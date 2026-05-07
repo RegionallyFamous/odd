@@ -12,8 +12,8 @@ __pycache__/
 .phpcs-cache
 *.swp
 
-# Local dev scratch
-_tmp/
+# Local e2e WordPress tree (bin/e2e-local.sh)
+.e2e/
 
 # ODD ships empty — bundle content lives in the remote catalog at
 # _tools/catalog-sources/. These legacy plugin asset folders must not
