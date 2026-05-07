@@ -33,7 +33,7 @@ Screenshots live in `/assets/` on the SVN side (sibling of `/trunk/`, `/tags/`, 
 | `icon-256x256.png`    | 256×256          | Directory icon                                          |
 | `icon-128x128.png`    | 128×128          | Directory icon (low-DPI)                                |
 
-All screenshots are captured in the live demo (https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/RegionallyFamous/odd/main/blueprint.json) at 1× zoom, cropped to the desktop surface, saved as PNG through `cmd-shift-4` + OSX screenshot viewer "Export" (use PNG — the directory rejects JPEG).
+All screenshots are captured in the live demo (`https://playground.wordpress.net/?blueprint-url=` + URL-encoded `https://raw.githubusercontent.com/RegionallyFamous/odd/main/blueprint.json?oddbp=v2-desktop-zip`) at 1× zoom, cropped to the desktop surface, saved as PNG through `cmd-shift-4` + OSX screenshot viewer "Export" (use PNG — the directory rejects JPEG).
 
 ## SVN workflow
 
