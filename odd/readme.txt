@@ -4,7 +4,7 @@ Tags: wp-desktop-mode, desktop, wallpaper, widgets, apps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 2.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,7 +64,7 @@ Open ODD Shop → About → Copy diagnostics, then paste the markdown into a Git
 
 == Changelog ==
 
-= 2.0.0 =
+= 1.0.1 =
 
 Shop Luxe + Weird overhaul, Shop theme/chaos prefs, Desktop Mode **v0.7.2+** integration (`desktop-mode.*` hooks and globals), install-smoke/E2E on wordpress.org Desktop Mode, and Playground opens the wp-admin desktop portal.
 
@@ -74,9 +74,9 @@ The clean public baseline for ODD: a catalog-driven app store and decorator laye
 
 == Upgrade Notice ==
 
-= 2.0.0 =
+= 1.0.1 =
 
-**Requires WP Desktop Mode v0.7.2 or newer.** This release removes legacy `wp-desktop` integration. Upgrade Desktop Mode first, then ODD.
+**Requires WP Desktop Mode v0.7.2 or newer.** Upgrade Desktop Mode first if you are still on an older shell.
 
 = 1.0.0 =
 
