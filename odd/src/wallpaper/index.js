@@ -87,10 +87,30 @@
 		}
 	}
 
+	function isPlaygroundWallpaperShell() {
+		try {
+			var h = window.location && window.location.hostname ? String( window.location.hostname ).toLowerCase() : '';
+			return 'playground.wordpress.net' === h
+				|| ( h.length > 24 && /\.playground\.wordpress\.net$/.test( h ) );
+		} catch ( _ ) {
+			return false;
+		}
+	}
+
 	function makeBloomLayer( PIXI, strength ) {
 		var c = new PIXI.Container();
 		c.blendMode = 'add';
-		c.filters = [ new PIXI.BlurFilter( { strength: strength || 8, quality: 2 } ) ];
+		// Pixi v8 blur filters can throw internally during filter passes when
+		// FilterSystem textures are unavailable — common during WebGL churn in
+		// WordPress Playground iframes. Bloom is purely decorative; omit it
+		// there so wallpapers stay alive.
+		if ( isPlaygroundWallpaperShell() ) {
+			return c;
+		}
+		var amt = typeof strength === 'number' ? strength : 8;
+		try {
+			c.filters = [ new PIXI.BlurFilter( { strength: amt, quality: 2 } ) ];
+		} catch ( _bf ) {}
 		return c;
 	}
 
