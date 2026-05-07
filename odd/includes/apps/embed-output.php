@@ -94,13 +94,23 @@ function odd_apps_transform_embed_bundle_output( $contents, $mime ) {
 		return $contents;
 	}
 
-	// Sideways-installed archives may register `./sw.js` under wp-admin —
-	// strip registration so orphaned workers never wedge the iframe root.
-	return (string) preg_replace(
-		'#navigator\.serviceWorker\.register\("\./sw\.js"\)[^;]*;#',
-		'void 0;',
-		$contents
-	);
+	// Sideways-installed archives sometimes still ship Vite/React PWA bootstraps:
+	// a load listener wrapping `navigator.serviceWorker.register("./sw.js")` with no
+	// trailing semicolon (Firefox warns when that worker evaluates). Strip both shapes.
+	if ( false !== strpos( $contents, 'serviceWorker' ) ) {
+		$contents = (string) preg_replace(
+			'#"serviceWorker"in navigator&&window\.addEventListener\("load",\(\)=>\{navigator\.serviceWorker\.register\("\./sw\.js"\)\.catch\(\(\)=>\{\}\)\}\)#',
+			'void 0',
+			$contents
+		);
+		$contents = (string) preg_replace(
+			'#navigator\.serviceWorker\.register\("\./sw\.js"\)[^;]*;#',
+			'void 0;',
+			$contents
+		);
+	}
+
+	return $contents;
 }
 
 /**
