@@ -13,8 +13,8 @@
     {
       "step": "installPlugin",
       "pluginData": {
-        "resource": "url",
-        "url": "https://odd.regionallyfamous.com/vendor/desktop-mode-v0.6.0.zip"
+        "resource": "wordpress.org/plugins",
+        "slug": "desktop-mode"
       },
       "options": { "activate": true, "targetFolderName": "desktop-mode" }
     },

@@ -31,9 +31,12 @@ Checks (all emit bullets; any failure → exit code 1):
      plugin headers.
   5. Any `installPlugin` with `resource: "url"` must be HTTPS and
      cannot point at `github.com/*/releases/download/…`.
-  6. WP Desktop Mode must not be installed from `git:directory` because
+  6. Any `installPlugin` with `resource: "wordpress.org/plugins"` must
+     include `slug`, and prefer `targetFolderName` alongside `slug`.
+  7. WP Desktop Mode must not be installed from `git:directory` because
      its source archives do not include the compiled desktop shell JS
-     (`assets/js/desktop.min.js`). Use a packaged zip instead.
+     (`assets/js/desktop.min.js`). Install from wordpress.org/plugins,
+     HTTPS URL hosts, etc.
 """
 from __future__ import annotations
 
@@ -98,12 +101,26 @@ def validate_file(path: Path) -> tuple[list[str], int]:
                     f"step[{idx}] resource=url must be https, got {url!r}"
                 )
 
+        elif resource == "wordpress.org/plugins":
+            slug = plugin.get("slug")
+            if not slug or not isinstance(slug, str):
+                problems.append(
+                    f"step[{idx}] wordpress.org/plugins install is missing "
+                    "`pluginData.slug`"
+                )
+            if not options.get("targetFolderName"):
+                problems.append(
+                    f"step[{idx}] wordpress.org/plugins installPlugin should set "
+                    "options.targetFolderName so plugin folder naming is deterministic"
+                )
+
         elif resource == "git:directory":
             url = str(plugin.get("url", ""))
             if "github.com/WordPress/desktop-mode" in url:
                 problems.append(
                     f"step[{idx}] installs WP Desktop Mode from git:directory — "
-                    "source archives miss compiled shell assets; use a packaged zip URL"
+                    "source archives miss compiled shell assets; use "
+                    "resource=wordpress.org/plugins or another packaged HTTPS ZIP"
                 )
             if not plugin.get("ref"):
                 problems.append(
