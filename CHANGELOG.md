@@ -11,6 +11,9 @@ notes to GitHub Releases.
 <a id="unreleased"></a>
 ## [Unreleased]
 
+<a id="v2.0.0"></a>
+## [2.0.0] — 2026-05-07
+
 ### Added
 - ODD Shop Luxe + Weird overhaul: tokenized light/dark chrome, responsive rail, SVG glyph system, animated iris brand mark, live wallpaper hero, editorial strip, motion polish, Chaos mode, and shop-local Oddling chaos cast.
 - New Shop preferences for `theme` (`light|dark|auto`) and `chaosMode`, both persisted through `/odd/v1/prefs`.
@@ -18,7 +21,7 @@ notes to GitHub Releases.
 
 ### Changed
 - **Breaking: WP Desktop Mode v0.7.2+ only.** Hooks use the `desktop-mode.*` namespace, the bundled script handle is `desktop-mode`, shell roots use `#desktop-mode-shell` / `body.desktop-mode-active`, native window renderers live on `desktopModeNativeWindows`, and host config/wallpapers use `desktopModeConfig` / `desktopModeWallpapers`. CI installs Desktop Mode from WordPress.org.
-- Public Playground blueprints install ODD via `git:directory` **branch `main`** (with Desktop Mode from wordpress.org) so hosted demos track `main` while release zips remain semver-tagged.
+- Public Playground blueprints open `/wp-admin/index.php?desktop_mode_portal=1`, install ODD via `git:directory` **branch `main`** (with Desktop Mode from wordpress.org), and track `main` while release zips stay semver-tagged.
 - `odd/bin/bump-version` skips blueprint tag rewrites when those blueprints pin `main`.
 - Icon-set dock/desktop mapping targets the recycle bin slug `desktop-mode-recycle-bin` (WP Desktop Mode v0.7+).
 - The ODD Shop native window now defaults to 1080x720 with a 720x520 minimum.
