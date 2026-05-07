@@ -32,16 +32,17 @@ class Test_Dependency_Guards extends WP_UnitTestCase {
 	}
 
 	public function test_capability_groups_are_defined() {
-		$core        = odd_desktop_mode_capability_functions( 'core' );
-		$os_settings = odd_desktop_mode_capability_functions( 'os_settings' );
-		$registry    = odd_desktop_mode_capability_functions( 'registry' );
-		$commands    = odd_desktop_mode_capability_functions( 'commands' );
-		$settings    = odd_desktop_mode_capability_functions( 'settings' );
-		$titlebar    = odd_desktop_mode_capability_functions( 'titlebar' );
-		$dock_rail   = odd_desktop_mode_capability_functions( 'dock_rail' );
-		$debug       = odd_desktop_mode_capability_functions( 'debug' );
-		$ai          = odd_desktop_mode_capability_functions( 'ai' );
-		$unknown     = odd_desktop_mode_capability_functions( 'does-not-exist' );
+		$core          = odd_desktop_mode_capability_functions( 'core' );
+		$os_settings   = odd_desktop_mode_capability_functions( 'os_settings' );
+		$registry      = odd_desktop_mode_capability_functions( 'registry' );
+		$commands      = odd_desktop_mode_capability_functions( 'commands' );
+		$settings      = odd_desktop_mode_capability_functions( 'settings' );
+		$titlebar      = odd_desktop_mode_capability_functions( 'titlebar' );
+		$dock_rail     = odd_desktop_mode_capability_functions( 'dock_rail' );
+		$debug         = odd_desktop_mode_capability_functions( 'debug' );
+		$ai            = odd_desktop_mode_capability_functions( 'ai' );
+		$window_chrome = odd_desktop_mode_capability_functions( 'window_chrome' );
+		$unknown       = odd_desktop_mode_capability_functions( 'does-not-exist' );
 		$this->assertNotEmpty( $core );
 		$this->assertContains( 'desktop_mode_get_os_settings', $os_settings );
 		$this->assertContains( 'desktop_mode_save_os_settings', $os_settings );
@@ -55,6 +56,8 @@ class Test_Dependency_Guards extends WP_UnitTestCase {
 		$this->assertContains( 'desktop_mode_debug_publish', $debug );
 		$this->assertContains( 'desktop_mode_debug_session_for_request', $debug );
 		$this->assertContains( 'desktop_mode_register_ai_tool', $ai );
+		$this->assertContains( 'desktop_mode_register_window_theme', $window_chrome );
+		$this->assertContains( 'desktop_mode_register_window_chrome', $window_chrome );
 		$this->assertSame( array(), $unknown, 'Unknown capabilities return an empty list, not null.' );
 	}
 

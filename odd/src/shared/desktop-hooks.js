@@ -1,9 +1,10 @@
 /**
  * ODD ↔ WP Desktop Mode hook bridge.
  * ---------------------------------------------------------------
- * WP Desktop Mode v0.7.2+ uses the `desktop-mode.*` hook namespace plus
- * layout, settings-tab, and activity APIs. Older Desktop Mode builds
- * (pre-0.7) are not supported.
+ * Targets the **wordpress.org** shipping line — currently Desktop Mode
+ * **0.7.2** — `desktop-mode.*` wp.hooks, `wp.desktop.*`, layout + registry
+ * CustomEvents, and the activity bus. Older host builds (pre-0.7.2) are
+ * not supported.
  */
 ( function () {
 	'use strict';
@@ -869,6 +870,29 @@
 			record( 'info', 'desktop-mode-layout-changed', detail );
 			emit( 'odd.desktop-layout-changed', detail );
 		} );
+		addDomEvent( 'desktop-mode-registry-changed', function ( event ) {
+			var detail = event && event.detail || {};
+			record( 'info', 'desktop-mode-registry-changed', detail );
+			emit( 'odd.host-registry-changed', detail );
+			// Host shell/live-activation syncs `nativeWindows` without always
+			// reloading the page. Re-run app window registration when an ODD app
+			// id appears so `desktopModeNativeWindows['odd-app-*']` exists before
+			// `openWindow` (matches WP.org desktop-mode 0.7.2+ payload apply).
+			if ( ! detail || detail.registry !== 'native-windows' || ! Array.isArray( detail.added ) ) return;
+			var needsOdd = false;
+			for ( var i = 0; i < detail.added.length; i++ ) {
+				var rid = detail.added[ i ];
+				if ( typeof rid === 'string' && rid.indexOf( ODD_WINDOW_PREFIX ) === 0 ) {
+					needsOdd = true;
+					break;
+				}
+			}
+			if ( ! needsOdd ) return;
+			var reg = window.__odd && window.__odd.apps && window.__odd.apps.registerWpdmCallbacks;
+			if ( typeof reg === 'function' ) {
+				try { reg(); } catch ( _e ) {}
+			}
+		} );
 		addDomEvent( 'desktop-mode-presence-changed', function ( event ) {
 			pulseActivity( 'presence' );
 			record( 'info', 'desktop-mode-presence-changed', event && event.detail || {} );
@@ -949,6 +973,12 @@
 				stampChromeTheme( payload || {} );
 				record( 'info', hookName, payload || {} );
 			} );
+		} );
+		addAction( 'desktop-mode.desktop-icon.clicked', function ( payload ) {
+			record( 'info', 'desktop-mode.desktop-icon.clicked', payload || {} );
+			if ( payload && payload.id === 'odd' ) {
+				emit( 'odd.desktop-icon-clicked', payload );
+			}
 		} );
 		addAction( 'desktop-mode.window.attention', function ( payload ) {
 			record( 'info', 'desktop-mode.window.attention', payload || {} );

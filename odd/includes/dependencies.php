@@ -33,37 +33,50 @@ function odd_desktop_mode_required_functions() {
  */
 function odd_desktop_mode_capability_functions( $capability ) {
 	$map = array(
-		'core'        => odd_desktop_mode_required_functions(),
-		'os_settings' => array(
+		'core'          => odd_desktop_mode_required_functions(),
+		'os_settings'   => array(
 			'desktop_mode_get_os_settings',
 			'desktop_mode_save_os_settings',
 			'desktop_mode_default_os_settings',
 		),
-		'registry'    => array(
+		'registry'      => array(
 			'desktop_mode_native_window_registry',
 		),
-		'wallpaper'   => array(
+		'wallpaper'     => array(
 			'desktop_mode_register_wallpaper',
 		),
-		'commands'    => array(
+		'commands'      => array(
 			'desktop_mode_register_command_script',
 		),
-		'settings'    => array(
+		'settings'      => array(
 			'desktop_mode_register_settings_tab_script',
 			'desktop_mode_register_settings_tab',
 		),
-		'titlebar'    => array(
+		'titlebar'      => array(
 			'desktop_mode_register_titlebar_button_script',
 		),
-		'dock_rail'   => array(
+		'dock_rail'     => array(
 			'desktop_mode_register_dock_rail_renderer_script',
 		),
-		'debug'       => array(
+		'debug'         => array(
 			'desktop_mode_debug_publish',
 			'desktop_mode_debug_session_for_request',
 		),
-		'ai'          => array(
+		'ai'            => array(
 			'desktop_mode_register_ai_tool',
+		),
+		// Window-chrome framework — wordpress.org desktop-mode 0.7.2+
+		// (includes/window-chrome.php). Optional; extensions use
+		// odd_desktop_mode_supports( 'window_chrome' ) before registering themes / controls / slots.
+		'window_chrome' => array(
+			'desktop_mode_register_window_theme_script',
+			'desktop_mode_register_window_theme',
+			'desktop_mode_register_window_control_script',
+			'desktop_mode_register_window_control',
+			'desktop_mode_register_window_slot_script',
+			'desktop_mode_register_window_slot',
+			'desktop_mode_register_window_chrome_script',
+			'desktop_mode_register_window_chrome',
 		),
 	);
 	return isset( $map[ $capability ] ) ? $map[ $capability ] : array();

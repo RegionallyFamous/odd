@@ -15,6 +15,9 @@ function loadDesktopHooks() {
 
 describe( 'Desktop Mode hook bridge', () => {
 	beforeEach( () => {
+		if ( window.__odd && window.__odd.desktopHooks && typeof window.__odd.desktopHooks.uninstall === 'function' ) {
+			try { window.__odd.desktopHooks.uninstall(); } catch ( e ) {}
+		}
 		loadFoundation( {
 			config: {
 				version: 'test',
@@ -308,5 +311,26 @@ describe( 'Desktop Mode hook bridge', () => {
 		const log = window.__odd.diagnostics.recent().map( ( row ) => row.message );
 		expect( log.some( ( row ) => row.includes( 'desktop-mode.command.before-run' ) ) ).toBe( true );
 		expect( log.some( ( row ) => row.includes( 'desktop-mode.command.error' ) ) ).toBe( true );
+	} );
+
+	it( 're-runs app window registration when host native-windows registry gains odd-app-*', () => {
+		window.wp.desktop = { ready: ( cb ) => cb() };
+		const registerWpdmCallbacks = vi.fn();
+		window.__odd.apps = { registerWpdmCallbacks };
+		loadDesktopHooks();
+
+		document.dispatchEvent(
+			new CustomEvent( 'desktop-mode-registry-changed', {
+				detail: { registry: 'native-windows', added: [ 'plugins' ], removed: [] },
+			} ),
+		);
+		expect( registerWpdmCallbacks ).not.toHaveBeenCalled();
+
+		document.dispatchEvent(
+			new CustomEvent( 'desktop-mode-registry-changed', {
+				detail: { registry: 'native-windows', added: [ 'odd-app-timer' ], removed: [] },
+			} ),
+		);
+		expect( registerWpdmCallbacks ).toHaveBeenCalledTimes( 1 );
 	} );
 } );
