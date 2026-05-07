@@ -27,19 +27,20 @@ If on a different branch, stop and ask.
 
 ## 2. Bump version pins
 
-Use the helper — it updates `odd/odd.php` and, when Playground installs ODD from a semver **git tag**, rewrites both blueprints’ `ref` pins. Hosted demos currently install from branch `main`, so **`bump-version` only bumps `odd.php` for those blueprints.** Manually fork a semver-tagged blueprint (or revert the branch pin locally) before release if you need tag parity baked into JSON.
+Use the helper — it updates `odd/odd.php` **and** both Playground blueprints’ ODD **`git:directory` ref** to `v<version>`. If you change `ODD_DESKTOP_MODE_MIN_VERSION` without a plugin bump, manually set `pluginData.version` for the `desktop-mode` install step in **both** blueprints (same value); `odd/bin/validate-blueprint` ensures they match `odd/odd.php`.
 
 ```bash
 odd/bin/bump-version <version>
 ```
 
-Then confirm they agree (`check-version` only cross-checks blueprint vs `odd.php` when blueprints pin a release tag):
+Then confirm they agree:
 
 ```bash
 odd/bin/check-version --expect <version>
+odd/bin/validate-blueprint
 ```
 
-Commit whatever changed (always `odd.php`; blueprints too if bump-version rewrote tags):
+Commit whatever changed (`odd/odd.php`; both `blueprint.json` files when bump-version rewrote the tag):
 
 ```bash
 git add odd/odd.php blueprint.json site/playground/blueprint.json
@@ -78,7 +79,7 @@ Or browse to the Actions tab in the repo.
 Give the user:
 
 - The release URL: `https://github.com/RegionallyFamous/odd/releases/tag/v<version>`
-- The Playground demo URL (hosted blueprint on `main` + wordpress.org Desktop Mode): `https://playground.wordpress.net/?blueprint-url=https://odd.regionallyfamous.com/playground/blueprint.json`. Raw GitHub mirror: `https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/RegionallyFamous/odd/main/blueprint.json`.
+- The Playground demo URL (hosted blueprint; pins Desktop Mode + semver ODD tag): `https://playground.wordpress.net/?blueprint-url=https://odd.regionallyfamous.com/playground/blueprint.json`. Raw GitHub mirror: `https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/RegionallyFamous/odd/main/blueprint.json`.
 - A one-line summary of what shipped
 
 If the auto-generated release notes need editing, open the release in

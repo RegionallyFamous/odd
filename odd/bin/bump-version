@@ -7,11 +7,11 @@ Updates all declared versions in sync:
   3. `v<x.y.z>` release tag ref in each Playground blueprint.json *when* the
      hosted demo installs ODD from a semver git tag.
 
-Public Playground blueprints that install ODD from branch `main`
-intentionally track `main` (while release zips stay semver-tagged). For
-those blueprints, `odd/bin/bump-version` updates only `odd.php` and skips
-the blueprint edits — use `odd/bin/check-version` after bumping (it only
-requires blueprint ↔ odd.php agreement when the blueprint pins a release tag).
+Public Playground blueprints install ODD via `git:directory` **tag `v`
++ `ODD_VERSION`** and Desktop Mode via wordpress.org **`pluginData.version`
+= `ODD_DESKTOP_MODE_MIN_VERSION`**; `odd/bin/validate-blueprint` enforces
+both against `odd/odd.php`. `odd/bin/bump-version` rewrites blueprint `ref`
+pins when tagging a new semver release.
 
 Usage:
     odd/bin/bump-version 0.14.0            # edits in place

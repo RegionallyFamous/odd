@@ -12,9 +12,9 @@ failure — and that's typically the first thing a new user ever sees.
 This script parses the blueprint and fails on known-fragile patterns so
 regressions are caught before they reach `main`.
 
-Note: demos may deliberately install ODD from `git:directory` branch `main`
-so Playground stays aligned with merged plugin changes; `ref`/`refType` are still
-explicitly pinned for reliability (see checklist #3).
+The public blueprints pin ODD with a semver `git:directory` **tag** (`v` + `ODD_VERSION`)
+and WP Desktop Mode with `pluginData.version` equal to `ODD_DESKTOP_MODE_MIN_VERSION`.
+Both must agree with values in `odd/odd.php` (see checklist #8).
 
 Checks (all emit bullets; any failure → exit code 1):
 
@@ -26,9 +26,8 @@ Checks (all emit bullets; any failure → exit code 1):
         - `ref`   (tag / branch / SHA)
         - `refType` (one of `tag`, `branch`, `commit`, `refname`)
         - `path`  (use `/` for repo-root plugins)
-     Unpinned `ref` lets the demo silently drift when upstream `main`
-     changes — and when that drift includes a broken PHP file, every
-     new Playground load fatals.
+     Unpinned `ref` lets the demo silently drift — and when that drift
+     includes a broken PHP file, every new Playground load fatals.
   4. Every `git:directory` installPlugin has `options.targetFolderName`.
      Without it, Playground guesses folder names from the repo slug,
      which can collide with `Requires Plugins:` expectations in the
@@ -41,10 +40,15 @@ Checks (all emit bullets; any failure → exit code 1):
      its source archives do not include the compiled desktop shell JS
      (`assets/js/desktop.min.js`). Install from wordpress.org/plugins,
      HTTPS URL hosts, etc.
+  8. Desktop Mode wordpress.org installs use `slug: desktop-mode` and
+     `pluginData.version` matching `ODD_DESKTOP_MODE_MIN_VERSION`.
+     RegionallyFamous/odd installs use `refType: tag` with `ref: v`
+     plus `ODD_VERSION`.
 """
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -53,6 +57,33 @@ HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent.parent
 BLUEPRINT = REPO_ROOT / "blueprint.json"
 SITE_BLUEPRINT = REPO_ROOT / "site" / "playground" / "blueprint.json"
+PLUGIN_MAIN = REPO_ROOT / "odd" / "odd.php"
+
+
+ODD_CONST_RE = re.compile(
+    r"define\(\s*['\"]ODD_(VERSION|DESKTOP_MODE_MIN_VERSION)['\"]\s*,\s*['\"]"
+    r"([^'\"]+)['\"]\s*\)",
+)
+
+
+def odd_php_constants() -> tuple[str, str]:
+    """Return (ODD_VERSION, ODD_DESKTOP_MODE_MIN_VERSION) from odd/odd.php."""
+    text = PLUGIN_MAIN.read_text(encoding="utf-8")
+    found: dict[str, str] = {}
+    for m in ODD_CONST_RE.finditer(text):
+        key = m.group(1).lower()
+        if key == "version":
+            found["version"] = m.group(2)
+        elif key == "desktop_mode_min_version":
+            found["desktop"] = m.group(2)
+    version = found.get("version")
+    dm_min = found.get("desktop")
+    if version is None or dm_min is None:
+        raise SystemExit(
+            f"error: could not read ODD_VERSION and "
+            f"ODD_DESKTOP_MODE_MIN_VERSION from {PLUGIN_MAIN}"
+        )
+    return version, dm_min
 
 
 def fail(problems: list[str]) -> None:
@@ -62,7 +93,7 @@ def fail(problems: list[str]) -> None:
     sys.exit(1)
 
 
-def validate_file(path: Path) -> tuple[list[str], int]:
+def validate_file(path: Path, odd_version: str, dm_min: str) -> tuple[list[str], int]:
     problems: list[str] = []
 
     if not path.exists():
@@ -78,6 +109,7 @@ def validate_file(path: Path) -> tuple[list[str], int]:
         problems.append("blueprint has no steps array")
 
     allowed_ref_types = {"tag", "branch", "commit", "refname"}
+    expected_odd_ref = "v" + odd_version
 
     for idx, step in enumerate(steps or []):
         if not isinstance(step, dict):
@@ -112,6 +144,13 @@ def validate_file(path: Path) -> tuple[list[str], int]:
                     f"step[{idx}] wordpress.org/plugins install is missing "
                     "`pluginData.slug`"
                 )
+            if slug == "desktop-mode":
+                got = plugin.get("version")
+                if got != dm_min:
+                    problems.append(
+                        f"step[{idx}] desktop-mode must set pluginData.version to "
+                        f"ODD_DESKTOP_MODE_MIN_VERSION ({dm_min!r}); got {got!r}"
+                    )
             if not options.get("targetFolderName"):
                 problems.append(
                     f"step[{idx}] wordpress.org/plugins installPlugin should set "
@@ -146,15 +185,29 @@ def validate_file(path: Path) -> tuple[list[str], int]:
                     f"step[{idx}] git:directory installPlugin must set options.targetFolderName "
                     "so the plugin folder matches what `Requires Plugins:` expects"
                 )
+            if "RegionallyFamous/odd" in url:
+                if ref_type != "tag":
+                    problems.append(
+                        f"step[{idx}] RegionallyFamous/odd installs must use refType \"tag\""
+                    )
+                ref = str(plugin.get("ref", ""))
+                if ref != expected_odd_ref:
+                    problems.append(
+                        f"step[{idx}] ODD git ref must match ODD_VERSION as {expected_odd_ref!r}; got {ref!r}"
+                    )
 
     return problems, len(steps or [])
 
 
 def main() -> int:
+    if not PLUGIN_MAIN.is_file():
+        print(f"error: missing {PLUGIN_MAIN}", file=sys.stderr)
+        return 1
+    odd_version, dm_min = odd_php_constants()
     problems: list[str] = []
     total_steps = 0
     for path in (BLUEPRINT, SITE_BLUEPRINT):
-        file_problems, step_count = validate_file(path)
+        file_problems, step_count = validate_file(path, odd_version, dm_min)
         problems.extend(file_problems)
         total_steps += step_count
 

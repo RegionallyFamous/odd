@@ -11,6 +11,9 @@ notes to GitHub Releases.
 <a id="unreleased"></a>
 ## [Unreleased]
 
+### Changed
+- Playground deploys enforce pins: wordpress.org Desktop Mode uses `pluginData.version` (= `ODD_DESKTOP_MODE_MIN_VERSION`), ODD installs from git tag `v` + `ODD_VERSION`; `odd/bin/validate-blueprint` checks both against `odd/odd.php`.
+
 <a id="v1.0.1"></a>
 ## [1.0.1] — 2026-05-07
 
@@ -21,8 +24,8 @@ notes to GitHub Releases.
 
 ### Changed
 - **Requires WP Desktop Mode v0.7.2+.** Hooks use the `desktop-mode.*` namespace, the bundled script handle is `desktop-mode`, shell roots use `#desktop-mode-shell` / `body.desktop-mode-active`, native window renderers live on `desktopModeNativeWindows`, and host config/wallpapers use `desktopModeConfig` / `desktopModeWallpapers`. CI installs Desktop Mode from WordPress.org (legacy `wp-desktop` integration is removed).
-- Public Playground blueprints open `/wp-admin/index.php?desktop_mode_portal=1`, install ODD via `git:directory` **branch `main`** (with Desktop Mode from wordpress.org), and track `main` while release zips stay semver-tagged.
-- `odd/bin/bump-version` skips blueprint tag rewrites when those blueprints pin `main`.
+- Public Playground blueprints open `/wp-admin/index.php?desktop_mode_portal=1`, pin wordpress.org Desktop Mode **0.7.2**, and install ODD **v1.0.1** from a `git:directory` semver tag (see `odd/bin/validate-blueprint`).
+- `odd/bin/bump-version` bumps both blueprints’ ODD **`ref`** when cutting a semver release (`v` tag).
 - Icon-set dock/desktop mapping targets the recycle bin slug `desktop-mode-recycle-bin` (WP Desktop Mode v0.7+).
 - The ODD Shop native window now defaults to 1080x720 with a 720x520 minimum.
 - Scene bundles can carry `heroSafe:false` to keep desktop-only scenes out of the Shop hero.

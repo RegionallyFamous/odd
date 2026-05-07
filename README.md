@@ -31,7 +31,7 @@
 
 [WP Desktop Mode](https://github.com/WordPress/desktop-mode) makes WordPress feel like a desktop. ODD gives that desktop a polished, updateable shop for visual themes and small tools.
 
-The hosted [Playground blueprint](https://odd.regionallyfamous.com/playground/blueprint.json) installs WP Desktop Mode from [wordpress.org](https://wordpress.org/plugins/desktop-mode/) (latest compatible build) and ODD straight from branch `main` — so quick clicks track merged plugin work; **release quality** stays tied to semver-tagged **`odd.zip`** on [Releases](https://github.com/RegionallyFamous/odd/releases/latest). Equivalent raw blueprint: [`blueprint.json` on GitHub](https://raw.githubusercontent.com/RegionallyFamous/odd/main/blueprint.json).
+The hosted [Playground blueprint](https://odd.regionallyfamous.com/playground/blueprint.json) pins **[WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/)** to **0.7.2** (`pluginData.version`, kept equal to `ODD_DESKTOP_MODE_MIN_VERSION`) and **[ODD](https://github.com/RegionallyFamous/odd)** to the **semver git tag** that matches `ODD_VERSION` in `odd/odd.php` (today **v1.0.1**). Raw GitHub copy: [`blueprint.json`](https://raw.githubusercontent.com/RegionallyFamous/odd/main/blueprint.json). **Production installs:** **`odd.zip`** on [Releases](https://github.com/RegionallyFamous/odd/releases/latest).
 
 ---
 
