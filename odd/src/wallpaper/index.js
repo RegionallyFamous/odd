@@ -455,6 +455,83 @@
 		recordRecent: recordRecent,
 	};
 
+	// ------------------------------------------------------------ //
+	// Live scene picks (`odd.pickScene`) can fire from the Shop
+	// while `mountODD` is still awaiting Pixi (`app.init`). Bridge
+	// early: queue the slug until the mount assigns a real `swap`.
+	//
+	// Also subscribe to legacy `odd/pickScene` (slash form) — some
+	// extensions and stale snippets still emit it.
+	// ------------------------------------------------------------ //
+
+	var wallpaperPickSink  = null;
+	var wallpaperPickQueue = null;
+	var wallpaperPickBridged = false;
+
+	function exposeWallpaperPickSink( sink ) {
+		wallpaperPickSink = sink || null;
+		if ( wallpaperPickSink && wallpaperPickQueue != null ) {
+			var queued = wallpaperPickQueue;
+			wallpaperPickQueue = null;
+			try { wallpaperPickSink( queued ); } catch ( _pickFlush ) {}
+		}
+	}
+
+	function routeWallpaperScenePick( slug ) {
+		if ( wallpaperPickSink ) {
+			try { wallpaperPickSink( slug ); } catch ( _pickRoute ) {}
+		} else {
+			wallpaperPickQueue = slug;
+		}
+	}
+
+	function installWallpaperPickBridge() {
+		if ( wallpaperPickBridged ) return;
+		var hooks = window.wp && window.wp.hooks;
+		if ( ! hooks || typeof hooks.addAction !== 'function' ) return;
+		wallpaperPickBridged = true;
+		try { hooks.addAction( 'odd.pickScene', 'odd.wallpaper-bridge', routeWallpaperScenePick ); } catch ( _a ) {}
+		try { hooks.addAction( 'odd/pickScene', 'odd.wallpaper-bridge-slash', routeWallpaperScenePick ); } catch ( _b ) {}
+	}
+
+	// ------------------------------------------------------------ //
+	// Wallpaper visibility toggles Pixi's ticker via
+	// `desktop-mode.wallpaper.visibility`; the host may emit that
+	// before Pixi finishes `app.init`, so subscribe from `boot` and
+	// queue the latest payload until `mountODD` wires `onVis`.
+	// ------------------------------------------------------------ //
+
+	var wallpaperVisSink   = null;
+	var wallpaperVisQueue  = null;
+	var wallpaperVisBridged = false;
+
+	function exposeWallpaperVisSink( sink ) {
+		wallpaperVisSink = sink || null;
+		if ( wallpaperVisSink && wallpaperVisQueue != null ) {
+			var q = wallpaperVisQueue;
+			wallpaperVisQueue = null;
+			try { wallpaperVisSink( q ); } catch ( _visFlush ) {}
+		}
+	}
+
+	function routeWallpaperVisibility( detail ) {
+		if ( wallpaperVisSink ) {
+			try { wallpaperVisSink( detail ); } catch ( _visRoute ) {}
+		} else {
+			wallpaperVisQueue = detail;
+		}
+	}
+
+	function installWallpaperVisibilityBridge() {
+		if ( wallpaperVisBridged ) return;
+		var hooks = window.wp && window.wp.hooks;
+		if ( ! hooks || typeof hooks.addAction !== 'function' ) return;
+		wallpaperVisBridged = true;
+		try {
+			hooks.addAction( 'desktop-mode.wallpaper.visibility', 'odd.wallpaper-vis-bridge', routeWallpaperVisibility );
+		} catch ( _visBridge ) {}
+	}
+
 	// ============================================================ //
 	// Mount — one Pixi app, swap scenes in place.
 	// ============================================================ //
@@ -919,25 +996,21 @@
 
 			// ---------- Visibility + wp.hooks bridge ---------------- //
 
-			var visHook = 'odd.visibility';
 			function onVis( detail ) {
 				if ( ! detail || detail.id !== ctx.id ) return;
 				if ( detail.state === 'hidden' ) app.ticker.stop();
 				else if ( ! ctx.prefersReducedMotion ) app.ticker.start();
 			}
-			if ( window.wp && window.wp.hooks ) {
-				window.wp.hooks.addAction( 'desktop-mode.wallpaper.visibility', visHook, onVis );
+			exposeWallpaperVisSink( onVis );
 
-				// Panel / widgets / slash commands all fire this action
-				// to swap the live scene without waiting on REST. The
-				// caller still persists via POST /odd/v1/prefs.
-				window.wp.hooks.addAction( 'odd.pickScene', 'odd.wallpaper', function ( slug ) {
-					if ( ! slug || slug === currentSlug ) return;
-					swap( slug ).then( function ( res ) {
-						if ( res && res.ok ) recordRecent( slug );
-					} );
+			// Wired through the bridge (installed from `boot`) so picks
+			// during Pixi bootstrap are not dropped.
+			exposeWallpaperPickSink( function ( slug ) {
+				if ( ! slug || slug === currentSlug ) return;
+				swap( slug ).then( function ( res ) {
+					if ( res && res.ok ) recordRecent( slug );
 				} );
-			}
+			} );
 
 			function onDocVis() {
 				if ( document.hidden ) app.ticker.stop();
@@ -974,10 +1047,8 @@
 				if ( window.__odd.audio && window.__odd.audio.disable ) {
 					try { window.__odd.audio.disable(); } catch ( e ) { /* ignore */ }
 				}
-				if ( window.wp && window.wp.hooks ) {
-					window.wp.hooks.removeAction( 'desktop-mode.wallpaper.visibility', visHook );
-					window.wp.hooks.removeAction( 'odd.pickScene', 'odd.wallpaper' );
-				}
+				exposeWallpaperPickSink( null );
+				exposeWallpaperVisSink( null );
 				document.removeEventListener( 'visibilitychange', onDocVis );
 				window.removeEventListener( 'pointermove', onPointerMove );
 				if ( live.parentNode ) live.parentNode.removeChild( live );
@@ -1036,6 +1107,8 @@
 			// certainly doesn't have the shell loaded and we can bail.
 			return;
 		}
+		installWallpaperPickBridge();
+		installWallpaperVisibilityBridge();
 		if ( window.wp.desktop && typeof window.wp.desktop.ready === 'function' ) {
 			window.wp.desktop.ready( registerAll );
 		} else {

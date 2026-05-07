@@ -15,6 +15,17 @@ notes to GitHub Releases.
 - Playground deploys enforce pins: Desktop Mode via **downloads.wordpress.org** `plugin/desktop-mode.{ODD_DESKTOP_MODE_MIN_VERSION}.zip` (`resource: "url"`), ODD from git tag `v` + `ODD_VERSION`; `odd/bin/validate-blueprint` checks both against `odd/odd.php`. (Playground schema disallows `pluginData.version` on `wordpress.org/plugins`.)
 - Pin Playground **`preferredVersions.wp`** to **`6.9`** (matches the bundle Playground resolves for `latest` today) so the console does not warn that loaded WP differs from the requested slug.
 
+<a id="v1.0.2"></a>
+## [1.0.2] — 2026-05-07
+
+### Fixed
+- **Wallpaper live swaps.** `odd.pickScene` / legacy `odd/pickScene` can fire while Pixi still awaits `app.init`; an early hook bridge queues picks until mount wires `swap`, and wallpaper visibility hooks are bridged the same way.
+- **Shop prefs path.** Wallpaper confirmation re-fires the live pick; `api.setScene` emits both hook spellings; screensaver swaps emit slash form too.
+- **Dock overflow.** Left/right rails cap to the shell body height with vertical scroll (`min-height: 0`, `overflow-y: auto`) so large icon sets and long menus are not clipped by `desktop-mode-shell__body`.
+
+### Changed
+- Public Playground pins ODD **`v1.0.2`** via `git:directory` semver tag (`blueprint.json` + `site/playground/blueprint.json`).
+
 <a id="v1.0.1"></a>
 ## [1.0.1] — 2026-05-07
 

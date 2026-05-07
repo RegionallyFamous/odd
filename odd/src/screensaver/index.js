@@ -86,6 +86,7 @@
 	function pickScene( slug ) {
 		if ( ! slug || ! hooks || typeof hooks.doAction !== 'function' ) return;
 		try { hooks.doAction( 'odd.pickScene', slug ); } catch ( e ) {}
+		try { hooks.doAction( 'odd/pickScene', slug ); } catch ( e2 ) {}
 	}
 
 	function pad( n ) { return ( n < 10 ? '0' : '' ) + n; }

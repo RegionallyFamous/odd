@@ -22,6 +22,24 @@ body.desktop-mode-active .desktop-mode-dock {
 	border-radius: 24px;
 }
 
+/*
+ * Vertical docks (left/right): WP Desktop Mode gives the rail
+ * `flex-shrink: 0` inside `desktop-mode-shell__body` while stacking
+ * icons in a column. With many menu items the rail's intrinsic height
+ * exceeds the shell; `body` keeps `overflow:hidden` and the icons are
+ * clipped. Cap the rail to the viewport column and scroll internally.
+ */
+body.desktop-mode-active .desktop-mode-dock[ data-desktop-mode-dock-placement="left" ],
+body.desktop-mode-active .desktop-mode-dock[ data-desktop-mode-dock-placement="right" ] {
+	min-height: 0;
+	max-height: 100%;
+	align-self: stretch;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-gutter: stable;
+}
+
 body.desktop-mode-active .desktop-mode-dock__items,
 body.desktop-mode-active .desktop-mode-dock__list {
 	gap: var( --odd-dock-gap );

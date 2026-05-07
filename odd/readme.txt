@@ -4,7 +4,7 @@ Tags: wp-desktop-mode, desktop, wallpaper, widgets, apps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,10 @@ Open ODD Shop → About → Copy diagnostics, then paste the markdown into a Git
 
 == Changelog ==
 
+= 1.0.2 =
+
+Reliable wallpaper scene swaps from the Shop (early hook bridge + prefs confirm path). Vertical dock rails scroll instead of clipping when many menu icons are visible. Wallpapers honor `desktop-mode.wallpaper.visibility` during Pixi bootstrap. Screensaver/API/panel dual-emit the legacy `odd/pickScene` hook.
+
 = 1.0.1 =
 
 Shop Luxe + Weird overhaul, Shop theme/chaos prefs, Desktop Mode **v0.7.2+** integration (`desktop-mode.*` hooks and globals), install-smoke/E2E on wordpress.org Desktop Mode, and Playground opens the wp-admin desktop portal.
@@ -73,6 +77,10 @@ Shop Luxe + Weird overhaul, Shop theme/chaos prefs, Desktop Mode **v0.7.2+** int
 The clean public baseline for ODD: a catalog-driven app store and decorator layer for WP Desktop Mode v0.7.2+, with unified store cards, hardened bundle installs, local-only diagnostics, starter content, and release-quality CI gates.
 
 == Upgrade Notice ==
+
+= 1.0.2 =
+
+Fixes dock overflow with long menus and unreliable wallpaper swaps triggered from the ODD Shop during shell boot.
 
 = 1.0.1 =
 

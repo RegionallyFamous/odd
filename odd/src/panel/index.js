@@ -3773,6 +3773,7 @@
 		function pickSceneLive( slug ) {
 			if ( window.wp && window.wp.hooks && typeof window.wp.hooks.doAction === 'function' ) {
 				try { window.wp.hooks.doAction( 'odd.pickScene', slug ); } catch ( e ) {}
+				try { window.wp.hooks.doAction( 'odd/pickScene', slug ); } catch ( e2 ) {}
 			}
 		}
 
@@ -3830,12 +3831,17 @@
 			if ( ! state.preview || state.preview.kind !== 'wallpaper' || state.posting ) return;
 			state.posting = true;
 			var slug = state.preview.slug;
+			// Re-fire even if Preview already swapped — Pixi hook may have
+			// wired after the preview action, leaving REST committed but
+			// the canvas stale.
+			pickSceneLive( slug );
 
 			savePrefs( { wallpaper: slug }, function ( data ) {
 				state.posting = false;
 				if ( data && typeof data.wallpaper === 'string' ) {
 					state.cfg.wallpaper = data.wallpaper;
 					state.cfg.scene    = data.wallpaper;
+					pickSceneLive( data.wallpaper );
 				}
 				state.preview = null;
 				playShopSound( 'success' );
