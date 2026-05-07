@@ -223,6 +223,30 @@ add_action(
 			array( 'desktop-mode' ),
 			ODD_VERSION
 		);
+		wp_enqueue_style(
+			'odd-dm-integration-hints',
+			ODD_URL . '/src/shell/desktop-mode-integration-hints.css',
+			array(),
+			$asset_version( 'src/shell/desktop-mode-integration-hints.css' )
+		);
+		if ( function_exists( 'odd_desktop_mode_supports' ) && odd_desktop_mode_supports( 'dock_rail' ) ) {
+			wp_enqueue_style(
+				'odd-dock-rail',
+				ODD_URL . '/src/shell/odd-dock-rail.css',
+				array( 'desktop-mode' ),
+				$asset_version( 'src/shell/odd-dock-rail.css' )
+			);
+			wp_enqueue_script(
+				'odd-dock-rail',
+				ODD_URL . '/src/shell/odd-dock-rail.js',
+				array( 'desktop-mode', 'wp-i18n' ),
+				$asset_version( 'src/shell/odd-dock-rail.js' ),
+				true
+			);
+			if ( function_exists( 'desktop_mode_register_dock_rail_renderer_script' ) ) {
+				desktop_mode_register_dock_rail_renderer_script( 'odd-dock-rail' );
+			}
+		}
 
 		// ---- Apps ---- //
 		//
@@ -342,43 +366,44 @@ add_action(
 		}
 
 		$config = array(
-			'pluginUrl'        => ODD_URL,
-			'version'          => ODD_VERSION,
-			'schemaVersion'    => defined( 'ODD_SCHEMA_VERSION' ) ? ODD_SCHEMA_VERSION : 0,
-			'restUrl'          => esc_url_raw( rest_url( 'odd/v1/prefs' ) ),
-			'restNonce'        => wp_create_nonce( 'wp_rest' ),
+			'pluginUrl'         => ODD_URL,
+			'version'           => ODD_VERSION,
+			'schemaVersion'     => defined( 'ODD_SCHEMA_VERSION' ) ? ODD_SCHEMA_VERSION : 0,
+			'restUrl'           => esc_url_raw( rest_url( 'odd/v1/prefs' ) ),
+			'restNonce'         => wp_create_nonce( 'wp_rest' ),
 
 			// Wallpaper. `scenes` is the array shape the panel needs;
 			// `sceneMap` is a slug→descriptor dict installed scene.js
 			// bundles read to resolve their `wallpaperUrl` + `previewUrl`
 			// without having to scan `scenes` on every frame.
-			'scenes'           => $scenes,
-			'sceneMap'         => array_column( $scenes, null, 'slug' ),
-			'scene'            => $active_scene,
-			'wallpaper'        => $active_scene,
-			'favorites'        => odd_wallpaper_get_user_slug_list( $uid, 'odd_favorites' ),
-			'recents'          => odd_wallpaper_get_user_slug_list( $uid, 'odd_recents' ),
-			'shuffle'          => odd_wallpaper_get_user_shuffle( $uid ),
-			'screensaver'      => odd_wallpaper_get_user_screensaver( $uid ),
-			'audioReactive'    => odd_wallpaper_get_user_audio_reactive( $uid ),
-			'shopTaskbar'      => function_exists( 'odd_shop_taskbar_enabled' ) ? odd_shop_taskbar_enabled( $uid ) : false,
-			'shopV2'           => apply_filters( 'odd_shop_v2', true ),
-			'theme'            => function_exists( 'odd_shop_get_theme' ) ? odd_shop_get_theme( $uid ) : 'auto',
-			'chaosMode'        => (bool) get_user_meta( $uid, 'odd_chaos', true ),
+			'scenes'            => $scenes,
+			'sceneMap'          => array_column( $scenes, null, 'slug' ),
+			'scene'             => $active_scene,
+			'wallpaper'         => $active_scene,
+			'favorites'         => odd_wallpaper_get_user_slug_list( $uid, 'odd_favorites' ),
+			'recents'           => odd_wallpaper_get_user_slug_list( $uid, 'odd_recents' ),
+			'shuffle'           => odd_wallpaper_get_user_shuffle( $uid ),
+			'screensaver'       => odd_wallpaper_get_user_screensaver( $uid ),
+			'audioReactive'     => odd_wallpaper_get_user_audio_reactive( $uid ),
+			'shopTaskbar'       => function_exists( 'odd_shop_taskbar_enabled' ) ? odd_shop_taskbar_enabled( $uid ) : false,
+			'shopDesktopPinned' => function_exists( 'odd_shop_desktop_pinned' ) ? odd_shop_desktop_pinned( $uid ) : false,
+			'shopV2'            => apply_filters( 'odd_shop_v2', true ),
+			'theme'             => function_exists( 'odd_shop_get_theme' ) ? odd_shop_get_theme( $uid ) : 'auto',
+			'chaosMode'         => (bool) get_user_meta( $uid, 'odd_chaos', true ),
 
 			// Iris personality prefs.
-			'initiated'        => (bool) get_user_meta( $uid, 'odd_initiated', true ),
-			'mascotQuiet'      => (bool) get_user_meta( $uid, 'odd_mascot_quiet', true ),
-			'winkUnlocked'     => (bool) get_user_meta( $uid, 'odd_wink_unlocked', true ),
+			'initiated'         => (bool) get_user_meta( $uid, 'odd_initiated', true ),
+			'mascotQuiet'       => (bool) get_user_meta( $uid, 'odd_mascot_quiet', true ),
+			'winkUnlocked'      => (bool) get_user_meta( $uid, 'odd_wink_unlocked', true ),
 
 			// Icons.
-			'iconSets'         => $sets,
-			'iconSet'          => odd_icons_get_active_slug( $uid ),
+			'iconSets'          => $sets,
+			'iconSet'           => odd_icons_get_active_slug( $uid ),
 
 			// Cursors.
-			'cursorSets'       => $cursor_sets,
-			'cursorSet'        => odd_cursors_get_active_slug( $uid ),
-			'cursorStylesheet' => odd_cursors_active_stylesheet_url(),
+			'cursorSets'        => $cursor_sets,
+			'cursorSet'         => odd_cursors_get_active_slug( $uid ),
+			'cursorStylesheet'  => odd_cursors_active_stylesheet_url(),
 
 			// Registries for extension authors. Keys are *only* emitted
 			// when a third-party plugin has actually filtered them to
@@ -395,10 +420,10 @@ add_action(
 			// to pin, and which they've installed themselves. Both
 			// ship only when the apps feature is flag-enabled so the
 			// JS store stays empty on legacy installs.
-			'appsEnabled'      => $apps_enabled,
-			'apps'             => ( $apps_enabled && $has_ext ) ? odd_extensions_collect( 'apps' ) : array(),
-			'appServeUrls'     => $app_serve_urls,
-			'userApps'         => array(
+			'appsEnabled'       => $apps_enabled,
+			'apps'              => ( $apps_enabled && $has_ext ) ? odd_extensions_collect( 'apps' ) : array(),
+			'appServeUrls'      => $app_serve_urls,
+			'userApps'          => array(
 				'installed' => $installed,
 				'pinned'    => (array) get_user_meta( $uid, 'odd_apps_pinned', true ),
 			),
@@ -408,7 +433,7 @@ add_action(
 			// on the Widgets department. Empty when no widgets have
 			// been installed — the built-in sticky + eight-ball live
 			// entirely client-side.
-			'installedWidgets' => function_exists( 'odd_widgets_index_load' ) ? array_values(
+			'installedWidgets'  => function_exists( 'odd_widgets_index_load' ) ? array_values(
 				array_map(
 					function ( $row ) {
 						return array(
@@ -426,11 +451,11 @@ add_action(
 
 			// Capability flags the Shop UI keys off when deciding
 			// whether to render install affordances.
-			'canInstall'       => current_user_can( 'manage_options' ),
-			'bundlesUploadUrl' => esc_url_raw( rest_url( 'odd/v1/bundles/upload' ) ),
-			'bundleCatalogUrl' => esc_url_raw( rest_url( 'odd/v1/bundles/catalog' ) ),
-			'bundleInstallUrl' => esc_url_raw( rest_url( 'odd/v1/bundles/install-from-catalog' ) ),
-			'systemHealth'     => array(
+			'canInstall'        => current_user_can( 'manage_options' ),
+			'bundlesUploadUrl'  => esc_url_raw( rest_url( 'odd/v1/bundles/upload' ) ),
+			'bundleCatalogUrl'  => esc_url_raw( rest_url( 'odd/v1/bundles/catalog' ) ),
+			'bundleInstallUrl'  => esc_url_raw( rest_url( 'odd/v1/bundles/install-from-catalog' ) ),
+			'systemHealth'      => array(
 				'catalog'     => function_exists( 'odd_catalog_meta' ) ? odd_catalog_meta() : array(),
 				'starter'     => function_exists( 'odd_starter_get_state_for_rest' ) ? odd_starter_get_state_for_rest() : array(),
 				'apps'        => array(
@@ -457,17 +482,18 @@ add_action(
 					'settingsTabs'         => odd_desktop_mode_supports( 'settings' ),
 					'titlebarButtons'      => odd_desktop_mode_supports( 'titlebar' ),
 					'dockRailRenderers'    => odd_desktop_mode_supports( 'dock_rail' ),
+					'windowChromeThemes'   => odd_desktop_mode_supports( 'window_chrome' ),
 					'debugSessions'        => odd_desktop_mode_supports( 'debug' ),
 					'aiTools'              => odd_desktop_mode_supports( 'ai' ),
 					'jsHookBridge'         => true,
-					'dockRendererProvided' => false,
+					'dockRendererProvided' => function_exists( 'odd_desktop_mode_supports' ) && odd_desktop_mode_supports( 'dock_rail' ),
 				),
 			),
 			// Pre-compute the Discover shelves by type so the panel
 			// can render the catalog without a REST round-trip on
 			// first paint. The `installed` flag is annotated so the
 			// "Install" → "Installed" toggle is decided server-side.
-			'bundleCatalog'    => function_exists( 'odd_bundle_catalog' ) ? array(
+			'bundleCatalog'     => function_exists( 'odd_bundle_catalog' ) ? array(
 				'scene'     => odd_bundle_catalog_for_type( 'scene' ),
 				'iconSet'   => odd_bundle_catalog_for_type( 'icon-set' ),
 				'cursorSet' => odd_bundle_catalog_for_type( 'cursor-set' ),

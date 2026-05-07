@@ -13,9 +13,9 @@
  *   2. A toggle POSTs `/odd/v1/apps/{slug}/toggle` with
  *      `{ surfaces: { <field>: bool } }` — partial payloads only,
  *      so the two checkboxes stay independent.
- *   3. After a successful POST the panel does NOT auto-reload — it
- *      flips the row's `requiresReload` flag so the unified grid
- *      swaps its pill to "Reload to apply" on the next render.
+ *   3. After a successful POST the panel schedules the shared
+ *      `scheduleAdminReload()` (surfaces delay) so Desktop Mode
+ *      re-reads native registration on the next load.
  *   4. Toggles are disabled when app.enabled === false.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -190,7 +190,7 @@ describe( 'ODD Shop · App surfaces', () => {
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );
 
-	it( 'toggling taskbar posts a partial { surfaces: { taskbar } } payload and does NOT auto-reload', async () => {
+	it( 'toggling taskbar posts a partial { surfaces: { taskbar } } payload and schedules admin reload', async () => {
 		const { host, cleanup } = mountPanel();
 		await gotoAppsDepartment( host );
 
@@ -211,11 +211,8 @@ describe( 'ODD Shop · App surfaces', () => {
 		expect( body ).toEqual( { surfaces: { taskbar: true } } );
 		expect( Object.keys( body.surfaces ) ).toEqual( [ 'taskbar' ] );
 
-		// Crucially no hard reload — the row just flips its
-		// `requiresReload` flag so the Shop's unified action pill
-		// switches to "Reload to apply" next render.
-		await tick( 220 );
-		expect( reloadSpy ).not.toHaveBeenCalled();
+		await tick( 400 );
+		expect( reloadSpy ).toHaveBeenCalled();
 
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );
@@ -260,7 +257,7 @@ describe( 'ODD Shop · App surfaces', () => {
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );
 
-	it( 'newly installed catalog apps require a reload before Open is offered', async () => {
+	it( 'catalog app install shows Applying… and schedules admin reload', async () => {
 		seedConfig( [] );
 		fetchMock = vi.fn( ( url, opts ) => {
 			if ( opts && opts.method === 'POST' && /\/bundles\/install-from-catalog$/.test( url ) ) {
@@ -269,6 +266,9 @@ describe( 'ODD Shop · App surfaces', () => {
 					json: () => Promise.resolve( {
 						installed: true,
 						manifest:  { slug: 'board', name: 'Board', version: '1.2.0' },
+						// Even with a hot serve URL, the Shop still schedules a full
+						// admin reload so Desktop Mode picks up the new app surfaces.
+						serve_url: 'http://localhost/odd-app/board/?_wpnonce=fake',
 					} ),
 				} );
 			}
@@ -299,10 +299,12 @@ describe( 'ODD Shop · App surfaces', () => {
 		await tick( 0 );
 		await tick( 0 );
 
-		const labels = Array.from( host.querySelectorAll( '.odd-shop__card-btn' ) )
+		const labelsMid = Array.from( host.querySelectorAll( '.odd-shop__card-btn' ) )
 			.map( ( btn ) => btn.textContent.trim() );
-		expect( labels ).toContain( 'Reload to apply' );
-		expect( labels ).not.toContain( 'Open' );
+		expect( labelsMid ).toContain( 'Applying…' );
+
+		await tick( 450 );
+		expect( reloadSpy ).toHaveBeenCalled();
 
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );

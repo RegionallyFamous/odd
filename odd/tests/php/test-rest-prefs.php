@@ -39,6 +39,7 @@ class Test_REST_Prefs extends ODD_REST_Test_Case {
 				'screensaver',
 				'audioReactive',
 				'shopTaskbar',
+				'shopDesktopPinned',
 				'theme',
 				'chaosMode',
 				'iconSet',
@@ -60,6 +61,7 @@ class Test_REST_Prefs extends ODD_REST_Test_Case {
 		$this->assertArrayHasKey( 'minutes', $data['screensaver'] );
 		$this->assertArrayHasKey( 'scene', $data['screensaver'] );
 		$this->assertTrue( $data['shopTaskbar'] );
+		$this->assertFalse( $data['shopDesktopPinned'] );
 		$this->assertSame( 'auto', $data['theme'] );
 		$this->assertFalse( $data['chaosMode'] );
 	}
@@ -156,6 +158,20 @@ class Test_REST_Prefs extends ODD_REST_Test_Case {
 		$this->assertSame( 200, $res->get_status() );
 		$this->assertFalse( $res->get_data()['shopTaskbar'] );
 		$this->assertSame( '0', get_user_meta( $this->admin_id, 'odd_shop_taskbar', true ) );
+	}
+
+	public function test_post_updates_shop_desktop_pinned_preference() {
+		$this->login_as();
+
+		$res = $this->dispatch_json( 'POST', '/odd/v1/prefs', array( 'shopDesktopPinned' => true ) );
+		$this->assertSame( 200, $res->get_status() );
+		$this->assertTrue( $res->get_data()['shopDesktopPinned'] );
+		$this->assertSame( '1', get_user_meta( $this->admin_id, 'odd_shop_desktop_pinned', true ) );
+
+		$res = $this->dispatch_json( 'POST', '/odd/v1/prefs', array( 'shopDesktopPinned' => false ) );
+		$this->assertSame( 200, $res->get_status() );
+		$this->assertFalse( $res->get_data()['shopDesktopPinned'] );
+		$this->assertSame( '0', get_user_meta( $this->admin_id, 'odd_shop_desktop_pinned', true ) );
 	}
 
 	public function test_post_round_trips_shop_theme_preference() {

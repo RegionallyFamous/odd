@@ -9,7 +9,7 @@
  *   not installed?   → "Install"
  *   broken?          → "Repair"
  *   updateAvailable? → "Update"
- *   requiresReload?  → "Reload" / "Reload to apply"
+ *   requiresReload?  → "Reload now" (escape hatch; pending reload → "Applying…")
  *   active?          → "Active" (disabled)
  *   type=scene/icon  → "Preview"
  *   type=widget      → "Add"

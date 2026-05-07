@@ -131,7 +131,9 @@ body.desktop-mode-active .desktop-mode-dock__item img.desktop-mode-dock__item-im
 }
 
 body.desktop-mode-active .desktop-mode-icon {
-	padding: 10px 6px;
+	/* DM 0.8+ uses grid-template-rows: repeat(auto-fill, 96px); keep the
+	 * shortcut stack within one row so labels are not clipped into the next slot. */
+	padding: 8px 4px;
 	border-radius: 12px;
 }
 
@@ -143,9 +145,10 @@ body.desktop-mode-active .desktop-mode-icon:focus-visible {
 }
 
 body.desktop-mode-active .desktop-mode-icon__image {
-	width: 54px;
-	height: 54px;
-	border-radius: 16px;
+	/* Match DM default 48× tile; our previous 54× surface overflowed the grid row. */
+	width: 48px;
+	height: 48px;
+	border-radius: 12px;
 	background:
 		linear-gradient( 180deg, rgba( 255, 255, 255, 0.16 ), rgba( 255, 255, 255, 0.04 ) ),
 		rgba( 4, 8, 18, 0.66 );
@@ -203,6 +206,7 @@ body.desktop-mode-active .desktop-mode-icon__label {
 	box-decoration-break: clone;
 	-webkit-box-decoration-break: clone;
 	color: #fff;
+	text-wrap: balance;
 	text-shadow:
 		0 1px 1px rgba( 0, 0, 0, 0.95 ),
 		0 0 5px rgba( 0, 0, 0, 0.82 );

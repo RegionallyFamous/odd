@@ -1,0 +1,26 @@
+.desktop-mode-my-wordpress__odd-hint,
+.desktop-mode-recycle-bin__odd-hint {
+	box-sizing: border-box;
+	max-width: 68ch;
+}
+
+.desktop-mode-my-wordpress__odd-hint {
+	margin: 0 14px 12px;
+	padding: 12px 14px;
+	border-radius: 12px;
+	background: rgba(255, 125, 154, 0.09);
+	border: 1px solid rgba(106, 92, 255, 0.18);
+	font-size: 13px;
+	line-height: 1.45;
+}
+
+.desktop-mode-recycle-bin__odd-hint {
+	margin: 12px 16px;
+	padding: 12px 14px;
+	border-radius: 12px;
+	background: rgba(106, 92, 255, 0.09);
+	border: 1px solid rgba(106, 92, 255, 0.22);
+	font-size: 13px;
+	line-height: 1.45;
+	color: inherit;
+}

@@ -288,7 +288,7 @@ describe( 'ODD Shop · install flows', () => {
 		expect( window.sessionStorage.getItem( 'odd.justInstalled' ) ).toBeNull();
 	} );
 
-	it( 'widget hot-register failure marks the tile as reloadable without hard reloading', async () => {
+	it( 'widget hot-register failure schedules admin reload after success path', async () => {
 		seed( {
 			bundleCatalog: {
 				scene: [],
@@ -329,9 +329,10 @@ describe( 'ODD Shop · install flows', () => {
 		const installedTile = host.querySelector( '[data-odd-shop-card][data-widget-id="odd/broken"]' );
 		expect( installedTile, 'failed hot-register still adds the installed tile' ).toBeTruthy();
 		const btn = installedTile.querySelector( '.odd-shop__card-btn' );
-		expect( btn.textContent.trim() ).toBe( 'Reload' );
-		expect( reloadSpy ).not.toHaveBeenCalled();
-		expect( window.sessionStorage.getItem( 'odd.justInstalled' ) ).toBeNull();
+		expect( btn.textContent.trim() ).toBe( 'Applying…' );
+		expect( window.sessionStorage.getItem( 'odd.justInstalled' ) ).toBeTruthy();
+		await new Promise( ( r ) => setTimeout( r, 450 ) );
+		expect( reloadSpy ).toHaveBeenCalled();
 	} );
 
 	it( 'mount consumes a pre-existing breadcrumb and navigates to the right department', () => {

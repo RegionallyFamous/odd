@@ -242,12 +242,19 @@ function odd_apps_rest_upload( WP_REST_Request $req ) {
 		$result->add_data( $data );
 		return $result;
 	}
-	return rest_ensure_response(
-		array(
-			'installed' => true,
-			'manifest'  => $result,
-		)
+	$out = array(
+		'installed' => true,
+		'slug'      => sanitize_key( (string) ( $result['slug'] ?? '' ) ),
+		'type'      => 'app',
+		'manifest'  => $result,
 	);
+	if ( isset( $out['slug'] ) && '' !== $out['slug'] && function_exists( 'odd_apps_serve_url_for_rest_payload' ) ) {
+		$serve = odd_apps_serve_url_for_rest_payload( $out['slug'] );
+		if ( '' !== $serve ) {
+			$out['serve_url'] = $serve;
+		}
+	}
+	return rest_ensure_response( $out );
 }
 
 function odd_apps_rest_delete( WP_REST_Request $req ) {

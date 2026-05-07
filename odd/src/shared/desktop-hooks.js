@@ -1076,6 +1076,39 @@
 		}
 	}
 
+	function setupCrossSurfaceOddLinks() {
+		if ( typeof document === 'undefined' ) {
+			return;
+		}
+		function onNavigate( ev ) {
+			var target = ev.target;
+			if ( ! target || ! target.closest ) {
+				return;
+			}
+			var t = target.closest( '.odd-js-open-shop' );
+			if ( ! t ) {
+				return;
+			}
+			ev.preventDefault();
+			var api = window.__odd && window.__odd.api;
+			if ( api && typeof api.openPanel === 'function' ) {
+				api.openPanel();
+				return;
+			}
+			var d = desktop();
+			if ( d && typeof d.openWindow === 'function' ) {
+				d.openWindow( 'odd' );
+			}
+		}
+		document.body.addEventListener( 'click', onNavigate );
+		INSTALLED.push( function () {
+			try {
+				document.body.removeEventListener( 'click', onNavigate );
+			} catch ( _ ) {}
+		} );
+	}
+
+	setupCrossSurfaceOddLinks();
 	setupWindowDiagnostics();
 	setupIframeDiagnostics();
 	setupWidgetDiagnostics();

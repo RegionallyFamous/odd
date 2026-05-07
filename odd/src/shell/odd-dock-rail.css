@@ -1,0 +1,92 @@
+.desktop-mode-dock .odd-dock-rail-mount {
+	flex: 1 1 auto;
+	min-height: 0;
+	min-width: 0;
+	display: flex;
+	align-items: stretch;
+	flex-direction: row;
+	gap: 0;
+}
+
+.odd-dock-rail-mount__menu,
+.odd-dock-rail-mount__system {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex: 1 1 auto;
+	min-height: 0;
+	flex-flow: row wrap;
+	justify-content: flex-start;
+}
+
+.desktop-mode-dock.desktop-mode-shell__dock--orientation-left .odd-dock-rail-mount,
+.desktop-mode-dock.desktop-mode-shell__dock--orientation-right .odd-dock-rail-mount {
+	flex-direction: column;
+}
+
+.desktop-mode-dock.desktop-mode-shell__dock--orientation-left .odd-dock-rail-mount__menu,
+.desktop-mode-dock.desktop-mode-shell__dock--orientation-right .odd-dock-rail-mount__menu,
+.desktop-mode-dock.desktop-mode-shell__dock--orientation-left .odd-dock-rail-mount__system,
+.desktop-mode-dock.desktop-mode-shell__dock--orientation-right .odd-dock-rail-mount__system {
+	flex-direction: column;
+}
+
+.odd-dock-rail-mount__divider {
+	flex: 0 0 auto;
+	width: 1px;
+	align-self: stretch;
+	margin: 0 4px;
+	background: rgba(60, 60, 67, 0.12);
+	min-height: 24px;
+}
+
+.desktop-mode-dock.desktop-mode-shell__dock--orientation-left .odd-dock-rail-mount__divider,
+.desktop-mode-dock.desktop-mode-shell__dock--orientation-right .odd-dock-rail-mount__divider {
+	width: auto;
+	height: 1px;
+	min-height: 0;
+	min-width: 24px;
+	margin: 4px 0;
+}
+
+button.odd-dock-rail-mount__tile {
+	all: unset;
+	box-sizing: border-box;
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	border-radius: 12px;
+	cursor: pointer;
+	background: transparent;
+	transition: transform 120ms ease, background 140ms ease, box-shadow 160ms ease;
+	position: relative;
+}
+
+button.odd-dock-rail-mount__tile:focus-visible {
+	outline: 2px solid var(--desktop-mode-accent, #5856d6);
+	outline-offset: 2px;
+}
+
+button.odd-dock-rail-mount__tile:hover {
+	background: rgba(106, 92, 255, 0.12);
+	transform: translateY(-1px);
+	box-shadow: 0 12px 24px -16px rgba(106, 92, 255, 0.45);
+}
+
+button.odd-dock-rail-mount__tile img {
+	display: block;
+	width: 24px;
+	height: 24px;
+	object-fit: contain;
+	border-radius: 4px;
+}
+
+button.odd-dock-rail-mount__tile span.dashicons {
+	font-size: 24px;
+	width: 24px;
+	height: 24px;
+	line-height: 24px;
+}

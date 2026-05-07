@@ -7,7 +7,7 @@
  *          full catalog of installed scenes, icon sets, and cursor sets so the panel
  *          can hydrate without re-fetching localized data.
  *   - POST accepts any subset of wallpaper/favorites/recents/shuffle/
- *          audioReactive/shopTaskbar/iconSet/cursorSet and writes each to its own user_meta
+ *          audioReactive/shopTaskbar/shopDesktopPinned/iconSet/cursorSet and writes each to its own user_meta
  *          key. Partial updates are fine.
  */
 
@@ -73,27 +73,28 @@ function odd_rest_prefs_get() {
 
 	return rest_ensure_response(
 		array(
-			'wallpaper'        => odd_wallpaper_get_user_scene( $uid ),
-			'favorites'        => odd_wallpaper_get_user_slug_list( $uid, 'odd_favorites' ),
-			'recents'          => odd_wallpaper_get_user_slug_list( $uid, 'odd_recents' ),
-			'shuffle'          => odd_wallpaper_get_user_shuffle( $uid ),
-			'screensaver'      => odd_wallpaper_get_user_screensaver( $uid ),
-			'audioReactive'    => odd_wallpaper_get_user_audio_reactive( $uid ),
-			'shopTaskbar'      => function_exists( 'odd_shop_taskbar_enabled' ) ? odd_shop_taskbar_enabled( $uid ) : false,
-			'iconSet'          => odd_icons_get_active_slug( $uid ),
-			'cursorSet'        => odd_cursors_get_active_slug( $uid ),
-			'cursorStylesheet' => odd_cursors_active_stylesheet_url(),
-			'theme'            => odd_shop_get_theme( $uid ),
-			'chaosMode'        => (bool) get_user_meta( $uid, 'odd_chaos', true ),
-			'initiated'        => (bool) get_user_meta( $uid, 'odd_initiated', true ),
-			'mascotQuiet'      => (bool) get_user_meta( $uid, 'odd_mascot_quiet', true ),
-			'winkUnlocked'     => (bool) get_user_meta( $uid, 'odd_wink_unlocked', true ),
-			'scenes'           => odd_wallpaper_scenes(),
-			'sets'             => $sets,
-			'cursorSets'       => $cursor_sets,
-			'appsEnabled'      => $apps_enabled,
-			'apps'             => $apps_list,
-			'userApps'         => array(
+			'wallpaper'         => odd_wallpaper_get_user_scene( $uid ),
+			'favorites'         => odd_wallpaper_get_user_slug_list( $uid, 'odd_favorites' ),
+			'recents'           => odd_wallpaper_get_user_slug_list( $uid, 'odd_recents' ),
+			'shuffle'           => odd_wallpaper_get_user_shuffle( $uid ),
+			'screensaver'       => odd_wallpaper_get_user_screensaver( $uid ),
+			'audioReactive'     => odd_wallpaper_get_user_audio_reactive( $uid ),
+			'shopTaskbar'       => function_exists( 'odd_shop_taskbar_enabled' ) ? odd_shop_taskbar_enabled( $uid ) : false,
+			'shopDesktopPinned' => function_exists( 'odd_shop_desktop_pinned' ) ? odd_shop_desktop_pinned( $uid ) : false,
+			'iconSet'           => odd_icons_get_active_slug( $uid ),
+			'cursorSet'         => odd_cursors_get_active_slug( $uid ),
+			'cursorStylesheet'  => odd_cursors_active_stylesheet_url(),
+			'theme'             => odd_shop_get_theme( $uid ),
+			'chaosMode'         => (bool) get_user_meta( $uid, 'odd_chaos', true ),
+			'initiated'         => (bool) get_user_meta( $uid, 'odd_initiated', true ),
+			'mascotQuiet'       => (bool) get_user_meta( $uid, 'odd_mascot_quiet', true ),
+			'winkUnlocked'      => (bool) get_user_meta( $uid, 'odd_wink_unlocked', true ),
+			'scenes'            => odd_wallpaper_scenes(),
+			'sets'              => $sets,
+			'cursorSets'        => $cursor_sets,
+			'appsEnabled'       => $apps_enabled,
+			'apps'              => $apps_list,
+			'userApps'          => array(
 				'installed' => wp_list_pluck( $apps_list, 'slug' ),
 				'pinned'    => (array) get_user_meta( $uid, 'odd_apps_pinned', true ),
 			),
@@ -167,6 +168,16 @@ function odd_rest_prefs_post( WP_REST_Request $request ) {
 		} else {
 			update_user_meta( $uid, 'odd_shop_taskbar', $on ? 1 : 0 );
 			$out['shopTaskbar'] = $on;
+		}
+	}
+
+	if ( array_key_exists( 'shopDesktopPinned', $params ) ) {
+		$on = ! empty( $params['shopDesktopPinned'] );
+		if ( function_exists( 'odd_shop_set_desktop_pinned' ) ) {
+			$out['shopDesktopPinned'] = odd_shop_set_desktop_pinned( $uid, $on );
+		} else {
+			update_user_meta( $uid, 'odd_shop_desktop_pinned', $on ? 1 : 0 );
+			$out['shopDesktopPinned'] = $on;
 		}
 	}
 

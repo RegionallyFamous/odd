@@ -90,6 +90,8 @@ require_once ODD_DIR . 'includes/rest.php';
 require_once ODD_DIR . 'includes/accents.php';
 require_once ODD_DIR . 'includes/toasts.php';
 require_once ODD_DIR . 'includes/native-window.php';
+require_once ODD_DIR . 'includes/integration/desktop-mode-ai.php';
+require_once ODD_DIR . 'includes/integration/desktop-mode-extended-surfaces.php';
 require_once ODD_DIR . 'includes/apps/bootstrap.php';
 // Universal bundle installer. Requires the Apps bootstrap above so
 // the App type module can delegate to odd_apps_validate_archive() /

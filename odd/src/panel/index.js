@@ -345,6 +345,9 @@
 			franchiseFilter: '',
 			searchScope:   'all',
 			shopSounds:    loadShopSoundsSetting(),
+			// When set, the Shop scheduled a full admin reload (desktop / taskbar /
+			// script-fallback). Catalog tiles show "Applying…" for the matching slug.
+			pendingAdminReload: null,
 		};
 		state.cfg.shopV2 = state.cfg.shopV2 !== false;
 		body.setAttribute( 'data-odd-shop-v2', state.cfg.shopV2 ? '1' : '0' );
@@ -354,6 +357,87 @@
 		var shopRowCache = {};
 		var buttons = {};
 		var shopSfx = { ctx: null, last: {} };
+		var pendingAdminReloadTimer = null;
+
+		var ODD_RELOAD_DELAY_MS_ICON    = 180;
+		var ODD_RELOAD_DELAY_MS_TASKBAR       = 250;
+		var ODD_RELOAD_DELAY_MS_DESKTOP_PIN = 260;
+		var ODD_RELOAD_DELAY_MS_SURFACE = 300;
+		var ODD_RELOAD_DELAY_MS_DEFAULT = 400;
+
+		function clearPendingAdminReload() {
+			if ( pendingAdminReloadTimer ) {
+				clearTimeout( pendingAdminReloadTimer );
+				pendingAdminReloadTimer = null;
+			}
+			state.pendingAdminReload = null;
+		}
+
+		/**
+		 * One deduped full-page reload gate. Call only after REST/save success.
+		 */
+		function scheduleAdminReload( opts ) {
+			opts            = opts || {};
+			var delayMs     = typeof opts.delayMs === 'number' ? opts.delayMs : ODD_RELOAD_DELAY_MS_DEFAULT;
+			var slug        = opts.slug || '';
+			var type        = opts.type || 'bundle';
+			var name        = opts.name || slug || '';
+			var toastMsg    = opts.toastMessage;
+			clearPendingAdminReload();
+			state.pendingAdminReload = { slug: slug || '*', type: type, at: Date.now() };
+			try {
+				rememberJustInstalled( { type: type, slug: slug, name: name } );
+			} catch ( eReloadMeta ) {}
+			if ( toastMsg ) {
+				toast( toastMsg );
+			}
+			pendingAdminReloadTimer = setTimeout( function () {
+				pendingAdminReloadTimer = null;
+				state.pendingAdminReload = null;
+				try {
+					if ( document.visibilityState !== 'visible' ) {
+						return;
+					}
+					window.location.reload();
+				} catch ( eDoReload ) {}
+			}, delayMs );
+		}
+
+		function captureShopScrollTops() {
+			var snaps = [];
+			function pushIfScrollable( el ) {
+				if ( ! el || typeof el.scrollTop !== 'number' ) {
+					return;
+				}
+				if ( el.scrollHeight > el.clientHeight + 2 ) {
+					snaps.push( { el: el, top: el.scrollTop } );
+				}
+			}
+			pushIfScrollable( content );
+			pushIfScrollable( document.documentElement );
+			if ( document.body ) {
+				pushIfScrollable( document.body );
+			}
+			return snaps;
+		}
+
+		function restoreShopScrollTops( snaps ) {
+			if ( ! snaps || ! snaps.length ) return;
+			requestAnimationFrame( function () {
+				snaps.forEach( function ( s ) {
+					try {
+						s.el.scrollTop = s.top;
+					} catch ( e1 ) {}
+				} );
+				requestAnimationFrame( function () {
+					snaps.forEach( function ( s ) {
+						try {
+							s.el.scrollTop = s.top;
+						} catch ( e2 ) {}
+					} );
+				} );
+			} );
+		}
 
 		function updateSearchToolState() {
 			var active = String( state.franchiseFilter || '' );
@@ -679,7 +763,7 @@
 			if ( cfg.wallpaper || cfg.scene ) active++;
 			if ( cfg.iconSet && cfg.iconSet !== 'none' ) active++;
 			if ( cfg.cursorSet && cfg.cursorSet !== 'none' ) active++;
-			if ( cfg.shopTaskbar ) active++;
+			if ( cfg.shopDesktopPinned ) active++;
 			return installed + ' ' + __( 'installed' ) + ' · ' + active + ' ' + __( 'active' );
 		}
 
@@ -762,6 +846,7 @@
 		} );
 
 		return function teardown() {
+			clearPendingAdminReload();
 			body.classList.remove( 'odd-panel', 'odd-shop' );
 			while ( cleanupFns.length ) {
 				var clean = cleanupFns.pop();
@@ -783,6 +868,7 @@
 		function renderSection( id, opts ) {
 			var stopSectionTimer = diagTime( 'panel.renderSection', { section: id || '' } );
 			opts = opts || {};
+			var scrollSnap = opts.skipScrollPreserve ? null : captureShopScrollTops();
 			// Abandoning a tab with a pending preview reverts the
 			// live swap — no silent commits because the user clicked
 			// "About" to look at stats.
@@ -829,6 +915,13 @@
 				content.appendChild( renderSettings() );
 			} else {
 				content.appendChild( renderAbout() );
+			}
+			if ( scrollSnap ) {
+				requestAnimationFrame( function () {
+					requestAnimationFrame( function () {
+						restoreShopScrollTops( scrollSnap );
+					} );
+				} );
 			}
 			// If we re-entered the tab that owns an active preview,
 			// re-draw the sticky confirmation bar.
@@ -913,7 +1006,6 @@
 						return ( a.name || a.slug || '' ).localeCompare( b.name || b.slug || '' );
 					} );
 
-					gallery.innerHTML = '';
 					if ( ! rows.length ) {
 						var empty = el( 'div', { class: 'odd-apps-empty' } );
 						empty.textContent = 'No apps have wandered in yet — refresh the catalog or feed ODD a .wp bundle.';
@@ -1031,8 +1123,15 @@
 					setAppSurfaces( app.slug, payload ).then( function ( res ) {
 						box.disabled = false;
 						if ( res && res.surfaces ) {
-							markAppNeedsReload( app.slug, res.surfaces );
-							setAppsStatus( wrap, __( 'Saved — reload to apply.' ), 'ok' );
+							mirrorAppSurfacesInCfg( app.slug, res.surfaces );
+							scheduleAdminReload( {
+								delayMs:      ODD_RELOAD_DELAY_MS_SURFACE,
+								slug:         app.slug,
+								type:         'app',
+								name:         app.name || app.slug,
+								toastMessage: __( 'Applying changes…' ),
+							} );
+							setAppsStatus( wrap, __( 'Applying changes…' ), '' );
 							return;
 						}
 						box.checked  = ! box.checked;
@@ -1174,14 +1273,9 @@
 
 			// Surface toggles — Desktop icon + Taskbar icon.
 			//
-			// Desktop Mode registers the chosen surface(s) on `init`
-			// from odd_apps_row_surfaces(), so flipping a checkbox
-			// needs a page reload for the change to reach the dock /
-			// desktop. We save the preference immediately and leave
-			// the reload to the user (the Shop card's primary pill
-			// switches to "Reload to apply") so we don't bounce them
-			// out of the Shop mid-session. Greyed out when the app
-			// is disabled — a disabled app isn't registered at all.
+			// Desktop Mode registers native windows on `init`, so a
+			// saved checkbox change schedules the shared deferred
+			// admin reload (deduped) once the REST toggle succeeds.
 			var rowSurfaces = ( app.surfaces && typeof app.surfaces === 'object' )
 				? app.surfaces
 				: { desktop: true, taskbar: false };
@@ -1218,11 +1312,18 @@
 					setAppSurfaces( app.slug, payload ).then( function ( res ) {
 						box.disabled = false;
 						if ( res && res.surfaces ) {
-							markAppNeedsReload( app.slug, res.surfaces );
+							mirrorAppSurfacesInCfg( app.slug, res.surfaces );
+							scheduleAdminReload( {
+								delayMs:      ODD_RELOAD_DELAY_MS_SURFACE,
+								slug:         app.slug,
+								type:         'app',
+								name:         app.name || app.slug,
+								toastMessage: __( 'Applying changes…' ),
+							} );
 							setAppsStatus(
 								wrap,
-								__( 'Saved — reload to apply.' ),
-								'ok'
+								__( 'Applying changes…' ),
+								''
 							);
 							return;
 						}
@@ -1502,41 +1603,58 @@
 			}
 		}
 
-		// Last-resort path. We no longer auto-reload on a successful
-		// install because Desktop Mode can restore the WP Dashboard
-		// window during a full shell boot, which makes install feel
-		// like a hard reset.
-		function onInstallSuccessReload( data, type, slug, name ) {
-			var noun = NOUN_FOR_TYPE[ type ] || 'bundle';
-			rememberJustInstalled( { type: type, slug: slug, name: name } );
+		// Deferred full reload after install / surface-save success.
+		function onEscapeHatchReload( row ) {
+			if ( ! row || ! row.slug ) return;
+			scheduleAdminReload( {
+				delayMs:      ODD_RELOAD_DELAY_MS_DEFAULT,
+				slug:         row.slug,
+				type:         row.type || 'bundle',
+				name:         row.name || row.slug,
+				toastMessage: __( 'Refreshing admin…' ),
+			} );
 			playShopSound( 'success' );
-			toast( 'Installed ' + noun + ' "' + name + '". Refreshing…' );
-			setTimeout( function () {
-				try { window.location.reload(); } catch ( e ) {}
-			}, 500 );
 		}
 
 		function onInstallSuccessScene( data, slug, name ) {
 			var entryUrl = data && data.entry_url;
 			if ( ! entryUrl ) {
-				var missingRow = data && data.row ? Object.assign( {}, data.row, { requiresReload: true } ) : null;
-				if ( missingRow ) data = Object.assign( {}, data, { row: missingRow } );
-				return onInstallSuccessInPanel( data, 'scene', slug, name, 'Installed scene "' + name + '". Reload before previewing.' );
+				return onInstallSuccessInPanel(
+					data,
+					'scene',
+					slug,
+					name,
+					'Installed scene "' + name + '". Refreshing admin…',
+					{ scheduleReload: true, delayMs: ODD_RELOAD_DELAY_MS_DEFAULT }
+				);
 			}
 			loadBundleScript( 'scene', slug, entryUrl ).then( function () {
-				onInstallSuccessInPanel( data, 'scene', slug, name, 'Installed scene "' + name + '". Ready to preview.' );
+				onInstallSuccessInPanel(
+					data,
+					'scene',
+					slug,
+					name,
+					'Installed scene "' + name + '". Ready to preview.'
+				);
 			} ).catch( function () {
-				var failedRow = data && data.row ? Object.assign( {}, data.row, { requiresReload: true } ) : null;
-				if ( failedRow ) data = Object.assign( {}, data, { row: failedRow } );
-				onInstallSuccessInPanel( data, 'scene', slug, name, 'Installed scene "' + name + '". Reload before previewing.' );
+				onInstallSuccessInPanel(
+					data,
+					'scene',
+					slug,
+					name,
+					'Installed scene "' + name + '". Refreshing admin…',
+					{ scheduleReload: true, delayMs: ODD_RELOAD_DELAY_MS_DEFAULT }
+				);
 			} );
 		}
 
-		function onInstallSuccessInPanel( data, type, slug, name, message ) {
-			var noun = NOUN_FOR_TYPE[ type ] || 'bundle';
-			var row = data && data.row;
+		function onInstallSuccessInPanel( data, type, slug, name, message, reloadOpts ) {
+			reloadOpts       = reloadOpts || {};
+			var scheduleReload = !! reloadOpts.scheduleReload;
+			var reloadDelayMs = typeof reloadOpts.delayMs === 'number' ? reloadOpts.delayMs : ODD_RELOAD_DELAY_MS_DEFAULT;
+			var noun         = NOUN_FOR_TYPE[ type ] || 'bundle';
+			var row          = data && data.row;
 			if ( 'app' === type ) {
-				var haveServe = !!( data && data.serve_url );
 				row = Object.assign(
 					{},
 					row || {},
@@ -1544,11 +1662,18 @@
 						slug: slug,
 						name: ( row && row.name ) || name || slug,
 						installed: true,
-						// Hot-path: REST returns `serve_url` so window-host can
-						// register `desktopModeNativeWindows` + iframe URL without reload.
-						requiresReload: ! haveServe,
+						requiresReload: false,
 					}
 				);
+				// REST may return serve_url so we can hydrate `window.odd` +
+				// iframe hosts before reload, but Desktop Mode still registers
+				// per-app surfaces and native-window metadata during admin boot —
+				// a deferred full reload stays the reliable completion path.
+				scheduleReload = true;
+				reloadDelayMs = ODD_RELOAD_DELAY_MS_DEFAULT;
+				message =
+					message ||
+					( 'Installed app "' + name + '". Refreshing admin…' );
 			}
 			spliceInstalledRow( type, slug, row, data && data.manifest );
 			if ( 'app' === type && data && data.serve_url ) {
@@ -1556,7 +1681,18 @@
 			}
 			state.justInstalled = { type: type, slug: slug, name: name, at: Date.now() };
 			playShopSound( 'success' );
-			toast( message || ( 'Installed ' + noun + ' "' + name + '".' ) );
+			if ( scheduleReload ) {
+				scheduleAdminReload( {
+					delayMs:       reloadDelayMs,
+					slug:          slug,
+					type:          type,
+					name:          name || slug,
+					toastMessage:  message ||
+						( 'Installed ' + noun + ' "' + name + '". Refreshing admin…' ),
+				} );
+			} else {
+				toast( message || ( 'Installed ' + noun + ' "' + name + '".' ) );
+			}
 			renderSection( DEPT_FOR_TYPE[ type ] || state.active, { keepQuery: true } );
 		}
 
@@ -1565,14 +1701,23 @@
 		// `wp.desktop.registerWidget`), splice a panel-shaped row
 		// into `state.cfg.installedWidgets`, re-render the Widgets
 		// department, and flash the new tile. If the script fails to
-		// load, the tile still appears with an explicit Reload action
-		// instead of forcing a desktop reset.
+		// load, we schedule the same deferred admin reload as other
+		// registration-bound installs.
 		function onInstallSuccessWidget( data, slug, name ) {
 			var entryUrl = data && data.entry_url;
 			var row      = data && data.row;
 			function fallback() {
-				var fallbackRow = row ? Object.assign( {}, row, { requiresReload: true } ) : { id: 'odd/' + slug, slug: slug, label: name, installed: true, requiresReload: true };
-				onInstallSuccessInPanel( Object.assign( {}, data || {}, { row: fallbackRow } ), 'widget', slug, name, 'Installed widget "' + name + '". Reload before adding it.' );
+				var fallbackRow = row
+					? Object.assign( {}, row )
+					: { id: 'odd/' + slug, slug: slug, label: name, installed: true };
+				onInstallSuccessInPanel(
+					Object.assign( {}, data || {}, { row: fallbackRow } ),
+					'widget',
+					slug,
+					name,
+					'Installed widget "' + name + '". Refreshing admin…',
+					{ scheduleReload: true, delayMs: ODD_RELOAD_DELAY_MS_DEFAULT }
+				);
 			}
 			if ( ! entryUrl ) { fallback(); return; }
 
@@ -1719,7 +1864,46 @@
 				}
 				if ( tile ) {
 					tile.classList.add( 'is-just-installed' );
-					try { tile.scrollIntoView( { behavior: 'smooth', block: 'center' } ); } catch ( e ) {}
+					var motionReduce =
+						typeof window.matchMedia === 'function' &&
+						window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
+					var scrollBehavior = motionReduce ? 'instant' : 'smooth';
+					var inset = 12;
+					function tileIntersectsMainScroller() {
+						var tb = tile.getBoundingClientRect();
+						var roots = [ content, document.documentElement ];
+						for ( var ri = 0; ri < roots.length; ri++ ) {
+							var rootEl = roots[ ri ];
+							if ( ! rootEl ) continue;
+							var scrollH = rootEl.scrollHeight || 0;
+							var clientH = rootEl.clientHeight || 0;
+							if ( scrollH <= clientH + 2 ) continue;
+							var rb = rootEl.getBoundingClientRect();
+							var visibleTop = rb.top + inset;
+							var visibleBottom = rb.bottom - inset;
+							if ( tb.bottom > visibleTop && tb.top < visibleBottom ) return true;
+						}
+						var vbH = window.innerHeight || 0;
+						if ( vbH > inset * 2 ) {
+							var vTop = inset;
+							var vBottom = vbH - inset;
+							if ( tb.bottom > vTop && tb.top < vBottom ) return true;
+						}
+						return false;
+					}
+					if ( ! tileIntersectsMainScroller() ) {
+						try {
+							tile.scrollIntoView(
+								scrollBehavior === 'instant'
+									? { block: 'nearest', inline: 'nearest' }
+									: { behavior: 'smooth', block: 'nearest', inline: 'nearest' }
+							);
+						} catch ( eScroll ) {
+							try {
+								tile.scrollIntoView( motionReduce ? false : true );
+							} catch ( e2 ) {}
+						}
+					}
 					setTimeout( function () { tile.classList.remove( 'is-just-installed' ); }, 4000 );
 				}
 				state.justInstalled = null;
@@ -2496,10 +2680,43 @@
 					if ( data && Object.prototype.hasOwnProperty.call( data, 'shopTaskbar' ) ) {
 						state.cfg.shopTaskbar = !! data.shopTaskbar;
 					}
-					toast( __( 'Updated ODD taskbar setting. Reloading…' ) );
-					setTimeout( function () {
-						try { window.location.reload(); } catch ( e ) {}
-					}, 250 );
+					scheduleAdminReload( {
+						delayMs:      ODD_RELOAD_DELAY_MS_TASKBAR,
+						slug:         '',
+						type:         'settings',
+						name:         __( 'Shop taskbar' ),
+						toastMessage: __( 'Updated ODD taskbar setting. Reloading…' ),
+					} );
+				} );
+			} );
+
+			var pinRow = el( 'label', { class: 'odd-setting-card odd-setting-card--shop-desktop-pin odd-switch-row' } );
+			var pinBox = el( 'input', { type: 'checkbox' } );
+			pinBox.checked = !! state.cfg.shopDesktopPinned;
+			var pinKnob = el( 'span', { class: 'odd-switch' } );
+			var pinText = el( 'span', { class: 'odd-setting-card__text' } );
+			var pinLbl = el( 'strong' );
+			pinLbl.textContent = __( 'Pin ODD to desktop wallpaper' );
+			var pinHint = el( 'span' );
+			pinHint.textContent = __( 'Keep the ODD Shop shortcut in Desktop Mode\'s pinned row with My WordPress (Desktop Mode files layer).' );
+			pinText.appendChild( pinLbl );
+			pinText.appendChild( pinHint );
+			pinRow.appendChild( pinBox );
+			pinRow.appendChild( pinKnob );
+			pinRow.appendChild( pinText );
+			settings.appendChild( pinRow );
+			pinBox.addEventListener( 'change', function () {
+				savePrefs( { shopDesktopPinned: pinBox.checked }, function ( data ) {
+					if ( data && Object.prototype.hasOwnProperty.call( data, 'shopDesktopPinned' ) ) {
+						state.cfg.shopDesktopPinned = !! data.shopDesktopPinned;
+					}
+					scheduleAdminReload( {
+						delayMs:      ODD_RELOAD_DELAY_MS_DESKTOP_PIN,
+						slug:         '',
+						type:         'settings',
+						name:         __( 'Desktop shortcut' ),
+						toastMessage: __( 'Updated ODD wallpaper shortcut. Reloading…' ),
+					} );
 				} );
 			} );
 
@@ -2712,10 +2929,8 @@
 		 * { desktop, taskbar }) to the same /toggle route and
 		 * return the new, server-normalized shape.
 		 *
-		 * Native-window + desktop-icon registration happens on
-		 * `init`, so the result is only visible after a soft reload
-		 * — callers are expected to schedule one (see the 180 ms
-		 * timer in renderAppCard).
+		 * Native-window registration is request-lifetime; after
+		 * success the checkbox handlers call scheduleAdminReload().
 		 */
 		function setAppSurfaces( slug, surfaces ) {
 			return fetch( appsBaseUrl() + '/' + encodeURIComponent( slug ) + '/toggle', {
@@ -2731,38 +2946,21 @@
 			} ).catch( function () { return null; } );
 		}
 		/**
-		 * Flip the in-memory `requiresReload` flag on an installed
-		 * app's row (and mirror the new surfaces shape) so the Shop's
-		 * unified grid re-renders its action pill as "Reload to
-		 * apply" without us bouncing the user out of the window.
-		 *
-		 * Native-window + desktop-icon registration happens once on
-		 * `init`, so the actual dock/desktop surfaces only reflect
-		 * the saved preferences after a page reload — but letting the
-		 * user pick when to take that reload (instead of firing one
-		 * 180 ms after a checkbox flip) is the whole point.
+		 * Mirror server-normalised `surfaces` onto the cfg.apps row
+		 * without forcing a reload pill — callers schedule reload.
 		 */
-		function markAppNeedsReload( slug, surfaces ) {
-			if ( ! slug ) return;
+		function mirrorAppSurfacesInCfg( slug, surfaces ) {
+			if ( ! slug || ! surfaces || typeof surfaces !== 'object' ) return;
 			var cfg = state.cfg || {};
 			var apps = Array.isArray( cfg.apps ) ? cfg.apps : [];
 			for ( var i = 0; i < apps.length; i++ ) {
 				var row = apps[ i ];
 				if ( ! row || row.slug !== slug ) continue;
-				if ( surfaces && typeof surfaces === 'object' ) {
-					row.surfaces = Object.assign( {}, row.surfaces || {}, surfaces );
-				}
-				row.requiresReload = true;
+				row.surfaces = Object.assign( {}, row.surfaces || {}, surfaces );
+				delete row.requiresReload;
 			}
-			// Re-render the Apps department so the unified grid's
-			// pill flips to "Reload to apply" (see shopCardAction) —
-			// do it lazily so the checkbox click handler can finish.
-			try {
-				if ( state.active === 'apps' ) {
-					renderSection( 'apps', { keepQuery: true } );
-				}
-			} catch ( e ) {}
 		}
+
 		function deleteApp( slug ) {
 			return fetch( appsBaseUrl() + '/' + encodeURIComponent( slug ), {
 				method: 'DELETE',
@@ -4539,9 +4737,20 @@
 				state.preview = null;
 				playShopSound( 'success' );
 				if ( reload ) {
-					setTimeout( function () {
-						try { window.location.reload(); } catch ( e ) {}
-					}, 180 );
+					var iconLabel = slug;
+					var sets = Array.isArray( state.cfg.iconSets ) ? state.cfg.iconSets : [];
+					for ( var ii = 0; ii < sets.length; ii++ ) {
+						if ( sets[ ii ] && sets[ ii ].slug === slug ) {
+							iconLabel = sets[ ii ].label || sets[ ii ].name || slug;
+							break;
+						}
+					}
+					scheduleAdminReload( {
+						delayMs: ODD_RELOAD_DELAY_MS_ICON,
+						slug:    slug,
+						type:    'icon-set',
+						name:    iconLabel,
+					} );
 					return;
 				}
 				redecorateIconGrid();
@@ -5445,8 +5654,12 @@
 			if ( row.updateAvailable ) {
 				return { label: 'Update', kind: 'update', disabled: false };
 			}
+			var pend = state.pendingAdminReload;
+			if ( pend && row && row.slug && row.installed && pend.slug === row.slug ) {
+				return { label: __( 'Applying…' ), kind: 'pending_reload', disabled: true };
+			}
 			if ( row.requiresReload ) {
-				return { label: row.type === 'app' ? 'Reload to apply' : 'Reload', kind: 'reload', disabled: false };
+				return { label: __( 'Reload now' ), kind: 'reload', disabled: false };
 			}
 			if ( shopCardIsActive( row ) ) {
 				return { label: 'Active', kind: 'active', disabled: true };
@@ -5512,8 +5725,9 @@
 					openAppWindow( row.slug );
 					break;
 				case 'reload':
-					onInstallSuccessReload( { row: row }, row.type, row.slug, row.name || row.slug );
+					onEscapeHatchReload( row );
 					break;
+				case 'pending_reload':
 				case 'active':
 				case 'incompatible':
 				default:

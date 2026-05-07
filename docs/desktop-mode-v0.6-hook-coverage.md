@@ -26,12 +26,14 @@ Status values:
 | Command script registration: `desktop_mode_register_command_script()` | supported | ODD registers the command script for live plugin activation/deactivation. |
 | Settings tab registration: `desktop_mode_register_settings_tab_script()`, `desktop_mode_register_settings_tab()` | supported | ODD adds a Desktop Mode settings tab. |
 | Title-bar button script registration: `desktop_mode_register_titlebar_button_script()` | supported | ODD registers a diagnostics title-bar button script. |
-| Dock rail renderer registration: `desktop_mode_register_dock_rail_renderer_script()` | not applicable | ODD decorates dock tiles but does not replace the user's rail renderer. |
+| Dock rail renderer registration: `desktop_mode_register_dock_rail_renderer_script()` | supported | ODD registers `odd-compact` via `odd-dock-rail.js` — pickable in OS Settings → Dock style alongside the default strip. |
 | Dock filters: `desktop_mode_dock_items`, `desktop_mode_dock_item`, `desktop_mode_dock_item_multi`, `desktop_mode_dock_placement`, `desktop_mode_arrange_menu_items` | supported | ODD uses dock/icon filters and app placement. |
 | Appearance filters: `desktop_mode_accent_colors`, `desktop_mode_toast_types`, `desktop_mode_default_wallpaper`, `desktop_mode_wallpapers`, `desktop_mode_icons`, `desktop_mode_window_tabs` | supported | ODD contributes accents, toast tone, wallpapers, icon sets, and native surfaces. |
 | AI provider/tool hooks | diagnostics-only | ODD can expose catalog/shop actions only when Desktop Mode's experimental AI APIs are present. |
 | Debug helpers: `desktop_mode_debug_publish()`, `desktop_mode_debug_session_for_request()` | diagnostics-only | ODD publishes local diagnostics into debug sessions when available. |
-| Recycle Bin hooks | diagnostics-only | ODD records related activity; it does not alter recycle-bin behavior. |
+| Recycle Bin hooks | supported | ODD adds a cross-link hint (`Open ODD Shop`) in the recycle bin + My WordPress templates; click handling lives in `odd-desktop-hooks`. |
+| Window chrome theme registration | supported | ODD registers PHP theme `odd/shop-chrome` (CSS token map) when `odd_desktop_mode_supports( 'window_chrome' )`. |
+| My WordPress hooks | supported | ODD injects a Shop cross-link via `desktop_mode_my_wordpress_template_html`. |
 | Presence hooks | diagnostics-only | ODD records presence transitions for debugging only. |
 | Planned window/body/context hooks | planned upstream | ODD will not ship dependencies on planned-only contracts. |
 
@@ -56,5 +58,5 @@ Status values:
 | Palette APIs | diagnostics-only | ODD documents palette presence; commands remain the product surface. |
 | DevTools APIs | diagnostics-only | ODD observes app-window requests when available for local bug reports. |
 | Debug bus | diagnostics-only | ODD can publish copied diagnostics into a Desktop Mode debug session. |
-| Window chrome controls/slots/themes | supported | ODD uses the title-bar button layer for diagnostics and documents deeper visual theming as future work. |
+| Window chrome controls/slots/themes | supported | ODD registers a window **theme** (`odd/shop-chrome`); title-bar integration remains as before. |
 | Recycle Bin JS/REST APIs | diagnostics-only | ODD records signals but does not change content lifecycle. |

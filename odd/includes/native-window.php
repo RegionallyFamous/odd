@@ -61,7 +61,8 @@ add_action(
 				'title'    => __( 'ODD', 'odd' ),
 				'icon'     => $icon_url,
 				'window'   => 'odd',
-				'position' => 100,
+				'position' => odd_shop_desktop_pinned_position( $uid ),
+				'pinned'   => odd_shop_desktop_pinned( $uid ),
 			)
 		);
 	}
@@ -167,7 +168,15 @@ function odd_render_panel_template() {
  * with a cog on the desktop for a while.
  */
 function odd_control_icon_url() {
-	return ODD_URL . '/assets/odd-eye.svg';
+	$url = plugins_url( 'assets/odd-eye.svg', ODD_FILE );
+	$url = (string) odd_url_current_scheme( $url );
+	// Desktop Mode 0.8+ only instantiates an <img> when icon is an absolute
+	// http(s) URL; root-relative fallbacks from plugins_url() would render
+	// as a blank dashicon tile.
+	if ( ! preg_match( '#\Ahttps?://#i', $url ) ) {
+		$url = home_url( '/' . ltrim( $url, '/' ) );
+	}
+	return $url;
 }
 
 /**
@@ -196,4 +205,37 @@ function odd_shop_set_taskbar_enabled( $uid, $enabled ) {
 	}
 	update_user_meta( $uid, 'odd_shop_taskbar', $enabled ? 1 : 0 );
 	return odd_shop_taskbar_enabled( $uid );
+}
+
+/**
+ * Desktop wallpaper shortcut: pin beside My WordPress (Desktop Mode ≥0.8 files layer).
+ *
+ * @param int $uid User ID.
+ * @return bool
+ */
+function odd_shop_desktop_pinned( $uid = 0 ) {
+	$uid = $uid ? (int) $uid : get_current_user_id();
+	if ( $uid <= 0 ) {
+		return false;
+	}
+	return (bool) get_user_meta( $uid, 'odd_shop_desktop_pinned', true );
+}
+
+function odd_shop_set_desktop_pinned( $uid, $enabled ) {
+	$uid = (int) $uid;
+	if ( $uid <= 0 ) {
+		return false;
+	}
+	update_user_meta( $uid, 'odd_shop_desktop_pinned', $enabled ? 1 : 0 );
+	return odd_shop_desktop_pinned( $uid );
+}
+
+/**
+ * Pinned launcher spots use `-1`; free icons keep a late sort slot.
+ *
+ * @param int $uid User ID.
+ * @return int
+ */
+function odd_shop_desktop_pinned_position( $uid = 0 ) {
+	return odd_shop_desktop_pinned( $uid ) ? -2 : 100;
 }
