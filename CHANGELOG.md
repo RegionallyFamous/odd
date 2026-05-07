@@ -12,7 +12,7 @@ notes to GitHub Releases.
 ## [Unreleased]
 
 ### Changed
-- Playground deploys enforce pins: wordpress.org Desktop Mode uses `pluginData.version` (= `ODD_DESKTOP_MODE_MIN_VERSION`), ODD installs from git tag `v` + `ODD_VERSION`; `odd/bin/validate-blueprint` checks both against `odd/odd.php`.
+- Playground deploys enforce pins: Desktop Mode via **downloads.wordpress.org** `plugin/desktop-mode.{ODD_DESKTOP_MODE_MIN_VERSION}.zip` (`resource: "url"`), ODD from git tag `v` + `ODD_VERSION`; `odd/bin/validate-blueprint` checks both against `odd/odd.php`. (Playground schema disallows `pluginData.version` on `wordpress.org/plugins`.)
 
 <a id="v1.0.1"></a>
 ## [1.0.1] — 2026-05-07

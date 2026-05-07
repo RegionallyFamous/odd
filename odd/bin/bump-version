@@ -8,10 +8,12 @@ Updates all declared versions in sync:
      hosted demo installs ODD from a semver git tag.
 
 Public Playground blueprints install ODD via `git:directory` **tag `v`
-+ `ODD_VERSION`** and Desktop Mode via wordpress.org **`pluginData.version`
-= `ODD_DESKTOP_MODE_MIN_VERSION`**; `odd/bin/validate-blueprint` enforces
-both against `odd/odd.php`. `odd/bin/bump-version` rewrites blueprint `ref`
-pins when tagging a new semver release.
++ `ODD_VERSION`** and Desktop Mode via **`resource: "url"`** pointing at
+`https://downloads.wordpress.org/plugin/desktop-mode.{version}.zip`
+where `{version}` is `ODD_DESKTOP_MODE_MIN_VERSION` (the Playground
+schema does not allow pinning versions on `wordpress.org/plugins`).
+`odd/bin/validate-blueprint` enforces both against `odd/odd.php`.
+`odd/bin/bump-version` rewrites blueprint ODD `ref` pins when tagging a new semver release.
 
 Usage:
     odd/bin/bump-version 0.14.0            # edits in place

@@ -12,9 +12,13 @@ failure — and that's typically the first thing a new user ever sees.
 This script parses the blueprint and fails on known-fragile patterns so
 regressions are caught before they reach `main`.
 
-The public blueprints pin ODD with a semver `git:directory` **tag** (`v` + `ODD_VERSION`)
-and WP Desktop Mode with `pluginData.version` equal to `ODD_DESKTOP_MODE_MIN_VERSION`.
-Both must agree with values in `odd/odd.php` (see checklist #8).
+The public blueprints pin ODD with a semver `git:directory` **tag** (`v` + `ODD_VERSION`).
+WP Desktop Mode is pinned with `resource: "url"` to
+`https://downloads.wordpress.org/plugin/desktop-mode.{version}.zip` where `{version}`
+equals `ODD_DESKTOP_MODE_MIN_VERSION`. (Playground's JSON schema rejects
+`pluginData.version` on `wordpress.org/plugins`, so directory installs cannot pin.)
+
+Both pins must agree with values in `odd/odd.php` (see checklist #8).
 
 Checks (all emit bullets; any failure → exit code 1):
 
@@ -38,10 +42,12 @@ Checks (all emit bullets; any failure → exit code 1):
      include `slug`, and prefer `targetFolderName` alongside `slug`.
   7. WP Desktop Mode must not be installed from `git:directory` because
      its source archives do not include the compiled desktop shell JS
-     (`assets/js/desktop.min.js`). Install from wordpress.org/plugins,
-     HTTPS URL hosts, etc.
-  8. Desktop Mode wordpress.org installs use `slug: desktop-mode` and
-     `pluginData.version` matching `ODD_DESKTOP_MODE_MIN_VERSION`.
+     (`assets/js/desktop.min.js`). Install packaged zips (`downloads.
+     wordpress.org` or HTTPS mirrors), never raw plugin source repos.
+  8. Exactly one step installs pinned Desktop Mode: `pluginData` is
+     `resource: "url"` with URL equal to downloads.wordpress.org
+     `/plugin/desktop-mode.{ODD_DESKTOP_MODE_MIN_VERSION}.zip` and
+     `options.targetFolderName` equals `desktop-mode`.
      RegionallyFamous/odd installs use `refType: tag` with `ref: v`
      plus `ODD_VERSION`.
 """
@@ -64,6 +70,14 @@ ODD_CONST_RE = re.compile(
     r"define\(\s*['\"]ODD_(VERSION|DESKTOP_MODE_MIN_VERSION)['\"]\s*,\s*['\"]"
     r"([^'\"]+)['\"]\s*\)",
 )
+
+
+def desktop_mode_zip_url(dm_min: str) -> str:
+    """Canonical WordPress.org release zip URL for pinned Desktop Mode."""
+    return (
+        "https://downloads.wordpress.org/"
+        + f"plugin/desktop-mode.{dm_min}.zip"
+    )
 
 
 def odd_php_constants() -> tuple[str, str]:
@@ -110,6 +124,8 @@ def validate_file(path: Path, odd_version: str, dm_min: str) -> tuple[list[str],
 
     allowed_ref_types = {"tag", "branch", "commit", "refname"}
     expected_odd_ref = "v" + odd_version
+    dm_zip_expected = desktop_mode_zip_url(dm_min)
+    pinned_desktop_mode_ok = False
 
     for idx, step in enumerate(steps or []):
         if not isinstance(step, dict):
@@ -136,21 +152,29 @@ def validate_file(path: Path, odd_version: str, dm_min: str) -> tuple[list[str],
                 problems.append(
                     f"step[{idx}] resource=url must be https, got {url!r}"
                 )
+            if url == dm_zip_expected:
+                if options.get("targetFolderName") != "desktop-mode":
+                    problems.append(
+                        f"step[{idx}] pinned Desktop Mode zip must use "
+                        "options.targetFolderName \"desktop-mode\""
+                    )
+                else:
+                    pinned_desktop_mode_ok = True
 
         elif resource == "wordpress.org/plugins":
             slug = plugin.get("slug")
+            if slug == "desktop-mode":
+                problems.append(
+                    f"step[{idx}] must not install Desktop Mode via "
+                    'wordpress.org/plugins (Playground schema has no semver pin '
+                    'there); use resource=url → '
+                    f"{desktop_mode_zip_url(dm_min)!r}"
+                )
             if not slug or not isinstance(slug, str):
                 problems.append(
                     f"step[{idx}] wordpress.org/plugins install is missing "
                     "`pluginData.slug`"
                 )
-            if slug == "desktop-mode":
-                got = plugin.get("version")
-                if got != dm_min:
-                    problems.append(
-                        f"step[{idx}] desktop-mode must set pluginData.version to "
-                        f"ODD_DESKTOP_MODE_MIN_VERSION ({dm_min!r}); got {got!r}"
-                    )
             if not options.get("targetFolderName"):
                 problems.append(
                     f"step[{idx}] wordpress.org/plugins installPlugin should set "
@@ -163,7 +187,7 @@ def validate_file(path: Path, odd_version: str, dm_min: str) -> tuple[list[str],
                 problems.append(
                     f"step[{idx}] installs WP Desktop Mode from git:directory — "
                     "source archives miss compiled shell assets; use "
-                    "resource=wordpress.org/plugins or another packaged HTTPS ZIP"
+                    "the downloads.wordpress.org release zip URL"
                 )
             if not plugin.get("ref"):
                 problems.append(
@@ -195,6 +219,13 @@ def validate_file(path: Path, odd_version: str, dm_min: str) -> tuple[list[str],
                     problems.append(
                         f"step[{idx}] ODD git ref must match ODD_VERSION as {expected_odd_ref!r}; got {ref!r}"
                     )
+
+    rel = path.relative_to(REPO_ROOT)
+    if not pinned_desktop_mode_ok:
+        problems.append(
+            f"{rel}: missing pinned Desktop Mode install at {dm_zip_expected!r} "
+            "(resource=url, targetFolderName=desktop-mode)"
+        )
 
     return problems, len(steps or [])
 

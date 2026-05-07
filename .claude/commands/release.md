@@ -27,7 +27,7 @@ If on a different branch, stop and ask.
 
 ## 2. Bump version pins
 
-Use the helper — it updates `odd/odd.php` **and** both Playground blueprints’ ODD **`git:directory` ref** to `v<version>`. If you change `ODD_DESKTOP_MODE_MIN_VERSION` without a plugin bump, manually set `pluginData.version` for the `desktop-mode` install step in **both** blueprints (same value); `odd/bin/validate-blueprint` ensures they match `odd/odd.php`.
+Use the helper — it updates `odd/odd.php` **and** both Playground blueprints’ ODD **`git:directory` ref** to `v<version>`. If you change `ODD_DESKTOP_MODE_MIN_VERSION` without a plugin bump, update the **Desktop Mode** `installPlugin` URL in **both** blueprints to `https://downloads.wordpress.org/plugin/desktop-mode.<version>.zip`; `odd/bin/validate-blueprint` checks it against `odd/odd.php`.
 
 ```bash
 odd/bin/bump-version <version>
