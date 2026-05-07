@@ -51,7 +51,7 @@ jobs:
           # Manifests live with each bundle source in catalog-sources/.
           MANIFESTS=$(find _tools/catalog-sources -name manifest.json -type f)
           METAS=$(find _tools/catalog-sources -name meta.json -type f)
-          for f in blueprint.json $MANIFESTS $METAS; do
+          for f in blueprint.json blueprint-dev.json site/playground/blueprint.json site/playground/blueprint-dev.json $MANIFESTS $METAS; do
               echo "  $f"
               python3 -c "import json,sys; json.load(open('$f'))"
           done

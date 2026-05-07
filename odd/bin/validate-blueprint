@@ -4,7 +4,10 @@
 Background
 ----------
 `blueprint.json` at the repo root and `site/playground/blueprint.json`
-are the source and hosted forms of the public Playground demo. Any step that depends on a
+are the source and hosted forms of the public Playground demo. The pair
+`blueprint-dev.json` / `site/playground/blueprint-dev.json` installs latest
+Desktop Mode from WordPress.org plus ODD **main** for throwaway trunk tests.
+Any step that depends on a
 browser-blocked URL, a wiggly `releases/latest/download` redirect, or
 an unpinned plugin install turns the first-run experience into a CORS
 failure — and that's typically the first thing a new user ever sees.
@@ -12,17 +15,24 @@ failure — and that's typically the first thing a new user ever sees.
 This script parses the blueprint and fails on known-fragile patterns so
 regressions are caught before they reach `main`.
 
-The public blueprints pin ODD with a semver `git:directory` **tag** (`v` + `ODD_VERSION`).
+The public blueprints pin ODD with a semver `git:directory` peel **commit**
+(40-char SHA) or the release **tag** (`v` + `ODD_VERSION`). Playground's
+isomorphic-git integration can fail fetching some tag packfiles
+(*Invalid PACK header*); pinning the peeled commit keeps the demo
+deterministic and reliable. When `refType` is `commit`, the validator
+asserts the SHA matches `git rev-parse v$ODD_VERSION^{commit}` whenever
+a local `.git` checkout is available.
 WP Desktop Mode is pinned with `resource: "url"` to
 `https://downloads.wordpress.org/plugin/desktop-mode.{version}.zip` where `{version}`
 equals `ODD_DESKTOP_MODE_MIN_VERSION`. (Playground's JSON schema rejects
 `pluginData.version` on `wordpress.org/plugins`, so directory installs cannot pin.)
 
-Both pins must agree with values in `odd/odd.php` (see checklist #8).
+Release blueprint pins must agree with values in `odd/odd.php` (checklist #8).
 
 Checks (all emit bullets; any failure → exit code 1):
 
-  1. Both blueprints exist and parse as JSON.
+  1. All four JSON files exist and parse (`blueprint.json`,
+     `blueprint-dev.json`, and each mirrored under `site/playground/`).
   2. No `installPlugin` step uses GitHub release asset URLs.
      GitHub serves release assets without Playground-compatible CORS
      headers, even when the tag is pinned.
@@ -48,13 +58,19 @@ Checks (all emit bullets; any failure → exit code 1):
      `resource: "url"` with URL equal to downloads.wordpress.org
      `/plugin/desktop-mode.{ODD_DESKTOP_MODE_MIN_VERSION}.zip` and
      `options.targetFolderName` equals `desktop-mode`.
-     RegionallyFamous/odd installs use `refType: tag` with `ref: v`
-     plus `ODD_VERSION`.
+     RegionallyFamous/odd installs use either `refType: commit`
+     (recommended) whose `ref` peels `v` + `ODD_VERSION`, or legacy
+     `refType: tag` with `ref: v` + `ODD_VERSION`.
+  9. Dev blueprints: Desktop Mode from
+     `https://downloads.wordpress.org/plugin/desktop-mode.zip` (targetFolderName
+     desktop-mode); ODD from `git:directory` **branch** `main` on
+     `RegionallyFamous/odd` with `path` `odd`.
 """
 from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -62,7 +78,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent.parent
 BLUEPRINT = REPO_ROOT / "blueprint.json"
+BLUEPRINT_DEV = REPO_ROOT / "blueprint-dev.json"
 SITE_BLUEPRINT = REPO_ROOT / "site" / "playground" / "blueprint.json"
+SITE_BLUEPRINT_DEV = REPO_ROOT / "site" / "playground" / "blueprint-dev.json"
 PLUGIN_MAIN = REPO_ROOT / "odd" / "odd.php"
 
 
@@ -70,6 +88,34 @@ ODD_CONST_RE = re.compile(
     r"define\(\s*['\"]ODD_(VERSION|DESKTOP_MODE_MIN_VERSION)['\"]\s*,\s*['\"]"
     r"([^'\"]+)['\"]\s*\)",
 )
+
+ODD_GIT_COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
+
+# Dev Playground: latest shell from WordPress.org + ODD trunk (non-deterministic).
+DEV_DESKTOP_MODE_LATEST_URL = "https://downloads.wordpress.org/plugin/desktop-mode.zip"
+
+
+def odd_peeled_tag_commit(repo_root: Path, odd_version: str) -> str | None:
+    """Return `git rev-parse v{version}^{commit}` or None when unavailable."""
+
+    if not (repo_root / ".git").exists():
+        return None
+    tag = "v" + odd_version
+    try:
+        out = subprocess.check_output(
+            ["git", "-C", str(repo_root), "rev-parse", tag + "^{commit}"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=30,
+        )
+    except (
+        subprocess.CalledProcessError,
+        FileNotFoundError,
+        subprocess.TimeoutExpired,
+    ):
+        return None
+    peeled = out.strip()
+    return peeled if ODD_GIT_COMMIT_RE.fullmatch(peeled) else None
 
 
 def desktop_mode_zip_url(dm_min: str) -> str:
@@ -210,14 +256,31 @@ def validate_file(path: Path, odd_version: str, dm_min: str) -> tuple[list[str],
                     "so the plugin folder matches what `Requires Plugins:` expects"
                 )
             if "RegionallyFamous/odd" in url:
-                if ref_type != "tag":
-                    problems.append(
-                        f"step[{idx}] RegionallyFamous/odd installs must use refType \"tag\""
-                    )
                 ref = str(plugin.get("ref", ""))
-                if ref != expected_odd_ref:
+                expected_tag_ref = expected_odd_ref
+                if ref_type == "tag":
+                    if ref != expected_tag_ref:
+                        problems.append(
+                            f"step[{idx}] ODD git tag ref must be "
+                            f"{expected_tag_ref!r}; got {ref!r}"
+                        )
+                elif ref_type == "commit":
+                    if not ODD_GIT_COMMIT_RE.fullmatch(ref):
+                        problems.append(
+                            f"step[{idx}] ODD git commit ref must be "
+                            f"40-char lowercase hex; got {ref!r}"
+                        )
+                    else:
+                        peeled = odd_peeled_tag_commit(REPO_ROOT, odd_version)
+                        if peeled is not None and peeled != ref:
+                            problems.append(
+                                f"step[{idx}] ODD git commit must peel "
+                                f"v{odd_version}: expected {peeled}; got {ref}"
+                            )
+                else:
                     problems.append(
-                        f"step[{idx}] ODD git ref must match ODD_VERSION as {expected_odd_ref!r}; got {ref!r}"
+                        f"step[{idx}] RegionallyFamous/odd installs must use "
+                        f'refType \"tag\" or \"commit\"; got {ref_type!r}'
                     )
 
     rel = path.relative_to(REPO_ROOT)
@@ -225,6 +288,121 @@ def validate_file(path: Path, odd_version: str, dm_min: str) -> tuple[list[str],
         problems.append(
             f"{rel}: missing pinned Desktop Mode install at {dm_zip_expected!r} "
             "(resource=url, targetFolderName=desktop-mode)"
+        )
+
+    return problems, len(steps or [])
+
+
+def validate_dev_file(path: Path) -> tuple[list[str], int]:
+    """Lint the trunk / latest-Desktop-Mode dev blueprint."""
+
+    problems: list[str] = []
+
+    if not path.exists():
+        return [f"{path.relative_to(REPO_ROOT)} not found — dev blueprint gate cannot run."], 0
+
+    try:
+        data = json.loads(path.read_text())
+    except json.JSONDecodeError as e:
+        return [f"{path.relative_to(REPO_ROOT)} did not parse as JSON: {e}"], 0
+
+    steps = data.get("steps")
+    if not isinstance(steps, list) or not steps:
+        problems.append("blueprint has no steps array")
+
+    allowed_ref_types = {"tag", "branch", "commit", "refname"}
+    pinned_dm_latest = False
+    pinned_odd_trunk = False
+
+    for idx, step in enumerate(steps or []):
+        if not isinstance(step, dict):
+            problems.append(f"step[{idx}] is not an object")
+            continue
+        if step.get("step") != "installPlugin":
+            continue
+        plugin = step.get("pluginData")
+        if not isinstance(plugin, dict):
+            problems.append(f"step[{idx}].pluginData is not an object")
+            continue
+
+        resource = plugin.get("resource", "")
+        options = step.get("options") or {}
+
+        if resource == "url":
+            url = str(plugin.get("url", ""))
+            if "github.com" in url and "/releases/" in url and "/download/" in url:
+                problems.append(
+                    f"step[{idx}] installs from a GitHub release asset — "
+                    "CORS-blocked from Playground; mirror the packaged zip to a CORS-safe static URL"
+                )
+            if not url.startswith("https://"):
+                problems.append(
+                    f"step[{idx}] resource=url must be https, got {url!r}"
+                )
+            if url == DEV_DESKTOP_MODE_LATEST_URL:
+                if options.get("targetFolderName") != "desktop-mode":
+                    problems.append(
+                        f"step[{idx}] Desktop Mode zip must use "
+                        'options.targetFolderName "desktop-mode"'
+                    )
+                else:
+                    pinned_dm_latest = True
+
+        elif resource == "wordpress.org/plugins":
+            slug = plugin.get("slug")
+            if slug == "desktop-mode":
+                problems.append(
+                    f"step[{idx}] dev blueprint must install Desktop Mode via "
+                    f"resource=url → {DEV_DESKTOP_MODE_LATEST_URL!r} "
+                    "(wordpress.org/plugins slug installs are not pinned to latest.zip)"
+                )
+
+        elif resource == "git:directory":
+            url = str(plugin.get("url", ""))
+            if "github.com/WordPress/desktop-mode" in url:
+                problems.append(
+                    f"step[{idx}] installs WP Desktop Mode from git:directory — "
+                    "source archives miss compiled shell assets; use "
+                    "the downloads.wordpress.org zip URL"
+                )
+            if not plugin.get("ref"):
+                problems.append(
+                    f"step[{idx}] git:directory resource is missing `ref`"
+                )
+            ref_type = plugin.get("refType")
+            if ref_type not in allowed_ref_types:
+                problems.append(
+                    f"step[{idx}] git:directory resource has refType={ref_type!r}; "
+                    f"allowed: {sorted(allowed_ref_types)}"
+                )
+            if "path" not in plugin:
+                problems.append(
+                    f"step[{idx}] git:directory resource must specify `path`"
+                )
+            if not options.get("targetFolderName"):
+                problems.append(
+                    f"step[{idx}] git:directory installPlugin must set options.targetFolderName"
+                )
+            if "RegionallyFamous/odd" in url:
+                ref = str(plugin.get("ref", ""))
+                if ref_type != "branch" or ref != "main":
+                    problems.append(
+                        f"step[{idx}] dev ODD must use refType \"branch\" and "
+                        f'ref \"main\"; got {ref_type!r} {ref!r}'
+                    )
+                else:
+                    pinned_odd_trunk = True
+
+    rel = path.relative_to(REPO_ROOT)
+    if not pinned_dm_latest:
+        problems.append(
+            f"{rel}: dev blueprint must install Desktop Mode from "
+            f"{DEV_DESKTOP_MODE_LATEST_URL!r} (resource=url, targetFolderName=desktop-mode)"
+        )
+    if not pinned_odd_trunk:
+        problems.append(
+            f"{rel}: dev blueprint must install ODD from branch main "
+            "(git:directory → github.com/RegionallyFamous/odd, path odd)"
         )
 
     return problems, len(steps or [])
@@ -242,11 +420,20 @@ def main() -> int:
         problems.extend(file_problems)
         total_steps += step_count
 
+    for path in (BLUEPRINT_DEV, SITE_BLUEPRINT_DEV):
+        file_problems, step_count = validate_dev_file(path)
+        problems.extend(file_problems)
+        total_steps += step_count
+
     if problems:
         fail(problems)
         return 1
 
-    print(f"blueprints ok: {total_steps} total steps, no CORS-fragile or unpinned dependencies")
+    print(
+        "blueprints ok: "
+        f"{total_steps} total steps across release + dev copies, "
+        "no CORS-fragile or release-misconfigured installs"
+    )
     return 0
 
 

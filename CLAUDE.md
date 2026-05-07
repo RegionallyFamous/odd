@@ -16,7 +16,7 @@ ODD (**Outlandish Desktop Decorator**) is a WordPress plugin that layers on top 
 All four are managed from a single native WP Desktop Mode window (the **ODD Shop** — a Mac App Store-style browsing surface) opened from the desktop shortcut icon, the `/odd-panel` slash command, or any widget that routes through `api.openPanel()`. Internally the window id stays `odd` — tests, commands, and the WP Desktop Mode session state still reference it by that id.
 
 - **Repo:** `RegionallyFamous/odd`
-- **Live demo:** https://playground.wordpress.net/?blueprint-url=https%3A%2F%2Fraw.githubusercontent.com%2FRegionallyFamous%2Fodd%2Fmain%2Fblueprint.json%3Foddbp%3Dv2-desktop-zip (pins Desktop Mode **0.7.2** zip + ODD git tag **v1.0.2**; `oddbp` avoids stale blueprint caching)
+- **Live demo:** https://playground.wordpress.net/?blueprint-url=…raw.githubusercontent.com…%2Fblueprint.json%3Foddbp%3Dv2-desktop-zip (pins Desktop Mode **0.7.2** zip + ODD peeled **git commit** for the current `ODD_VERSION`; `oddbp` avoids stale blueprint caching). **Dev / trunk:** `blueprint-dev.json` + [`site/playground/blueprint-dev.json`](https://odd.regionallyfamous.com/playground/blueprint-dev.json) — latest `desktop-mode.zip` + ODD `main`; short redirects [`/go/`](https://odd.regionallyfamous.com/go/) (stable) and [`/go/dev`](https://odd.regionallyfamous.com/go/dev/).
 - **Remote catalog:** https://odd.regionallyfamous.com/catalog/v1/registry.json
 - **Host plugin (required at runtime):** WP Desktop Mode v0.7.2+ (wordpress.org/plugins/desktop-mode)
 

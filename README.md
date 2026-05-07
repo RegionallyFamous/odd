@@ -31,7 +31,7 @@
 
 [WP Desktop Mode](https://github.com/WordPress/desktop-mode) makes WordPress feel like a desktop. ODD gives that desktop a polished, updateable shop for visual themes and small tools.
 
-The hosted [Playground blueprint](https://odd.regionallyfamous.com/playground/blueprint.json?oddbp=v2-desktop-zip) pins **[WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/)** to **0.7.2** via the official release zip URL (`resource: "url"` → `downloads.wordpress.org/.../desktop-mode.0.7.2.zip`, matching `ODD_DESKTOP_MODE_MIN_VERSION`) and **[ODD](https://github.com/RegionallyFamous/odd)** to the **semver git tag** for `ODD_VERSION` in `odd/odd.php` (today **v1.0.2**). Raw GitHub copy: [`blueprint.json`](https://raw.githubusercontent.com/RegionallyFamous/odd/main/blueprint.json) (add `?oddbp=v2-desktop-zip` if Playground still loads a cached older file). **Production installs:** **`odd.zip`** on [Releases](https://github.com/RegionallyFamous/odd/releases/latest).
+The hosted [Playground blueprint](https://odd.regionallyfamous.com/playground/blueprint.json?oddbp=v2-desktop-zip) pins **[WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/)** to **0.7.2** via the official release zip URL (`resource: "url"` → `downloads.wordpress.org/.../desktop-mode.0.7.2.zip`, matching `ODD_DESKTOP_MODE_MIN_VERSION`) and **[ODD](https://github.com/RegionallyFamous/odd)** to the **peeled git commit** for **`v` + `ODD_VERSION`** in `blueprint.json` (reliable Playground installs). Raw GitHub copy: [`blueprint.json`](https://raw.githubusercontent.com/RegionallyFamous/odd/main/blueprint.json) (add `?oddbp=v2-desktop-zip` if Playground still loads a cached older file). **Production installs:** **`odd.zip`** on [Releases](https://github.com/RegionallyFamous/odd/releases/latest) — use **v1.0.3+** if downloads for **1.0.1**/**1.0.2** are missing (those tags did not finish CI).
 
 ---
 
@@ -62,6 +62,8 @@ Wallpapers, icon sets, and cursor sets preview instantly. Try a scene, theme, or
 [**Launch ODD in WordPress Playground →**](https://playground.wordpress.net/?blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint.json%3Foddbp%3Dv2-desktop-zip)
 
 First load takes ~20–30 seconds while Playground boots the site and installs the plugin. Throwaway — close the tab and it's gone.
+
+**Short links (GitHub Pages — same host as the hosted blueprint):** [`/go/`](https://odd.regionallyfamous.com/go/) redirects to that stable demo; [`/go/dev`](https://odd.regionallyfamous.com/go/dev/) opens a **dev** blueprint (latest wordpress.org Desktop Mode zip + ODD `main`). Full launcher pages: [`/playground/`](https://odd.regionallyfamous.com/playground/) and [`/playground/dev/`](https://odd.regionallyfamous.com/playground/dev/).
 
 ### A real WordPress install
 

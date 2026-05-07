@@ -4,16 +4,9 @@
 Updates all declared versions in sync:
   1. `Version:` header in odd/odd.php
   2. `ODD_VERSION` constant in odd/odd.php
-  3. `v<x.y.z>` release tag ref in each Playground blueprint.json *when* the
-     hosted demo installs ODD from a semver git tag.
-
-Public Playground blueprints install ODD via `git:directory` **tag `v`
-+ `ODD_VERSION`** and Desktop Mode via **`resource: "url"`** pointing at
-`https://downloads.wordpress.org/plugin/desktop-mode.{version}.zip`
-where `{version}` is `ODD_DESKTOP_MODE_MIN_VERSION` (the Playground
-schema does not allow pinning versions on `wordpress.org/plugins`).
-`odd/bin/validate-blueprint` enforces both against `odd/odd.php`.
-`odd/bin/bump-version` rewrites blueprint ODD `ref` pins when tagging a new semver release.
+  3. ODD Playground install: **`git:directory`** `refType: commit` with the peeled
+     SHA of **`v` + `ODD_VERSION`** when that tag exists locally; otherwise **`tag`**
+     + `v` + version until you tag and re-run bump (Playground avoids flaky tag packs).
 
 Usage:
     odd/bin/bump-version 0.14.0            # edits in place
@@ -26,6 +19,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -70,18 +64,45 @@ def bump_plugin(text: str, new_version: str) -> tuple[str, list[str]]:
     return new_text, lines
 
 
-def odd_blueprint_install_ref(text: str, label: str) -> tuple[str | None, str | None]:
-    """Return (refType, ref) for ODD's git:directory install step, or (None, None).
+def peel_release_tag(repo_root: Path, version: str) -> str | None:
+    """Return `git rev-parse v{version}^{commit}` when the tag exists locally."""
 
-    Exits the process if JSON is invalid or the ODD step is missing.
+    if not (repo_root / ".git").exists():
+        return None
+    tag = "v" + version
+    try:
+        out = subprocess.check_output(
+            ["git", "-C", str(repo_root), "rev-parse", tag + "^{commit}"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=30,
+        )
+    except (
+        subprocess.CalledProcessError,
+        FileNotFoundError,
+        subprocess.TimeoutExpired,
+    ):
+        return None
+    digest = out.strip()
+    return digest if re.fullmatch(r"[0-9a-f]{40}", digest) else None
+
+
+def bump_blueprint(text: str, new_version: str, label: str) -> tuple[str, list[str]]:
+    """Rewrite ODD's `git:directory` pin to peeled commit or semver tag.
+
+    Returns (new_text, summary_lines).
     """
+    lines: list[str] = []
     try:
         data = json.loads(text)
     except json.JSONDecodeError as e:
         raise SystemExit(f"error: {label} is not valid JSON: {e}") from e
+
     steps = data.get("steps")
     if not isinstance(steps, list):
         raise SystemExit(f"error: {label} has no steps array")
+
+    matched = False
     for step in steps:
         if not isinstance(step, dict) or step.get("step") != "installPlugin":
             continue
@@ -92,53 +113,36 @@ def odd_blueprint_install_ref(text: str, label: str) -> tuple[str | None, str | 
             continue
         if "RegionallyFamous/odd" not in str(plugin.get("url", "")):
             continue
-        ref_type = plugin.get("refType")
-        ref = plugin.get("ref")
-        if not isinstance(ref_type, str) or not isinstance(ref, str):
-            raise SystemExit(f"error: ODD git step in {label} has invalid ref/refType")
-        return ref_type, ref
-    raise SystemExit(f"error: could not find ODD installPlugin step in {label}")
 
+        rt = plugin.get("refType", "")
+        cr = plugin.get("ref", "")
+        if rt == "branch" and cr == "main":
+            lines.append(
+                f"  {label}: ODD branch main — skipped (release bump not applicable)"
+            )
+            return text, lines
 
-def bump_blueprint(text: str, new_version: str, label: str) -> tuple[str, list[str]]:
-    """Replace `v<x.y.z>` in ODD's git:directory ref, or skip branch-main installs.
+        tag = "v" + new_version
+        peel = peel_release_tag(REPO_ROOT, new_version)
+        if peel:
+            plugin["ref"] = peel
+            plugin["refType"] = "commit"
+            lines.append(
+                f"  {label}: ODD git -> commit {peel[:7]}… (peel of {tag})"
+            )
+        else:
+            plugin["ref"] = tag
+            plugin["refType"] = "tag"
+            lines.append(
+                f"  {label}: ODD git -> {tag} (no local tag peel yet — after `git tag`, re-run bump for commit pin)"
+            )
+        matched = True
+        break
 
-    Returns (new_text, summary_lines).
-    """
-    lines: list[str] = []
-    ref_type, cur_ref = odd_blueprint_install_ref(text, label)
-    if ref_type == "branch" and cur_ref == "main":
-        lines.append(f"  {label}: ODD branch main — skipped (release tag bump not applicable)")
-        return text, lines
+    if not matched:
+        raise SystemExit(f"error: could not find ODD release installPlugin step in {label}")
 
-    ref_re = re.compile(
-        r'("url"\s*:\s*"https://github\.com/RegionallyFamous/odd"\s*,\s*\n'
-        r'\s*"ref"\s*:\s*")v[0-9]+\.[0-9]+\.[0-9]+(")'
-    )
-    matches = list(ref_re.finditer(text))
-    if not matches:
-        raise SystemExit(
-            f"error: could not find a semver git tag ref for ODD in {label} "
-            f"(refType={ref_type!r}, ref={cur_ref!r})"
-        )
-    if len(matches) > 1:
-        raise SystemExit(
-            f"error: {label} contains {len(matches)} ODD release refs "
-            "(expected exactly 1) — cowardly refusing to guess which to bump"
-        )
-
-    new_text = ref_re.sub(
-        lambda m: f"{m.group(1)}v{new_version}{m.group(2)}",
-        text,
-        count=1,
-    )
-
-    try:
-        json.loads(new_text)
-    except json.JSONDecodeError as e:
-        raise SystemExit(f"error: {label} stopped being valid JSON after edit: {e}") from e
-
-    lines.append(f"  {label}: ODD git tag -> v{new_version}")
+    new_text = json.dumps(data, indent=2) + "\n"
     return new_text, lines
 
 

@@ -11,9 +11,19 @@ notes to GitHub Releases.
 <a id="unreleased"></a>
 ## [Unreleased]
 
+<a id="v1.0.3"></a>
+## [1.0.3] — 2026-05-07
+
+### Fixed
+- **GitHub Releases / CI:** `desktop_mode_shell_config` now copies themed `desktopIcons[]` artwork onto matching `nativeWindows[]` entries by `id`, satisfying `Test_Icons_Dock_Filter::test_code_editor_taskbar_icon_matches_themed_desktop_icon` and unblocking the `release-odd` workflow. Tags **v1.0.1** and **v1.0.2** did not finish publishing **`odd.zip`** because this test failed in `phpunit`; use **v1.0.3** or install from `main` / the catalog.
+
+### Added
+- **Dev Playground blueprint** (`blueprint-dev.json` + `site/playground/blueprint-dev.json`): latest `downloads.wordpress.org/plugin/desktop-mode.zip` and ODD **`main`** via `git:directory`. Short launchers: [`/go/`](https://odd.regionallyfamous.com/go/), [`/go/dev`](https://odd.regionallyfamous.com/go/dev/), [`/playground/dev/`](https://odd.regionallyfamous.com/playground/dev/).
+
 ### Changed
-- Playground deploys enforce pins: Desktop Mode via **downloads.wordpress.org** `plugin/desktop-mode.{ODD_DESKTOP_MODE_MIN_VERSION}.zip` (`resource: "url"`), ODD from git tag `v` + `ODD_VERSION`; `odd/bin/validate-blueprint` checks both against `odd/odd.php`. (Playground schema disallows `pluginData.version` on `wordpress.org/plugins`.)
-- Pin Playground **`preferredVersions.wp`** to **`6.9`** (matches the bundle Playground resolves for `latest` today) so the console does not warn that loaded WP differs from the requested slug.
+- **`odd/bin/validate-blueprint`** — validates the dev blueprint pair; release blueprints still pin Desktop Mode semver zip + ODD tag or peeled commit.
+- **`odd/bin/bump-version`** — when the release git tag exists locally, rewrites ODD Playground pins to **`refType: commit`** (peel of `v` + version).
+- Playground **preferredVersions.wp** remains **6.9**; release ODD pin stays a peeled **commit** when possible (reliable isomorphic-git installs).
 
 <a id="v1.0.2"></a>
 ## [1.0.2] — 2026-05-07
@@ -24,7 +34,7 @@ notes to GitHub Releases.
 - **Dock overflow.** Left/right rails cap to the shell body height with vertical scroll (`min-height: 0`, `overflow-y: auto`) so large icon sets and long menus are not clipped by `desktop-mode-shell__body`.
 
 ### Changed
-- Public Playground pins ODD **`v1.0.2`** via `git:directory` semver tag (`blueprint.json` + `site/playground/blueprint.json`).
+- Public Playground pins ODD **`v1.0.2`** peeled commit via `git:directory` (`blueprint.json` + `site/playground/blueprint.json`) for reliable installs.
 
 <a id="v1.0.1"></a>
 ## [1.0.1] — 2026-05-07

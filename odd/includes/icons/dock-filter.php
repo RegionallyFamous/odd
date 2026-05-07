@@ -152,3 +152,56 @@ add_filter(
 	},
 	20
 );
+
+/**
+ * Keep native-window taskbar icons aligned with themed desktop shortcuts.
+ *
+ * WP Desktop Mode can surface the same logical surface as both a wallpaper
+ * shortcut (`desktopIcons[]`) and a dock/taskbar entry (`nativeWindows[]`).
+ * After icon-set theming runs, the desktop entry carries the SVG URL while
+ * the native window may still advertise a Dashicon name — copy the desktop
+ * art onto the matching native window when their `id` values match.
+ */
+add_filter(
+	'desktop_mode_shell_config',
+	function ( $config ) {
+		if ( ! is_array( $config ) ) {
+			return $config;
+		}
+		if ( empty( $config['nativeWindows'] ) || ! is_array( $config['nativeWindows'] ) ) {
+			return $config;
+		}
+		if ( empty( $config['desktopIcons'] ) || ! is_array( $config['desktopIcons'] ) ) {
+			return $config;
+		}
+
+		$by_id = array();
+		foreach ( $config['desktopIcons'] as $entry ) {
+			if ( ! is_array( $entry ) ) {
+				continue;
+			}
+			$id = isset( $entry['id'] ) ? (string) $entry['id'] : '';
+			if ( '' === $id || ! isset( $entry['icon'] ) || '' === (string) $entry['icon'] ) {
+				continue;
+			}
+			$by_id[ $id ] = (string) $entry['icon'];
+		}
+		if ( empty( $by_id ) ) {
+			return $config;
+		}
+
+		foreach ( $config['nativeWindows'] as $i => $win ) {
+			if ( ! is_array( $win ) ) {
+				continue;
+			}
+			$wid = isset( $win['id'] ) ? (string) $win['id'] : '';
+			if ( '' === $wid || ! isset( $by_id[ $wid ] ) ) {
+				continue;
+			}
+			$config['nativeWindows'][ $i ]['icon'] = $by_id[ $wid ];
+		}
+
+		return $config;
+	},
+	18
+);

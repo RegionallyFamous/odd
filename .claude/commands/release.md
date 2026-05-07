@@ -27,10 +27,10 @@ If on a different branch, stop and ask.
 
 ## 2. Bump version pins
 
-Use the helper — it updates `odd/odd.php` **and** both Playground blueprints’ ODD **`git:directory` ref** to `v<version>`. If you change `ODD_DESKTOP_MODE_MIN_VERSION` without a plugin bump, update the **Desktop Mode** `installPlugin` URL in **both** blueprints to `https://downloads.wordpress.org/plugin/desktop-mode.<version>.zip`; `odd/bin/validate-blueprint` checks it against `odd/odd.php`.
+Use the helper — it updates `odd/odd.php` **and** both Playground blueprints’ ODD **`git:directory` ref** to the peeled **commit** for `v<version>` when that tag already exists locally (recommended for Playground reliability); otherwise it falls back to `refType: tag` + `v<version>` until you tag and re-run bump. If you change `ODD_DESKTOP_MODE_MIN_VERSION` without a plugin bump, update the **Desktop Mode** `installPlugin` URL in **both** blueprints to `https://downloads.wordpress.org/plugin/desktop-mode.<version>.zip`; `odd/bin/validate-blueprint` checks it against `odd/odd.php`.
 
 ```bash
-odd/bin/bump-version <version>
+odd/bin/bump-version <version>   # before tag: sets tag ref; after tag: re-run to pin commit SHA
 ```
 
 Then confirm they agree:
