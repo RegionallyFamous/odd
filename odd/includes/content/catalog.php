@@ -905,18 +905,23 @@ function odd_bundle_rest_install_from_catalog( WP_REST_Request $req ) {
 		return $install;
 	}
 
-	return rest_ensure_response(
-		array(
-			'installed' => true,
-			'slug'      => $install['slug'],
-			'type'      => $install['type'],
-			'manifest'  => $install['manifest'],
-			// Shop hot-register payload. See the matching upload
-			// endpoint in includes/content/rest.php for the rationale.
-			'entry_url' => odd_bundle_entry_url_for( $install['manifest'] ),
-			'row'       => odd_bundle_panel_row_for( $install['manifest'] ),
-		)
+	$out = array(
+		'installed' => true,
+		'slug'      => $install['slug'],
+		'type'      => $install['type'],
+		'manifest'  => $install['manifest'],
+		// Shop hot-register payload. See the matching upload
+		// endpoint in includes/content/rest.php for the rationale.
+		'entry_url' => odd_bundle_entry_url_for( $install['manifest'] ),
+		'row'       => odd_bundle_panel_row_for( $install['manifest'] ),
 	);
+	if ( 'app' === $install['type'] && function_exists( 'odd_apps_serve_url_for_rest_payload' ) ) {
+		$serve = odd_apps_serve_url_for_rest_payload( $install['slug'] );
+		if ( '' !== $serve ) {
+			$out['serve_url'] = $serve;
+		}
+	}
+	return rest_ensure_response( $out );
 }
 
 /**

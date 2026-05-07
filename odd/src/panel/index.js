@@ -1536,6 +1536,7 @@
 			var noun = NOUN_FOR_TYPE[ type ] || 'bundle';
 			var row = data && data.row;
 			if ( 'app' === type ) {
+				var haveServe = !!( data && data.serve_url );
 				row = Object.assign(
 					{},
 					row || {},
@@ -1543,11 +1544,16 @@
 						slug: slug,
 						name: ( row && row.name ) || name || slug,
 						installed: true,
-						requiresReload: true,
+						// Hot-path: REST returns `serve_url` so window-host can
+						// register `desktopModeNativeWindows` + iframe URL without reload.
+						requiresReload: ! haveServe,
 					}
 				);
 			}
 			spliceInstalledRow( type, slug, row, data && data.manifest );
+			if ( 'app' === type && data && data.serve_url ) {
+				syncWindowOddAfterAppInstall( slug, data.serve_url );
+			}
 			state.justInstalled = { type: type, slug: slug, name: name, at: Date.now() };
 			playShopSound( 'success' );
 			toast( message || ( 'Installed ' + noun + ' "' + name + '".' ) );
@@ -1600,6 +1606,37 @@
 					rows[ i ].installed = true;
 					return;
 				}
+			}
+		}
+
+		/**
+		 * After catalog/upload install, `window.odd` was frozen at first paint
+		 * but `registerWpdmCallbacks()` only reads `userApps.installed` +
+		 * `appServeUrls` from `window.odd`. Mirror server state and re-run
+		 * registration so `openWindow('odd-app-*')` can hydrate the iframe
+		 * without a full reload.
+		 */
+		function syncWindowOddAfterAppInstall( slug, serveUrl ) {
+			if ( ! slug ) return;
+			if ( window.odd ) {
+				window.odd.appServeUrls = window.odd.appServeUrls || {};
+				window.odd.appServeUrls[ slug ] = serveUrl;
+				window.odd.userApps = window.odd.userApps || { installed: [], pinned: [] };
+				if ( state.cfg.userApps && Array.isArray( state.cfg.userApps.installed ) ) {
+					window.odd.userApps.installed = state.cfg.userApps.installed.slice();
+				}
+				if ( state.cfg.userApps && Array.isArray( state.cfg.userApps.pinned ) ) {
+					window.odd.userApps.pinned = state.cfg.userApps.pinned.slice();
+				}
+				if ( Array.isArray( state.cfg.apps ) ) {
+					window.odd.apps = state.cfg.apps.map( function ( r ) {
+						return r && typeof r === 'object' ? Object.assign( {}, r ) : r;
+					} );
+				}
+			}
+			var reg = window.__odd && window.__odd.apps && window.__odd.apps.registerWpdmCallbacks;
+			if ( typeof reg === 'function' ) {
+				try { reg(); } catch ( e ) {}
 			}
 		}
 

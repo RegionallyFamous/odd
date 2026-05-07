@@ -74,22 +74,27 @@ function odd_bundle_rest_upload( WP_REST_Request $req ) {
 		return $result;
 	}
 
-	return rest_ensure_response(
-		array(
-			'installed' => true,
-			'slug'      => $result['slug'],
-			'type'      => $result['type'],
-			'manifest'  => $result['manifest'],
-			// Shop hot-register payload. `entry_url` is the widget or
-			// scene bundle's JS URL (null for every other type), and
-			// `row` is a panel-shaped record the client splices into
-			// `state.cfg.installedWidgets` / `scenes` / `iconSets` /
-			// `apps` so the unified grid can re-render with the new
-			// tile without a page reload.
-			'entry_url' => odd_bundle_entry_url_for( $result['manifest'] ),
-			'row'       => odd_bundle_panel_row_for( $result['manifest'] ),
-		)
+	$out = array(
+		'installed' => true,
+		'slug'      => $result['slug'],
+		'type'      => $result['type'],
+		'manifest'  => $result['manifest'],
+		// Shop hot-register payload. `entry_url` is the widget or
+		// scene bundle's JS URL (null for every other type), and
+		// `row` is a panel-shaped record the client splices into
+		// `state.cfg.installedWidgets` / `scenes` / `iconSets` /
+		// `apps` so the unified grid can re-render with the new
+		// tile without a page reload.
+		'entry_url' => odd_bundle_entry_url_for( $result['manifest'] ),
+		'row'       => odd_bundle_panel_row_for( $result['manifest'] ),
 	);
+	if ( 'app' === $result['type'] && function_exists( 'odd_apps_serve_url_for_rest_payload' ) ) {
+		$serve = odd_apps_serve_url_for_rest_payload( $result['slug'] );
+		if ( '' !== $serve ) {
+			$out['serve_url'] = $serve;
+		}
+	}
+	return rest_ensure_response( $out );
 }
 
 function odd_bundle_rest_delete( WP_REST_Request $req ) {

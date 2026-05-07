@@ -438,6 +438,25 @@ function odd_apps_cookieauth_url_for( $slug ) {
 	return odd_url_current_scheme( home_url( '/odd-app/' . $slug . '/' ) );
 }
 
+/**
+ * Full iframe URL + wp_rest nonce for REST install/upload responses (matches `appServeUrls` in enqueue).
+ *
+ * @param string $slug App slug.
+ * @return string Empty when slug invalid or apps are unavailable.
+ */
+function odd_apps_serve_url_for_rest_payload( $slug ) {
+	$slug = sanitize_key( (string) $slug );
+	if ( '' === $slug || ! function_exists( 'odd_apps_cookieauth_url_for' ) ) {
+		return '';
+	}
+	return esc_url_raw(
+		add_query_arg(
+			array( '_wpnonce' => wp_create_nonce( 'wp_rest' ) ),
+			odd_apps_cookieauth_url_for( $slug )
+		)
+	);
+}
+
 function odd_apps_runtime_importmap_html() {
 	$imports = array(
 		'react'             => odd_url_current_scheme( home_url( '/odd-app-runtime/react.js' ) ),

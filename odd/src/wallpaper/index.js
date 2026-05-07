@@ -452,6 +452,21 @@
 		Object.keys( patch ).forEach( function ( k ) { prefsState[ k ] = patch[ k ]; } );
 		mirrorToLS();
 		if ( ! cfg.restUrl ) return Promise.resolve( prefsState );
+		// Same path as the Shop + `api.setScene`: `api.savePrefs` notifies
+		// Desktop Mode to select the `odd` wallpaper engine (`updateOsSettings`)
+		// when the patch touches `wallpaper` / `scene` — raw fetch skipped that
+		// (e.g. shuffle timer) so the host could stay on the built-in gradient.
+		var api = window.__odd && window.__odd.api;
+		if ( api && typeof api.savePrefs === 'function' ) {
+			return new Promise( function ( resolve ) {
+				api.savePrefs( patch, function ( data ) {
+					resolve( data && typeof data === 'object' ? data : prefsState );
+				} );
+			} ).catch( function ( err ) {
+				if ( window.console ) window.console.warn( 'ODD: prefs save deferred to localStorage', err );
+				return prefsState;
+			} );
+		}
 		return fetch( cfg.restUrl, {
 			method: 'POST',
 			credentials: 'same-origin',
