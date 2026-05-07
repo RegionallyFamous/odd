@@ -2,7 +2,7 @@
 /**
  * ODD Apps — storage primitives.
  *
- * Two-tier option layout (matches Bazaar, renamed):
+ * Two-tier option layout:
  *
  *   odd_apps_index          Flat { slug => index_entry }. Autoload = no.
  *                           index_entry contains: name, slug, version,
@@ -35,9 +35,8 @@ if ( ! defined( 'ODD_APPS_OPTION_PREFIX' ) ) {
 	define( 'ODD_APPS_OPTION_PREFIX', 'odd_app_' );
 }
 if ( ! defined( 'ODD_APPS_MAX_UNCOMPRESSED' ) ) {
-	// 25 MB uncompressed cap per app. Matches Bazaar default and
-	// leaves headroom for React-based apps without letting a rogue
-	// upload exhaust server disk.
+	// 25 MB uncompressed cap per app — leaves headroom for larger front-end
+	// bundles without letting a rogue upload exhaust server disk.
 	define( 'ODD_APPS_MAX_UNCOMPRESSED', 25 * 1024 * 1024 );
 }
 

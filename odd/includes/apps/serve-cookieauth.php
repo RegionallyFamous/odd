@@ -376,7 +376,11 @@ function odd_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 		// their archives on disk.
 		$raw = file_get_contents( $full ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 		if ( false !== $raw ) {
-			$body = odd_apps_inject_runtime_importmap( $raw );
+			if ( function_exists( 'odd_apps_prepare_app_html_output' ) ) {
+				$body = odd_apps_prepare_app_html_output( $raw );
+			} else {
+				$body = odd_apps_inject_runtime_importmap( $raw );
+			}
 			$size = strlen( $body );
 		}
 	} elseif ( odd_apps_is_js_mime( $mime ) ) {
@@ -392,6 +396,9 @@ function odd_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 		$raw = file_get_contents( $full ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 		if ( false !== $raw ) {
 			$body = odd_apps_rewrite_runtime_bare_imports( $raw );
+			if ( function_exists( 'odd_apps_transform_embed_bundle_output' ) ) {
+				$body = odd_apps_transform_embed_bundle_output( $body, $mime );
+			}
 			$size = strlen( $body );
 		}
 	}

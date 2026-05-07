@@ -15,10 +15,10 @@
  * Index of every core-shipped migration (source of truth — ODD_SCHEMA_VERSION
  * below must equal the highest entry here):
  *
- *   1  baseline            odd/includes/migrations.php
- *   2  apps_baseline       odd/includes/migrations.php
- *   3  bazaar_migration    odd/includes/apps/migrate-from-bazaar.php
- *
+ *   1  baseline                   odd/includes/migrations.php
+ *   2  apps_baseline             odd/includes/migrations.php
+ *   3  empty_slot                odd/includes/migrations.php (no-op placeholder)
+ *   4  reserved                  odd/includes/migrations.php (no-op)
  * Third-party plugins can register higher-numbered migrations via
  * `add_filter( 'odd_migrations', … )`; see docs/building-on-odd.md.
  */
@@ -26,7 +26,7 @@
 defined( 'ABSPATH' ) || exit;
 
 if ( ! defined( 'ODD_SCHEMA_VERSION' ) ) {
-	define( 'ODD_SCHEMA_VERSION', 3 );
+	define( 'ODD_SCHEMA_VERSION', 4 );
 }
 
 function odd_migrations_all() {
@@ -47,6 +47,8 @@ function odd_migrations_all() {
 		array(
 			1 => 'odd_migration_1_baseline',
 			2 => 'odd_migration_2_apps_baseline',
+			3 => 'odd_migration_3_empty_slot',
+			4 => 'odd_migration_4_reserved',
 		)
 	);
 }
@@ -81,8 +83,8 @@ function odd_run_migrations( $user_id = 0 ) {
 		}
 		// A migration may return `false` to signal "skip, don't advance
 		// the schema version — retry on the next pageload." This is
-		// how odd_migration_3_from_bazaar handles lock-contention or
-		// partial-progress without silently losing the migration
+		// how long-running or lock-contention migrations handle
+		// partial progress without silently losing the migration
 		// forever. `null` / `true` / `void` all count as success for
 		// back-compat with no-op migrations.
 		if ( false === $result ) {
@@ -114,6 +116,22 @@ function odd_migration_2_apps_baseline( $user_id ) {
 		odd_apps_ensure_storage();
 	}
 }
+
+/**
+ * Empty placeholder for migration slot 3 (reserved — older installs may already
+ * have advanced past this step).
+ */
+function odd_migration_3_empty_slot( $user_id ) {
+	unset( $user_id );
+}
+
+/**
+ * Reserved schema step (no-op — keeps numbering stable vs early pre-release installs).
+ */
+function odd_migration_4_reserved( $user_id ) {
+	unset( $user_id );
+}
+
 
 // Run on every admin pageload for the current user. Cheap when the
 // version already matches target; a single integer meta read.

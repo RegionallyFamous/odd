@@ -4,7 +4,7 @@
  *
  * Validates and extracts `.wp` archives.
  *
- * The validation pipeline is a trimmed port of Bazaar's WareLoader:
+ * The validation pipeline follows a conventional allowlist-first ZIP path:
  *
  *   1. Extension allowlist           (.wp)
  *   2. ZIP integrity                 ZipArchive::open RDONLY

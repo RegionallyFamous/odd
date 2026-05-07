@@ -11,6 +11,12 @@
  *   DELETE /apps/{slug}                     Uninstall
  *   GET  /apps/serve/{slug}/{path...}       Serve a file from the app bundle
  *   GET  /apps/icon/{slug}                  Public icon for the app (no auth)
+ *   POST /apps/runtime/errors               Client error ingest (logged-in)
+ *   GET  /apps/store/{slug}/{segment}       KV store read { value }
+ *   PUT/POST /apps/store/{slug}/{segment}   KV store write { value }
+ *   DELETE /apps/store/{slug}/{segment}     KV store delete
+ *   GET  /apps/store/{slug}                 KV segment keys (bare array)
+ *   DELETE /apps/store/{slug}               Clear KV bucket for slug
  *
  * Authorization:
  *
@@ -27,6 +33,10 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+
+if ( ! defined( 'ODD_APPS_KV_USER_META' ) ) {
+	define( 'ODD_APPS_KV_USER_META', 'odd_apps_kv' );
+}
 
 add_action(
 	'rest_api_init',
@@ -52,6 +62,67 @@ add_action(
 				'permission_callback' => function () {
 					return current_user_can( 'manage_options' );
 				},
+			)
+		);
+
+		register_rest_route(
+			'odd/v1',
+			'/apps/runtime/errors',
+			array(
+				'methods'             => 'POST',
+				'callback'            => 'odd_apps_rest_runtime_errors',
+				'permission_callback' => static function () {
+					return is_user_logged_in() && current_user_can( 'read' );
+				},
+			)
+		);
+
+		register_rest_route(
+			'odd/v1',
+			'/apps/store/(?P<slug>[a-z0-9-]+)/(?P<segment>[a-z0-9-]+)',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => 'odd_apps_rest_store_get',
+					'permission_callback' => static function () {
+						return is_user_logged_in() && current_user_can( 'read' );
+					},
+				),
+				array(
+					'methods'             => array( 'PUT', 'POST' ),
+					'callback'            => 'odd_apps_rest_store_put',
+					'permission_callback' => static function () {
+						return is_user_logged_in() && current_user_can( 'read' );
+					},
+				),
+				array(
+					'methods'             => 'DELETE',
+					'callback'            => 'odd_apps_rest_store_delete',
+					'permission_callback' => static function () {
+						return is_user_logged_in() && current_user_can( 'read' );
+					},
+				),
+			)
+		);
+
+		register_rest_route(
+			'odd/v1',
+			'/apps/store/(?P<slug>[a-z0-9-]+)',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => 'odd_apps_rest_store_keys',
+					'permission_callback' => static function () {
+						return is_user_logged_in() && current_user_can( 'read' );
+					},
+				),
+				array(
+					'methods'             => 'DELETE',
+					'callback'            => 'odd_apps_rest_store_clear',
+					'permission_callback' => static function () {
+						return is_user_logged_in() && current_user_can( 'read' );
+					},
+				),
 			)
 		);
 
@@ -626,4 +697,133 @@ function odd_apps_rest_diag( WP_REST_Request $req ) {
 	);
 
 	return rest_ensure_response( $diag );
+}
+
+function odd_apps_kv_load_tree( $user_id ) {
+	$user_id = (int) $user_id;
+	$root    = get_user_meta( $user_id, ODD_APPS_KV_USER_META, true );
+	if ( ! is_array( $root ) ) {
+		return array(
+			'stores' => array(),
+		);
+	}
+	if ( isset( $root['stores'] ) && is_array( $root['stores'] ) ) {
+		return array(
+			'stores' => $root['stores'],
+		);
+	}
+
+	return array(
+		'stores' => array(),
+	);
+}
+
+function odd_apps_kv_save_tree( $user_id, array $stores ) {
+	update_user_meta(
+		(int) $user_id,
+		ODD_APPS_KV_USER_META,
+		array(
+			'stores' => $stores,
+		)
+	);
+}
+
+function odd_apps_kv_segments_for_slug( $user_id, $slug ) {
+	$slug = sanitize_key( (string) $slug );
+	$tree = odd_apps_kv_load_tree( $user_id );
+	if ( '' === $slug || ! isset( $tree['stores'][ $slug ] ) || ! is_array( $tree['stores'][ $slug ] ) ) {
+		return array();
+	}
+
+	return $tree['stores'][ $slug ];
+}
+
+function odd_apps_rest_runtime_errors( WP_REST_Request $request ) {
+	unset( $request );
+
+	return rest_ensure_response( array( 'ok' => true ) );
+}
+
+function odd_apps_rest_store_get( WP_REST_Request $request ) {
+	$user_id = get_current_user_id();
+	$slug    = sanitize_key( (string) $request['slug'] );
+	$segment = sanitize_key( (string) $request['segment'] );
+	$bucket  = odd_apps_kv_segments_for_slug( $user_id, $slug );
+	$value   = null;
+	if ( isset( $bucket[ $segment ] ) ) {
+		$value = $bucket[ $segment ];
+	}
+
+	return rest_ensure_response(
+		array(
+			'value' => $value,
+		)
+	);
+}
+
+function odd_apps_rest_store_put( WP_REST_Request $request ) {
+	$user_id = get_current_user_id();
+	$slug    = sanitize_key( (string) $request['slug'] );
+	$segment = sanitize_key( (string) $request['segment'] );
+	$params  = $request->get_json_params();
+	if ( ! is_array( $params ) ) {
+		$params = array();
+	}
+
+	$value       = isset( $params['value'] ) ? $params['value'] : null;
+	$tree        = odd_apps_kv_load_tree( $user_id );
+	$tree_stores = isset( $tree['stores'] ) && is_array( $tree['stores'] ) ? $tree['stores'] : array();
+	if ( ! isset( $tree_stores[ $slug ] ) || ! is_array( $tree_stores[ $slug ] ) ) {
+		$tree_stores[ $slug ] = array();
+	}
+	$tree_stores[ $slug ][ $segment ] = $value;
+	odd_apps_kv_save_tree( $user_id, $tree_stores );
+
+	return rest_ensure_response(
+		array(
+			'value' => $value,
+		)
+	);
+}
+
+function odd_apps_rest_store_delete( WP_REST_Request $request ) {
+	$user_id = get_current_user_id();
+	$slug    = sanitize_key( (string) $request['slug'] );
+	$segment = sanitize_key( (string) $request['segment'] );
+
+	$tree        = odd_apps_kv_load_tree( $user_id );
+	$tree_stores = isset( $tree['stores'] ) && is_array( $tree['stores'] ) ? $tree['stores'] : array();
+
+	if ( isset( $tree_stores[ $slug ][ $segment ] ) ) {
+		unset( $tree_stores[ $slug ][ $segment ] );
+	}
+
+	odd_apps_kv_save_tree( $user_id, $tree_stores );
+
+	return new WP_REST_Response( null, 204 );
+}
+
+function odd_apps_rest_store_keys( WP_REST_Request $request ) {
+	$user_id = get_current_user_id();
+	$slug    = sanitize_key( (string) $request['slug'] );
+
+	$segments = odd_apps_kv_segments_for_slug( $user_id, $slug );
+	$keys     = array_keys( $segments );
+	sort( $keys, SORT_NATURAL );
+
+	return rest_ensure_response( $keys );
+}
+
+function odd_apps_rest_store_clear( WP_REST_Request $request ) {
+	$user_id = get_current_user_id();
+	$slug    = sanitize_key( (string) $request['slug'] );
+
+	$tree        = odd_apps_kv_load_tree( $user_id );
+	$tree_stores = isset( $tree['stores'] ) && is_array( $tree['stores'] ) ? $tree['stores'] : array();
+
+	unset( $tree_stores[ $slug ] );
+
+	odd_apps_kv_save_tree( $user_id, $tree_stores );
+
+	return new WP_REST_Response( null, 204 );
 }

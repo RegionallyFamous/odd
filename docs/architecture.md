@@ -359,7 +359,7 @@ validation.
 |---------------------------|----------|--------------------------------------------------------|
 | `odd_apps_index`          | no       | Flat `{ slug => index_row }`. Fast path for listing.   |
 | `odd_app_<slug>`          | no       | Full manifest + runtime fields for one app.            |
-| `odd_apps_shared_secret`  | no       | Optional shared secret (carried over from Bazaar).     |
+| `odd_apps_shared_secret`  | no       | Optional shared secret for signed app URLs. |
 | `odd_apps_install_lock_<slug>` | no  | Transient lock — `add_option` guard against concurrent installs. |
 | `odd_catalog`             | yes      | 12-hour transient cache of the remote registry.        |
 | `odd_starter_state`       | yes      | Starter-pack runner state + last error + attempt count. |

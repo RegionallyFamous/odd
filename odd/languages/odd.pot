@@ -361,9 +361,7 @@ msgstr ""
 msgid "Dim into a full-screen scene when the admin sits idle."
 msgstr ""
 
-#: odd/includes/apps/migrate-from-bazaar.php:234
-msgid "Dismiss"
-msgstr ""
+
 
 #: odd/includes/content/catalog.php:995
 msgid "Downloaded bundle slug does not match the catalog entry."
@@ -578,9 +576,7 @@ msgstr ""
 msgid "ODD Shop"
 msgstr ""
 
-#: odd/includes/apps/migrate-from-bazaar.php:265
-msgid "ODD absorbed your Bazaar wares — %d migrated into the Apps tab. The old Bazaar plugin has been deactivated; delete it when you\\'re ready."
-msgstr ""
+
 
 #: odd/src/panel/index.js:916
 msgid "ODD couldn\\u2019t finalise the install. Check wp-content permissions and try again."
