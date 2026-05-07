@@ -5,10 +5,11 @@ import { expect } from '@playwright/test';
  * Enters the WP Desktop Mode shell. ODD’s `desktop-mode` script dependency
  * only loads when the shell renders (`includes/render.php`); a bare
  * `/wp-admin/` request can look “classic” and skip the canvas + scenes.
- * The `/wp-desktop/` portal redirects into `wp-admin` with the shell.
+ * Use `?desktop_mode_portal=1` on wp-admin — the legacy `/wp-desktop/` route
+ * shipped in older Desktop Mode builds was removed from wordpress.org releases.
  */
 export async function goDesktopShell( page: Page ) {
-	await page.goto( '/wp-desktop/', { waitUntil: 'load', timeout: 45_000 } );
+	await page.goto( '/wp-admin/index.php?desktop_mode_portal=1', { waitUntil: 'load', timeout: 45_000 } );
 	await page.waitForURL( /\/wp-admin/, { timeout: 45_000 } );
 	await expect( page.locator( '#desktop-mode-shell' ) ).toBeVisible( { timeout: 20_000 } );
 	await page.waitForFunction( () => {
