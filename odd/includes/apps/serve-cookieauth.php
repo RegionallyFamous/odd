@@ -90,6 +90,35 @@ function odd_apps_cookieauth_strip_home_path_prefix( $req_path, $home_pt ) {
 }
 
 /**
+ * Peel WordPress Playground’s per-instance URL prefix when present.
+ *
+ * The embedded site is often reached at paths like
+ * `/scope:brave-quiet-road/wp-json/...` while `site_url()` path stays `/`.
+ * Cookie-auth matching runs on raw `REQUEST_URI` — without this strip the
+ * `/odd-app/<slug>/` regex never fires, assets 404, and the iframe stays white.
+ *
+ * @param string $req_path REQUEST_URI path (no query), with leading slash.
+ * @return string Path with a single leading `/scope:…` segment removed when matched.
+ */
+function odd_apps_cookieauth_strip_playground_scope_prefix( $req_path ) {
+	$path = (string) $req_path;
+	if ( '' !== $path && '/' !== $path[0] ) {
+		$path = '/' . $path;
+	}
+	if ( ! preg_match( '#^/scope:[-a-zA-Z0-9]+#', $path ) ) {
+		return $path;
+	}
+	$tail = (string) preg_replace( '#^/scope:[-a-zA-Z0-9]+#', '', $path );
+	if ( '' === $tail || '/' === $tail ) {
+		return '/';
+	}
+	if ( '/' !== $tail[0] ) {
+		return '/' . $tail;
+	}
+	return $tail;
+}
+
+/**
  * Match + serve on every request. Registered at priority 1 on
  * `init` — that's the first hook after `pluggable.php` loads, so
  * `wp_validate_auth_cookie` is guaranteed to be available. It still
@@ -114,6 +143,9 @@ function odd_apps_cookieauth_maybe_serve() {
 
 	$parts = explode( '?', $uri, 2 );
 	$path  = (string) $parts[0];
+
+	// Before site-path stripping — Playground scope is outside WP’s site_url path.
+	$path = odd_apps_cookieauth_strip_playground_scope_prefix( $path );
 
 	// Optional one-shot JSON trace, gated on manage_options. Lets
 	// an admin hit /odd-app/<slug>/?odd_debug=1 and see the exact

@@ -308,6 +308,19 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 		);
 	}
 
+	public function test_cookieauth_strip_playground_scope_prefix() {
+		$this->assertSame(
+			'/odd-app/board/',
+			odd_apps_cookieauth_strip_playground_scope_prefix( '/scope:brave-quiet-road/odd-app/board/' )
+		);
+		$this->assertSame(
+			'/odd-app-runtime/react.js',
+			odd_apps_cookieauth_strip_playground_scope_prefix( '/scope:x9/odd-app-runtime/react.js' )
+		);
+		$this->assertSame( '/', odd_apps_cookieauth_strip_playground_scope_prefix( '/scope:only' ) );
+		$this->assertSame( '/odd-app/foo/', odd_apps_cookieauth_strip_playground_scope_prefix( '/odd-app/foo/' ) );
+	}
+
 	public function test_prepare_app_html_output_strips_base_and_rewrites_root_asset_refs() {
 		$raw = '<!DOCTYPE html><html><head><base href="/">'
 			. '<link rel="stylesheet" href="/assets/index.css">'
