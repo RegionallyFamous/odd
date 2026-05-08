@@ -581,6 +581,9 @@ function odd_apps_rest_diag( WP_REST_Request $req ) {
 	$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
 	$home_url    = home_url( '/' );
 	$home_path   = (string) wp_parse_url( $home_url, PHP_URL_PATH );
+	$site_url    = site_url( '/' );
+	$site_path   = wp_parse_url( $site_url, PHP_URL_PATH );
+	$site_path   = is_string( $site_path ) ? $site_path : '';
 
 	$env = array(
 		'odd_version'        => defined( 'ODD_VERSION' ) ? ODD_VERSION : null,
@@ -592,6 +595,8 @@ function odd_apps_rest_diag( WP_REST_Request $req ) {
 		'request_uri'        => $request_uri,
 		'home_url'           => $home_url,
 		'home_path'          => $home_path,
+		'site_url'           => $site_url,
+		'site_path'          => $site_path,
 		'user_id'            => get_current_user_id(),
 		'wp_debug'           => defined( 'WP_DEBUG' ) && WP_DEBUG,
 	);

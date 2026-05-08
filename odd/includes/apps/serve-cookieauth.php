@@ -59,7 +59,7 @@ defined( 'ABSPATH' ) || exit;
  * whenever `PHP_URL_PATH` omitted a trailing slash).
  *
  * @param string $req_path REQUEST_URI path (no query).
- * @param mixed  $home_pt Path from wp_parse_url( home_url( '/' ), PHP_URL_PATH ); may be false.
+ * @param mixed  $home_pt Path from wp_parse_url( site_url( '/' ), PHP_URL_PATH ); may be false.
  *
  * @return string Path beginning with '/' for `#^/odd-app/` regexes.
  */
@@ -130,8 +130,12 @@ function odd_apps_cookieauth_maybe_serve() {
 		);
 	}
 
-	$home_pt = wp_parse_url( home_url( '/' ), PHP_URL_PATH );
-	$path    = odd_apps_cookieauth_strip_home_path_prefix( $path, false === $home_pt ? '' : $home_pt );
+	// Use SITEURL path (WordPress install directory), not home_url path. When
+	// HOME ≠ SITE (e.g. front page at `/`, core under `/blog` or `/wp`),
+	// REQUEST_URI is scoped to SITEURL — matching HOME would fail to peel
+	// /odd-app/.
+	$site_pt = wp_parse_url( site_url( '/' ), PHP_URL_PATH );
+	$path    = odd_apps_cookieauth_strip_home_path_prefix( $path, false === $site_pt ? '' : $site_pt );
 
 	// Runtime endpoint: serves React 19 ESM bundles + any shared chunks
 	// esbuild emitted alongside them. The app bundles' bare `react` /
@@ -471,7 +475,7 @@ function odd_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
  */
 function odd_apps_cookieauth_url_for( $slug ) {
 	$slug = sanitize_key( (string) $slug );
-	return odd_url_current_scheme( home_url( '/odd-app/' . $slug . '/' ) );
+	return odd_url_current_scheme( site_url( '/odd-app/' . $slug . '/' ) );
 }
 
 /**
@@ -495,10 +499,10 @@ function odd_apps_serve_url_for_rest_payload( $slug ) {
 
 function odd_apps_runtime_importmap_html() {
 	$imports = array(
-		'react'             => odd_url_current_scheme( home_url( '/odd-app-runtime/react.js' ) ),
-		'react-dom'         => odd_url_current_scheme( home_url( '/odd-app-runtime/react-dom.js' ) ),
-		'react-dom/client'  => odd_url_current_scheme( home_url( '/odd-app-runtime/react-dom-client.js' ) ),
-		'react/jsx-runtime' => odd_url_current_scheme( home_url( '/odd-app-runtime/react-jsx-runtime.js' ) ),
+		'react'             => odd_url_current_scheme( site_url( '/odd-app-runtime/react.js' ) ),
+		'react-dom'         => odd_url_current_scheme( site_url( '/odd-app-runtime/react-dom.js' ) ),
+		'react-dom/client'  => odd_url_current_scheme( site_url( '/odd-app-runtime/react-dom-client.js' ) ),
+		'react/jsx-runtime' => odd_url_current_scheme( site_url( '/odd-app-runtime/react-jsx-runtime.js' ) ),
 	);
 	return '<script type="importmap">' . wp_json_encode( array( 'imports' => $imports ) ) . '</script>';
 }
@@ -549,7 +553,7 @@ function odd_apps_rewrite_runtime_bare_imports( $js ) {
 	if ( false === strpos( $js, '"react' ) && false === strpos( $js, "'react" ) ) {
 		return $js;
 	}
-	$base = rtrim( odd_url_current_scheme( home_url( '/odd-app-runtime' ) ), '/' );
+	$base = rtrim( odd_url_current_scheme( site_url( '/odd-app-runtime' ) ), '/' );
 	$re   = '#(\b(?:from|import)\s*)(["\'])(react(?:/jsx-runtime|-dom(?:/client)?)?)\2#';
 	return preg_replace_callback(
 		$re,
