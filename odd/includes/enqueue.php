@@ -105,7 +105,7 @@ add_action(
 			'odd-diagnostics',
 			ODD_URL . '/src/shared/diagnostics.js',
 			array( 'odd-events' ),
-			ODD_VERSION,
+			$asset_version( 'src/shared/diagnostics.js' ),
 			true
 		);
 
@@ -270,7 +270,7 @@ add_action(
 			'odd-apps',
 			ODD_URL . '/src/apps/window-host.js',
 			array_merge( $foundation_deps, array( 'odd-api', 'odd-cursors', 'wp-dom-ready' ) ),
-			ODD_VERSION,
+			$asset_version( 'src/apps/window-host.js' ),
 			true
 		);
 
