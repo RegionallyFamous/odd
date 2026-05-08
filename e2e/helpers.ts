@@ -210,3 +210,51 @@ export async function exerciseOddShopInteractions( page: Page ) {
 	await shop.getByTestId( 'odd-preview-cancel' ).click();
 	await expect( shop.locator( '[data-odd-preview-bar]' ) ).toHaveCount( 0, { timeout: 10_000 } );
 }
+
+/**
+ * ODD Shop → Apps → install first catalog app that still shows “Install” (if any),
+ * then “Open”, then assert the sandbox iframe actually hydrates DOM.
+ * Same-origin iframe is readable in Playwright; this guards the “blank white app” class of regressions.
+ */
+export async function installCatalogAppOpenAndAssertHydratedIframe( page: Page ) {
+	const shop = page.locator( '.odd-panel.odd-shop' ).first();
+	await expect( shop ).toBeVisible();
+	await shop.getByTestId( 'odd-shop-nav-apps' ).click();
+	const pane = shop.getByTestId( 'odd-shop-content' );
+
+	const installBtns = pane.locator(
+		'[data-odd-card-type="app"] .odd-shop__card-btn--install',
+	);
+	if ( ( await installBtns.count() ) > 0 && ( await installBtns.first().isVisible() ) ) {
+		await installBtns.first().click();
+		await expect(
+			pane.locator( '[data-odd-card-type="app"] .odd-shop__card-btn--open' ).first(),
+		).toBeVisible( { timeout: 180_000 } );
+	}
+
+	const openBtn = pane.locator( '[data-odd-card-type="app"] .odd-shop__card-btn--open' ).first();
+	await expect( openBtn ).toBeVisible( { timeout: 20_000 } );
+	await openBtn.click();
+
+	await page.waitForFunction(
+		() => {
+			const f = document.querySelector( 'iframe.odd-app-frame' );
+			if ( ! f || ! ( f instanceof HTMLIFrameElement ) ) {
+				return false;
+			}
+			const doc = f.contentDocument;
+			if ( ! doc ) {
+				return false;
+			}
+			const root = doc.getElementById( 'root' ) ?? doc.body;
+			if ( ! root ) {
+				return false;
+			}
+			if ( root.children && root.children.length > 0 ) {
+				return true;
+			}
+			return ( root.textContent ?? '' ).trim().length > 20;
+		},
+		{ timeout: 90_000 },
+	);
+}

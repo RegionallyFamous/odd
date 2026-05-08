@@ -10,6 +10,11 @@ import { defineConfig, devices } from '@playwright/test';
  * For local iteration: run WP via `wp server --host=0.0.0.0 --port=8080`
  * in a separate terminal, activate ODD + WP Desktop Mode, then
  * `BASE_URL=http://127.0.0.1:8080 npx playwright test`.
+ *
+ * WordPress Playground (https://playground.wordpress.net) does **not** load
+ * inside Cursor’s embedded browser / most in-app Chromium — use
+ * `bash bin/open-playground-dev.sh` to open trunk ODD in Safari/Chrome, or run
+ * this suite (`bash bin/e2e-local.sh all`) for an automated regression pass.
  */
 
 const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:8080';

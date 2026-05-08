@@ -9,14 +9,21 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { installOddFailureDiagnostics } from './diagnostics-hooks';
-import { exerciseOddShopInteractions, goDesktopShell, loginAdmin, openOddShop, waitForWallpaperScenes } from './helpers';
+import {
+	exerciseOddShopInteractions,
+	goDesktopShell,
+	installCatalogAppOpenAndAssertHydratedIframe,
+	loginAdmin,
+	openOddShop,
+	waitForWallpaperScenes,
+} from './helpers';
 
 installOddFailureDiagnostics();
 
 test.describe( 'ODD admin smoke', () => {
 	test( 'wallpaper + scene hook, shop axe, then rail + preview', async ( { page } ) => {
-		// ~3–8m cold CI; one combined flow, not two full boots.
-		test.setTimeout( 300_000 );
+		// ~3–8m cold CI; catalog app install + open can add a few minutes at tail.
+		test.setTimeout( 420_000 );
 
 		page.on( 'console', ( msg ) => {
 			const type = msg.type();
@@ -108,5 +115,6 @@ test.describe( 'ODD admin smoke', () => {
 		expect( bad, JSON.stringify( bad, null, 2 ) ).toEqual( [] );
 
 		await exerciseOddShopInteractions( page );
+		await installCatalogAppOpenAndAssertHydratedIframe( page );
 	} );
 } );
