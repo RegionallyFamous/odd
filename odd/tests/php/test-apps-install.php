@@ -274,6 +274,40 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 		$this->assertFalse( odd_apps_is_html_mime( 'application/javascript; charset=utf-8' ) );
 	}
 
+	public function test_cookieauth_strip_home_prefix_root_untouched() {
+		$this->assertSame( '/odd-app/board/', odd_apps_cookieauth_strip_home_path_prefix( '/odd-app/board/', '/' ) );
+		$this->assertSame( '/odd-app/board/', odd_apps_cookieauth_strip_home_path_prefix( '/odd-app/board/', '' ) );
+	}
+
+	public function test_cookieauth_strip_home_prefix_subdirectory_and_runtime() {
+		$this->assertSame(
+			'/odd-app/board/',
+			odd_apps_cookieauth_strip_home_path_prefix( '/blog/odd-app/board/', '/blog' )
+		);
+		$this->assertSame(
+			'/odd-app/board/',
+			odd_apps_cookieauth_strip_home_path_prefix( '/blog/odd-app/board/', '/blog/' )
+		);
+		$this->assertSame(
+			'/odd-app-runtime/react.js',
+			odd_apps_cookieauth_strip_home_path_prefix( '/scoped/wp/odd-app-runtime/react.js', '/scoped/wp' )
+		);
+	}
+
+	public function test_cookieauth_strip_home_prefix_requires_segment_boundary() {
+		$this->assertSame(
+			'/bloggers/page/',
+			odd_apps_cookieauth_strip_home_path_prefix( '/bloggers/page/', '/blog' )
+		);
+	}
+
+	public function test_cookieauth_strip_home_prefix_exact_home_maps_to_slash() {
+		$this->assertSame(
+			'/',
+			odd_apps_cookieauth_strip_home_path_prefix( '/blog', '/blog' )
+		);
+	}
+
 	public function test_prepare_app_html_output_strips_base_and_rewrites_root_asset_refs() {
 		$raw = '<!DOCTYPE html><html><head><base href="/">'
 			. '<link rel="stylesheet" href="/assets/index.css">'

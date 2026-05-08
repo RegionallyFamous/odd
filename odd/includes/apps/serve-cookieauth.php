@@ -51,6 +51,45 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
+ * Normalize REQUEST_URI path for `/odd-app/` matching on subdirectory installs.
+ *
+ * `wordpress.org/blog/odd-app/foo` exposes a path `/blog/odd-app/foo`; matchers
+ * expect `/odd-app/foo`. Uses `$segment/` as the prefix boundary so `/bloggers`
+ * is not treated as `/blog` + garbage (earlier substr(len-1) bugs mangled paths
+ * whenever `PHP_URL_PATH` omitted a trailing slash).
+ *
+ * @param string $req_path REQUEST_URI path (no query).
+ * @param mixed  $home_pt Path from wp_parse_url( home_url( '/' ), PHP_URL_PATH ); may be false.
+ *
+ * @return string Path beginning with '/' for `#^/odd-app/` regexes.
+ */
+function odd_apps_cookieauth_strip_home_path_prefix( $req_path, $home_pt ) {
+	$path = (string) $req_path;
+	if ( '' !== $path && '/' !== $path[0] ) {
+		$path = '/' . $path;
+	}
+
+	$h = '';
+	if ( is_string( $home_pt ) ) {
+		$h = '/' . trim( $home_pt, '/' );
+	}
+	if ( '' === $h || '/' === $h ) {
+		return $path;
+	}
+
+	$prefix = $h . '/';
+	if ( 0 === strpos( $path, $prefix ) ) {
+		$tail = substr( $path, strlen( $prefix ) );
+		return '' !== $tail ? '/' . ltrim( $tail, '/' ) : '/';
+	}
+	if ( $path === $h || $path === $h . '/' ) {
+		return '/';
+	}
+
+	return $path;
+}
+
+/**
  * Match + serve on every request. Registered at priority 1 on
  * `init` — that's the first hook after `pluggable.php` loads, so
  * `wp_validate_auth_cookie` is guaranteed to be available. It still
@@ -91,18 +130,8 @@ function odd_apps_cookieauth_maybe_serve() {
 		);
 	}
 
-	$home_path = wp_parse_url( home_url( '/' ), PHP_URL_PATH );
-	if ( ! is_string( $home_path ) ) {
-		$home_path = '/';
-	}
-	$home_path = '/' . ltrim( (string) $home_path, '/' );
-
-	// Strip the site's home path prefix so that subdir installs
-	// (example.com/blog/odd-app/...) match the same way as root
-	// installs (example.com/odd-app/...).
-	if ( '/' !== $home_path && 0 === strpos( $path, $home_path ) ) {
-		$path = substr( $path, strlen( $home_path ) - 1 );
-	}
+	$home_pt = wp_parse_url( home_url( '/' ), PHP_URL_PATH );
+	$path    = odd_apps_cookieauth_strip_home_path_prefix( $path, false === $home_pt ? '' : $home_pt );
 
 	// Runtime endpoint: serves React 19 ESM bundles + any shared chunks
 	// esbuild emitted alongside them. The app bundles' bare `react` /
