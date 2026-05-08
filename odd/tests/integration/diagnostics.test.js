@@ -1,9 +1,10 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { loadFoundation } from './harness.js';
 
 describe( 'ODD diagnostics metrics', () => {
 	beforeEach( () => {
 		loadFoundation();
+		vi.restoreAllMocks();
 	} );
 
 	it( 'records bounded local timing and counter metrics', () => {
@@ -22,5 +23,73 @@ describe( 'ODD diagnostics metrics', () => {
 		expect( d.collect().apps ).toBeDefined();
 		expect( Array.isArray( d.collect().apps.iframes ) ).toBe( true );
 		expect( d.collectMarkdown() ).toContain( '## Local Metrics' );
+	} );
+
+	it( 'actively probes app iframe, module, runtime, and server diagnostics URLs', async () => {
+		loadFoundation( {
+			config: {
+				appsEnabled: true,
+				restUrl: 'http://localhost/wp-json/odd/v1/prefs',
+				restNonce: 'rest-nonce',
+				appServeUrls: { demo: '/odd-app/demo/?_wpnonce=secret' },
+				userApps: { installed: [ 'demo' ], pinned: [] },
+			},
+		} );
+		const html = [
+			'<!doctype html><html><head>',
+			'<script type="importmap">{"imports":{"react":"/odd-app-runtime/react.js"}}</script>',
+			'<script id="odd_apps_iframe_fetch_bootstrap"></script>',
+			'<script type="module" src="./assets/app.js"></script>',
+			'</head><body><div id="root"></div></body></html>',
+		].join( '' );
+
+		const makeResponse = ( body, init = {} ) => Promise.resolve( {
+			ok: init.ok ?? true,
+			status: init.status ?? 200,
+			statusText: init.statusText ?? 'OK',
+			redirected: false,
+			url: init.url || '',
+			headers: {
+				get: ( key ) => key.toLowerCase() === 'content-type' ? ( init.contentType || 'text/plain' ) : '',
+			},
+			text: () => Promise.resolve( body ),
+		} );
+
+		window.fetch = vi.fn( ( url, opts = {} ) => {
+			const u = String( url );
+			if ( u.includes( '/apps/diag/demo' ) ) {
+				expect( opts.headers[ 'X-WP-Nonce' ] ).toBe( 'rest-nonce' );
+				return makeResponse(
+					JSON.stringify( { summary: { status: 'pass' } } ),
+					{ url: u, contentType: 'application/json' },
+				);
+			}
+			if ( u.includes( '/odd-app/demo/' ) && ! u.includes( 'assets/app.js' ) ) {
+				return makeResponse( html, { url: u, contentType: 'text/html' } );
+			}
+			if ( u.includes( '/odd-app/demo/assets/app.js' ) ) {
+				return makeResponse( 'import React from "/odd-app-runtime/react.js";', {
+					url: u,
+					contentType: 'application/javascript',
+				} );
+			}
+			if ( u.includes( '/odd-app-runtime/react.js' ) ) {
+				return makeResponse( 'export default {};', {
+					url: u,
+					contentType: 'application/javascript',
+				} );
+			}
+			return makeResponse( 'not found', { ok: false, status: 404, url: u } );
+		} );
+
+		const probe = await window.__odd.diagnostics.probeApp( 'demo', { reason: 'test' } );
+
+		expect( probe.status ).toBe( 'pass' );
+		expect( probe.serveUrl ).toContain( '_wpnonce=[redacted]' );
+		expect( probe.html.hasImportmap ).toBe( true );
+		expect( probe.fetches.modules ).toHaveLength( 1 );
+		expect( probe.fetches.runtimes ).toHaveLength( 1 );
+		expect( window.__odd.diagnostics.appProbes() ).toHaveLength( 1 );
+		expect( window.__odd.diagnostics.collectMarkdown() ).toContain( 'active app probes' );
 	} );
 } );

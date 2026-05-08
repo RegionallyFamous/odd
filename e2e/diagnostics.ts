@@ -23,6 +23,8 @@ export type OddE2eDiagnosticsBundle = {
 	serverFetchError?: string;
 	client: OddClientDiagnostics | null;
 	clientError?: string;
+	appProbe?: Record<string, unknown> | null;
+	appProbeError?: string;
 };
 
 /**
@@ -94,6 +96,32 @@ export async function collectClientDiagnostics( page: Page ): Promise<OddClientD
 	} );
 }
 
+export async function probeInstalledApp(
+	page: Page,
+	slug = 'board'
+): Promise<Record<string, unknown> | null> {
+	return page.evaluate( async ( appSlug ) => {
+		const w = window as unknown as {
+			__odd?: {
+				diagnostics?: {
+					probeApp?: ( slug: string, opts?: Record<string, unknown> ) => Promise<Record<string, unknown>>;
+				};
+			};
+		};
+		const probe = w.__odd?.diagnostics?.probeApp;
+		if ( typeof probe !== 'function' ) {
+			return null;
+		}
+		const timeout = new Promise<Record<string, unknown>>( ( resolve ) => {
+			window.setTimeout( () => resolve( { _error: true, message: 'app probe timed out' } ), 10_000 );
+		} );
+		return Promise.race( [
+			probe( appSlug, { reason: 'playwright-failure' } ),
+			timeout,
+		] );
+	}, slug );
+}
+
 /**
  * On Playwright failures: attach a JSON bundle (artifact) and echo a short
  * summary to stdout so CI logs stay readable without opening the HTML report.
@@ -120,6 +148,12 @@ export async function attachOddDiagnostics( page: Page, testInfo: TestInfo ) {
 		bundle.client = await collectClientDiagnostics( page );
 	} catch ( err ) {
 		bundle.clientError = err instanceof Error ? err.message : String( err );
+	}
+
+	try {
+		bundle.appProbe = await probeInstalledApp( page, 'board' );
+	} catch ( err ) {
+		bundle.appProbeError = err instanceof Error ? err.message : String( err );
 	}
 
 	const text = JSON.stringify( bundle, null, 2 );

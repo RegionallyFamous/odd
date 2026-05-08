@@ -166,6 +166,8 @@
 
 	var APP_ERRORS_MAX = 24;
 	var appIframeErrors = [];
+	var APP_PROBES_MAX = 12;
+	var appProbeRuns = [];
 
 	function pushAppIframeError( row ) {
 		try {
@@ -243,12 +245,243 @@
 		}
 	}
 
+	function pushAppProbeRun( row ) {
+		try {
+			appProbeRuns.push( row );
+			while ( appProbeRuns.length > APP_PROBES_MAX ) appProbeRuns.shift();
+		} catch ( _ ) {}
+		return row;
+	}
+
+	function appRestUrl( path ) {
+		path = String( path || '' ).replace( /^\/+/, '' );
+		try {
+			var rest = ( window.odd && window.odd.restUrl ) || '';
+			var marker = '/odd/v1/';
+			var i = rest.indexOf( marker );
+			if ( i !== -1 ) {
+				return rest.slice( 0, i + marker.length ) + path;
+			}
+		} catch ( _ ) {}
+		return '/wp-json/odd/v1/' + path;
+	}
+
+	function appProbeHeaders() {
+		var h = {};
+		try {
+			if ( window.odd && window.odd.restNonce ) h[ 'X-WP-Nonce' ] = window.odd.restNonce;
+		} catch ( _ ) {}
+		return h;
+	}
+
+	function absoluteUrl( ref, base ) {
+		try {
+			return new URL( ref, base || window.location.href ).href;
+		} catch ( _ ) {
+			return ref;
+		}
+	}
+
+	function fetchProbeText( url, opts ) {
+		opts = opts || {};
+		var started = monotonicNow();
+		if ( typeof window.fetch !== 'function' ) {
+			return Promise.resolve( {
+				ok: false,
+				url: redactAppServeUrlForReport( url ),
+				status: 0,
+				error: 'window.fetch unavailable',
+			} );
+		}
+		return window.fetch( url, {
+			cache:       'no-store',
+			credentials: 'same-origin',
+			headers:     opts.headers || {},
+		} ).then( function ( res ) {
+			return res.text().then( function ( text ) {
+				return {
+					ok:          res.ok,
+					status:      res.status,
+					statusText:  res.statusText || '',
+					contentType: res.headers && res.headers.get ? ( res.headers.get( 'content-type' ) || '' ) : '',
+					url:         redactAppServeUrlForReport( res.url || url ),
+					redirected:  !! res.redirected,
+					elapsedMs:   Math.round( monotonicNow() - started ),
+					bytes:       text.length,
+					head:        text.slice( 0, 1000 ),
+					text:        opts.keepText ? text : undefined,
+				};
+			} );
+		}, function ( err ) {
+			return {
+				ok:        false,
+				url:       redactAppServeUrlForReport( url ),
+				status:    0,
+				elapsedMs: Math.round( monotonicNow() - started ),
+				error:     err && err.message ? err.message : String( err ),
+			};
+		} );
+	}
+
+	function parseAppHtmlForProbe( html, baseUrl ) {
+		var out = {
+			title: '',
+			hasRoot: false,
+			hasImportmap: false,
+			hasFetchBootstrap: html.indexOf( 'odd_apps_iframe_fetch_bootstrap' ) !== -1,
+			moduleScripts: [],
+			styles: [],
+			imports: {},
+		};
+		try {
+			var doc = new DOMParser().parseFromString( html, 'text/html' );
+			out.title = doc.title || '';
+			out.hasRoot = !! doc.getElementById( 'root' );
+			var maps = doc.querySelectorAll( 'script[type="importmap"]' );
+			out.hasImportmap = maps.length > 0;
+			if ( maps[0] ) {
+				try {
+					var decoded = JSON.parse( maps[0].textContent || '{}' );
+					if ( decoded && decoded.imports && typeof decoded.imports === 'object' ) {
+						Object.keys( decoded.imports ).slice( 0, 12 ).forEach( function ( key ) {
+							out.imports[ key ] = absoluteUrl( decoded.imports[ key ], baseUrl );
+						} );
+					}
+				} catch ( err ) {
+					out.importmapParseError = err && err.message ? err.message : String( err );
+				}
+			}
+			Array.prototype.slice.call( doc.querySelectorAll( 'script[type="module"][src]' ), 0, 12 )
+				.forEach( function ( node ) {
+					out.moduleScripts.push( absoluteUrl( node.getAttribute( 'src' ) || '', baseUrl ) );
+				} );
+			Array.prototype.slice.call( doc.querySelectorAll( 'link[rel="stylesheet"][href]' ), 0, 12 )
+				.forEach( function ( node ) {
+					out.styles.push( absoluteUrl( node.getAttribute( 'href' ) || '', baseUrl ) );
+				} );
+		} catch ( err ) {
+			out.parseError = err && err.message ? err.message : String( err );
+		}
+		return out;
+	}
+
+	function summarizeAppProbe( probe ) {
+		var checks = [];
+		function add( id, ok, message ) {
+			checks.push( { id: id, status: ok ? 'pass' : 'fail', message: message } );
+		}
+		add( 'serveUrl', !! probe.serveUrl, probe.serveUrl ? 'Serve URL is present.' : 'Serve URL is missing.' );
+		if ( probe.fetches && probe.fetches.iframe ) {
+			add( 'iframeFetch', !! probe.fetches.iframe.ok, 'Iframe HTML fetch returned ' + probe.fetches.iframe.status + '.' );
+		}
+		if ( probe.html ) {
+			add( 'htmlImportmap', !! probe.html.hasImportmap, 'HTML contains a runtime import map.' );
+			add( 'htmlFetchBootstrap', !! probe.html.hasFetchBootstrap, 'HTML contains the iframe fetch bootstrap.' );
+			if ( probe.html.moduleScripts.length > 0 ) {
+				add( 'htmlModules', true, 'HTML references at least one module script.' );
+			}
+		}
+		if ( probe.fetches && probe.fetches.modules && probe.fetches.modules.length ) {
+			add(
+				'moduleFetches',
+				probe.fetches.modules.every( function ( row ) { return row.ok; } ),
+				'Module script fetches completed.'
+			);
+		}
+		if ( probe.fetches && probe.fetches.runtimes && probe.fetches.runtimes.length ) {
+			add(
+				'runtimeFetches',
+				probe.fetches.runtimes.every( function ( row ) { return row.ok; } ),
+				'Runtime module fetches completed.'
+			);
+		}
+		if ( probe.serverDiag && probe.serverDiag.summary ) {
+			add(
+				'serverDiag',
+				probe.serverDiag.summary.status !== 'fail',
+				'Server diagnostics returned ' + probe.serverDiag.summary.status + '.'
+			);
+		}
+		probe.checks = checks;
+		probe.status = checks.some( function ( row ) { return row.status === 'fail'; } ) ? 'fail' : 'pass';
+		return probe;
+	}
+
+	function probeApp( slug, opts ) {
+		opts = opts || {};
+		slug = String( slug || '' );
+		var serveUrls = appServeUrlsSnapshot();
+		var rawMap = ( window.odd && window.odd.appServeUrls ) || {};
+		var rawServeUrl = rawMap && typeof rawMap[ slug ] === 'string' ? rawMap[ slug ] : '';
+		var probe = {
+			at: now(),
+			slug: slug,
+			reason: opts.reason || 'manual',
+			serveUrl: serveUrls[ slug ] || '',
+			fetches: {
+				iframe: null,
+				modules: [],
+				runtimes: [],
+				serverDiag: null,
+			},
+		};
+		if ( ! slug ) {
+			probe.error = 'missing slug';
+			return Promise.resolve( pushAppProbeRun( summarizeAppProbe( probe ) ) );
+		}
+		var diagUrl = appRestUrl( 'apps/diag/' + encodeURIComponent( slug ) + '?client=1' );
+		return fetchProbeText( diagUrl, { headers: appProbeHeaders(), keepText: true } )
+			.then( function ( serverFetch ) {
+				probe.fetches.serverDiag = serverFetch;
+				if ( serverFetch.ok && serverFetch.text ) {
+					try {
+						probe.serverDiag = JSON.parse( serverFetch.text );
+					} catch ( err ) {
+						probe.serverDiagParseError = err && err.message ? err.message : String( err );
+					}
+				}
+				if ( ! rawServeUrl ) {
+					return probe;
+				}
+				return fetchProbeText( rawServeUrl, { keepText: true } ).then( function ( iframeFetch ) {
+					probe.fetches.iframe = iframeFetch;
+					if ( ! iframeFetch.ok || ! iframeFetch.text ) {
+						return probe;
+					}
+					probe.html = parseAppHtmlForProbe(
+						iframeFetch.text,
+						absoluteUrl( rawServeUrl, window.location.href )
+					);
+					var moduleFetches = probe.html.moduleScripts.slice( 0, 4 ).map( function ( url ) {
+						return fetchProbeText( url );
+					} );
+					var runtimeFetches = Object.keys( probe.html.imports ).slice( 0, 6 ).map( function ( key ) {
+						return fetchProbeText( probe.html.imports[ key ] ).then( function ( row ) {
+							row.specifier = key;
+							return row;
+						} );
+					} );
+					return Promise.all( moduleFetches.concat( runtimeFetches ) ).then( function ( rows ) {
+						probe.fetches.modules = rows.slice( 0, moduleFetches.length );
+						probe.fetches.runtimes = rows.slice( moduleFetches.length );
+						return probe;
+					} );
+				} );
+			} )
+			.then( function () {
+				var done = pushAppProbeRun( summarizeAppProbe( probe ) );
+				record( done.status === 'pass' ? 'info' : 'warn', [ 'odd.app.probe', done.slug, done.status, done.reason ] );
+				return done;
+			} );
+	}
+
 	function appsDiagnosticsSnapshot() {
 		var snap = {
 			appsEnabled: typeof window.odd !== 'undefined' && !! window.odd.appsEnabled,
 			serveUrls:   appServeUrlsSnapshot(),
 			iframes:     appIframesSnapshot(),
 			iframeErrors: appIframeErrors.slice(),
+			probes:      appProbeRuns.slice(),
 		};
 		try {
 			if ( window.__odd && window.__odd.debug && window.__odd.debug.enabled && typeof window.__odd.debug.apps === 'function' ) {
@@ -392,6 +625,7 @@
 			'- apps feature flag (localized): `' + ( p.apps && p.apps.appsEnabled ? 'yes' : 'no' ) + '`',
 			'- open app iframes: `' + ( p.apps && p.apps.iframes && p.apps.iframes.length || 0 ) + '`',
 			'- recent odd.iframe-error events: `' + ( p.apps && p.apps.iframeErrors && p.apps.iframeErrors.length || 0 ) + '`',
+			'- active app probes: `' + ( p.apps && p.apps.probes && p.apps.probes.length || 0 ) + '`',
 			'```json',
 			JSON.stringify( p.apps || {}, null, 2 ),
 			'```',
@@ -439,6 +673,8 @@
 		copy:            copy,
 		count:           count,
 		metrics:         metricsSnapshot,
+		probeApp:        probeApp,
+		appProbes:       function () { return appProbeRuns.slice(); },
 		record:          record,
 		recent:          function () { return buffer.slice(); },
 		time:            time,
