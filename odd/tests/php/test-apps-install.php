@@ -267,6 +267,13 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 		$this->assertStringContainsString( "worker-src 'self' blob:", $csp );
 	}
 
+	public function test_odd_apps_is_html_mime_matches_charset_suffix() {
+		$this->assertTrue( odd_apps_is_html_mime( 'text/html; charset=utf-8' ) );
+		$this->assertTrue( odd_apps_is_html_mime( 'TEXT/HTML' ) );
+		$this->assertTrue( odd_apps_is_html_mime( 'application/xhtml+xml; charset=utf-8' ) );
+		$this->assertFalse( odd_apps_is_html_mime( 'application/javascript; charset=utf-8' ) );
+	}
+
 	public function test_prepare_app_html_output_strips_base_and_rewrites_root_asset_refs() {
 		$raw = '<!DOCTYPE html><html><head><base href="/">'
 			. '<link rel="stylesheet" href="/assets/index.css">'

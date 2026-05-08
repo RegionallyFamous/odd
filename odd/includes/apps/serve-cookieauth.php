@@ -362,7 +362,7 @@ function odd_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 		odd_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'ok_would_serve' ) ) );
 	}
 
-	if ( 'text/html' === $mime ) {
+	if ( odd_apps_is_html_mime( $mime ) ) {
 		$manifest = odd_apps_manifest_load( $slug );
 		$csp      = odd_apps_cookieauth_csp( $slug, is_array( $manifest ) ? $manifest : array() );
 		if ( is_string( $csp ) && '' !== $csp ) {

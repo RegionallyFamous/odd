@@ -383,11 +383,17 @@ function odd_apps_rest_serve( WP_REST_Request $req ) {
 	$body = null;
 	$size = filesize( $full );
 
-	if ( 'text/html' === $mime && function_exists( 'odd_apps_inject_runtime_importmap' ) ) {
+	if ( odd_apps_is_html_mime( $mime ) ) {
 		$raw = file_get_contents( $full ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 		if ( false !== $raw ) {
-			$body = odd_apps_inject_runtime_importmap( $raw );
-			$size = strlen( $body );
+			if ( function_exists( 'odd_apps_prepare_app_html_output' ) ) {
+				$body = odd_apps_prepare_app_html_output( $raw );
+			} elseif ( function_exists( 'odd_apps_inject_runtime_importmap' ) ) {
+				$body = odd_apps_inject_runtime_importmap( $raw );
+			}
+			if ( null !== $body ) {
+				$size = strlen( $body );
+			}
 		}
 	}
 
@@ -537,6 +543,24 @@ function odd_apps_mime_for( $path ) {
 		'map'   => 'application/json; charset=utf-8',
 	);
 	return isset( $map[ $ext ] ) ? $map[ $ext ] : 'application/octet-stream';
+}
+
+/**
+ * Whether a Content-Type value is HTML (ignores charset and other parameters).
+ *
+ * odd_apps_mime_for() always appends `; charset=utf-8` for .html — strict
+ * equality with `text/html` would skip the entire cookie-auth / REST HTML
+ * pipeline (import map, fetch bootstrap, CSP).
+ *
+ * @param string $mime Full header value, e.g. `text/html; charset=utf-8`.
+ * @return bool
+ */
+function odd_apps_is_html_mime( $mime ) {
+	$mime = strtolower( (string) $mime );
+	if ( false !== strpos( $mime, ';' ) ) {
+		$mime = trim( substr( $mime, 0, strpos( $mime, ';' ) ) );
+	}
+	return in_array( $mime, array( 'text/html', 'application/xhtml+xml' ), true );
 }
 
 /**
