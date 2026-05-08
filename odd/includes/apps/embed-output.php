@@ -23,8 +23,8 @@ function odd_apps_iframe_rest_root_json() {
 }
 
 /**
- * Inline script: prefix root-relative `/odd/v1/apps/*` fetches with the
- * real REST base (critical for subdirectory installs + Playground scopes).
+ * Inline script: rewrite fetches whose path ends in `/odd/v1/apps/*` to use the
+ * real REST base (critical for subdirectory installs + Playground `/scope:…/`).
  *
  * @return string HTML fragment (script element only).
  */
@@ -33,7 +33,8 @@ function odd_apps_iframe_fetch_bootstrap_fragment() {
 
 	return '<script id="odd_apps_iframe_fetch_bootstrap">'
 		. '(function(){var B=' . $j . ';var o=window.fetch;'
-		. 'window.fetch=function(I,i){if(typeof I==="string"&&I.indexOf("/odd/v1/apps/")===0){I=B+I;}'
+		. 'window.fetch=function(I,i){if(typeof I==="string"){var j=I.indexOf("/odd/v1/apps/");'
+		. 'if(j!==-1&&I.slice(0,j).indexOf("wp-json")===-1){I=B+I.slice(j);}}'
 		. 'return o.call(this,I,i);};})();'
 		. '</script>';
 }

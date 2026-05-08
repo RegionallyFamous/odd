@@ -319,6 +319,10 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 		);
 		$this->assertSame( '/', odd_apps_cookieauth_strip_playground_scope_prefix( '/scope:only' ) );
 		$this->assertSame( '/odd-app/foo/', odd_apps_cookieauth_strip_playground_scope_prefix( '/odd-app/foo/' ) );
+		$this->assertSame(
+			'/odd-app/board/',
+			odd_apps_cookieauth_strip_playground_scope_prefix( '/scope:kind_modern_forest.v1/odd-app/board/' )
+		);
 	}
 
 	public function test_prepare_app_html_output_strips_base_and_rewrites_root_asset_refs() {
@@ -335,5 +339,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 		$this->assertStringContainsString( 'src="./chunks/main.js"', $result );
 		$this->assertStringContainsString( 'src="./@vite/client"', $result );
 		$this->assertStringContainsString( 'odd_apps_iframe_fetch_bootstrap', $result );
+		$this->assertStringContainsString( 'I.slice(j)', $result );
+		$this->assertStringContainsString( 'wp-json', $result );
 	}
 }

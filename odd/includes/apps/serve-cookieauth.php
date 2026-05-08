@@ -105,10 +105,11 @@ function odd_apps_cookieauth_strip_playground_scope_prefix( $req_path ) {
 	if ( '' !== $path && '/' !== $path[0] ) {
 		$path = '/' . $path;
 	}
-	if ( ! preg_match( '#^/scope:[-a-zA-Z0-9]+#', $path ) ) {
+	// Scope id is any non-`/` run (Playground uses hyphenated ids; older builds may use `_`, `.`, etc.).
+	if ( ! preg_match( '#^/scope:[^/]+#', $path ) ) {
 		return $path;
 	}
-	$tail = (string) preg_replace( '#^/scope:[-a-zA-Z0-9]+#', '', $path );
+	$tail = (string) preg_replace( '#^/scope:[^/]+#', '', $path );
 	if ( '' === $tail || '/' === $tail ) {
 		return '/';
 	}
