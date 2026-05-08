@@ -94,6 +94,38 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 		$this->assertSame( $suffix, substr( $path, 0 - strlen( $suffix ) ), $url );
 	}
 
+	protected function assert_rest_url_has_scope_and_route( $url, $scope, $route ) {
+		$parts = wp_parse_url( $url );
+		$this->assertIsArray( $parts, $url );
+		$path = isset( $parts['path'] ) ? (string) $parts['path'] : '';
+		$this->assertSame( 0, strpos( $path, '/' . $scope . '/' ), $url );
+		$this->assertSame( 1, substr_count( $path, '/' . $scope . '/' ), $url );
+
+		parse_str( isset( $parts['query'] ) ? (string) $parts['query'] : '', $query );
+		$expected_route = '/' . ltrim( (string) $route, '/' );
+		if ( isset( $query['rest_route'] ) ) {
+			$this->assertSame( $expected_route, $query['rest_route'], $url );
+			return;
+		}
+
+		$this->assertSame( '/wp-json' . $expected_route, substr( $path, 0 - strlen( '/wp-json' . $expected_route ) ), $url );
+	}
+
+	protected function assert_rest_root_has_scope( $url, $scope ) {
+		$parts = wp_parse_url( $url );
+		$this->assertIsArray( $parts, $url );
+		$path = isset( $parts['path'] ) ? (string) $parts['path'] : '';
+		$this->assertSame( 0, strpos( $path, '/' . $scope . '/' ), $url );
+		$this->assertSame( 1, substr_count( $path, '/' . $scope . '/' ), $url );
+
+		parse_str( isset( $parts['query'] ) ? (string) $parts['query'] : '', $query );
+		if ( array_key_exists( 'rest_route', $query ) ) {
+			return;
+		}
+
+		$this->assertStringContainsString( '/wp-json', $path, $url );
+	}
+
 	public function test_install_happy_path_writes_index_row() {
 		$res = $this->install_fixture( 'hello-odd' );
 		$this->assertIsArray( $res, is_wp_error( $res ) ? $res->get_error_message() : 'install returned non-array' );
@@ -460,10 +492,10 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 		$this->with_request_uri(
 			'/scope:pg-scope-xyz/wp-admin/index.php?desktop_mode_portal=1',
 			function () {
-				$this->assert_url_path_has_scope_and_suffix(
+				$this->assert_rest_url_has_scope_and_route(
 					odd_https_rest_url( 'odd/v1/apps' ),
 					'scope:pg-scope-xyz',
-					'/wp-json/odd/v1/apps'
+					'odd/v1/apps'
 				);
 			}
 		);
@@ -474,9 +506,53 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 			'/scope:pg-scope-xyz/odd-app/ledger/?_wpnonce=fake',
 			function () {
 				$root = odd_apps_iframe_effective_rest_root();
-				$this->assertStringContainsString( '/scope:pg-scope-xyz/', $root );
-				$this->assertStringContainsString( 'wp-json', $root );
-				$this->assertStringContainsString( '/scope:pg-scope-xyz/wp-json', $root );
+				$this->assert_rest_root_has_scope( $root, 'scope:pg-scope-xyz' );
+			}
+		);
+	}
+
+	public function test_app_diag_reports_scoped_urls_transforms_and_asset_probes() {
+		$zip = $this->build_wp_zip(
+			array(
+				'name'    => 'Diag App',
+				'slug'    => 'diag-app',
+				'version' => '0.0.1',
+				'entry'   => 'index.html',
+			),
+			array(
+				'index.html'    => '<!doctype html><html><head><base href="/">'
+					. '<script type="module" src="./assets/app.js"></script>'
+					. '</head><body><div id="root"></div></body></html>',
+				'assets/app.js' => 'import React from "react"; console.log(React);',
+			)
+		);
+		$res = odd_apps_install( $zip, 'diag-app.wp' );
+		@unlink( $zip );
+		$this->assertIsArray( $res, is_wp_error( $res ) ? $res->get_error_message() : 'install returned non-array' );
+		$this->installed[] = 'diag-app';
+		$this->login_as();
+
+		$this->with_request_uri(
+			'/scope:pg-scope-xyz/wp-admin/index.php?desktop_mode_portal=1',
+			function () {
+				$response = $this->dispatch_json( 'GET', '/odd/v1/apps/diag/diag-app' );
+				$this->assertSame( 200, $response->get_status() );
+					$data = $response->get_data();
+
+					$this->assertSame( 2, $data['schema'] );
+					$this->assertSame( 'diag-app', $data['slug'] );
+					$this->assertArrayHasKey( 'summary', $data );
+					$this->assertSame( 'pass', $data['summary']['status'] );
+					$this->assertStringContainsString( '/scope:pg-scope-xyz/odd-app/diag-app/', $data['serve']['url'] );
+					$this->assertSame( 0, strpos( $data['serve']['rest_root']['path'], '/scope:pg-scope-xyz/' ) );
+					$this->assertTrue( $data['serve']['regex_matches'] );
+					$this->assertTrue( $data['entry']['transformed']['hasImportmap'] );
+					$this->assertTrue( $data['entry']['transformed']['hasFetchBootstrap'] );
+					$this->assertFalse( $data['entry']['transformed']['hasBaseTag'] );
+				$this->assertNotEmpty( $data['asset_probes'] );
+				$this->assertTrue( $data['asset_probes'][0]['exists'] );
+				$this->assertTrue( $data['asset_probes'][0]['bareReactImportsBeforeRewrite'] );
+				$this->assertFalse( $data['asset_probes'][0]['bareReactImportsAfterRewrite'] );
 			}
 		);
 	}

@@ -173,7 +173,14 @@ class Test_Cursors extends WP_UnitTestCase {
 
 			$url = odd_https_rest_url( 'odd/v1/prefs' );
 			$this->assertStringStartsWith( 'https://', $url );
-			$this->assertStringContainsString( '/wp-json/odd/v1/prefs', $url );
+			$parts = wp_parse_url( $url );
+			$this->assertIsArray( $parts, $url );
+			parse_str( isset( $parts['query'] ) ? (string) $parts['query'] : '', $query );
+			if ( isset( $query['rest_route'] ) ) {
+				$this->assertSame( '/odd/v1/prefs', $query['rest_route'] );
+			} else {
+				$this->assertStringContainsString( '/wp-json/odd/v1/prefs', isset( $parts['path'] ) ? (string) $parts['path'] : '' );
+			}
 		} finally {
 			$_SERVER = $server;
 		}

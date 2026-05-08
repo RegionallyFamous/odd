@@ -563,6 +563,186 @@ function odd_apps_is_html_mime( $mime ) {
 	return in_array( $mime, array( 'text/html', 'application/xhtml+xml' ), true );
 }
 
+function odd_apps_diag_scope_segment_from_request( $request_uri = null ) {
+	$uri      = null === $request_uri
+		? ( isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '' )
+		: sanitize_text_field( (string) $request_uri );
+	$req_path = explode( '?', $uri, 2 )[0];
+	if ( '' !== $req_path && '/' !== $req_path[0] ) {
+		$req_path = '/' . $req_path;
+	}
+	if ( preg_match( '#^(/scope:[^/]+)(?:/|$)#', $req_path, $matches ) ) {
+		return $matches[1];
+	}
+	return '';
+}
+
+function odd_apps_diag_check( $id, $status, $message, array $details = array() ) {
+	return array(
+		'id'      => sanitize_key( (string) $id ),
+		'status'  => in_array( $status, array( 'pass', 'warn', 'fail', 'info' ), true ) ? $status : 'info',
+		'message' => (string) $message,
+		'details' => $details,
+	);
+}
+
+function odd_apps_diag_summarize_checks( array $checks ) {
+	$counts = array(
+		'pass' => 0,
+		'warn' => 0,
+		'fail' => 0,
+		'info' => 0,
+	);
+	$first  = null;
+	foreach ( $checks as $check ) {
+		$status = isset( $check['status'] ) ? (string) $check['status'] : 'info';
+		if ( ! isset( $counts[ $status ] ) ) {
+			$status = 'info';
+		}
+		++$counts[ $status ];
+		if ( null === $first && in_array( $status, array( 'fail', 'warn' ), true ) ) {
+			$first = $check;
+		}
+	}
+	return array(
+		'status'       => $counts['fail'] > 0 ? 'fail' : ( $counts['warn'] > 0 ? 'warn' : 'pass' ),
+		'counts'       => $counts,
+		'firstProblem' => $first,
+	);
+}
+
+function odd_apps_diag_url_row( $url, $active_scope = '' ) {
+	$url   = (string) $url;
+	$parts = wp_parse_url( $url );
+	$path  = is_array( $parts ) && isset( $parts['path'] ) ? (string) $parts['path'] : '';
+	return array(
+		'url'                    => $url,
+		'scheme'                 => is_array( $parts ) && isset( $parts['scheme'] ) ? (string) $parts['scheme'] : '',
+		'host'                   => is_array( $parts ) && isset( $parts['host'] ) ? (string) $parts['host'] : '',
+		'path'                   => $path,
+		'query'                  => is_array( $parts ) && isset( $parts['query'] ) ? (string) $parts['query'] : '',
+		'containsActiveScope'    => '' !== $active_scope && false !== strpos( $path, $active_scope . '/' ),
+		'containsAnyScopePrefix' => (bool) preg_match( '#(^|/)scope:[^/]+(?:/|$)#', $path ),
+	);
+}
+
+function odd_apps_diag_html_refs( $html ) {
+	$html = (string) $html;
+	$out  = array(
+		'scripts' => array(),
+		'styles'  => array(),
+	);
+	if ( preg_match_all( '#<script\b([^>]*)\bsrc=(["\'])([^"\']+)\2([^>]*)>#i', $html, $matches, PREG_SET_ORDER ) ) {
+		foreach ( $matches as $m ) {
+			$attrs            = $m[1] . ' ' . $m[4];
+			$out['scripts'][] = array(
+				'src'    => html_entity_decode( $m[3], ENT_QUOTES, 'UTF-8' ),
+				'module' => (bool) preg_match( '#\btype=(["\'])module\1#i', $attrs ),
+			);
+		}
+	}
+	if ( preg_match_all( '#<link\b([^>]*)\bhref=(["\'])([^"\']+)\2([^>]*)>#i', $html, $matches, PREG_SET_ORDER ) ) {
+		foreach ( $matches as $m ) {
+			$attrs = $m[1] . ' ' . $m[4];
+			if ( ! preg_match( '#\brel=(["\'])stylesheet\1#i', $attrs ) ) {
+				continue;
+			}
+			$out['styles'][] = array(
+				'href' => html_entity_decode( $m[3], ENT_QUOTES, 'UTF-8' ),
+			);
+		}
+	}
+	return $out;
+}
+
+function odd_apps_diag_asset_path_from_ref( $entry, $ref ) {
+	$ref = trim( (string) $ref );
+	if ( '' === $ref || preg_match( '#^(?:[a-z][a-z0-9+.-]*:)?//#i', $ref ) || preg_match( '#^(?:data|blob|mailto):#i', $ref ) ) {
+		return '';
+	}
+	$path = wp_parse_url( $ref, PHP_URL_PATH );
+	$path = is_string( $path ) ? $path : $ref;
+	if ( '' === $path ) {
+		return '';
+	}
+
+	if ( '/' === $path[0] ) {
+		$candidate = ltrim( $path, '/' );
+	} else {
+		$dir       = trim( dirname( (string) $entry ), '.\\/' );
+		$candidate = ( '' !== $dir ? $dir . '/' : '' ) . $path;
+	}
+	$candidate = preg_replace( '#/+#', '/', $candidate );
+	$parts     = array();
+	foreach ( explode( '/', $candidate ) as $part ) {
+		if ( '' === $part || '.' === $part ) {
+			continue;
+		}
+		if ( '..' === $part ) {
+			return '';
+		}
+		$parts[] = $part;
+	}
+	return implode( '/', $parts );
+}
+
+function odd_apps_diag_bare_react_imports( $js ) {
+	return (bool) preg_match( '#\b(?:from|import)\s*(["\'])react(?:/jsx-runtime|-dom(?:/client)?)?\1#', (string) $js );
+}
+
+function odd_apps_diag_file_probe( $slug, $path ) {
+	$slug = sanitize_key( (string) $slug );
+	$path = (string) $path;
+	$row  = array(
+		'path'     => $path,
+		'exists'   => false,
+		'readable' => false,
+	);
+	if ( '' === $slug || '' === $path || ! function_exists( 'odd_apps_dir_for' ) ) {
+		$row['reason'] = 'missing_slug_or_path';
+		return $row;
+	}
+	if (
+		false !== strpos( $path, '..' ) ||
+		( strlen( $path ) > 0 && '/' === $path[0] ) ||
+		false !== strpos( $path, "\0" ) ||
+		! preg_match( '#^[a-zA-Z0-9._/-]+$#', $path )
+	) {
+		$row['reason'] = 'bad_path';
+		return $row;
+	}
+
+	$base            = odd_apps_dir_for( $slug );
+	$real_base       = realpath( $base );
+	$full            = realpath( $base . $path );
+	$row['realpath'] = $full ? $full : '';
+	if ( ! $real_base || ! $full || 0 !== strpos( $full, $real_base ) ) {
+		$row['reason'] = 'missing_or_outside_app_dir';
+		return $row;
+	}
+	$row['exists']   = is_file( $full );
+	$row['readable'] = is_readable( $full );
+	$row['size']     = $row['exists'] ? (int) filesize( $full ) : 0;
+	$row['mime']     = $row['exists'] ? odd_apps_mime_for( $full ) : '';
+	if ( ! $row['readable'] ) {
+		$row['reason'] = 'not_readable';
+		return $row;
+	}
+
+	$head        = (string) @file_get_contents( $full, false, null, 0, 768 );
+	$row['head'] = $head;
+	if ( function_exists( 'odd_apps_is_js_mime' ) && odd_apps_is_js_mime( $row['mime'] ) ) {
+		$raw                                  = (string) @file_get_contents( $full, false, null, 0, 1024 * 1024 );
+		$row['bareReactImportsBeforeRewrite'] = odd_apps_diag_bare_react_imports( $raw );
+		if ( function_exists( 'odd_apps_rewrite_runtime_bare_imports' ) ) {
+			$rewritten                           = odd_apps_rewrite_runtime_bare_imports( $raw );
+			$row['bareReactImportsAfterRewrite'] = odd_apps_diag_bare_react_imports( $rewritten );
+			$row['rewriteChanged']               = $rewritten !== $raw;
+		}
+	}
+	return $row;
+}
+
 /**
  * Diagnostic payload for the "why does my app window render blank"
  * investigation. Walks every known layer between the install record
@@ -578,12 +758,13 @@ function odd_apps_rest_diag( WP_REST_Request $req ) {
 		return new WP_Error( 'invalid_slug', __( 'Missing slug.', 'odd' ), array( 'status' => 400 ) );
 	}
 
-	$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-	$home_url    = function_exists( 'odd_url_current_scheme' ) ? odd_url_current_scheme( home_url( '/' ) ) : home_url( '/' );
-	$home_path   = (string) wp_parse_url( $home_url, PHP_URL_PATH );
-	$site_url    = function_exists( 'odd_url_current_scheme' ) ? odd_url_current_scheme( site_url( '/' ) ) : site_url( '/' );
-	$site_path   = wp_parse_url( $site_url, PHP_URL_PATH );
-	$site_path   = is_string( $site_path ) ? $site_path : '';
+	$request_uri  = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+	$active_scope = odd_apps_diag_scope_segment_from_request( $request_uri );
+	$home_url     = function_exists( 'odd_url_current_scheme' ) ? odd_url_current_scheme( home_url( '/' ) ) : home_url( '/' );
+	$home_path    = (string) wp_parse_url( $home_url, PHP_URL_PATH );
+	$site_url     = function_exists( 'odd_url_current_scheme' ) ? odd_url_current_scheme( site_url( '/' ) ) : site_url( '/' );
+	$site_path    = wp_parse_url( $site_url, PHP_URL_PATH );
+	$site_path    = is_string( $site_path ) ? $site_path : '';
 
 	$env = array(
 		'odd_version'        => defined( 'ODD_VERSION' ) ? ODD_VERSION : null,
@@ -597,7 +778,10 @@ function odd_apps_rest_diag( WP_REST_Request $req ) {
 		'home_path'          => $home_path,
 		'site_url'           => $site_url,
 		'site_path'          => $site_path,
+		'active_scope'       => $active_scope,
 		'user_id'            => get_current_user_id(),
+		'can_read'           => current_user_can( 'read' ),
+		'can_manage_options' => current_user_can( 'manage_options' ),
 		'wp_debug'           => defined( 'WP_DEBUG' ) && WP_DEBUG,
 	);
 
@@ -647,6 +831,10 @@ function odd_apps_rest_diag( WP_REST_Request $req ) {
 	$row       = isset( $index[ $slug ] ) ? $index[ $slug ] : null;
 	$installed = null !== $row;
 	$enabled   = $installed && ! empty( $row['enabled'] );
+	$cap       = $installed && function_exists( 'odd_apps_normalize_capability' )
+		? odd_apps_normalize_capability( isset( $row['capability'] ) ? $row['capability'] : '' )
+		: 'manage_options';
+	$cap_ok    = current_user_can( $cap );
 
 	$manifest    = function_exists( 'odd_apps_manifest_load' ) ? odd_apps_manifest_load( $slug ) : null;
 	$icon_health = function_exists( 'odd_apps_manifest_icon_health' )
@@ -657,32 +845,111 @@ function odd_apps_rest_diag( WP_REST_Request $req ) {
 	$real_base = $base ? realpath( $base ) : false;
 
 	// Resolve what the iframe src would actually request.
-	$entry      = $manifest && ! empty( $manifest['entry'] ) ? (string) $manifest['entry'] : 'index.html';
-	$entry_path = $base ? ( $base . $entry ) : '';
+	$entry_file = $manifest && ! empty( $manifest['entry'] ) ? (string) $manifest['entry'] : 'index.html';
+	$entry_path = $base ? ( $base . $entry_file ) : '';
 	$entry_real = $entry_path ? realpath( $entry_path ) : false;
 	$entry_size = ( $entry_real && is_file( $entry_real ) ) ? (int) filesize( $entry_real ) : 0;
 	$entry_head = '';
 	if ( $entry_real && is_readable( $entry_real ) && $entry_size > 0 ) {
 		$entry_head = (string) @file_get_contents( $entry_real, false, null, 0, 256 );
 	}
+	$entry_mime = $entry_real && is_file( $entry_real ) ? odd_apps_mime_for( $entry_real ) : '';
 
 	$serve_url = '';
 	if ( function_exists( 'odd_apps_cookieauth_url_for' ) ) {
 		$serve_url = odd_apps_cookieauth_url_for( $slug );
 	}
+	$serve_with_nonce = '' !== $serve_url
+		? add_query_arg( array( '_wpnonce' => wp_create_nonce( 'wp_rest' ) ), $serve_url )
+		: '';
+	$rest_root        = function_exists( 'odd_https_rest_url' ) ? odd_https_rest_url() : rest_url();
+	$diag_url         = function_exists( 'odd_https_rest_url' )
+		? odd_https_rest_url( 'odd/v1/apps/diag/' . $slug )
+		: rest_url( 'odd/v1/apps/diag/' . $slug );
+	$serve_url_row    = odd_apps_diag_url_row( $serve_url, $active_scope );
+	$rest_url_row     = odd_apps_diag_url_row( $rest_root, $active_scope );
 
 	// Exercise the same regex the cookie-auth matcher uses, against
 	// a simulated path shaped like what the browser would send.
-	$simulated     = '/odd-app/' . $slug . '/';
-	$regex_matches = (bool) preg_match( '#^/odd-app/([a-z0-9-]+)(?:/(.*))?$#', $simulated );
+	$serve_path        = isset( $serve_url_row['path'] ) ? (string) $serve_url_row['path'] : '';
+	$after_scope_strip = function_exists( 'odd_apps_cookieauth_strip_playground_scope_prefix' )
+		? odd_apps_cookieauth_strip_playground_scope_prefix( $serve_path )
+		: $serve_path;
+	$after_site_strip  = function_exists( 'odd_apps_cookieauth_strip_home_path_prefix' )
+		? odd_apps_cookieauth_strip_home_path_prefix( $after_scope_strip, $site_path )
+		: $after_scope_strip;
+	$regex_matches     = (bool) preg_match( '#^/odd-app/([a-z0-9-]+)(?:/(.*))?$#', $after_site_strip );
 
 	// Sanity: would the import-map injection corrupt an empty-head
 	// HTML? Run the actual function on a known-good minimal doc.
-	$importmap_ok = null;
+	$importmap_ok    = null;
+	$runtime_imports = array();
 	if ( function_exists( 'odd_apps_inject_runtime_importmap' ) ) {
 		$sample       = '<!doctype html><html><head></head><body></body></html>';
 		$transformed  = odd_apps_inject_runtime_importmap( $sample );
 		$importmap_ok = is_string( $transformed ) && false !== stripos( $transformed, 'importmap' );
+		if ( preg_match( '#<script type="importmap">(.+)</script>#', $transformed, $matches ) ) {
+			$decoded = json_decode( $matches[1], true );
+			if ( is_array( $decoded ) && isset( $decoded['imports'] ) && is_array( $decoded['imports'] ) ) {
+				foreach ( $decoded['imports'] as $spec => $url ) {
+					$runtime_imports[ $spec ] = odd_apps_diag_url_row( $url, $active_scope );
+				}
+			}
+		}
+	}
+
+	$entry        = array(
+		'raw'         => array(
+			'path'       => $entry_file,
+			'mime'       => $entry_mime,
+			'size'       => $entry_size,
+			'head'       => $entry_head,
+			'hasBaseTag' => false !== stripos( $entry_head, '<base' ),
+		),
+		'transformed' => null,
+	);
+	$asset_probes = array();
+	if ( $entry_real && is_readable( $entry_real ) && odd_apps_is_html_mime( $entry_mime ) ) {
+		$raw_html             = (string) @file_get_contents( $entry_real );
+		$out_html             = function_exists( 'odd_apps_prepare_app_html_output' )
+			? odd_apps_prepare_app_html_output( $raw_html )
+			: ( function_exists( 'odd_apps_inject_runtime_importmap' ) ? odd_apps_inject_runtime_importmap( $raw_html ) : $raw_html );
+		$refs                 = odd_apps_diag_html_refs( $out_html );
+		$entry['transformed'] = array(
+			'size'              => strlen( $out_html ),
+			'hasImportmap'      => false !== stripos( $out_html, 'type="importmap"' ),
+			'hasFetchBootstrap' => false !== strpos( $out_html, 'odd_apps_iframe_fetch_bootstrap' ),
+			'hasBaseTag'        => false !== stripos( $out_html, '<base' ),
+			'hasRootElement'    => (bool) preg_match( '#\bid=(["\'])root\1#i', $out_html ),
+			'scripts'           => $refs['scripts'],
+			'styles'            => $refs['styles'],
+			'head'              => substr( $out_html, 0, 768 ),
+		);
+		foreach ( array_merge( $refs['scripts'], $refs['styles'] ) as $ref ) {
+			$src        = isset( $ref['src'] ) ? $ref['src'] : ( isset( $ref['href'] ) ? $ref['href'] : '' );
+			$asset_path = odd_apps_diag_asset_path_from_ref( $entry_file, $src );
+			if ( '' === $asset_path ) {
+				continue;
+			}
+			$asset_probes[] = odd_apps_diag_file_probe( $slug, $asset_path );
+			if ( count( $asset_probes ) >= 16 ) {
+				break;
+			}
+		}
+	}
+
+	$runtime_files = array();
+	if ( function_exists( 'odd_apps_runtime_dir' ) ) {
+		$runtime_dir = odd_apps_runtime_dir();
+		foreach ( array( 'react.js', 'react-dom.js', 'react-dom-client.js', 'react-jsx-runtime.js' ) as $name ) {
+			$full                   = realpath( $runtime_dir . '/' . $name );
+			$runtime_files[ $name ] = array(
+				'exists'   => $full && is_file( $full ),
+				'readable' => $full && is_readable( $full ),
+				'size'     => $full && is_file( $full ) ? (int) filesize( $full ) : 0,
+				'realpath' => $full ? $full : '',
+			);
+		}
 	}
 
 	// Has the client-side desktop shell template element been
@@ -693,8 +960,126 @@ function odd_apps_rest_diag( WP_REST_Request $req ) {
 		$desktop_mode_registered = null !== desktop_mode_native_window_registry( 'odd-app-' . $slug );
 	}
 
+	$checks = array(
+		odd_apps_diag_check(
+			'apps_enabled',
+			$env['apps_enabled'] ? 'pass' : 'fail',
+			$env['apps_enabled'] ? 'Apps feature flag is enabled.' : 'Apps feature flag is disabled.'
+		),
+		odd_apps_diag_check(
+			'app_installed',
+			$installed ? 'pass' : 'fail',
+			$installed ? 'App is present in odd_apps_index_load().' : 'App is missing from the installed app index.',
+			array( 'known_slugs' => is_array( $index ) ? array_keys( $index ) : array() )
+		),
+		odd_apps_diag_check(
+			'app_enabled',
+			$enabled ? 'pass' : 'fail',
+			$enabled ? 'App is enabled.' : 'App is installed but disabled.'
+		),
+		odd_apps_diag_check(
+			'capability',
+			$cap_ok ? 'pass' : 'fail',
+			$cap_ok ? 'Current user can load this app.' : 'Current user lacks the app capability.',
+			array( 'required_capability' => $cap )
+		),
+		odd_apps_diag_check(
+			'entry_file',
+			$entry_real && is_file( $entry_real ) && is_readable( $entry_real ) ? 'pass' : 'fail',
+			$entry_real && is_file( $entry_real ) && is_readable( $entry_real )
+				? 'Manifest entry exists and is readable.'
+				: 'Manifest entry is missing or unreadable.',
+			array(
+				'entry'      => $entry,
+				'entry_real' => $entry_real,
+			)
+		),
+		odd_apps_diag_check(
+			'serve_url',
+			'' !== $serve_url ? 'pass' : 'fail',
+			'' !== $serve_url ? 'Cookie-auth serve URL generated.' : 'Cookie-auth serve URL is empty.'
+		),
+		odd_apps_diag_check(
+			'serve_url_scope',
+			'' === $active_scope || ! empty( $serve_url_row['containsActiveScope'] ) ? 'pass' : 'fail',
+			'' === $active_scope
+				? 'No active Playground scope on this request.'
+				: ( ! empty( $serve_url_row['containsActiveScope'] )
+					? 'Serve URL includes the active Playground scope.'
+					: 'Serve URL drops the active Playground scope.' ),
+			$serve_url_row
+		),
+		odd_apps_diag_check(
+			'cookieauth_matcher',
+			$regex_matches ? 'pass' : 'fail',
+			$regex_matches
+				? 'Cookie-auth matcher recognizes the generated serve URL path.'
+				: 'Cookie-auth matcher misses the generated serve URL path.',
+			array(
+				'serve_path'        => $serve_path,
+				'after_scope_strip' => $after_scope_strip,
+				'after_site_strip'  => $after_site_strip,
+			)
+		),
+		odd_apps_diag_check(
+			'importmap',
+			$importmap_ok ? 'pass' : 'fail',
+			$importmap_ok ? 'Runtime import map injection is available.' : 'Runtime import map injection failed.'
+		),
+		odd_apps_diag_check(
+			'runtime_files',
+			empty(
+				array_filter(
+					$runtime_files,
+					static function ( $row ) {
+						return empty( $row['exists'] ) || empty( $row['readable'] );
+					}
+				)
+			) ? 'pass' : 'fail',
+			'React runtime module files are present and readable.',
+			$runtime_files
+		),
+	);
+
+	if ( is_array( $entry['transformed'] ) ) {
+		$checks[] = odd_apps_diag_check(
+			'html_transform',
+			! empty( $entry['transformed']['hasImportmap'] )
+				&& ! empty( $entry['transformed']['hasFetchBootstrap'] )
+				&& empty( $entry['transformed']['hasBaseTag'] )
+				? 'pass'
+				: 'warn',
+			'HTML entry transform includes iframe bootstrap/import map and strips base tags.',
+			$entry['transformed']
+		);
+	}
+	if ( ! empty( $asset_probes ) ) {
+		$missing_assets = array_filter(
+			$asset_probes,
+			static function ( $asset ) {
+				return empty( $asset['exists'] ) || empty( $asset['readable'] );
+			}
+		);
+		$bare_after     = array_filter(
+			$asset_probes,
+			static function ( $asset ) {
+				return ! empty( $asset['bareReactImportsAfterRewrite'] );
+			}
+		);
+		$checks[]       = odd_apps_diag_check(
+			'entry_assets',
+			empty( $missing_assets ) && empty( $bare_after ) ? 'pass' : 'fail',
+			'Referenced entry assets exist, are readable, and have React imports rewritten.',
+			array( 'probed' => count( $asset_probes ) )
+		);
+	}
+
 	$diag = array(
+		'schema'       => 2,
+		'generatedAt'  => gmdate( 'c' ),
 		'slug'         => $slug,
+		'summary'      => odd_apps_diag_summarize_checks( $checks ),
+		'checks'       => $checks,
 		'env'          => $env,
 		'loaders'      => $loaders,
 		'init_hooks'   => $init_hooks,
@@ -704,7 +1089,7 @@ function odd_apps_rest_diag( WP_REST_Request $req ) {
 			'row'       => $row,
 			'manifest'  => $manifest ? array(
 				'name'           => isset( $manifest['name'] ) ? $manifest['name'] : null,
-				'entry'          => $entry,
+				'entry'          => $entry_file,
 				'icon'           => isset( $manifest['icon'] ) ? $manifest['icon'] : null,
 				'has_extensions' => ! empty( $manifest['extensions'] ),
 			) : null,
@@ -718,10 +1103,20 @@ function odd_apps_rest_diag( WP_REST_Request $req ) {
 			'entry_head' => $entry_head,
 		),
 		'serve'        => array(
-			'url'           => $serve_url,
-			'regex_matches' => $regex_matches,
-			'importmap_ok'  => $importmap_ok,
+			'url'               => $serve_url,
+			'url_with_nonce'    => $serve_with_nonce,
+			'url_parts'         => $serve_url_row,
+			'rest_root'         => $rest_url_row,
+			'diag_url'          => odd_apps_diag_url_row( $diag_url, $active_scope ),
+			'runtime_imports'   => $runtime_imports,
+			'runtime_files'     => $runtime_files,
+			'regex_matches'     => $regex_matches,
+			'after_scope_strip' => $after_scope_strip,
+			'after_site_strip'  => $after_site_strip,
+			'importmap_ok'      => $importmap_ok,
 		),
+		'entry'        => $entry,
+		'asset_probes' => $asset_probes,
 		'repair'       => array(
 			'last' => function_exists( 'odd_apps_repair_meta_for' ) ? odd_apps_repair_meta_for( $slug ) : array(),
 		),

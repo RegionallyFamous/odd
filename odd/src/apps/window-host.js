@@ -118,6 +118,23 @@
 		var d = diagnostics();
 		if ( d && typeof d.count === 'function' ) d.count( name, by );
 	}
+	function diagProbeApp( slug, reason ) {
+		var d = diagnostics();
+		if ( ! d || typeof d.probeApp !== 'function' || ! slug ) return;
+		try {
+			d.probeApp( slug, { reason: reason || 'app-window' } ).then( function ( probe ) {
+				appsLog( 'diagnostic probe complete', {
+					slug: slug,
+					reason: reason || '',
+					status: probe && probe.status,
+				} );
+			}, function ( err ) {
+				appsLog( 'diagnostic probe failed', slug, err );
+			} );
+		} catch ( err ) {
+			appsLog( 'diagnostic probe threw', slug, err );
+		}
+	}
 
 	function cfg() {
 		return ( window.odd && typeof window.odd === 'object' ) ? window.odd : {};
@@ -243,6 +260,7 @@
 				message: 'odd-apps: missing app serve URL',
 				slug: slugForMetric,
 			} );
+			diagProbeApp( slugForMetric, 'missing-serve-url' );
 			stopInstallTimer( { status: 'missing-src' } );
 			diagCount( 'app.iframe.skipped' );
 			return 'skipped';
@@ -265,6 +283,7 @@
 			appsLog( 'iframe error event', slugForMetric, e );
 			diagInfo( 'app.iframe.elementError', { slug: slugForMetric } );
 			events.emit( events.NAMES.IFRAME_ERROR, { message: 'app frame error', err: e } );
+			diagProbeApp( slugForMetric, 'iframe-error-event' );
 			stopLoadTimer( { status: 'error' } );
 			diagCount( 'app.iframe.error' );
 			markContentLoaded( ctx );
@@ -364,14 +383,35 @@
 		var body = document.createElement( 'div' );
 		body.style.cssText = 'opacity:.88;';
 		body.textContent = hint;
+		var button = document.createElement( 'button' );
+		button.type = 'button';
+		button.textContent = 'Copy diagnostics';
+		button.style.cssText = [
+			'justify-self:center',
+			'border:1px solid rgba(255,255,255,.22)',
+			'background:#2f2740',
+			'color:#fff',
+			'border-radius:6px',
+			'padding:7px 10px',
+			'font:600 12px/1 -apple-system,system-ui,sans-serif',
+			'cursor:pointer',
+		].join( ';' );
+		button.addEventListener( 'click', function () {
+			diagProbeApp( slug, 'copy-diagnostics-button' );
+			var d = diagnostics();
+			if ( d && typeof d.copy === 'function' ) d.copy();
+		} );
 		card.appendChild( title );
 		card.appendChild( body );
+		card.appendChild( button );
 		loading.appendChild( card );
 		loading.style.display = 'grid';
 
 		events.emit( events.NAMES.IFRAME_ERROR, {
 			message: 'odd-apps: iframe loaded but app root stayed empty',
+			slug: slug,
 		} );
+		diagProbeApp( slug, 'empty-root-watchdog' );
 		diagCount( 'app.iframe.emptyRoot' );
 	}
 
