@@ -115,6 +115,11 @@ jobs:
         run: |
           wp eval '$r = odd_starter_install_now(); if (is_wp_error($r)) { fwrite(STDERR, $r->get_error_message() . "\n"); exit(1); } var_export($r);'
 
+      - name: Pre-install a catalog app for Playwright (iframe smoke)
+        working-directory: /tmp/wp
+        run: |
+          wp eval '$reg = odd_catalog_refresh(); $slug = "board"; if (function_exists("odd_bundle_catalog_installed_versions") && array_key_exists($slug, odd_bundle_catalog_installed_versions())) { fwrite(STDOUT, "e2e: app already installed\n"); exit(0); } $entry = null; foreach ((array) ($reg["bundles"] ?? array()) as $e) { if ((isset($e["type"], $e["slug"]) && $e["type"] === "app" && $e["slug"] === $slug)) { $entry = $e; break; } } if (!$entry) { fwrite(STDERR, "e2e: catalog missing app {$slug}\n"); exit(1);} $r = odd_catalog_install_entry($entry); if (is_wp_error($r)) { fwrite(STDERR, $r->get_error_message() . "\n"); exit(1);} var_export($r);'
+
       - name: Select the ODD canvas wallpaper for admin
         working-directory: /tmp/wp
         # Desktop Mode's built-in wallpaper picker defaults to the

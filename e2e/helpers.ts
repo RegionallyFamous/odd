@@ -212,28 +212,27 @@ export async function exerciseOddShopInteractions( page: Page ) {
 }
 
 /**
- * ODD Shop → Apps → install first catalog app that still shows “Install” (if any),
- * then “Open”, then assert the sandbox iframe actually hydrates DOM.
- * Same-origin iframe is readable in Playwright; this guards the “blank white app” class of regressions.
+ * ODD Shop → Apps → “Open” on a pre-installed catalog app tile, then assert the
+ * sandbox iframe hydrates DOM. Requires slug `board` pre-installed by CLI
+ * (bin/e2e-local.sh / .github/workflows/e2e.yml). Skips UI `install-from-catalog`
+ * because long installs can fail under `wp server`.
+ *
+ * Same-origin iframe is readable in Playwright — guards the blank-white regressions class.
  */
 export async function installCatalogAppOpenAndAssertHydratedIframe( page: Page ) {
 	const shop = page.locator( '.odd-panel.odd-shop' ).first();
 	await expect( shop ).toBeVisible();
 	await shop.getByTestId( 'odd-shop-nav-apps' ).click();
+
+	const paneSel = '[data-testid="odd-shop-content"]';
+	await page.waitForSelector( `${ paneSel } [data-odd-apps-gallery]`, { timeout: 30_000 } );
+	await page.waitForSelector( `${ paneSel } [data-odd-card-type="app"]`, { timeout: 120_000 } );
+
 	const pane = shop.getByTestId( 'odd-shop-content' );
-
-	const installBtns = pane.locator(
-		'[data-odd-card-type="app"] .odd-shop__card-btn--install',
-	);
-	if ( ( await installBtns.count() ) > 0 && ( await installBtns.first().isVisible() ) ) {
-		await installBtns.first().click();
-		await expect(
-			pane.locator( '[data-odd-card-type="app"] .odd-shop__card-btn--open' ).first(),
-		).toBeVisible( { timeout: 180_000 } );
-	}
-
-	const openBtn = pane.locator( '[data-odd-card-type="app"] .odd-shop__card-btn--open' ).first();
-	await expect( openBtn ).toBeVisible( { timeout: 20_000 } );
+	const openBtn = pane
+		.locator( '[data-odd-card-type="app"][data-slug="board"] .odd-shop__card-btn--open' )
+		.first();
+	await expect( openBtn ).toBeVisible( { timeout: 45_000 } );
 	await openBtn.click();
 
 	await page.waitForFunction(

@@ -22,8 +22,8 @@ installOddFailureDiagnostics();
 
 test.describe( 'ODD admin smoke', () => {
 	test( 'wallpaper + scene hook, shop axe, then rail + preview', async ( { page } ) => {
-		// ~3–8m cold CI; catalog app install + open can add a few minutes at tail.
-		test.setTimeout( 420_000 );
+		// ~3–8m cold CI; one combined flow + pre-provisioned app iframe check.
+		test.setTimeout( 300_000 );
 
 		page.on( 'console', ( msg ) => {
 			const type = msg.type();
