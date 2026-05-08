@@ -245,6 +245,26 @@ export async function installCatalogAppOpenAndAssertHydratedIframe( page: Page )
 			if ( ! doc ) {
 				return false;
 			}
+			const frameRect = f.getBoundingClientRect();
+			const frameStyle = window.getComputedStyle( f );
+			const mount = f.closest( '.odd-app-host' );
+			const mountRect = mount?.getBoundingClientRect();
+			const mountStyle = mount ? window.getComputedStyle( mount ) : null;
+			if (
+				frameRect.width <= 0 ||
+				frameRect.height <= 0 ||
+				frameStyle.display === 'none' ||
+				frameStyle.visibility === 'hidden' ||
+				frameStyle.opacity === '0' ||
+				! mountRect ||
+				mountRect.width <= 0 ||
+				mountRect.height <= 0 ||
+				mountStyle?.display === 'none' ||
+				mountStyle?.visibility === 'hidden' ||
+				mountStyle?.opacity === '0'
+			) {
+				return false;
+			}
 			const root = doc.getElementById( 'root' ) ?? doc.body;
 			if ( ! root ) {
 				return false;

@@ -304,6 +304,25 @@
 		}
 	}
 
+	function visibleBoxSnapshot( win, node ) {
+		var rect = rectSnapshot( node );
+		var style = styleSnapshot( win, node );
+		var opacity = style ? parseFloat( style.opacity ) : 1;
+		var ok = !! rect && rect.w > 0 && rect.h > 0 &&
+			( ! style || (
+				style.display !== 'none' &&
+				style.visibility !== 'hidden' &&
+				( isNaN( opacity ) || opacity > 0 )
+			) );
+		return {
+			ok: ok,
+			rect: rect,
+			display: style && style.display || '',
+			visibility: style && style.visibility || '',
+			opacity: style && style.opacity || '',
+		};
+	}
+
 	function nodeSnapshot( win, node ) {
 		if ( ! node ) return { exists: false };
 		var text = '';
@@ -341,8 +360,10 @@
 					iframeSrc:  redactAppServeUrlForReport( frame.getAttribute( 'src' ) || '' ),
 					iframeRect: rectSnapshot( frame ),
 					iframeStyle: styleSnapshot( window, frame ),
+					iframeVisible: visibleBoxSnapshot( window, frame ),
 					mountRect:  rectSnapshot( mount ),
 					mountStyle: styleSnapshot( window, mount ),
+					mountVisible: visibleBoxSnapshot( window, mount ),
 					title:      '',
 					rootKids:   null,
 					bodyScript: null,
@@ -606,6 +627,13 @@
 		}
 		if ( probe.liveIframe ) {
 			add( 'liveIframe', true, 'Live iframe is present in the desktop DOM.' );
+			add(
+				'liveIframeVisible',
+				!! ( probe.liveIframe.iframeVisible && probe.liveIframe.iframeVisible.ok && probe.liveIframe.mountVisible && probe.liveIframe.mountVisible.ok ),
+				probe.liveIframe.iframeVisible && probe.liveIframe.iframeVisible.ok && probe.liveIframe.mountVisible && probe.liveIframe.mountVisible.ok
+					? 'Live app iframe has a visible layout box.'
+					: 'Live app iframe exists but has no visible layout box.'
+			);
 			if ( probe.liveIframe.document && probe.liveIframe.document.root && probe.liveIframe.document.root.exists ) {
 				var root = probe.liveIframe.document.root;
 				add(

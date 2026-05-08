@@ -47,6 +47,30 @@ describe( 'ODD app window host', () => {
 		expect( metrics.timings.some( ( row ) => row.name === 'app.iframe.load' && row.meta.slug === 'demo' ) ).toBe( true );
 	} );
 
+	it( 'uses the Desktop Mode window manager to dismiss fallback loading overlays', () => {
+		const markContentLoading = vi.fn();
+		const markContentLoaded = vi.fn();
+		window.wp.desktop = {
+			windowManager: {
+				getById: vi.fn( () => ( { markContentLoading, markContentLoaded } ) ),
+			},
+		};
+		loadWindowHost();
+		const body = document.createElement( 'div' );
+		document.body.appendChild( body );
+
+		window.__odd.events.emit( window.__odd.events.NAMES.WINDOW_OPENED, {
+			id: 'odd-app-demo',
+			body,
+		} );
+
+		expect( markContentLoading ).toHaveBeenCalledTimes( 1 );
+		const frame = body.querySelector( 'iframe.odd-app-frame' );
+		expect( frame ).toBeTruthy();
+		frame.dispatchEvent( new Event( 'load' ) );
+		expect( markContentLoaded ).toHaveBeenCalledTimes( 1 );
+	} );
+
 	it( 'surfaces a visible error when an app has no serve URL', () => {
 		window.odd.appServeUrls = {};
 		loadWindowHost();
@@ -99,6 +123,11 @@ describe( 'ODD app window host', () => {
 		const frame = body.querySelector( 'iframe.odd-app-frame' );
 		expect( frame ).toBeTruthy();
 		expect( frame.getAttribute( 'src' ) ).toBe( '/odd-app/demo/' );
+		const host = body.querySelector( '.odd-app-host' );
+		expect( body.style.position ).toBe( 'relative' );
+		expect( body.style.overflow ).toBe( 'hidden' );
+		expect( host.style.position ).toBe( 'relative' );
+		expect( host.style.minHeight ).toBe( '240px' );
 		expect( appOpened ).toEqual( [ { slug: 'demo', windowId: 'odd-app-demo' } ] );
 	} );
 

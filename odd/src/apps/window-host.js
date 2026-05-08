@@ -215,6 +215,12 @@
 	function windowController( ctx ) {
 		if ( ctx && ctx.window && typeof ctx.window === 'object' ) return ctx.window;
 		if ( ctx && typeof ctx.markContentLoading === 'function' ) return ctx;
+		var id = windowIdFromPayload( ctx );
+		var d = window.wp && window.wp.desktop;
+		var win = id && d && d.windowManager && typeof d.windowManager.getById === 'function'
+			? d.windowManager.getById( id )
+			: null;
+		if ( win && typeof win === 'object' ) return win;
 		return null;
 	}
 
@@ -249,6 +255,42 @@
 			return window.CSS.escape( value );
 		}
 		return value.replace( /["\\]/g, '\\$&' );
+	}
+
+	function setStyleDefault( node, prop, value ) {
+		if ( ! node || ! node.style ) return;
+		try {
+			if ( ! node.style[ prop ] ) node.style[ prop ] = value;
+		} catch ( _ ) {}
+	}
+
+	function ensureMountBodyGeometry( body ) {
+		if ( ! body || ! body.style ) return;
+		try {
+			var computed = window.getComputedStyle ? window.getComputedStyle( body ) : null;
+			var position = computed && computed.position;
+			if ( ( ! body.style.position ) && ( ! position || position === 'static' ) ) {
+				body.style.position = 'relative';
+			}
+		} catch ( _ ) {
+			setStyleDefault( body, 'position', 'relative' );
+		}
+		setStyleDefault( body, 'width', '100%' );
+		setStyleDefault( body, 'height', '100%' );
+		setStyleDefault( body, 'minHeight', '240px' );
+		setStyleDefault( body, 'overflow', 'hidden' );
+	}
+
+	function ensureMountGeometry( mount ) {
+		if ( ! mount || ! mount.style ) return;
+		mount.style.position = 'relative';
+		mount.style.width = '100%';
+		mount.style.height = '100%';
+		mount.style.minHeight = '240px';
+		mount.style.overflow = 'hidden';
+		mount.style.background = '#101014';
+		mount.style.boxSizing = 'border-box';
+		mount.style.isolation = 'isolate';
 	}
 
 	function appWindowRoot( id ) {
@@ -356,7 +398,14 @@
 	 */
 	function installFrame( mount, ctx ) {
 		if ( ! mount ) return 'skipped';
-		if ( mount.querySelector( 'iframe.odd-app-frame' ) ) return 'already';
+		if ( mount.parentNode && mount.parentNode.nodeType === 1 ) {
+			ensureMountBodyGeometry( mount.parentNode );
+		}
+		ensureMountGeometry( mount );
+		if ( mount.querySelector( 'iframe.odd-app-frame' ) ) {
+			markContentLoaded( ctx );
+			return 'already';
+		}
 		var slugForMetric = mount.getAttribute( 'data-odd-app-slug' ) || '';
 		var stopInstallTimer = diagTime( 'app.iframe.install', { slug: slugForMetric } );
 		markContentLoading( ctx );
@@ -543,9 +592,10 @@
 	 */
 	function buildAndMount( body, slug, ctx ) {
 		if ( ! body || ! slug ) return 'skipped';
+		ensureMountBodyGeometry( body );
 		// Reuse any existing host the server may already have
 		// painted (avoids double-mounts on session-restore paths).
-		var existing = body.querySelector( '.odd-app-host[data-odd-app-slug="' + slug + '"]' );
+		var existing = body.querySelector( '.odd-app-host[data-odd-app-slug="' + cssEscape( slug ) + '"]' );
 		if ( existing ) {
 			return installFrame( existing, ctx );
 		}
@@ -556,7 +606,7 @@
 		host.setAttribute( 'data-odd-app-slug', slug );
 		host.setAttribute( 'data-odd-cursor-root', 'true' );
 		if ( src ) host.setAttribute( 'data-odd-app-src', src );
-		host.style.cssText = 'position:absolute;inset:0;background:#101014;';
+		ensureMountGeometry( host );
 
 		var loading = document.createElement( 'div' );
 		loading.className = 'odd-app-host__loading';
@@ -668,7 +718,7 @@
 			if ( host.querySelector( 'iframe.odd-app-frame' ) ) continue;
 			var slug = host.getAttribute( 'data-odd-app-slug' );
 			if ( ! slug ) continue;
-			var result = installFrame( host );
+			var result = installFrame( host, { id: APP_ID_PREFIX + slug } );
 			// Only emit APP_OPENED on an actual new mount. Without the
 			// guard, a stale host that already has an iframe would
 			// re-emit every time the observer picks it up.
@@ -759,7 +809,10 @@
 				var id = APP_ID_PREFIX + slug;
 				if ( typeof reg[ id ] === 'function' ) return; // Respect any override.
 				reg[ id ] = function ( body, ctx ) {
-					var result = buildAndMount( body, slug, ctx );
+					var appCtx = ctx && typeof ctx === 'object' ? ctx : {};
+					if ( ! appCtx.id ) appCtx.id = id;
+					if ( ! appCtx.windowId ) appCtx.windowId = id;
+					var result = buildAndMount( body, slug, appCtx );
 					if ( result === 'mounted' ) {
 						events.emit( events.NAMES.APP_OPENED, { slug: slug, windowId: id } );
 					}

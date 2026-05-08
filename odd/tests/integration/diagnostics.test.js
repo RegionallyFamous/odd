@@ -50,6 +50,8 @@ describe( 'ODD diagnostics metrics', () => {
 		const frame = document.createElement( 'iframe' );
 		frame.className = 'odd-app-frame';
 		frame.src = '/odd-app/demo/?_wpnonce=secret';
+		mount.getBoundingClientRect = () => ( { left: 0, top: 0, right: 320, bottom: 240, width: 320, height: 240 } );
+		frame.getBoundingClientRect = () => ( { left: 0, top: 0, right: 320, bottom: 240, width: 320, height: 240 } );
 		mount.appendChild( frame );
 		document.body.appendChild( mount );
 
@@ -99,6 +101,7 @@ describe( 'ODD diagnostics metrics', () => {
 		expect( probe.html.hasImportmap ).toBe( true );
 		expect( probe.fetches.modules ).toHaveLength( 1 );
 		expect( probe.fetches.runtimes ).toHaveLength( 1 );
+		expect( probe.liveIframe.iframeVisible.ok ).toBe( true );
 		expect( window.__odd.diagnostics.appProbes() ).toHaveLength( 1 );
 		expect( window.__odd.diagnostics.collectMarkdown() ).toContain( 'active app probes' );
 	} );
