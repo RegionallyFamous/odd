@@ -8,6 +8,7 @@
  *   manifest.json          slug / name / version / type / entry
  *   widget.js              self-registers via wp.desktop.registerWidget
  *   widget.css             (optional) companion stylesheet; enqueue list in manifest `"css"`
+ *   assets/*               (optional) static files referenced by widget.css / widget.js
  *   preview.webp           (optional) 640×360, shown on Shop cards
  *
  * Installed widgets live at `wp-content/odd-widgets/<slug>/`. Each

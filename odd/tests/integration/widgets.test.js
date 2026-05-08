@@ -17,7 +17,8 @@
  * by the shine/window/badge overlays and the ball never responded.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -27,6 +28,8 @@ const STICKY_JS    = resolve( WIDGETS_ROOT, 'sticky/widget.js' );
 const STICKY_CSS   = resolve( WIDGETS_ROOT, 'sticky/widget.css' );
 const EIGHTBALL_JS  = resolve( WIDGETS_ROOT, 'eight-ball/widget.js' );
 const EIGHTBALL_CSS = resolve( WIDGETS_ROOT, 'eight-ball/widget.css' );
+const EIGHTBALL_ASSET = resolve( WIDGETS_ROOT, 'eight-ball/assets/oracle-texture.webp' );
+const EIGHTBALL_BUNDLE = resolve( __dirname, '../../../site/catalog/v1/bundles/widget-eight-ball.wp' );
 const SPOTIFY_JS    = resolve( WIDGETS_ROOT, 'spotify/widget.js' );
 
 function installWpDesktop() {
@@ -225,6 +228,23 @@ describe( 'eight-ball widget', () => {
 		const stage = container.querySelector( '.odd-eight__stage' );
 		const stageComputed = window.getComputedStyle( stage );
 		expect( stageComputed.pointerEvents ).not.toBe( 'none' );
+	} );
+
+	it( 'ships the generated oracle texture in source and built bundle', () => {
+		const css = readFileSync( EIGHTBALL_CSS, 'utf8' );
+		expect( css ).toContain( 'assets/oracle-texture.webp' );
+		expect( existsSync( EIGHTBALL_ASSET ) ).toBe( true );
+
+		const listing = execFileSync(
+			'python3',
+			[
+				'-c',
+				'import sys, zipfile; print("\\n".join(zipfile.ZipFile(sys.argv[1]).namelist()))',
+				EIGHTBALL_BUNDLE,
+			],
+			{ encoding: 'utf8' }
+		);
+		expect( listing ).toContain( 'assets/oracle-texture.webp' );
 	} );
 } );
 

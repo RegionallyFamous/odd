@@ -191,6 +191,88 @@ describe( 'ODD Shop', () => {
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );
 
+	it( 'replaces the desktop rail scrollbar with soft overflow controls', async () => {
+		const { host, cleanup } = mountPanel();
+		const rail = host.querySelector( '.odd-shop__rail' );
+		const startBtn = host.querySelector( '.odd-shop__rail-scroll--start' );
+		const endBtn = host.querySelector( '.odd-shop__rail-scroll--end' );
+		const startFade = host.querySelector( '.odd-shop__rail-fade--start' );
+		const endFade = host.querySelector( '.odd-shop__rail-fade--end' );
+
+		expect( rail ).toBeTruthy();
+		expect( startBtn ).toBeTruthy();
+		expect( endBtn ).toBeTruthy();
+		expect( startFade.getAttribute( 'aria-hidden' ) ).toBe( 'true' );
+		expect( endFade.getAttribute( 'aria-hidden' ) ).toBe( 'true' );
+
+		host.getBoundingClientRect = () => ( {
+			width: 900,
+			height: 600,
+			top: 0,
+			left: 0,
+			right: 900,
+			bottom: 600,
+			x: 0,
+			y: 0,
+			toJSON: () => {},
+		} );
+		rail.getBoundingClientRect = () => ( {
+			width: 220,
+			height: 260,
+			top: 82,
+			left: 0,
+			right: 220,
+			bottom: 342,
+			x: 0,
+			y: 82,
+			toJSON: () => {},
+		} );
+
+		let scrollTop = 0;
+		let scrollLeft = 37;
+		Object.defineProperty( rail, 'clientHeight', { configurable: true, get: () => 260 } );
+		Object.defineProperty( rail, 'scrollHeight', { configurable: true, get: () => 760 } );
+		Object.defineProperty( rail, 'scrollTop', {
+			configurable: true,
+			get: () => scrollTop,
+			set: ( value ) => { scrollTop = value; },
+		} );
+		Object.defineProperty( rail, 'scrollLeft', {
+			configurable: true,
+			get: () => scrollLeft,
+			set: ( value ) => { scrollLeft = value; },
+		} );
+		rail.scrollTo = vi.fn( ( arg, y ) => {
+			scrollTop = typeof arg === 'object' ? arg.top : y;
+			scrollLeft = typeof arg === 'object' && typeof arg.left === 'number' ? arg.left : scrollLeft;
+			rail.dispatchEvent( new Event( 'scroll' ) );
+		} );
+
+		rail.dispatchEvent( new Event( 'scroll' ) );
+		await new Promise( ( resolveTick ) => setTimeout( resolveTick, 25 ) );
+
+		expect( rail.hasAttribute( 'data-odd-rail-overflow' ) ).toBe( true );
+		expect( rail.hasAttribute( 'data-odd-rail-at-start' ) ).toBe( true );
+		expect( rail.hasAttribute( 'data-odd-rail-at-end' ) ).toBe( false );
+		expect( startBtn.hidden ).toBe( true );
+		expect( endBtn.hidden ).toBe( false );
+		expect( startFade.hidden ).toBe( true );
+		expect( endFade.classList.contains( 'is-visible' ) ).toBe( true );
+		expect( scrollLeft ).toBe( 0 );
+
+		endBtn.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+		expect( rail.scrollTo ).toHaveBeenCalledWith( expect.objectContaining( { top: expect.any( Number ), left: 0 } ) );
+		expect( scrollTop ).toBeGreaterThan( 0 );
+		expect( scrollLeft ).toBe( 0 );
+
+		rail.dispatchEvent( new Event( 'scroll' ) );
+		await new Promise( ( resolveTick ) => setTimeout( resolveTick, 25 ) );
+		expect( startBtn.hidden ).toBe( false );
+		expect( startFade.classList.contains( 'is-visible' ) ).toBe( true );
+
+		if ( typeof cleanup === 'function' ) cleanup();
+	} );
+
 	it( 'keeps heroSafe:false scenes out of the live wallpaper hero', () => {
 		window.odd.wallpaper = 'aurora';
 		window.odd.scene = 'aurora';

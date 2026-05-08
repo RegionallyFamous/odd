@@ -827,6 +827,7 @@
 		installShopKeyboard( body, sidebar, buttons, renderSection );
 		installCardMotion( body );
 		installResponsiveState( body );
+		installShopRailOverflow( body, sidebar );
 
 		// Post-reload landing: if the previous navigation just
 		// installed a bundle, switch to its department and flash
@@ -2167,6 +2168,180 @@
 				ev.preventDefault();
 				var next = ev.key === 'ArrowDown' ? Math.min( list.length - 1, ix + 1 ) : Math.max( 0, ix - 1 );
 				try { list[ next ].focus(); } catch ( e4 ) {}
+			} );
+		}
+
+		function installShopRailOverflow( body, rail ) {
+			if ( ! body || ! rail || rail.__oddRailOverflowInstalled ) return;
+			rail.__oddRailOverflowInstalled = true;
+
+			function makeButton( direction ) {
+				var label = direction < 0 ? __( 'Scroll store sections up' ) : __( 'Scroll store sections down' );
+				var btn = el( 'button', {
+					type: 'button',
+					class: 'odd-shop__rail-scroll odd-shop__rail-scroll--' + ( direction < 0 ? 'start' : 'end' ),
+					'aria-label': label,
+				} );
+				btn.innerHTML = direction < 0
+					? '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 14 6-6 6 6"/></svg>'
+					: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 10 6 6 6-6"/></svg>';
+				btn.hidden = true;
+				return btn;
+			}
+
+			var startBtn  = makeButton( -1 );
+			var endBtn    = makeButton( 1 );
+			var startFade = el( 'span', { class: 'odd-shop__rail-fade odd-shop__rail-fade--start', 'aria-hidden': 'true' } );
+			var endFade   = el( 'span', { class: 'odd-shop__rail-fade odd-shop__rail-fade--end', 'aria-hidden': 'true' } );
+			startFade.hidden = true;
+			endFade.hidden = true;
+			body.appendChild( startFade );
+			body.appendChild( endFade );
+			body.appendChild( startBtn );
+			body.appendChild( endBtn );
+
+			function reducedMotion() {
+				try {
+					return !! ( window.matchMedia && window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches );
+				} catch ( e ) {
+					return false;
+				}
+			}
+
+			function isHorizontalRail() {
+				var layout = body.getAttribute( 'data-odd-layout' );
+				var size = body.getAttribute( 'data-odd-size' );
+				if ( layout === 'mobile' || size === 'xs' || size === 's' ) return true;
+				try {
+					return window.getComputedStyle && window.getComputedStyle( rail ).flexDirection === 'row';
+				} catch ( e ) {
+					return false;
+				}
+			}
+
+			function positionRailChrome() {
+				var bodyRect;
+				var railRect;
+				try {
+					bodyRect = body.getBoundingClientRect();
+					railRect = rail.getBoundingClientRect();
+				} catch ( e ) {
+					return;
+				}
+				var railWidth = Math.max( 0, railRect.width || rail.offsetWidth || 0 );
+				var railHeight = Math.max( 0, railRect.height || rail.clientHeight || 0 );
+				if ( ! railWidth || ! railHeight ) return;
+				var buttonSize = Math.min( 34, Math.max( 28, railWidth - 18 ) );
+				var left = Math.round( ( railRect.left - bodyRect.left ) + ( railWidth - buttonSize ) / 2 );
+				var top = Math.round( railRect.top - bodyRect.top );
+				var bottom = Math.round( railRect.bottom - bodyRect.top );
+
+				startBtn.style.left = left + 'px';
+				startBtn.style.top = Math.round( top + 8 ) + 'px';
+				startBtn.style.width = buttonSize + 'px';
+				startBtn.style.height = buttonSize + 'px';
+				endBtn.style.left = left + 'px';
+				endBtn.style.top = Math.round( bottom - buttonSize - 8 ) + 'px';
+				endBtn.style.width = buttonSize + 'px';
+				endBtn.style.height = buttonSize + 'px';
+
+				[ startFade, endFade ].forEach( function ( fade ) {
+					fade.style.left = Math.round( railRect.left - bodyRect.left ) + 'px';
+					fade.style.width = Math.round( railWidth ) + 'px';
+				} );
+				startFade.style.top = top + 'px';
+				endFade.style.top = Math.round( bottom - Math.min( 54, railHeight / 3 ) ) + 'px';
+				endFade.style.height = Math.round( Math.min( 54, railHeight / 3 ) ) + 'px';
+			}
+
+			function setFadeVisible( node, visible ) {
+				node.hidden = ! visible;
+				node.classList.toggle( 'is-visible', !! visible );
+			}
+
+			function updateRailOverflow() {
+				var horizontal = isHorizontalRail();
+				if ( ! horizontal && rail.scrollLeft ) {
+					rail.scrollLeft = 0;
+				}
+				var overflow = ! horizontal && rail.scrollHeight > rail.clientHeight + 2;
+				var atStart = ! overflow || rail.scrollTop <= 2;
+				var atEnd = ! overflow || rail.scrollTop + rail.clientHeight >= rail.scrollHeight - 2;
+
+				rail.toggleAttribute( 'data-odd-rail-overflow', overflow );
+				rail.toggleAttribute( 'data-odd-rail-at-start', atStart );
+				rail.toggleAttribute( 'data-odd-rail-at-end', atEnd );
+
+				startBtn.hidden = ! overflow || atStart;
+				endBtn.hidden = ! overflow || atEnd;
+				setFadeVisible( startFade, overflow && ! atStart );
+				setFadeVisible( endFade, overflow && ! atEnd );
+				positionRailChrome();
+			}
+
+			var raf = 0;
+			function scheduleRailUpdate() {
+				if ( raf ) return;
+				var rafFn = window.requestAnimationFrame || function ( cb ) { return window.setTimeout( cb, 16 ); };
+				raf = rafFn( function () {
+					raf = 0;
+					updateRailOverflow();
+				} );
+			}
+
+			function scrollRail( direction ) {
+				var maxTop = Math.max( 0, rail.scrollHeight - rail.clientHeight );
+				var delta = Math.max( 96, Math.round( rail.clientHeight * 0.72 ) );
+				var top = Math.max( 0, Math.min( maxTop, rail.scrollTop + direction * delta ) );
+				if ( typeof rail.scrollTo === 'function' ) {
+					try {
+						rail.scrollTo( { top: top, left: 0, behavior: reducedMotion() ? 'auto' : 'smooth' } );
+					} catch ( e ) {
+						try { rail.scrollTo( 0, top ); } catch ( e2 ) { rail.scrollTop = top; }
+					}
+				} else {
+					rail.scrollTop = top;
+				}
+				scheduleRailUpdate();
+			}
+
+			startBtn.addEventListener( 'click', function () { scrollRail( -1 ); } );
+			endBtn.addEventListener( 'click', function () { scrollRail( 1 ); } );
+			rail.addEventListener( 'scroll', scheduleRailUpdate, { passive: true } );
+			window.addEventListener( 'resize', scheduleRailUpdate );
+
+			var ro = null;
+			if ( typeof ResizeObserver !== 'undefined' ) {
+				ro = new ResizeObserver( scheduleRailUpdate );
+				try {
+					ro.observe( body );
+					ro.observe( rail );
+				} catch ( e3 ) {}
+			}
+
+			var mo = null;
+			if ( typeof MutationObserver !== 'undefined' ) {
+				mo = new MutationObserver( scheduleRailUpdate );
+				try { mo.observe( rail, { childList: true, subtree: true } ); } catch ( e4 ) {}
+			}
+
+			updateRailOverflow();
+			cleanupFns.push( function () {
+				if ( raf ) {
+					try {
+						if ( window.cancelAnimationFrame ) window.cancelAnimationFrame( raf );
+					} catch ( e5 ) {}
+					try { window.clearTimeout( raf ); } catch ( e6 ) {}
+					raf = 0;
+				}
+				rail.__oddRailOverflowInstalled = false;
+				rail.removeEventListener( 'scroll', scheduleRailUpdate );
+				window.removeEventListener( 'resize', scheduleRailUpdate );
+				if ( ro ) ro.disconnect();
+				if ( mo ) mo.disconnect();
+				[ startBtn, endBtn, startFade, endFade ].forEach( function ( node ) {
+					if ( node && node.parentNode ) node.parentNode.removeChild( node );
+				} );
 			} );
 		}
 

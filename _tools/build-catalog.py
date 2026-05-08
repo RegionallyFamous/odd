@@ -31,7 +31,7 @@ Bundle types:
     cursor-set  source: catalog-sources/cursor-sets/<slug>/ (manifest
                 + SVG cursors)
     widget      source: catalog-sources/widgets/<slug>/{widget.js,
-                widget.css?, manifest.json, preview.svg?}
+                widget.css?, manifest.json, preview.svg?, assets/*}
     app         source: catalog-sources/apps/<slug>/{bundle.wp, icon.svg,
                 meta.json} — app .wp is prebuilt, we just publish it.
 """
@@ -84,6 +84,11 @@ ICON_SQUIRCLE_PATH = (
     "C 198.87 0 249.26 0 350.06 0 Z"
 )
 ICON_SIZE_BUDGET = 10240  # bytes per SVG
+ASSET_REL_PATH = re.compile(r"^[a-zA-Z0-9._-]+(/[a-zA-Z0-9._-]+)*$")
+BUNDLE_FORBIDDEN_EXTENSIONS = {
+    "php", "phtml", "phar", "php3", "php4", "php5", "php7",
+    "phps", "cgi", "pl", "py", "rb", "sh", "bash",
+}
 
 _ICON_CTRL = re.compile(rb"[\x00-\x08\x0b\x0c\x0e-\x1f]")
 _ICON_WS = re.compile(r"\s+")
@@ -836,6 +841,19 @@ def build_widget(slug: str, src_dir: Path) -> dict:
     for rel in css_rel:
         p = src_dir / rel
         if p.is_file():
+            files[rel] = p.read_bytes()
+
+    assets_dir = src_dir / "assets"
+    if assets_dir.is_dir():
+        for p in sorted(assets_dir.rglob("*")):
+            if not p.is_file():
+                continue
+            rel = p.relative_to(src_dir).as_posix()
+            if not ASSET_REL_PATH.match(rel):
+                raise SystemExit(f"widget {slug}: invalid asset path {rel!r}")
+            ext = p.suffix.lower().lstrip(".")
+            if ext in BUNDLE_FORBIDDEN_EXTENSIONS:
+                raise SystemExit(f"widget {slug}: forbidden asset extension in {rel!r}")
             files[rel] = p.read_bytes()
 
     bundle = OUT_BUNDLES / f"widget-{slug}.wp"

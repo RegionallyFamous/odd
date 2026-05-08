@@ -745,15 +745,15 @@
       "type": "widget",
       "slug": "eight-ball",
       "name": "Magic 8-Ball",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "author": "Regionally Famous",
       "description": "A WordPress-flavored magic 8-ball. Click to shake for wisdom.",
       "franchise": "ODD Originals",
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/widget-eight-ball.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/widget-eight-ball.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/widget-eight-ball.wp",
-      "sha256": "00575f45dfadd5652ca68f3192281ecbdb8ed5b6c569550315a7a3686fe59cef",
-      "size": 4455
+      "sha256": "22d881f7620a628007d9528a37f41f447c956b90721bae2acbeb59705940e0e8",
+      "size": 107389
     },
     {
       "type": "widget",

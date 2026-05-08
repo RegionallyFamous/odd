@@ -115,7 +115,7 @@
 			var window_   = el( 'div', { class: 'odd-eight__window' } );
 			var triangle  = el( 'div', { class: 'odd-eight__triangle' } );
 			var answer    = el( 'div', { class: 'odd-eight__answer', role: 'status', 'aria-live': 'polite' }, 'Ask a question' );
-			var hint      = el( 'div', { class: 'odd-eight__hint', 'aria-hidden': 'true' }, 'Click the ball to shake' );
+			var hint      = el( 'div', { class: 'odd-eight__hint', 'aria-hidden': 'true' }, 'Click to consult' );
 	
 			triangle.appendChild( answer );
 			window_.appendChild( triangle );
@@ -147,7 +147,7 @@
 			function shake() {
 				if ( shaking ) return;
 				shaking = true;
-				hint.textContent = __( 'Shaking…' );
+				hint.textContent = __( 'Consulting…' );
 	
 				var next = pickAnswer();
 	
@@ -157,7 +157,7 @@
 						answer.textContent = next;
 						answer.classList.remove( 'is-fading' );
 						shaking = false;
-						hint.textContent = __( 'Click to shake' );
+						hint.textContent = __( 'Click to consult' );
 					}, 180 );
 					return;
 				}
@@ -171,7 +171,7 @@
 					window.requestAnimationFrame( function () {
 						answer.classList.remove( 'is-fading' );
 						shaking = false;
-						hint.textContent = __( 'Click to shake' );
+						hint.textContent = __( 'Click to consult' );
 					} );
 				}, 520 );
 			}

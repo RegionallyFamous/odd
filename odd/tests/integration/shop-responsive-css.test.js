@@ -26,6 +26,18 @@ describe( 'ODD Shop responsive CSS contract', () => {
 		expect( css ).toContain( 'padding:16px 14px max(18px,env(safe-area-inset-bottom)) 14px;overflow-x:hidden;overflow-y:auto' );
 	} );
 
+	it( 'hides the native shop rail scrollbar behind accessible overflow controls', () => {
+		const css = readFileSync( STYLES_CSS, 'utf8' );
+
+		expect( css ).toContain( '.odd-panel.odd-shop{color:var(--odd-shop-ink);position:relative}' );
+		expect( css ).toContain( '.odd-panel.odd-shop .odd-shop__rail{background:var(--odd-shop-rail-bg);border-right:1px solid var(--odd-shop-border);padding:18px 12px 14px;display:flex;flex-direction:column;gap:4px;overflow-x:hidden;overflow-y:auto;scrollbar-width:none;overscroll-behavior:contain' );
+		expect( css ).toContain( '.odd-panel.odd-shop .odd-shop__rail::-webkit-scrollbar{display:none}' );
+		expect( css ).toContain( '.odd-panel.odd-shop .odd-shop__rail-scroll:not([hidden]){opacity:.96;pointer-events:auto}' );
+		expect( css ).toContain( '.odd-panel.odd-shop .odd-shop__rail-fade{position:absolute;z-index:5;height:54px;pointer-events:none' );
+		expect( css ).toContain( '.odd-panel.odd-shop[data-odd-layout="mobile"] .odd-shop__rail-scroll,.odd-panel.odd-shop[data-odd-layout="mobile"] .odd-shop__rail-fade{display:none!important}' );
+		expect( css ).toContain( '.odd-panel.odd-shop[data-odd-size="xs"] .odd-shop__rail-scroll,.odd-panel.odd-shop[data-odd-size="xs"] .odd-shop__rail-fade,.odd-panel.odd-shop[data-odd-size="s"] .odd-shop__rail-scroll,.odd-panel.odd-shop[data-odd-size="s"] .odd-shop__rail-fade{display:none!important}' );
+	} );
+
 	it( 'keeps mobile sticky chrome from overlapping', () => {
 		const css = readFileSync( STYLES_CSS, 'utf8' );
 
