@@ -579,9 +579,9 @@ function odd_apps_rest_diag( WP_REST_Request $req ) {
 	}
 
 	$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-	$home_url    = home_url( '/' );
+	$home_url    = function_exists( 'odd_url_current_scheme' ) ? odd_url_current_scheme( home_url( '/' ) ) : home_url( '/' );
 	$home_path   = (string) wp_parse_url( $home_url, PHP_URL_PATH );
-	$site_url    = site_url( '/' );
+	$site_url    = function_exists( 'odd_url_current_scheme' ) ? odd_url_current_scheme( site_url( '/' ) ) : site_url( '/' );
 	$site_path   = wp_parse_url( $site_url, PHP_URL_PATH );
 	$site_path   = is_string( $site_path ) ? $site_path : '';
 

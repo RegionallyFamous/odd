@@ -153,7 +153,7 @@ function odd_icons_svg_uses_current_color( $abs_path ) {
  * sanitized inputs; the endpoint itself still re-validates both.
  */
 function odd_icons_tinted_svg_url( $set_slug, $key ) {
-	return rest_url( 'odd/v1/icons/' . $set_slug . '/' . $key );
+	return odd_https_rest_url( 'odd/v1/icons/' . $set_slug . '/' . $key );
 }
 
 /**

@@ -73,6 +73,17 @@ function odd_url_current_scheme( $url ) {
 	return odd_request_uses_https() ? set_url_scheme( $url, 'https' ) : $url;
 }
 
+/**
+ * `rest_url()` uses `site_url()`; when the DB still has `http://`, mixed-content
+ * warnings appear on HTTPS (Playground, TLS proxies). Align to the request.
+ *
+ * @param string $path Optional path appended to the REST root (e.g. `odd/v1/prefs`).
+ * @return string
+ */
+function odd_https_rest_url( $path = '' ) {
+	return odd_url_current_scheme( rest_url( $path ) );
+}
+
 define( 'ODD_URL', untrailingslashit( odd_url_current_scheme( plugins_url( '', __FILE__ ) ) ) );
 
 require_once ODD_DIR . 'includes/dependencies.php';

@@ -215,7 +215,7 @@ function odd_cursors_active_stylesheet_url( $slug = null ) {
 	if ( '' !== $slug ) {
 		$args['set'] = $slug;
 	}
-	return esc_url_raw( odd_cursors_url_current_scheme( add_query_arg( $args, rest_url( 'odd/v1/cursors/active.css' ) ) ) );
+	return esc_url_raw( odd_cursors_url_current_scheme( add_query_arg( $args, odd_https_rest_url( 'odd/v1/cursors/active.css' ) ) ) );
 }
 
 function odd_cursors_stylesheet_version( $slug = null ) {

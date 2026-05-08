@@ -160,4 +160,22 @@ class Test_Cursors extends WP_UnitTestCase {
 			$_SERVER = $server;
 		}
 	}
+
+	/**
+	 * REST URLs from `rest_url()` follow `siteurl`; align to HTTPS when the request is HTTPS.
+	 */
+	public function test_odd_https_rest_url_upgrades_like_plugins_url() {
+		$server = $_SERVER;
+		try {
+			$_SERVER['HTTP_HOST']              = 'example.test';
+			$_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https';
+			unset( $_SERVER['HTTPS'], $_SERVER['SERVER_PORT'] );
+
+			$url = odd_https_rest_url( 'odd/v1/prefs' );
+			$this->assertStringStartsWith( 'https://', $url );
+			$this->assertStringContainsString( '/wp-json/odd/v1/prefs', $url );
+		} finally {
+			$_SERVER = $server;
+		}
+	}
 }

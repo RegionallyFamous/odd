@@ -543,9 +543,15 @@ function odd_catalog_normalise( $data ) {
 			'author'       => isset( $entry['author'] ) ? sanitize_text_field( (string) $entry['author'] ) : '',
 			'description'  => isset( $entry['description'] ) ? wp_kses_post( (string) $entry['description'] ) : '',
 			'franchise'    => isset( $entry['franchise'] ) ? sanitize_text_field( (string) $entry['franchise'] ) : '',
-			'icon_url'     => isset( $entry['icon_url'] ) ? esc_url_raw( (string) $entry['icon_url'] ) : '',
-			'card_url'     => isset( $entry['card_url'] ) ? esc_url_raw( (string) $entry['card_url'] ) : '',
-			'download_url' => isset( $entry['download_url'] ) ? esc_url_raw( (string) $entry['download_url'] ) : '',
+			'icon_url'     => isset( $entry['icon_url'] )
+				? odd_url_current_scheme( esc_url_raw( (string) $entry['icon_url'] ) )
+				: '',
+			'card_url'     => isset( $entry['card_url'] )
+				? odd_url_current_scheme( esc_url_raw( (string) $entry['card_url'] ) )
+				: '',
+			'download_url' => isset( $entry['download_url'] )
+				? odd_url_current_scheme( esc_url_raw( (string) $entry['download_url'] ) )
+				: '',
 			'sha256'       => $sha,
 			'size'         => isset( $entry['size'] ) ? (int) $entry['size'] : 0,
 			'tags'         => isset( $entry['tags'] ) && is_array( $entry['tags'] )

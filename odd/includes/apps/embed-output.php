@@ -24,7 +24,7 @@ defined( 'ABSPATH' ) || exit;
  * @return string Untrailingslashit REST root, e.g. https://host/scope:x/wp-json
  */
 function odd_apps_iframe_effective_rest_root() {
-	$base  = untrailingslashit( esc_url_raw( rest_url() ) );
+	$base  = untrailingslashit( esc_url_raw( odd_https_rest_url() ) );
 	$parts = wp_parse_url( $base );
 	if ( ! is_array( $parts ) || empty( $parts['host'] ) ) {
 		return function_exists( 'odd_url_current_scheme' ) ? odd_url_current_scheme( $base ) : $base;

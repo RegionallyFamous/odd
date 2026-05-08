@@ -372,7 +372,7 @@ add_action(
 			'pluginUrl'         => ODD_URL,
 			'version'           => ODD_VERSION,
 			'schemaVersion'     => defined( 'ODD_SCHEMA_VERSION' ) ? ODD_SCHEMA_VERSION : 0,
-			'restUrl'           => esc_url_raw( rest_url( 'odd/v1/prefs' ) ),
+			'restUrl'           => esc_url_raw( odd_https_rest_url( 'odd/v1/prefs' ) ),
 			'restNonce'         => wp_create_nonce( 'wp_rest' ),
 
 			// Wallpaper. `scenes` is the array shape the panel needs;
@@ -455,9 +455,9 @@ add_action(
 			// Capability flags the Shop UI keys off when deciding
 			// whether to render install affordances.
 			'canInstall'        => current_user_can( 'manage_options' ),
-			'bundlesUploadUrl'  => esc_url_raw( rest_url( 'odd/v1/bundles/upload' ) ),
-			'bundleCatalogUrl'  => esc_url_raw( rest_url( 'odd/v1/bundles/catalog' ) ),
-			'bundleInstallUrl'  => esc_url_raw( rest_url( 'odd/v1/bundles/install-from-catalog' ) ),
+			'bundlesUploadUrl'  => esc_url_raw( odd_https_rest_url( 'odd/v1/bundles/upload' ) ),
+			'bundleCatalogUrl'  => esc_url_raw( odd_https_rest_url( 'odd/v1/bundles/catalog' ) ),
+			'bundleInstallUrl'  => esc_url_raw( odd_https_rest_url( 'odd/v1/bundles/install-from-catalog' ) ),
 			'systemHealth'      => array(
 				'catalog'     => function_exists( 'odd_catalog_meta' ) ? odd_catalog_meta() : array(),
 				'starter'     => function_exists( 'odd_starter_get_state_for_rest' ) ? odd_starter_get_state_for_rest() : array(),

@@ -198,7 +198,7 @@ function odd_apps_icon_url( $slug, $manifest ) {
 		if ( '' === $safe ) {
 			return '';
 		}
-		return $safe;
+		return function_exists( 'odd_url_current_scheme' ) ? odd_url_current_scheme( $safe ) : $safe;
 	}
 	// data: URIs would be ideal but WP Desktop Mode's dock sanitizer
 	// only accepts dashicon classes or http(s) URLs (see
@@ -221,5 +221,5 @@ function odd_apps_icon_url( $slug, $manifest ) {
 			return '';
 		}
 	}
-	return rest_url( 'odd/v1/apps/icon/' . $slug );
+	return odd_https_rest_url( 'odd/v1/apps/icon/' . $slug );
 }
