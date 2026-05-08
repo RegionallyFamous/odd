@@ -12,6 +12,7 @@
 #
 #   One-shot (Docker MySQL on 3307 + provision + wp server + Playwright):
 #     bash bin/e2e-local.sh all
+#     bash bin/docker-e2e.sh    # same, forces E2E_DB_PORT=3307
 #
 # Env:
 #   E2E_WP_DIR        WordPress tree (default: <repo>/.e2e/wp)
