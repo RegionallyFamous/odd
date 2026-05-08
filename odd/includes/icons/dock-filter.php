@@ -205,3 +205,96 @@ add_filter(
 	},
 	18
 );
+
+/**
+ * Re-run {@see desktop_mode_icons} against a single static-registry entry so
+ * the files-layer serialization path matches themed `desktopIcons[]`.
+ * Desktop Mode snapshots shortcut tiles from {@see desktop_mode_desktop_icon_registry()}
+ * icons (often dashicons-*), bypassing {@see desktop_mode_build_desktop_icons_payload()}.
+ *
+ * @param array<string,string|bool|int>       $shape          Serialized shortcut shape (`ref` holds registry id).
+ * @param array<string,string|bool|int|mixed> $registry_entry Stored icon registration row (`id`, `icon`, …).
+ *
+ * @return array<string,string|bool|int>
+ */
+function odd_icons_overlay_desktop_icons_on_shortcut_shape( array $shape, array $registry_entry ) {
+	$ref = isset( $shape['ref'] ) ? (string) $shape['ref'] : '';
+	if ( '' === $ref ) {
+		return $shape;
+	}
+
+	/** @var array<string, mixed> */
+	$singleton = apply_filters( 'desktop_mode_icons', array( $ref => $registry_entry ) );
+	if (
+		is_array( $singleton )
+		&& isset( $singleton[ $ref ] )
+		&& is_array( $singleton[ $ref ] )
+		&& isset( $singleton[ $ref ]['icon'] )
+	) {
+		$shape['icon'] = (string) $singleton[ $ref ]['icon'];
+	}
+	return $shape;
+}
+
+/**
+ * File-layer `buildTile()` only emits an img tag when previewUrl is set;
+ * HTTPS icons copied from `desktop_mode_icons` must land there too.
+ *
+ * @param array<string,string|bool|int> $shape Serialized shortcut/file shape from Desktop Mode file types.
+ *
+ * @return array<string,string|bool|int>
+ */
+function odd_icons_mirror_https_shortcut_icon_into_preview_if_needed( array $shape ) {
+	$icon = isset( $shape['icon'] ) ? (string) $shape['icon'] : '';
+	if ( '' === $icon || ! preg_match( '#\Ahttps?://#i', $icon ) ) {
+		return $shape;
+	}
+
+	$preview = isset( $shape['previewUrl'] ) ? (string) $shape['previewUrl'] : '';
+	if ( '' !== $preview ) {
+		return $shape;
+	}
+
+	$shape['previewUrl'] = $icon;
+	$shape['icon']       = 'dashicons-media-default';
+	return $shape;
+}
+
+/**
+ * Files-layer placements run through {@see Desktop_Mode_File::serialize()}.
+ * Map registry shortcuts to the themed icon URL + preview semantics above.
+ *
+ * @param mixed $shape Shape from Desktop Mode serialize (any file type).
+ *
+ * @return mixed
+ */
+function odd_normalize_desktop_file_shape_for_dm_files_layer( $shape ) {
+	if ( ! is_array( $shape ) ) {
+		return $shape;
+	}
+	if ( ! isset( $shape['type'] ) || 'shortcut' !== $shape['type'] ) {
+		return $shape;
+	}
+
+	if ( function_exists( 'desktop_mode_desktop_icon_registry' ) ) {
+		$ref = isset( $shape['ref'] ) ? (string) $shape['ref'] : '';
+		if ( '' !== $ref ) {
+			$entry = desktop_mode_desktop_icon_registry( $ref );
+			if ( is_array( $entry ) ) {
+				$shape = odd_icons_overlay_desktop_icons_on_shortcut_shape( $shape, $entry );
+			}
+		}
+	}
+
+	return odd_icons_mirror_https_shortcut_icon_into_preview_if_needed( $shape );
+}
+
+add_filter(
+	'desktop_mode_file_serialize',
+	static function ( $shape, $_file = null ) {
+		unset( $_file );
+		return odd_normalize_desktop_file_shape_for_dm_files_layer( $shape );
+	},
+	10,
+	2
+);

@@ -220,4 +220,48 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 		$this->assertSame( 'themed-code.svg', $config_after['nativeWindows'][0]['icon'] );
 		$this->assertSame( 'dashicons-admin-generic', $config_after['nativeWindows'][1]['icon'] );
 	}
+
+	public function test_shortcut_overlay_rewrites_recycle_bin_icon_like_registry_snapshot() {
+		$set_slug = $this->pick_set_with_fallback();
+		odd_icons_set_active_slug( $set_slug );
+
+		$shape    = array(
+			'type'       => 'shortcut',
+			'ref'        => 'desktop-mode-recycle-bin',
+			'title'      => 'Recycle Bin',
+			'icon'       => 'dashicons-trash',
+			'previewUrl' => '',
+			'exists'     => true,
+		);
+		$snapshot = array(
+			'id'     => 'desktop-mode-recycle-bin',
+			'title'  => 'Recycle Bin',
+			'icon'   => 'dashicons-trash',
+			'window' => 'desktop-mode-recycle-bin',
+		);
+		$after    = odd_icons_overlay_desktop_icons_on_shortcut_shape( $shape, $snapshot );
+
+		$this->assertStringStartsWith(
+			'http',
+			$after['icon'],
+			'Recycle bin shortcut must inherit `desktop_mode_icons` SVG URLs for the active set.'
+		);
+	}
+
+	public function test_shortcut_https_icon_mirrored_into_preview_for_file_tiles() {
+		$icon = 'https://example.test/bin.svg';
+
+		$shapein = array(
+			'type'       => 'shortcut',
+			'ref'        => 'desktop-mode-recycle-bin',
+			'title'      => 'Recycle Bin',
+			'icon'       => $icon,
+			'previewUrl' => '',
+			'exists'     => true,
+		);
+		$out     = odd_icons_mirror_https_shortcut_icon_into_preview_if_needed( $shapein );
+
+		$this->assertSame( $icon, $out['previewUrl'] );
+		$this->assertSame( 'dashicons-media-default', $out['icon'] );
+	}
 }

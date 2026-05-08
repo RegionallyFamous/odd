@@ -145,44 +145,6 @@ add_filter(
 );
 
 /**
- * Desktop Mode ≥0.9 files layer renders shortcut tiles via `buildTile()`,
- * which only paints `<img>` when `previewUrl` is non-empty. HTTP(S)
- * `icon` values are otherwise wedged into a `dashicons` class after
- * stripping punctuation — producing invisible tiles (e.g. the ODD eye).
- *
- * Duplicate the artwork into `previewUrl` so the files layer receives the
- * same surface area as legacy `desktop-mode-icons` rails.
- *
- * @param mixed $shape Serialized file shape.
- * @param mixed $_file Unused; kept for Desktop Mode filter arity.
- * @return mixed
- */
-add_filter(
-	'desktop_mode_file_serialize',
-	static function ( $shape, $_file = null ) {
-		if ( ! is_array( $shape ) ) {
-			return $shape;
-		}
-		if ( ! isset( $shape['type'] ) || 'shortcut' !== $shape['type'] ) {
-			return $shape;
-		}
-		$icon = isset( $shape['icon'] ) ? (string) $shape['icon'] : '';
-		if ( '' === $icon || ! preg_match( '#\Ahttps?://#i', $icon ) ) {
-			return $shape;
-		}
-		$preview = isset( $shape['previewUrl'] ) ? (string) $shape['previewUrl'] : '';
-		if ( '' !== $preview ) {
-			return $shape;
-		}
-		$shape['previewUrl'] = $icon;
-		$shape['icon']       = 'dashicons-media-default';
-		return $shape;
-	},
-	10,
-	2
-);
-
-/**
  * Panel template — the shell clones this into the native window body
  * when the JS render callback hasn't finished hydrating yet, and keeps
  * it around as a fallback if the plugin's script failed to load. Once
