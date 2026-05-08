@@ -44,6 +44,14 @@ describe( 'ODD diagnostics metrics', () => {
 			'<script type="module" src="./assets/app.js"></script>',
 			'</head><body><div id="root"></div></body></html>',
 		].join( '' );
+		const mount = document.createElement( 'div' );
+		mount.className = 'odd-app-host';
+		mount.setAttribute( 'data-odd-app-slug', 'demo' );
+		const frame = document.createElement( 'iframe' );
+		frame.className = 'odd-app-frame';
+		frame.src = '/odd-app/demo/?_wpnonce=secret';
+		mount.appendChild( frame );
+		document.body.appendChild( mount );
 
 		const makeResponse = ( body, init = {} ) => Promise.resolve( {
 			ok: init.ok ?? true,

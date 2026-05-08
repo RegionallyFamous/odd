@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadFoundation } from './harness.js';
+import { loadFoundation, sleep } from './harness.js';
 
 const __dirname = dirname( fileURLToPath( import.meta.url ) );
 const SRC = resolve( __dirname, '../../src/apps/window-host.js' );
@@ -82,5 +82,41 @@ describe( 'ODD app window host', () => {
 		expect( shadow.querySelector( 'iframe.odd-app-frame' ) ).toBeTruthy();
 		expect( window.__odd.diagnostics.appIframes()[0].domRoot ).toBe( 'shadowRoot' );
 		expect( window.__odd.diagnostics.metrics().counters[ 'app.iframe.loaded' ] ).toBeUndefined();
+	} );
+
+	it( 'mounts into the opened window body when no server host exists', () => {
+		loadWindowHost();
+		const body = document.createElement( 'div' );
+		document.body.appendChild( body );
+		const appOpened = [];
+		window.__odd.events.on( 'odd.app-opened', ( payload ) => appOpened.push( payload ) );
+
+		window.__odd.events.emit( window.__odd.events.NAMES.WINDOW_OPENED, {
+			id: 'odd-app-demo',
+			body,
+		} );
+
+		const frame = body.querySelector( 'iframe.odd-app-frame' );
+		expect( frame ).toBeTruthy();
+		expect( frame.getAttribute( 'src' ) ).toBe( '/odd-app/demo/' );
+		expect( appOpened ).toEqual( [ { slug: 'demo', windowId: 'odd-app-demo' } ] );
+	} );
+
+	it( 'hydrates app hosts added to shadow roots after boot', async () => {
+		loadWindowHost();
+		const shell = document.createElement( 'div' );
+		document.body.appendChild( shell );
+		const shadow = shell.attachShadow( { mode: 'open' } );
+		const host = document.createElement( 'div' );
+		host.className = 'odd-app-host';
+		host.setAttribute( 'data-odd-app', '' );
+		host.setAttribute( 'data-odd-app-slug', 'demo' );
+		host.setAttribute( 'data-odd-app-src', '/odd-app/demo/' );
+
+		shadow.appendChild( host );
+		await sleep( 0 );
+
+		expect( shadow.querySelector( 'iframe.odd-app-frame' ) ).toBeTruthy();
+		expect( window.__odd.diagnostics.appIframes()[0].domRoot ).toBe( 'shadowRoot' );
 	} );
 } );

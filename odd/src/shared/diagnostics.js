@@ -30,6 +30,7 @@
 
 	var MAX_ENTRIES = 100;
 	var MAX_METRICS = 80;
+	var APP_ID_PREFIX = 'odd-app-';
 	var buffer = [];
 	var metrics = {
 		timings: [],
@@ -600,6 +601,9 @@
 				'Server diagnostics returned ' + probe.serverDiag.summary.status + '.'
 			);
 		}
+		if ( probe.desktopWindow && Object.keys( probe.desktopWindow ).length ) {
+			add( 'desktopWindow', true, 'Desktop Mode returned diagnostics for the app window.' );
+		}
 		if ( probe.liveIframe ) {
 			add( 'liveIframe', true, 'Live iframe is present in the desktop DOM.' );
 			if ( probe.liveIframe.document && probe.liveIframe.document.root && probe.liveIframe.document.root.exists ) {
@@ -618,6 +622,8 @@
 			if ( hardErrors.length ) {
 				add( 'liveIframeErrors', false, 'Live iframe recorded runtime errors.' );
 			}
+		} else if ( probe.serveUrl && probe.serverDiag && probe.serverDiag.summary && probe.serverDiag.summary.status !== 'fail' ) {
+			add( 'liveIframe', false, 'No live app iframe was found in the current desktop DOM.' );
 		}
 		probe.checks = checks;
 		probe.status = checks.some( function ( row ) { return row.status === 'fail'; } ) ? 'fail' : 'pass';
@@ -686,6 +692,7 @@
 				} );
 			} )
 			.then( function () {
+				probe.desktopWindow = desktopSnapshot( APP_ID_PREFIX + slug );
 				probe.liveIframe = appIframeSnapshotForSlug( slug );
 				var done = pushAppProbeRun( summarizeAppProbe( probe ) );
 				record( done.status === 'pass' ? 'info' : 'warn', [ 'odd.app.probe', done.slug, done.status, done.reason ] );
@@ -767,10 +774,10 @@
 		} catch ( _ ) { return {}; }
 	}
 
-	function desktopSnapshot() {
+	function desktopSnapshot( windowId ) {
 		try {
 			var api = window.__odd && window.__odd.api;
-			return api && typeof api.diagnosticsSnapshot === 'function' ? api.diagnosticsSnapshot() : {};
+			return api && typeof api.diagnosticsSnapshot === 'function' ? api.diagnosticsSnapshot( windowId ) : {};
 		} catch ( _ ) { return {}; }
 	}
 

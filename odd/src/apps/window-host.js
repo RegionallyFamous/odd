@@ -218,6 +218,104 @@
 		return null;
 	}
 
+	function windowIdFromPayload( payload ) {
+		return payload && ( payload.id || payload.windowId ) || '';
+	}
+
+	function elementCandidate( value ) {
+		if ( value && ( value.nodeType === 1 || value.nodeType === 11 ) && value.querySelector && value.appendChild ) return value;
+		return null;
+	}
+
+	function elementFromPayload( payload ) {
+		if ( ! payload || typeof payload !== 'object' ) return null;
+		var keys = [ 'body', 'bodyElement', 'content', 'contentElement', 'element', 'el', 'node', 'host', 'root' ];
+		for ( var i = 0; i < keys.length; i++ ) {
+			var found = elementCandidate( payload[ keys[ i ] ] );
+			if ( found ) return found;
+		}
+		if ( payload.window && typeof payload.window === 'object' ) {
+			for ( var j = 0; j < keys.length; j++ ) {
+				var nested = elementCandidate( payload.window[ keys[ j ] ] );
+				if ( nested ) return nested;
+			}
+		}
+		return null;
+	}
+
+	function cssEscape( value ) {
+		value = String( value || '' );
+		if ( window.CSS && typeof window.CSS.escape === 'function' ) {
+			return window.CSS.escape( value );
+		}
+		return value.replace( /["\\]/g, '\\$&' );
+	}
+
+	function appWindowRoot( id ) {
+		if ( ! id ) return null;
+		var q = cssEscape( id );
+		var selectors = [
+			'[data-odd-native-window="' + q + '"]',
+			'[data-window-id="' + q + '"]',
+			'[data-windowid="' + q + '"]',
+			'[data-desktop-window-id="' + q + '"]',
+			'[data-window="' + q + '"]',
+			'[data-native-window-id="' + q + '"]',
+			'#desktop-mode-native-window-' + q,
+			'#desktop-mode-window-' + q,
+		];
+		for ( var i = 0; i < selectors.length; i++ ) {
+			var found = queryAllDeep( selectors[ i ] )[ 0 ];
+			if ( found ) return found;
+		}
+		return null;
+	}
+
+	function appWindowBodyWithin( root ) {
+		if ( ! root || ! root.querySelector ) return null;
+		if ( root.matches && root.matches( '[data-odd-native-window]' ) ) return root;
+		var selectors = [
+			'[data-odd-native-window]',
+			'[data-window-body]',
+			'[data-native-window-body]',
+			'[data-window-content]',
+			'.desktop-mode-window__body',
+			'.desktop-mode-window-body',
+			'.desktop-mode-native-window__body',
+			'.desktop-mode-native-window-body',
+			'.desktop-window__body',
+			'.native-window-body',
+		];
+		for ( var i = 0; i < selectors.length; i++ ) {
+			try {
+				var found = root.querySelector( selectors[ i ] );
+				if ( found ) return found;
+			} catch ( _ ) {}
+		}
+		return null;
+	}
+
+	function appWindowBodyFromPayload( payload, slug ) {
+		var id = windowIdFromPayload( payload ) || ( slug ? APP_ID_PREFIX + slug : '' );
+		var el = elementFromPayload( payload );
+		if ( el ) {
+			if ( el.matches && el.matches( '.odd-app-host[data-odd-app-slug="' + cssEscape( slug ) + '"]' ) ) {
+				return el.parentNode || el;
+			}
+			var body = appWindowBodyWithin( el );
+			return body || el;
+		}
+		var d = window.wp && window.wp.desktop;
+		var instance = d && d.windowManager && typeof d.windowManager.getById === 'function'
+			? d.windowManager.getById( id )
+			: null;
+		el = elementFromPayload( instance );
+		if ( el ) {
+			return appWindowBodyWithin( el ) || el;
+		}
+		return appWindowBodyWithin( appWindowRoot( id ) );
+	}
+
 	function markContentLoading( ctx ) {
 		var win = windowController( ctx );
 		if ( win && typeof win.markContentLoading === 'function' ) {
@@ -233,7 +331,7 @@
 	}
 
 	function findMount( slug ) {
-		var nodes = queryAllDeep( '.odd-app-host[data-odd-app-slug="' + slug + '"]' );
+		var nodes = queryAllDeep( '.odd-app-host[data-odd-app-slug="' + cssEscape( slug ) + '"]' );
 		if ( ! nodes.length ) return null;
 		// Prefer the one inside a visible window (offsetParent !== null
 		// under most layouts). Fall back to the last-rendered node.
@@ -493,23 +591,46 @@
 		var mount = findMount( slug );
 		if ( mount ) { cb( mount ); return; }
 		if ( attemptsLeft <= 0 ) { cb( null ); return; }
-		window.requestAnimationFrame( function () {
+		var raf = window.requestAnimationFrame || function ( fn ) { return window.setTimeout( fn, 16 ); };
+		raf( function () {
 			waitForMount( slug, attemptsLeft - 1, cb );
 		} );
 	}
 
-	events.on( events.NAMES.WINDOW_OPENED, function ( payload ) {
+	function emitAppOpenForResult( slug, windowId, result ) {
+		if ( result === 'already' ) return;
+		if ( result === 'mounted' ) {
+			events.emit( events.NAMES.APP_OPENED, { slug: slug, windowId: windowId } );
+			return;
+		}
+		diagInfo( 'app.window.noMountTarget', { slug: slug, windowId: windowId } );
+		diagCount( 'app.window.noMountTarget' );
+		diagProbeApp( slug, 'window-open-no-mount-target' );
+	}
+
+	function handleWindowShown( payload ) {
 		if ( ! payload || typeof payload !== 'object' ) return;
-		var slug = slugFromWindowId( payload.id );
+		var windowId = windowIdFromPayload( payload );
+		var slug = slugFromWindowId( windowId );
 		if ( ! slug ) return;
+		var body = appWindowBodyFromPayload( payload, slug );
+		if ( body && ! findMount( slug ) ) {
+			var immediate = buildAndMount( body, slug, payload );
+			if ( immediate !== 'skipped' ) {
+				emitAppOpenForResult( slug, windowId, immediate );
+				return;
+			}
+		}
 		waitForMount( slug, 30, function ( mount ) {
-			var result = installFrame( mount );
-			// If the MutationObserver path already mounted the iframe
-			// AND already emitted APP_OPENED, don't double-fire.
-			if ( result === 'already' ) return;
-			events.emit( events.NAMES.APP_OPENED, { slug: slug, windowId: payload.id } );
+			var result = mount
+				? installFrame( mount, payload )
+				: buildAndMount( body || appWindowBodyFromPayload( payload, slug ), slug, payload );
+			emitAppOpenForResult( slug, windowId, result );
 		} );
-	} );
+	}
+
+	events.on( events.NAMES.WINDOW_OPENED, handleWindowShown );
+	events.on( events.NAMES.WINDOW_REOPENED, handleWindowShown );
 
 	events.on( events.NAMES.WINDOW_CLOSED, function ( payload ) {
 		if ( ! payload || typeof payload !== 'object' ) return;
@@ -558,7 +679,7 @@
 
 	function startObserver() {
 		if ( ! window.MutationObserver || ! document.body ) return;
-		scanAndMount( document );
+		var observedScopes = [];
 		var mo = new MutationObserver( function ( mutations ) {
 			for ( var i = 0; i < mutations.length; i++ ) {
 				var m = mutations[ i ];
@@ -566,6 +687,12 @@
 				for ( var j = 0; j < m.addedNodes.length; j++ ) {
 					var n = m.addedNodes[ j ];
 					if ( n.nodeType !== 1 ) continue;
+					if ( n.shadowRoot ) observeScope( n.shadowRoot );
+					if ( n.querySelectorAll ) {
+						Array.prototype.forEach.call( n.querySelectorAll( '*' ), function ( child ) {
+							if ( child.shadowRoot ) observeScope( child.shadowRoot );
+						} );
+					}
 					if ( n.matches && n.matches( '.odd-app-host[data-odd-app]' ) ) {
 						scanAndMount( n.parentNode || document );
 					} else if ( n.querySelector && n.querySelector( '.odd-app-host[data-odd-app]' ) ) {
@@ -576,7 +703,30 @@
 				}
 			}
 		} );
-		mo.observe( document.body, { childList: true, subtree: true } );
+		function observeScope( scope ) {
+			if ( ! scope || ! scope.querySelectorAll || observedScopes.indexOf( scope ) !== -1 ) return;
+			observedScopes.push( scope );
+			scanAndMount( scope );
+			Array.prototype.forEach.call( scope.querySelectorAll( '*' ), function ( node ) {
+				if ( node.shadowRoot ) observeScope( node.shadowRoot );
+			} );
+			mo.observe( scope, { childList: true, subtree: true } );
+		}
+		function patchAttachShadow() {
+			var proto = window.Element && window.Element.prototype;
+			if ( ! proto || typeof proto.attachShadow !== 'function' ) return;
+			var original = proto.attachShadow.__oddAppsOriginal || proto.attachShadow;
+			var wrapped = function () {
+				var root = original.apply( this, arguments );
+				try { observeScope( root ); } catch ( _ ) {}
+				return root;
+			};
+			wrapped.__oddAppsPatched = true;
+			wrapped.__oddAppsOriginal = original;
+			proto.attachShadow = wrapped;
+		}
+		patchAttachShadow();
+		observeScope( document.body );
 	}
 
 	if ( document.readyState === 'loading' ) {
