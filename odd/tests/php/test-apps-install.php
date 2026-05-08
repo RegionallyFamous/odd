@@ -325,6 +325,24 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 		);
 	}
 
+	public function test_iframe_effective_rest_root_inserts_playground_scope_before_wp_json() {
+		$prev                   = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : null;
+		$_SERVER['REQUEST_URI'] = '/scope:pg-scope-xyz/odd-app/ledger/?_wpnonce=fake';
+
+		try {
+			$root = odd_apps_iframe_effective_rest_root();
+			$this->assertStringContainsString( '/scope:pg-scope-xyz/', $root );
+			$this->assertStringContainsString( 'wp-json', $root );
+			$this->assertStringContainsString( '/scope:pg-scope-xyz/wp-json', $root );
+		} finally {
+			if ( null === $prev ) {
+				unset( $_SERVER['REQUEST_URI'] );
+			} else {
+				$_SERVER['REQUEST_URI'] = $prev;
+			}
+		}
+	}
+
 	public function test_prepare_app_html_output_strips_base_and_rewrites_root_asset_refs() {
 		$raw = '<!DOCTYPE html><html><head><base href="/">'
 			. '<link rel="stylesheet" href="/assets/index.css">'

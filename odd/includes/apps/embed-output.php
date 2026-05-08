@@ -11,13 +11,67 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
+ * REST API root URL for scripts inside `/odd-app/{slug}/` HTML (fetch bootstrap).
+ *
+ * WordPress `rest_url()` matches `site_url()` and usually omits Playground’s
+ * `/scope:{instance}/` URL prefix (the embedded site is reached at that path,
+ * but `siteurl` stays unprefixed). Catalog apps then build
+ * `{restUrl}/odd/v1/…` using a `restUrl` derived from `location.href`, which
+ * includes the scope segment. The fetch shim fixes `/odd/v1/` paths by
+ * prepending this base — so the base must be `…/scope:…/wp-json`, not plain
+ * `…/wp-json`, or requests leave the Playground worker and return 404/empty.
+ *
+ * @return string Untrailingslashit REST root, e.g. https://host/scope:x/wp-json
+ */
+function odd_apps_iframe_effective_rest_root() {
+	$base  = untrailingslashit( esc_url_raw( rest_url() ) );
+	$parts = wp_parse_url( $base );
+	if ( ! is_array( $parts ) || empty( $parts['host'] ) ) {
+		return function_exists( 'odd_url_current_scheme' ) ? odd_url_current_scheme( $base ) : $base;
+	}
+
+	$uri      = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
+	$uri      = sanitize_text_field( $uri );
+	$req_path = explode( '?', $uri, 2 )[0];
+	if ( '' !== $req_path && '/' !== $req_path[0] ) {
+		$req_path = '/' . $req_path;
+	}
+
+	if ( ! preg_match( '#^(/scope:[^/]+)(?:/|$)#', $req_path, $rm ) ) {
+		return function_exists( 'odd_url_current_scheme' ) ? odd_url_current_scheme( $base ) : $base;
+	}
+	$scope_seg = $rm[1];
+
+	$rest_path = isset( $parts['path'] ) ? (string) $parts['path'] : '';
+	if ( false !== strpos( $rest_path, '/scope:' ) ) {
+		return function_exists( 'odd_url_current_scheme' ) ? odd_url_current_scheme( $base ) : $base;
+	}
+
+	$new_path = $scope_seg . ( '' !== $rest_path ? $rest_path : '/wp-json' );
+
+	$scheme = isset( $parts['scheme'] ) ? (string) $parts['scheme'] . '://' : '';
+	$host   = (string) $parts['host'];
+	$port   = isset( $parts['port'] ) ? ':' . (int) $parts['port'] : '';
+	$user   = isset( $parts['user'] ) ? (string) $parts['user'] : '';
+	$pass   = isset( $parts['pass'] ) ? ':' . (string) $parts['pass'] : '';
+	$auth   = ( '' !== $user ) ? $user . $pass . '@' : '';
+
+	$merged = $scheme . $auth . $host . $port . $new_path;
+	$merged = untrailingslashit( $merged );
+
+	$merged = (string) apply_filters( 'odd_apps_iframe_effective_rest_root', $merged, $base );
+
+	return function_exists( 'odd_url_current_scheme' ) ? odd_url_current_scheme( $merged ) : $merged;
+}
+
+/**
  * JSON-serialize the REST root for use inside an inline script.
  *
  * @return string Quoted JSON string (no wrapping tags).
  */
 function odd_apps_iframe_rest_root_json() {
 	return wp_json_encode(
-		untrailingslashit( esc_url_raw( rest_url() ) ),
+		odd_apps_iframe_effective_rest_root(),
 		JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_UNESCAPED_SLASHES
 	);
 }
