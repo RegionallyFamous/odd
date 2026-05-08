@@ -66,6 +66,34 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 		return $res;
 	}
 
+	protected function with_request_uri( $request_uri, callable $callback ) {
+		$prev = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : null;
+		if ( null === $request_uri ) {
+			unset( $_SERVER['REQUEST_URI'] );
+		} else {
+			$_SERVER['REQUEST_URI'] = $request_uri;
+		}
+
+		try {
+			return $callback();
+		} finally {
+			if ( null === $prev ) {
+				unset( $_SERVER['REQUEST_URI'] );
+			} else {
+				$_SERVER['REQUEST_URI'] = $prev;
+			}
+		}
+	}
+
+	protected function assert_url_path_has_scope_and_suffix( $url, $scope, $suffix ) {
+		$parts = wp_parse_url( $url );
+		$this->assertIsArray( $parts, $url );
+		$path = isset( $parts['path'] ) ? (string) $parts['path'] : '';
+		$this->assertSame( 0, strpos( $path, '/' . $scope . '/' ), $url );
+		$this->assertSame( 1, substr_count( $path, '/' . $scope . '/' ), $url );
+		$this->assertSame( $suffix, substr( $path, 0 - strlen( $suffix ) ), $url );
+	}
+
 	public function test_install_happy_path_writes_index_row() {
 		$res = $this->install_fixture( 'hello-odd' );
 		$this->assertIsArray( $res, is_wp_error( $res ) ? $res->get_error_message() : 'install returned non-array' );
@@ -325,22 +353,132 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 		);
 	}
 
-	public function test_iframe_effective_rest_root_inserts_playground_scope_before_wp_json() {
-		$prev                   = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : null;
-		$_SERVER['REQUEST_URI'] = '/scope:pg-scope-xyz/odd-app/ledger/?_wpnonce=fake';
+	public function test_url_with_playground_scope_preserves_parts_and_avoids_duplicates() {
+		$this->with_request_uri(
+			'/scope:pg-scope-xyz/wp-admin/index.php?desktop_mode_portal=1',
+			function () {
+				$url   = odd_url_with_playground_scope( 'http://example.test/wp/odd-app/board/?foo=bar#frag' );
+				$parts = wp_parse_url( $url );
 
-		try {
-			$root = odd_apps_iframe_effective_rest_root();
-			$this->assertStringContainsString( '/scope:pg-scope-xyz/', $root );
-			$this->assertStringContainsString( 'wp-json', $root );
-			$this->assertStringContainsString( '/scope:pg-scope-xyz/wp-json', $root );
-		} finally {
-			if ( null === $prev ) {
-				unset( $_SERVER['REQUEST_URI'] );
-			} else {
-				$_SERVER['REQUEST_URI'] = $prev;
+				$this->assertSame( 'example.test', $parts['host'] );
+				$this->assertSame( '/scope:pg-scope-xyz/wp/odd-app/board/', $parts['path'] );
+				$this->assertSame( 'foo=bar', $parts['query'] );
+				$this->assertSame( 'frag', $parts['fragment'] );
+
+				$already_scoped = odd_url_with_playground_scope( 'https://example.test/scope:existing/odd-app/board/' );
+				$already_parts  = wp_parse_url( $already_scoped );
+				$this->assertSame( '/scope:existing/odd-app/board/', $already_parts['path'] );
 			}
-		}
+		);
+	}
+
+	public function test_url_with_playground_scope_noops_without_scope_request() {
+		$this->with_request_uri(
+			'/wp-admin/index.php',
+			function () {
+				$url   = odd_url_with_playground_scope( 'https://example.test/odd-app/board/' );
+				$parts = wp_parse_url( $url );
+
+				$this->assertSame( '/odd-app/board/', $parts['path'] );
+			}
+		);
+	}
+
+	public function test_cookieauth_url_for_includes_playground_scope() {
+		$this->with_request_uri(
+			'/scope:pg-scope-xyz/wp-admin/index.php?desktop_mode_portal=1',
+			function () {
+				$this->assert_url_path_has_scope_and_suffix(
+					odd_apps_cookieauth_url_for( 'board' ),
+					'scope:pg-scope-xyz',
+					'/odd-app/board/'
+				);
+			}
+		);
+	}
+
+	public function test_runtime_importmap_urls_include_playground_scope() {
+		$this->with_request_uri(
+			'/scope:pg-scope-xyz/odd-app/board/',
+			function () {
+				$html = odd_apps_runtime_importmap_html();
+				$this->assertSame( 1, preg_match( '#<script type="importmap">(.+)</script>#', $html, $matches ) );
+
+				$decoded = json_decode( $matches[1], true );
+				$this->assertIsArray( $decoded );
+				$imports = isset( $decoded['imports'] ) ? $decoded['imports'] : array();
+
+				$this->assertArrayHasKey( 'react', $imports );
+				$this->assertArrayHasKey( 'react-dom', $imports );
+				$this->assertArrayHasKey( 'react-dom/client', $imports );
+				$this->assertArrayHasKey( 'react/jsx-runtime', $imports );
+				$this->assert_url_path_has_scope_and_suffix(
+					$imports['react'],
+					'scope:pg-scope-xyz',
+					'/odd-app-runtime/react.js'
+				);
+				$this->assert_url_path_has_scope_and_suffix(
+					$imports['react-dom'],
+					'scope:pg-scope-xyz',
+					'/odd-app-runtime/react-dom.js'
+				);
+				$this->assert_url_path_has_scope_and_suffix(
+					$imports['react-dom/client'],
+					'scope:pg-scope-xyz',
+					'/odd-app-runtime/react-dom-client.js'
+				);
+				$this->assert_url_path_has_scope_and_suffix(
+					$imports['react/jsx-runtime'],
+					'scope:pg-scope-xyz',
+					'/odd-app-runtime/react-jsx-runtime.js'
+				);
+			}
+		);
+	}
+
+	public function test_runtime_bare_import_rewrite_uses_scoped_runtime_base() {
+		$this->with_request_uri(
+			'/scope:pg-scope-xyz/odd-app/board/',
+			function () {
+				$result = odd_apps_rewrite_runtime_bare_imports(
+					'import React from "react";'
+					. 'import{jsx}from"react/jsx-runtime";'
+					. 'import"react-dom";'
+					. 'export*from"react-dom/client";'
+				);
+
+				$this->assertStringContainsString( '/scope:pg-scope-xyz/', $result );
+				$this->assertStringContainsString( '/odd-app-runtime/react.js"', $result );
+				$this->assertStringContainsString( '/odd-app-runtime/react-jsx-runtime.js"', $result );
+				$this->assertStringContainsString( '/odd-app-runtime/react-dom.js"', $result );
+				$this->assertStringContainsString( '/odd-app-runtime/react-dom-client.js"', $result );
+			}
+		);
+	}
+
+	public function test_https_rest_url_includes_playground_scope() {
+		$this->with_request_uri(
+			'/scope:pg-scope-xyz/wp-admin/index.php?desktop_mode_portal=1',
+			function () {
+				$this->assert_url_path_has_scope_and_suffix(
+					odd_https_rest_url( 'odd/v1/apps' ),
+					'scope:pg-scope-xyz',
+					'/wp-json/odd/v1/apps'
+				);
+			}
+		);
+	}
+
+	public function test_iframe_effective_rest_root_inserts_playground_scope_before_wp_json() {
+		$this->with_request_uri(
+			'/scope:pg-scope-xyz/odd-app/ledger/?_wpnonce=fake',
+			function () {
+				$root = odd_apps_iframe_effective_rest_root();
+				$this->assertStringContainsString( '/scope:pg-scope-xyz/', $root );
+				$this->assertStringContainsString( 'wp-json', $root );
+				$this->assertStringContainsString( '/scope:pg-scope-xyz/wp-json', $root );
+			}
+		);
 	}
 
 	public function test_prepare_app_html_output_strips_base_and_rewrites_root_asset_refs() {
