@@ -916,14 +916,15 @@ function odd_apps_rest_diag( WP_REST_Request $req ) {
 			: ( function_exists( 'odd_apps_inject_runtime_importmap' ) ? odd_apps_inject_runtime_importmap( $raw_html ) : $raw_html );
 		$refs                 = odd_apps_diag_html_refs( $out_html );
 		$entry['transformed'] = array(
-			'size'              => strlen( $out_html ),
-			'hasImportmap'      => false !== stripos( $out_html, 'type="importmap"' ),
-			'hasFetchBootstrap' => false !== strpos( $out_html, 'odd_apps_iframe_fetch_bootstrap' ),
-			'hasBaseTag'        => false !== stripos( $out_html, '<base' ),
-			'hasRootElement'    => (bool) preg_match( '#\bid=(["\'])root\1#i', $out_html ),
-			'scripts'           => $refs['scripts'],
-			'styles'            => $refs['styles'],
-			'head'              => substr( $out_html, 0, 768 ),
+			'size'                    => strlen( $out_html ),
+			'hasImportmap'            => false !== stripos( $out_html, 'type="importmap"' ),
+			'hasFetchBootstrap'       => false !== strpos( $out_html, 'odd_apps_iframe_fetch_bootstrap' ),
+			'hasDiagnosticsBootstrap' => false !== strpos( $out_html, 'odd_apps_iframe_diagnostics_bootstrap' ),
+			'hasBaseTag'              => false !== stripos( $out_html, '<base' ),
+			'hasRootElement'          => (bool) preg_match( '#\bid=(["\'])root\1#i', $out_html ),
+			'scripts'                 => $refs['scripts'],
+			'styles'                  => $refs['styles'],
+			'head'                    => substr( $out_html, 0, 768 ),
 		);
 		foreach ( array_merge( $refs['scripts'], $refs['styles'] ) as $ref ) {
 			$src        = isset( $ref['src'] ) ? $ref['src'] : ( isset( $ref['href'] ) ? $ref['href'] : '' );
@@ -1046,10 +1047,11 @@ function odd_apps_rest_diag( WP_REST_Request $req ) {
 			'html_transform',
 			! empty( $entry['transformed']['hasImportmap'] )
 				&& ! empty( $entry['transformed']['hasFetchBootstrap'] )
+				&& ! empty( $entry['transformed']['hasDiagnosticsBootstrap'] )
 				&& empty( $entry['transformed']['hasBaseTag'] )
 				? 'pass'
 				: 'warn',
-			'HTML entry transform includes iframe bootstrap/import map and strips base tags.',
+			'HTML entry transform includes iframe bootstraps/import map and strips base tags.',
 			$entry['transformed']
 		);
 	}

@@ -282,7 +282,7 @@
 		frame.addEventListener( 'error', function ( e ) {
 			appsLog( 'iframe error event', slugForMetric, e );
 			diagInfo( 'app.iframe.elementError', { slug: slugForMetric } );
-			events.emit( events.NAMES.IFRAME_ERROR, { message: 'app frame error', err: e } );
+			events.emit( events.NAMES.IFRAME_ERROR, { message: 'app frame error', slug: slugForMetric, err: e } );
 			diagProbeApp( slugForMetric, 'iframe-error-event' );
 			stopLoadTimer( { status: 'error' } );
 			diagCount( 'app.iframe.error' );

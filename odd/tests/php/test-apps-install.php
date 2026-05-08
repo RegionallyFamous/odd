@@ -548,6 +548,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 					$this->assertTrue( $data['serve']['regex_matches'] );
 					$this->assertTrue( $data['entry']['transformed']['hasImportmap'] );
 					$this->assertTrue( $data['entry']['transformed']['hasFetchBootstrap'] );
+					$this->assertTrue( $data['entry']['transformed']['hasDiagnosticsBootstrap'] );
 					$this->assertFalse( $data['entry']['transformed']['hasBaseTag'] );
 				$this->assertNotEmpty( $data['asset_probes'] );
 				$this->assertTrue( $data['asset_probes'][0]['exists'] );
@@ -571,6 +572,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 		$this->assertStringContainsString( 'src="./chunks/main.js"', $result );
 		$this->assertStringContainsString( 'src="./@vite/client"', $result );
 		$this->assertStringContainsString( 'odd_apps_iframe_fetch_bootstrap', $result );
+		$this->assertStringContainsString( 'odd_apps_iframe_diagnostics_bootstrap', $result );
 		$this->assertStringContainsString( 'I.slice(j)', $result );
 		$this->assertStringContainsString( 'wp-json', $result );
 	}

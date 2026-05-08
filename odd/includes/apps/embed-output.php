@@ -81,6 +81,59 @@ function odd_apps_inject_iframe_fetch_bootstrap( $html ) {
 }
 
 /**
+ * Inline script: capture iframe runtime failures before the app module runs.
+ *
+ * The parent diagnostics bundle can fetch HTML/JS successfully, but a blank app
+ * often comes from the next phase: module evaluation or React rendering. This
+ * bootstrap lives inside the iframe document and forwards early `error`,
+ * `unhandledrejection`, and console error/warn entries to the parent window.
+ *
+ * @return string HTML fragment (script element only).
+ */
+function odd_apps_iframe_diagnostics_bootstrap_fragment() {
+	return '<script id="odd_apps_iframe_diagnostics_bootstrap">'
+		. '(function(){if(window.__oddAppDiagnostics&&window.__oddAppDiagnostics.installed)return;'
+		. 'var q=[];function C(v,n){v=String(v==null?"":v);return v.length>(n||1200)?v.slice(0,n||1200):v;}'
+		. 'function S(v){if(v instanceof Error)return(v.name||"Error")+": "+v.message+(v.stack?"\n"+v.stack:"");'
+		. 'if(typeof v==="string")return v;try{return JSON.stringify(v);}catch(_){return String(v);}}'
+		. 'function G(){try{var m=location.pathname.match(/\/odd-app\/([^\/]+)/);return m?decodeURIComponent(m[1]):"";}catch(_){return"";}}'
+		. 'function P(t,p){try{p=p||{};var r={at:(new Date).toISOString(),source:"odd-app-iframe",type:t,slug:G(),href:location.href,'
+		. 'message:C(p.message||""),filename:C(p.filename||""),lineno:p.lineno||0,colno:p.colno||0,stack:C(p.stack||"",2000)};'
+		. 'q.push(r);while(q.length>20)q.shift();if(window.parent&&window.parent!==window){window.parent.postMessage({type:"odd-app-diagnostic",event:r},"*");}}catch(_){}}'
+		. 'window.__oddAppDiagnostics={installed:true,events:q,push:P};'
+		. 'window.addEventListener("error",function(e){P("error",{message:e&&e.message,filename:e&&e.filename,lineno:e&&e.lineno,colno:e&&e.colno,stack:e&&e.error&&e.error.stack});});'
+		. 'window.addEventListener("unhandledrejection",function(e){var r=e&&e.reason;P("unhandledrejection",{message:r&&r.message?r.message:String(r),stack:r&&r.stack});});'
+		. 'var c=window.console||{};["error","warn"].forEach(function(l){var o=c[l];if(typeof o!=="function")return;c[l]=function(){P("console."+l,{message:Array.prototype.slice.call(arguments).map(S).join(" ")});return o.apply(c,arguments);};});'
+		. '})();'
+		. '</script>';
+}
+
+/**
+ * Insert iframe diagnostics immediately after the opening <head> tag.
+ *
+ * @param string $html Full document.
+ *
+ * @return string
+ */
+function odd_apps_inject_iframe_diagnostics_bootstrap( $html ) {
+	if ( ! is_string( $html ) || '' === $html ) {
+		return $html;
+	}
+	if ( false !== strpos( $html, 'odd_apps_iframe_diagnostics_bootstrap' ) ) {
+		return $html;
+	}
+	$frag = odd_apps_iframe_diagnostics_bootstrap_fragment();
+	if ( false !== stripos( $html, '<head>' ) ) {
+		return preg_replace( '#<head>#i', "<head>\n" . $frag, $html, 1 );
+	}
+	if ( false !== stripos( $html, '<head ' ) ) {
+		return preg_replace( '#(<head\b[^>]*>)#i', '$1' . "\n" . $frag, $html, 1 );
+	}
+
+	return $frag . "\n" . $html;
+}
+
+/**
  * Strip `<base href="…">` from app HTML streamed into `/odd-app/{slug}/`.
  *
  * Default Vite `base: '/'` emits `<base href="/">`, which resolves every
@@ -198,6 +251,7 @@ function odd_apps_prepare_app_html_output( $raw ) {
 	$html = odd_apps_transform_embed_bundle_output( $raw, 'text/html; charset=utf-8' );
 	$html = odd_apps_strip_iframe_document_base_tags( $html );
 	$html = odd_apps_rewrite_iframe_absolute_asset_roots( $html );
+	$html = odd_apps_inject_iframe_diagnostics_bootstrap( $html );
 	$html = odd_apps_inject_iframe_fetch_bootstrap( $html );
 	if ( function_exists( 'odd_apps_inject_runtime_importmap' ) ) {
 		return odd_apps_inject_runtime_importmap( $html );

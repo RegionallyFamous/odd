@@ -169,15 +169,10 @@
 	var APP_PROBES_MAX = 12;
 	var appProbeRuns = [];
 
-	function pushAppIframeError( row ) {
-		try {
-			appIframeErrors.push( {
-				at:      now(),
-				message: row && row.message ? String( row.message ) : '',
-				slug:    row && row.slug ? String( row.slug ) : '',
-			} );
-			while ( appIframeErrors.length > APP_ERRORS_MAX ) appIframeErrors.shift();
-		} catch ( _ ) {}
+	function truncate( value, max ) {
+		value = value === undefined || value === null ? '' : String( value );
+		max = max || 1200;
+		return value.length > max ? value.slice( 0, max ) : value;
 	}
 
 	function redactAppServeUrlForReport( url ) {
@@ -185,8 +180,117 @@
 		return url.replace( /([?&])_wpnonce=[^&]*/g, '$1_wpnonce=[redacted]' );
 	}
 
+	function slugFromFrame( frame ) {
+		try {
+			var mount = frame && frame.closest ? frame.closest( '.odd-app-host' ) : null;
+			return mount && mount.getAttribute ? ( mount.getAttribute( 'data-odd-app-slug' ) || '' ) : '';
+		} catch ( _ ) {}
+		return '';
+	}
+
+	function frameForContentWindow( source ) {
+		try {
+			var frames = document.querySelectorAll ? document.querySelectorAll( 'iframe.odd-app-frame' ) : [];
+			for ( var i = 0; i < frames.length; i++ ) {
+				try {
+					if ( frames[ i ].contentWindow === source ) return frames[ i ];
+				} catch ( _ ) {}
+			}
+		} catch ( _ ) {}
+		return null;
+	}
+
+	function slugForMessageSource( source ) {
+		return slugFromFrame( frameForContentWindow( source ) );
+	}
+
+	function normalizeAppIframeError( row, source ) {
+		row = row || {};
+		return {
+			at:       row.at ? String( row.at ) : now(),
+			source:   row.source ? String( row.source ) : 'odd-app-iframe',
+			type:     row.type ? String( row.type ) : '',
+			message:  truncate( row.message || row.reason || row.error || '', 1600 ),
+			slug:     row.slug ? String( row.slug ) : slugForMessageSource( source ),
+			href:     redactAppServeUrlForReport( row.href ? String( row.href ) : '' ),
+			filename: redactAppServeUrlForReport( row.filename ? String( row.filename ) : '' ),
+			lineno:   Number( row.lineno ) || 0,
+			colno:    Number( row.colno ) || 0,
+			stack:    truncate( row.stack || '', 2400 ),
+		};
+	}
+
+	function pushAppIframeError( row, source ) {
+		var normalized = normalizeAppIframeError( row, source );
+		try {
+			appIframeErrors.push( normalized );
+			while ( appIframeErrors.length > APP_ERRORS_MAX ) appIframeErrors.shift();
+		} catch ( _ ) {}
+		return normalized;
+	}
+
+	function recentAppIframeErrors( slug ) {
+		var needle = String( slug || '' );
+		return appIframeErrors.filter( function ( row ) {
+			return ! needle || ! row.slug || row.slug === needle;
+		} ).slice( -8 );
+	}
+
+	function rectSnapshot( node ) {
+		if ( ! node || typeof node.getBoundingClientRect !== 'function' ) return null;
+		try {
+			var r = node.getBoundingClientRect();
+			return {
+				x: Math.round( r.left ),
+				y: Math.round( r.top ),
+				w: Math.round( r.width ),
+				h: Math.round( r.height ),
+			};
+		} catch ( _ ) {
+			return null;
+		}
+	}
+
+	function styleSnapshot( win, node ) {
+		if ( ! win || ! node || typeof win.getComputedStyle !== 'function' ) return null;
+		try {
+			var s = win.getComputedStyle( node );
+			return {
+				display:         s.display,
+				visibility:      s.visibility,
+				opacity:         s.opacity,
+				position:        s.position,
+				overflow:        s.overflow,
+				backgroundColor: s.backgroundColor,
+				color:           s.color,
+				width:           s.width,
+				height:          s.height,
+			};
+		} catch ( _ ) {
+			return null;
+		}
+	}
+
+	function nodeSnapshot( win, node ) {
+		if ( ! node ) return { exists: false };
+		var text = '';
+		try {
+			text = ( node.textContent || '' ).replace( /\s+/g, ' ' ).trim();
+		} catch ( _ ) {}
+		return {
+			exists:            true,
+			tagName:           node.tagName || '',
+			childElementCount: node.children ? node.children.length : 0,
+			textLength:        text.length,
+			textPreview:       truncate( text, 500 ),
+			htmlHead:          truncate( node.innerHTML || '', 1600 ),
+			rect:              rectSnapshot( node ),
+			style:             styleSnapshot( win, node ),
+		};
+	}
+
 	/**
-	 * Live snapshot of sandboxed app iframes (parent document only).
+	 * Live snapshot of sandboxed app iframes and same-origin iframe DOM.
 	 *
 	 * @return {array}
 	 */
@@ -197,23 +301,61 @@
 			for ( var i = 0; i < frames.length; i++ ) {
 				var frame = frames[ i ];
 				var mount = frame.closest ? frame.closest( '.odd-app-host' ) : null;
-				var slug = mount && mount.getAttribute ? mount.getAttribute( 'data-odd-app-slug' ) : '';
+				var slug = slugFromFrame( frame );
 				var row = {
 					slug:       slug || '',
 					iframeSrc:  redactAppServeUrlForReport( frame.getAttribute( 'src' ) || '' ),
+					iframeRect: rectSnapshot( frame ),
+					iframeStyle: styleSnapshot( window, frame ),
+					mountRect:  rectSnapshot( mount ),
+					mountStyle: styleSnapshot( window, mount ),
 					title:      '',
 					rootKids:   null,
 					bodyScript: null,
+					recentErrors: recentAppIframeErrors( slug ),
 				};
+				try {
+					var loading = mount && mount.querySelector ? mount.querySelector( '.odd-app-host__loading' ) : null;
+					if ( loading ) {
+						row.loading = {
+							text:  truncate( ( loading.textContent || '' ).replace( /\s+/g, ' ' ).trim(), 500 ),
+							rect:  rectSnapshot( loading ),
+							style: styleSnapshot( window, loading ),
+						};
+					}
+				} catch ( _ ) {}
 				try {
 					var doc = frame.contentDocument;
 					if ( doc ) {
+						var frameWin = frame.contentWindow || null;
 						row.title = doc.title || '';
 						var rt = doc.getElementById( 'root' ) || doc.body;
 						if ( rt ) {
 							row.rootKids = rt.children ? rt.children.length : 0;
 						}
 						row.bodyScript = doc.body ? doc.body.querySelectorAll( 'script' ).length : 0;
+						row.document = {
+							readyState: doc.readyState || '',
+							title:      doc.title || '',
+							url:        redactAppServeUrlForReport( doc.URL || '' ),
+							root:       nodeSnapshot( frameWin, doc.getElementById( 'root' ) ),
+							body:       nodeSnapshot( frameWin, doc.body ),
+							scripts:    {
+								total:      doc.scripts ? doc.scripts.length : 0,
+								withSrc:    doc.querySelectorAll ? doc.querySelectorAll( 'script[src]' ).length : 0,
+								modules:    doc.querySelectorAll ? doc.querySelectorAll( 'script[type="module"]' ).length : 0,
+								importMaps: doc.querySelectorAll ? doc.querySelectorAll( 'script[type="importmap"]' ).length : 0,
+							},
+							stylesheets: doc.styleSheets ? doc.styleSheets.length : 0,
+						};
+						try {
+							var embedded = frameWin && frameWin.__oddAppDiagnostics && frameWin.__oddAppDiagnostics.events;
+							if ( embedded && embedded.length ) {
+								row.embeddedDiagnostics = Array.prototype.slice.call( embedded, -8 ).map( function ( evt ) {
+									return normalizeAppIframeError( evt );
+								} );
+							}
+						} catch ( _ ) {}
 						try {
 							if ( frame.contentWindow && frame.contentWindow.location && frame.contentWindow.location.href ) {
 								row.frameLocation = redactAppServeUrlForReport( frame.contentWindow.location.href );
@@ -230,6 +372,27 @@
 		} catch ( _ ) {}
 		return out;
 	}
+
+	function appIframeSnapshotForSlug( slug ) {
+		slug = String( slug || '' );
+		var frames = appIframesSnapshot();
+		for ( var i = frames.length - 1; i >= 0; i-- ) {
+			if ( frames[ i ].slug === slug ) return frames[ i ];
+		}
+		return null;
+	}
+
+	window.addEventListener( 'message', function ( e ) {
+		try {
+			var data = e && e.data;
+			if ( ! data || data.type !== 'odd-app-diagnostic' || ! data.event ) return;
+			var row = pushAppIframeError( data.event, e.source );
+			record(
+				row.type === 'console.warn' ? 'warn' : 'error',
+				[ 'odd.app.iframe', row.slug, row.type, row.message ]
+			);
+		} catch ( _ ) {}
+	} );
 
 	function appServeUrlsSnapshot() {
 		try {
@@ -329,6 +492,7 @@
 			hasRoot: false,
 			hasImportmap: false,
 			hasFetchBootstrap: html.indexOf( 'odd_apps_iframe_fetch_bootstrap' ) !== -1,
+			hasDiagnosticsBootstrap: html.indexOf( 'odd_apps_iframe_diagnostics_bootstrap' ) !== -1,
 			moduleScripts: [],
 			styles: [],
 			imports: {},
@@ -377,6 +541,7 @@
 		if ( probe.html ) {
 			add( 'htmlImportmap', !! probe.html.hasImportmap, 'HTML contains a runtime import map.' );
 			add( 'htmlFetchBootstrap', !! probe.html.hasFetchBootstrap, 'HTML contains the iframe fetch bootstrap.' );
+			add( 'htmlDiagnosticsBootstrap', !! probe.html.hasDiagnosticsBootstrap, 'HTML contains the iframe runtime diagnostics bootstrap.' );
 			if ( probe.html.moduleScripts.length > 0 ) {
 				add( 'htmlModules', true, 'HTML references at least one module script.' );
 			}
@@ -401,6 +566,25 @@
 				probe.serverDiag.summary.status !== 'fail',
 				'Server diagnostics returned ' + probe.serverDiag.summary.status + '.'
 			);
+		}
+		if ( probe.liveIframe ) {
+			add( 'liveIframe', true, 'Live iframe is present in the desktop DOM.' );
+			if ( probe.liveIframe.document && probe.liveIframe.document.root && probe.liveIframe.document.root.exists ) {
+				var root = probe.liveIframe.document.root;
+				add(
+					'liveRootRendered',
+					root.childElementCount > 0 || root.textLength > 0,
+					root.childElementCount > 0 || root.textLength > 0
+						? 'Live iframe root has rendered content.'
+						: 'Live iframe root is still empty after execution.'
+				);
+			}
+			var hardErrors = ( probe.liveIframe.recentErrors || [] ).filter( function ( row ) {
+				return row && row.type !== 'console.warn';
+			} );
+			if ( hardErrors.length ) {
+				add( 'liveIframeErrors', false, 'Live iframe recorded runtime errors.' );
+			}
 		}
 		probe.checks = checks;
 		probe.status = checks.some( function ( row ) { return row.status === 'fail'; } ) ? 'fail' : 'pass';
@@ -469,6 +653,7 @@
 				} );
 			} )
 			.then( function () {
+				probe.liveIframe = appIframeSnapshotForSlug( slug );
 				var done = pushAppProbeRun( summarizeAppProbe( probe ) );
 				record( done.status === 'pass' ? 'info' : 'warn', [ 'odd.app.probe', done.slug, done.status, done.reason ] );
 				return done;
@@ -675,6 +860,7 @@
 		metrics:         metricsSnapshot,
 		probeApp:        probeApp,
 		appProbes:       function () { return appProbeRuns.slice(); },
+		recordAppIframeError: pushAppIframeError,
 		record:          record,
 		recent:          function () { return buffer.slice(); },
 		time:            time,

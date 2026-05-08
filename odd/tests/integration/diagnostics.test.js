@@ -39,6 +39,7 @@ describe( 'ODD diagnostics metrics', () => {
 			'<!doctype html><html><head>',
 			'<script type="importmap">{"imports":{"react":"/odd-app-runtime/react.js"}}</script>',
 			'<script id="odd_apps_iframe_fetch_bootstrap"></script>',
+			'<script id="odd_apps_iframe_diagnostics_bootstrap"></script>',
 			'<script type="module" src="./assets/app.js"></script>',
 			'</head><body><div id="root"></div></body></html>',
 		].join( '' );
@@ -91,5 +92,47 @@ describe( 'ODD diagnostics metrics', () => {
 		expect( probe.fetches.runtimes ).toHaveLength( 1 );
 		expect( window.__odd.diagnostics.appProbes() ).toHaveLength( 1 );
 		expect( window.__odd.diagnostics.collectMarkdown() ).toContain( 'active app probes' );
+	} );
+
+	it( 'captures live iframe DOM state and iframe runtime diagnostics', () => {
+		loadFoundation( {
+			config: {
+				appsEnabled: true,
+				appServeUrls: { demo: '/odd-app/demo/?_wpnonce=secret' },
+				userApps: { installed: [ 'demo' ], pinned: [] },
+			},
+		} );
+
+		const mount = document.createElement( 'div' );
+		mount.className = 'odd-app-host';
+		mount.setAttribute( 'data-odd-app-slug', 'demo' );
+		const frame = document.createElement( 'iframe' );
+		frame.className = 'odd-app-frame';
+		frame.src = '/odd-app/demo/?_wpnonce=secret';
+		mount.appendChild( frame );
+		document.body.appendChild( mount );
+		frame.contentDocument.open();
+		frame.contentDocument.write( '<!doctype html><html><body><div id="root"><main>Rendered app</main></div></body></html>' );
+		frame.contentDocument.close();
+
+		window.dispatchEvent( new MessageEvent( 'message', {
+			source: frame.contentWindow,
+			data: {
+				type: 'odd-app-diagnostic',
+				event: {
+					type: 'error',
+					message: 'Render exploded',
+					href: '/odd-app/demo/?_wpnonce=secret',
+				},
+			},
+		} ) );
+
+		const snap = window.__odd.diagnostics.appIframes()[0];
+		expect( snap.slug ).toBe( 'demo' );
+		expect( snap.iframeSrc ).toContain( '_wpnonce=[redacted]' );
+		expect( snap.document.root.childElementCount ).toBe( 1 );
+		expect( snap.document.root.textPreview ).toBe( 'Rendered app' );
+		expect( snap.recentErrors[0].message ).toBe( 'Render exploded' );
+		expect( snap.recentErrors[0].href ).toContain( '_wpnonce=[redacted]' );
 	} );
 } );
