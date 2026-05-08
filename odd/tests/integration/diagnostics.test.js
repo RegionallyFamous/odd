@@ -3,6 +3,7 @@ import { loadFoundation } from './harness.js';
 
 describe( 'ODD diagnostics metrics', () => {
 	beforeEach( () => {
+		document.body.innerHTML = '';
 		loadFoundation();
 		vi.restoreAllMocks();
 	} );
@@ -134,5 +135,32 @@ describe( 'ODD diagnostics metrics', () => {
 		expect( snap.document.root.textPreview ).toBe( 'Rendered app' );
 		expect( snap.recentErrors[0].message ).toBe( 'Render exploded' );
 		expect( snap.recentErrors[0].href ).toContain( '_wpnonce=[redacted]' );
+	} );
+
+	it( 'finds app iframes inside open shadow roots', () => {
+		loadFoundation( {
+			config: {
+				appsEnabled: true,
+				appServeUrls: { demo: '/odd-app/demo/?_wpnonce=secret' },
+				userApps: { installed: [ 'demo' ], pinned: [] },
+			},
+		} );
+
+		const shell = document.createElement( 'div' );
+		const shadow = shell.attachShadow( { mode: 'open' } );
+		const mount = document.createElement( 'div' );
+		mount.className = 'odd-app-host';
+		mount.setAttribute( 'data-odd-app-slug', 'demo' );
+		const frame = document.createElement( 'iframe' );
+		frame.className = 'odd-app-frame';
+		frame.src = '/odd-app/demo/?_wpnonce=secret';
+		mount.appendChild( frame );
+		shadow.appendChild( mount );
+		document.body.appendChild( shell );
+
+		const snap = window.__odd.diagnostics.appIframes()[0];
+		expect( snap.slug ).toBe( 'demo' );
+		expect( snap.domRoot ).toBe( 'shadowRoot' );
+		expect( snap.iframeSrc ).toContain( '_wpnonce=[redacted]' );
 	} );
 } );

@@ -179,10 +179,31 @@
 		link.setAttribute( 'href', href );
 	}
 	function injectCursorStylesheetIntoOpenFrames( href ) {
-		var frames = document.querySelectorAll( 'iframe.odd-app-frame' );
+		var frames = queryAllDeep( 'iframe.odd-app-frame' );
 		for ( var i = 0; i < frames.length; i++ ) {
 			injectCursorStylesheet( frames[ i ], href );
 		}
+	}
+
+	function queryAllDeep( selector, root ) {
+		var out = [];
+		var seen = [];
+		function visit( scope ) {
+			if ( ! scope || seen.indexOf( scope ) !== -1 ) return;
+			seen.push( scope );
+			if ( scope.querySelectorAll ) {
+				try {
+					Array.prototype.forEach.call( scope.querySelectorAll( selector ), function ( node ) {
+						if ( out.indexOf( node ) === -1 ) out.push( node );
+					} );
+					Array.prototype.forEach.call( scope.querySelectorAll( '*' ), function ( node ) {
+						if ( node.shadowRoot ) visit( node.shadowRoot );
+					} );
+				} catch ( _ ) {}
+			}
+		}
+		visit( root || document );
+		return out;
 	}
 
 	function slugFromWindowId( id ) {
@@ -212,7 +233,7 @@
 	}
 
 	function findMount( slug ) {
-		var nodes = document.querySelectorAll( '.odd-app-host[data-odd-app-slug="' + slug + '"]' );
+		var nodes = queryAllDeep( '.odd-app-host[data-odd-app-slug="' + slug + '"]' );
 		if ( ! nodes.length ) return null;
 		// Prefer the one inside a visible window (offsetParent !== null
 		// under most layouts). Fall back to the last-rendered node.
@@ -520,7 +541,7 @@
 	 */
 	function scanAndMount( root ) {
 		var scope = root && root.querySelectorAll ? root : document;
-		var hosts = scope.querySelectorAll( '.odd-app-host[data-odd-app]' );
+		var hosts = queryAllDeep( '.odd-app-host[data-odd-app]', scope );
 		for ( var i = 0; i < hosts.length; i++ ) {
 			var host = hosts[ i ];
 			if ( host.querySelector( 'iframe.odd-app-frame' ) ) continue;
@@ -549,6 +570,8 @@
 						scanAndMount( n.parentNode || document );
 					} else if ( n.querySelector && n.querySelector( '.odd-app-host[data-odd-app]' ) ) {
 						scanAndMount( n );
+					} else if ( n.shadowRoot ) {
+						scanAndMount( n.shadowRoot );
 					}
 				}
 			}

@@ -190,7 +190,7 @@
 
 	function frameForContentWindow( source ) {
 		try {
-			var frames = document.querySelectorAll ? document.querySelectorAll( 'iframe.odd-app-frame' ) : [];
+			var frames = queryAllDeep( 'iframe.odd-app-frame' );
 			for ( var i = 0; i < frames.length; i++ ) {
 				try {
 					if ( frames[ i ].contentWindow === source ) return frames[ i ];
@@ -198,6 +198,38 @@
 			}
 		} catch ( _ ) {}
 		return null;
+	}
+
+	function queryAllDeep( selector, root ) {
+		var out = [];
+		var seen = [];
+		function visit( scope ) {
+			if ( ! scope || seen.indexOf( scope ) !== -1 ) return;
+			seen.push( scope );
+			if ( scope.querySelectorAll ) {
+				try {
+					Array.prototype.forEach.call( scope.querySelectorAll( selector ), function ( node ) {
+						if ( out.indexOf( node ) === -1 ) out.push( node );
+					} );
+					Array.prototype.forEach.call( scope.querySelectorAll( '*' ), function ( node ) {
+						if ( node.shadowRoot ) visit( node.shadowRoot );
+					} );
+				} catch ( _ ) {}
+			}
+		}
+		visit( root || document );
+		return out;
+	}
+
+	function rootKindForNode( node ) {
+		try {
+			var cur = node;
+			while ( cur ) {
+				if ( cur.host ) return 'shadowRoot';
+				cur = cur.parentNode;
+			}
+		} catch ( _ ) {}
+		return 'document';
 	}
 
 	function slugForMessageSource( source ) {
@@ -297,13 +329,14 @@
 	function appIframesSnapshot() {
 		var out = [];
 		try {
-			var frames = document.querySelectorAll ? document.querySelectorAll( 'iframe.odd-app-frame' ) : [];
+			var frames = queryAllDeep( 'iframe.odd-app-frame' );
 			for ( var i = 0; i < frames.length; i++ ) {
 				var frame = frames[ i ];
 				var mount = frame.closest ? frame.closest( '.odd-app-host' ) : null;
 				var slug = slugFromFrame( frame );
 				var row = {
 					slug:       slug || '',
+					domRoot:    rootKindForNode( frame ),
 					iframeSrc:  redactAppServeUrlForReport( frame.getAttribute( 'src' ) || '' ),
 					iframeRect: rectSnapshot( frame ),
 					iframeStyle: styleSnapshot( window, frame ),

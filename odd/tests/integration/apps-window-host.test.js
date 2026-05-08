@@ -62,4 +62,25 @@ describe( 'ODD app window host', () => {
 		expect( errors.some( ( row ) => row.message === 'odd-apps: missing app serve URL' ) ).toBe( true );
 		expect( window.__odd.diagnostics.metrics().counters[ 'app.iframe.skipped' ] ).toBe( 1 );
 	} );
+
+	it( 'hydrates server-rendered app hosts inside open shadow roots', () => {
+		const shell = document.createElement( 'div' );
+		const shadow = shell.attachShadow( { mode: 'open' } );
+		const host = document.createElement( 'div' );
+		host.className = 'odd-app-host';
+		host.setAttribute( 'data-odd-app', '' );
+		host.setAttribute( 'data-odd-app-slug', 'demo' );
+		host.setAttribute( 'data-odd-app-src', '/odd-app/demo/' );
+		const loading = document.createElement( 'div' );
+		loading.className = 'odd-app-host__loading';
+		host.appendChild( loading );
+		shadow.appendChild( host );
+		document.body.appendChild( shell );
+
+		loadWindowHost();
+
+		expect( shadow.querySelector( 'iframe.odd-app-frame' ) ).toBeTruthy();
+		expect( window.__odd.diagnostics.appIframes()[0].domRoot ).toBe( 'shadowRoot' );
+		expect( window.__odd.diagnostics.metrics().counters[ 'app.iframe.loaded' ] ).toBeUndefined();
+	} );
 } );
