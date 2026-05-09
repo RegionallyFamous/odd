@@ -4,7 +4,7 @@ Tags: wp-desktop-mode, desktop, wallpaper, widgets, apps
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -64,6 +64,10 @@ Open ODD Shop → About → Copy diagnostics, then paste the markdown into a Git
 
 == Changelog ==
 
+= 1.0.5 =
+
+Fixes Desktop Mode dock rail horizontal drift, clamps ODD Shop horizontal overflow, keeps the Shop rendering when a live wallpaper hero scene asset is missing, and ships the polished Magic 8-Ball widget refresh. Pins the public Playground blueprints to ODD 1.0.5 plus WP Desktop Mode 0.8.0.
+
 = 1.0.4 =
 
 Fixes Playground app loading by preserving scoped app/runtime/REST URLs, mounting app iframes from the live Desktop Mode window payload, and keeping the iframe visible inside native windows. Adds local app-loading diagnostics and pins the public Playground blueprints to ODD 1.0.4 plus WP Desktop Mode 0.8.0.
@@ -85,6 +89,10 @@ Shop Luxe + Weird overhaul, Shop theme/chaos prefs, Desktop Mode **v0.7.2+** int
 The clean public baseline for ODD: a catalog-driven app store and decorator layer for WP Desktop Mode v0.7.2+, with unified store cards, hardened bundle installs, local-only diagnostics, starter content, and release-quality CI gates.
 
 == Upgrade Notice ==
+
+= 1.0.5 =
+
+Fixes horizontal dock/Shop drift and hardens the Shop against missing live hero scene assets.
 
 = 1.0.4 =
 

@@ -11,6 +11,18 @@ notes to GitHub Releases.
 <a id="unreleased"></a>
 ## [Unreleased]
 
+<a id="v1.0.5"></a>
+## [1.0.5] — 2026-05-09
+
+### Fixed
+- **Desktop dock rail:** left/right Desktop Mode rails no longer pan sideways when ODD icon tiles are active; vertical scrolling remains available for larger icon sets and long menus.
+- **Shop horizontal drift:** the ODD Shop root, content pane, and shelf track now clamp horizontal overflow so the panel stays fixed at desktop and mobile widths.
+- **Shop blank fallback:** missing live wallpaper hero scene assets no longer abort the Shop render; the panel falls back to its static preview layer and keeps loading.
+
+### Changed
+- **Magic 8-Ball widget:** refreshes the live widget skin with the polished abstract oracle texture, bundled widget assets, and updated widget packaging.
+- **Stable Playground:** the public blueprint now installs ODD **1.0.5** with WP Desktop Mode pinned to the official **0.8.0** release zip.
+
 <a id="v1.0.4"></a>
 ## [1.0.4] — 2026-05-08
 
