@@ -936,8 +936,8 @@
 .odd-panel.odd-shop[data-odd-layout="mobile"] .odd-shop__rail::-webkit-scrollbar,.odd-panel.odd-shop[data-odd-layout="mobile"] .odd-shop__search-tools::-webkit-scrollbar{display:none}
 .odd-panel.odd-shop[data-odd-layout="mobile"] .odd-shop__rail-group{display:flex;flex-direction:column;gap:4px;margin:0 0 10px}
 .odd-panel.odd-shop[data-odd-layout="mobile"] .odd-shop__rail-heading,.odd-panel.odd-shop[data-odd-layout="mobile"] .odd-shop__rail-group-heading,.odd-panel.odd-shop[data-odd-layout="mobile"] .odd-shop__rail-foot{display:none}
-.odd-panel.odd-shop[data-odd-layout="mobile"] .odd-shop__rail-label{display:flex;min-width:0}
-.odd-panel.odd-shop[data-odd-layout="mobile"] .odd-shop__rail-item{width:auto;grid-template-columns:auto minmax(0,1fr);min-width:0;min-height:44px;padding:9px 12px;scroll-snap-align:none}
+.odd-panel.odd-shop[data-odd-layout="mobile"] .odd-shop__rail-label{display:none}
+.odd-panel.odd-shop[data-odd-layout="mobile"] .odd-shop__rail-item{width:auto;grid-template-columns:1fr;justify-items:center;min-width:0;min-height:44px;padding:10px 8px;scroll-snap-align:none}
 .odd-panel.odd-shop[data-odd-layout="mobile"] .odd-shop__rail-glyph{width:28px;height:28px}
 .odd-panel.odd-shop[data-odd-layout="mobile"] .odd-shop__content{grid-column:2;grid-row:2;width:100%;max-width:100%;min-width:0;padding:16px 14px max(18px,env(safe-area-inset-bottom)) 14px;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .odd-panel.odd-shop[data-odd-layout="mobile"] .odd-shop__dept{display:block}
