@@ -31,22 +31,42 @@ body.desktop-mode-active .desktop-mode-dock {
  */
 body.desktop-mode-active .desktop-mode-dock[ data-desktop-mode-dock-placement="left" ],
 body.desktop-mode-active .desktop-mode-dock[ data-desktop-mode-dock-placement="right" ] {
+	--odd-dock-tile-size: 43px;
+	--odd-dock-icon-size: 38px;
+	--odd-dock-custom-icon-size: 43px;
+	--odd-dock-gap: 6px;
 	min-height: 0;
 	max-height: 100%;
+	max-width: 100%;
 	align-self: stretch;
+	box-sizing: border-box;
+	padding: 6px;
+	overflow-x: hidden;
 	overflow-y: auto;
-	overscroll-behavior: contain;
+	overscroll-behavior-x: none;
+	overscroll-behavior-y: contain;
+	touch-action: pan-y;
 	-webkit-overflow-scrolling: touch;
-	scrollbar-gutter: stable;
+	scrollbar-width: none;
+	scrollbar-gutter: auto;
+}
+
+body.desktop-mode-active .desktop-mode-dock[ data-desktop-mode-dock-placement="left" ]::-webkit-scrollbar,
+body.desktop-mode-active .desktop-mode-dock[ data-desktop-mode-dock-placement="right" ]::-webkit-scrollbar {
+	width: 0;
+	height: 0;
+	display: none;
 }
 
 body.desktop-mode-active .desktop-mode-dock__items,
 body.desktop-mode-active .desktop-mode-dock__list {
 	gap: var( --odd-dock-gap );
+	max-width: 100%;
 }
 
 body.desktop-mode-active .desktop-mode-dock__item {
 	min-width: var( --odd-dock-tile-size );
+	max-width: var( --odd-dock-tile-size );
 }
 
 body.desktop-mode-active .desktop-mode-dock__item-primary {

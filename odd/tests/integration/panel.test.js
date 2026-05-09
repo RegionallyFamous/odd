@@ -142,7 +142,9 @@ describe( 'ODD Shop', () => {
 		document.body.innerHTML = '';
 		const existing = document.getElementById( 'odd-panel-styles' );
 		if ( existing ) existing.remove();
+		delete window.__odd;
 		delete window.desktopModeNativeWindows;
+		delete window.WebGLRenderingContext;
 		if ( window.wp && window.wp.desktop ) delete window.wp.desktop.widgetLayer;
 		try { window.localStorage.removeItem( 'desktop-mode.widgets' ); } catch ( e ) {}
 		seedConfig();
@@ -159,6 +161,8 @@ describe( 'ODD Shop', () => {
 
 	afterEach( () => {
 		delete globalThis.fetch;
+		delete window.__odd;
+		delete window.WebGLRenderingContext;
 		document.body.classList.remove( 'desktop-mode-has-fullscreen-window' );
 	} );
 
@@ -283,6 +287,30 @@ describe( 'ODD Shop', () => {
 		const { host, cleanup } = mountPanel();
 
 		expect( host.querySelector( '.odd-shop__hero' )?.getAttribute( 'data-hero-slug' ) ).toBe( 'flux' );
+
+		if ( typeof cleanup === 'function' ) cleanup();
+	} );
+
+	it( 'keeps rendering when a live wallpaper hero scene is missing', () => {
+		const emit = vi.fn();
+		window.WebGLRenderingContext = function WebGLRenderingContext() {};
+		window.__odd = {
+			events: { emit },
+			mountSceneInto: vi.fn( () => {
+				throw new Error( 'Installed scene did not self-register: flux' );
+			} ),
+		};
+		delete window.desktopModeNativeWindows;
+		loadPanel();
+
+		const { host, cleanup } = mountPanel();
+
+		expect( host.querySelector( '.odd-shop__hero' )?.getAttribute( 'data-hero-slug' ) ).toBe( 'flux' );
+		expect( host.textContent ).toContain( 'Wallpapers' );
+		expect( host.textContent ).not.toContain( "ODD panel didn't load" );
+		expect( emit ).toHaveBeenCalledWith( 'odd.error', expect.objectContaining( {
+			source: 'panel.hero-scene',
+		} ) );
 
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );

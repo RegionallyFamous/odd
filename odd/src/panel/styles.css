@@ -181,7 +181,7 @@
 * to label-secondary for body copy. */
 .odd-panel.odd-shop{--odd-shop-surface-0:#f5f5f7;--odd-shop-surface-1:#ffffff;--odd-shop-surface-2:#fbfbfd;--odd-shop-surface-3:#ffffff;--odd-shop-ink-0:rgba(60,60,67,.14);--odd-shop-ink-1:#5d5d62;--odd-shop-ink-2:#3a3a3d;--odd-shop-ink-3:#1d1d1f;--odd-shop-glass:rgba(247,247,249,.86);--odd-shop-glass-strong:rgba(255,255,255,.94);--odd-shop-border:var(--odd-shop-ink-0);--odd-shop-border-strong:rgba(60,60,67,.22);--odd-shop-bg:var(--odd-shop-surface-0);--odd-shop-surface:var(--odd-shop-surface-1);--odd-shop-rail-bg:var(--odd-shop-glass);--odd-shop-ink:var(--odd-shop-ink-3);--odd-shop-accent:#0071e3;--odd-shop-accent-2:#5856d6;--odd-shop-tint-wallpaper:#ff3d9a;--odd-shop-tint-icons:#00d1b2;--odd-shop-tint-cursors:#ffd23f;--odd-shop-tint-widgets:#6a5cff;--odd-shop-tint-apps:#ff6d00;--odd-shop-t-xxs:10px;--odd-shop-t-xs:11px;--odd-shop-t-s:12px;--odd-shop-t-m:clamp(13px,1.2cqi,14px);--odd-shop-t-l:clamp(15px,1.6cqi,17px);--odd-shop-t-xl:clamp(19px,2.1cqi,22px);--odd-shop-t-2xl:clamp(28px,4.2cqi,40px);--odd-shop-t-3xl:clamp(36px,5.6cqi,56px);--odd-shop-r-s:8px;--odd-shop-r-m:14px;--odd-shop-r-l:20px;--odd-shop-r-xl:28px;--odd-shop-radius:var(--odd-shop-r-m);--odd-shop-radius-lg:var(--odd-shop-r-l);--odd-shop-e-1:0 1px 2px rgba(12,10,29,.04),0 12px 28px -24px rgba(12,10,29,.42);--odd-shop-e-2:0 1px 2px rgba(0,0,0,.04),0 24px 52px -28px rgba(20,14,40,.35);--odd-shop-e-3:0 24px 60px -20px rgba(0,0,0,.4);--odd-shop-dur-xs:80ms;--odd-shop-dur-s:140ms;--odd-shop-dur-m:220ms;--odd-shop-dur-l:380ms;--odd-shop-ease-out:cubic-bezier(.2,.8,.2,1);--odd-shop-ease-spring:cubic-bezier(.18,1.24,.34,1);--odd-shop-chaos-saturation:1}
 .odd-panel.odd-shop,.odd-panel.odd-shop *,.odd-panel.odd-shop *::before,.odd-panel.odd-shop *::after{box-sizing:border-box}
-.odd-panel.odd-shop{color:var(--odd-shop-ink);position:relative}
+.odd-panel.odd-shop{color:var(--odd-shop-ink);position:relative;overflow:hidden;overflow:clip;min-width:0;max-width:100%}
 
 /* Top bar. Spans columns 1 / -1 so it caps the entire frame.
 * Inset top highlight + 1px ink border at the bottom give
@@ -244,7 +244,7 @@
 
 /* Content pane — larger padding + subtle surface so the
 * shelves feel like they float on the store background. */
-.odd-panel.odd-shop .odd-shop__content{padding:32px 40px 0;overflow:auto;min-width:0;background:var(--odd-shop-bg)}
+.odd-panel.odd-shop .odd-shop__content{padding:32px 40px 0;overflow-x:hidden;overflow-y:auto;min-width:0;background:var(--odd-shop-bg);contain:layout paint}
 
 /* Department header — eyebrow label above an outsized title
 * matching the App Store department pages ("Apps We Love"). */
@@ -369,7 +369,7 @@
 /* Shelf tracks — horizontal scroller with snap so drag
 * gestures stop on a card boundary. Extra right padding
 * leaves the last card breathing room against the pane. */
-.odd-panel.odd-shop .odd-shop__shelf-track{display:flex;gap:14px;overflow-x:auto;overflow-y:visible;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:4px 4px 14px;margin:-4px -4px 0;scrollbar-width:none}
+.odd-panel.odd-shop .odd-shop__shelf-track{display:flex;gap:14px;min-width:0;max-width:100%;overflow-x:auto;overflow-y:visible;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:4px 4px 14px;margin:-4px -4px 0;scrollbar-width:none}
 .odd-panel.odd-shop .odd-shop__shelf-track::-webkit-scrollbar{height:0;display:none}
 .odd-panel.odd-shop .odd-shop__shelf-track--tiles > .odd-shop__tile,
 .odd-panel.odd-shop .odd-shop__shelf-track--tiles > .odd-shop__tile-wrap,
@@ -389,7 +389,7 @@
 * end and hide entirely when the track isn\'t overflowing
 * so short shelves (1–2 cards) stay clean.
 */
-.odd-panel.odd-shop .odd-shop__slider{position:relative}
+.odd-panel.odd-shop .odd-shop__slider{position:relative;min-width:0;max-width:100%;overflow:hidden;contain:paint}
 .odd-panel.odd-shop .odd-shop__slider-btn{all:unset;position:absolute;top:50%;transform:translateY(-50%);z-index:3;width:30px;height:30px;border-radius:999px;background:rgba(14,14,24,.88);border:1px solid rgba(255,255,255,.34);display:none;align-items:center;justify-content:center;color:#fff;cursor:pointer;font-size:18px;font-weight:900;line-height:1;text-shadow:0 1px 2px rgba(0,0,0,.7);box-shadow:0 12px 28px -14px rgba(0,0,0,.9),0 0 0 1px rgba(0,0,0,.16),0 1px 0 rgba(255,255,255,.16) inset;transition:opacity .18s ease,transform .18s ease,background .18s ease,box-shadow .18s ease,color .18s ease,border-color .18s ease;-webkit-backdrop-filter:saturate(1.35) blur(14px);backdrop-filter:saturate(1.35) blur(14px)}
 .odd-panel.odd-shop .odd-shop__slider-btn--prev{left:6px}
 .odd-panel.odd-shop .odd-shop__slider-btn--next{right:6px}
@@ -924,7 +924,7 @@
 .odd-panel.odd-shop[data-odd-layout="compact"] .odd-shop__hero{grid-template-columns:minmax(0,1fr);align-items:end}
 .odd-panel.odd-shop[data-odd-layout="compact"] .odd-shop__hero-body{max-width:78%}
 .odd-panel.odd-shop[data-odd-layout="compact"] .odd-shop__hero-thumb{display:none}
-.odd-panel.odd-shop[data-odd-layout="mobile"]{grid-template-rows:auto minmax(0,1fr)!important;grid-template-columns:64px minmax(0,1fr)!important;width:100%;max-width:100%;max-inline-size:100vw;inline-size:min(100%,100vw);min-width:0;overflow:hidden;overflow-x:hidden}
+.odd-panel.odd-shop[data-odd-layout="mobile"]{grid-template-rows:auto minmax(0,1fr)!important;grid-template-columns:64px minmax(0,1fr)!important;width:100%;max-width:100%;max-inline-size:100vw;inline-size:min(100%,100vw);min-width:0;overflow:hidden;overflow-x:hidden;overflow:clip}
 .odd-panel.odd-shop[data-odd-layout="mobile"] .odd-shop__topbar{grid-column:1/-1;grid-row:1;grid-template-columns:minmax(0,1fr);grid-template-areas:"brand" "command";gap:9px;min-width:0;min-height:0;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));position:sticky;top:0;z-index:4;border-radius:0;background:var(--odd-shop-topbar-bg,var(--odd-shop-surface));box-shadow:0 1px 0 var(--odd-shop-border)}
 .odd-panel.odd-shop[data-odd-layout="mobile"] .odd-shop__brand{min-width:0}
 .odd-panel.odd-shop[data-odd-layout="mobile"] .odd-shop__brand-text{display:flex}

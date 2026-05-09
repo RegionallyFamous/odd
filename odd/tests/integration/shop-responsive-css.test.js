@@ -11,7 +11,7 @@ describe( 'ODD Shop responsive CSS contract', () => {
 		const css = readFileSync( STYLES_CSS, 'utf8' );
 
 		expect( css ).toContain( '.odd-panel.odd-shop,.odd-panel.odd-shop *,.odd-panel.odd-shop *::before,.odd-panel.odd-shop *::after{box-sizing:border-box}' );
-		expect( css ).toContain( '.odd-panel.odd-shop[data-odd-layout="mobile"]{grid-template-rows:auto minmax(0,1fr)!important;grid-template-columns:64px minmax(0,1fr)!important;width:100%;max-width:100%;max-inline-size:100vw;inline-size:min(100%,100vw);min-width:0;overflow:hidden;overflow-x:hidden}' );
+		expect( css ).toContain( '.odd-panel.odd-shop[data-odd-layout="mobile"]{grid-template-rows:auto minmax(0,1fr)!important;grid-template-columns:64px minmax(0,1fr)!important;width:100%;max-width:100%;max-inline-size:100vw;inline-size:min(100%,100vw);min-width:0;overflow:hidden;overflow-x:hidden;overflow:clip}' );
 		expect( css ).toContain( '.odd-panel.odd-shop[data-odd-layout="compact"]{grid-template-columns:64px minmax(0,1fr)!important}' );
 		expect( css ).toContain( '`data-odd-pointer` owns touch ergonomics. The host window owns' );
 	} );
@@ -31,9 +31,12 @@ describe( 'ODD Shop responsive CSS contract', () => {
 	it( 'keeps every shop rail vertical behind accessible overflow controls', () => {
 		const css = readFileSync( STYLES_CSS, 'utf8' );
 
-		expect( css ).toContain( '.odd-panel.odd-shop{color:var(--odd-shop-ink);position:relative}' );
+		expect( css ).toContain( '.odd-panel.odd-shop{color:var(--odd-shop-ink);position:relative;overflow:hidden;overflow:clip;min-width:0;max-width:100%}' );
+		expect( css ).toContain( '.odd-panel.odd-shop .odd-shop__content{padding:32px 40px 0;overflow-x:hidden;overflow-y:auto;min-width:0;background:var(--odd-shop-bg);contain:layout paint}' );
 		expect( css ).toContain( '.odd-panel.odd-shop .odd-shop__rail{background:var(--odd-shop-rail-bg);border-right:1px solid var(--odd-shop-border);padding:18px 12px 14px;display:flex;flex-direction:column;gap:4px;overflow-x:hidden;overflow-y:auto;scrollbar-width:none;overscroll-behavior:contain' );
 		expect( css ).toContain( '.odd-panel.odd-shop .odd-shop__rail::-webkit-scrollbar{display:none}' );
+		expect( css ).toContain( '.odd-panel.odd-shop .odd-shop__shelf-track{display:flex;gap:14px;min-width:0;max-width:100%;overflow-x:auto;overflow-y:visible' );
+		expect( css ).toContain( '.odd-panel.odd-shop .odd-shop__slider{position:relative;min-width:0;max-width:100%;overflow:hidden;contain:paint}' );
 		expect( css ).toContain( '.odd-panel.odd-shop .odd-shop__rail-scroll:not([hidden]){opacity:.96;pointer-events:auto}' );
 		expect( css ).toContain( '.odd-panel.odd-shop .odd-shop__rail-fade{position:absolute;z-index:5;height:54px;pointer-events:none' );
 		expect( css ).toContain( '.odd-panel.odd-shop[data-odd-size="xs"] .odd-shop__rail,.odd-panel.odd-shop[data-odd-size="s"] .odd-shop__rail{grid-column:1;grid-row:2;display:flex;flex-direction:column;gap:6px;overflow-x:hidden;overflow-y:auto' );

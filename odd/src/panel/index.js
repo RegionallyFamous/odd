@@ -3319,13 +3319,23 @@
 			var handle = null;
 			var pausedByVisibility = false;
 			var perfTimer = 0;
-			window.__odd.mountSceneInto( live, scene.slug, {
-				lowPower: true,
-				maxFPS: 30,
-				resolution: 1,
-				heroMode: true,
-				desktopStub: { supports: {}, wallpaper: { visible: true, state: 'visible', id: 'odd-shop-hero' }, windows: { all: [], count: 0 }, surfaces: { all: [], count: 0 } },
-			} ).then( function ( mounted ) {
+			var mountPromise;
+			try {
+				mountPromise = window.__odd.mountSceneInto( live, scene.slug, {
+					lowPower: true,
+					maxFPS: 30,
+					resolution: 1,
+					heroMode: true,
+					desktopStub: { supports: {}, wallpaper: { visible: true, state: 'visible', id: 'odd-shop-hero' }, windows: { all: [], count: 0 }, surfaces: { all: [], count: 0 } },
+				} );
+			} catch ( err ) {
+				reportError( 'panel.hero-scene', err );
+				if ( live.parentNode ) live.parentNode.removeChild( live );
+				if ( previewUrl ) bg.style.backgroundImage = 'url("' + previewUrl + '")';
+				return;
+			}
+			if ( ! mountPromise || typeof mountPromise.then !== 'function' ) return;
+			mountPromise.then( function ( mounted ) {
 				handle = mounted;
 				if ( handle && handle.env && handle.env.perfTier === 'low' ) {
 					destroyHero();
@@ -3333,7 +3343,8 @@
 				perfTimer = window.setInterval( function () {
 					if ( handle && handle.env && handle.env.perfTier === 'low' ) destroyHero();
 				}, 1000 );
-			} ).catch( function () {
+			} ).catch( function ( err ) {
+				reportError( 'panel.hero-scene', err );
 				if ( live.parentNode ) live.parentNode.removeChild( live );
 				if ( previewUrl ) bg.style.backgroundImage = 'url("' + previewUrl + '")';
 			} );
