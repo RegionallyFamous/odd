@@ -31,7 +31,7 @@
 
 [WP Desktop Mode](https://github.com/WordPress/desktop-mode) makes WordPress feel like a desktop. ODD gives that desktop a polished, updateable shop for visual themes and small tools.
 
-The hosted [Playground blueprint](https://odd.regionallyfamous.com/playground/blueprint.json?oddbp=v2-1.0.6) pins **[WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/)** to **0.8.0** via the official release zip URL (`resource: "url"` -> `downloads.wordpress.org/.../desktop-mode.0.8.0.zip`, matching `ODD_DESKTOP_MODE_MIN_VERSION`) and **[ODD 1.0.6](https://github.com/RegionallyFamous/odd/releases/tag/v1.0.6)** to the release git ref in `blueprint.json` (peeled commit once the tag is available locally). Raw GitHub copy: [`blueprint.json`](https://raw.githubusercontent.com/RegionallyFamous/odd/main/blueprint.json) (add `?oddbp=v2-1.0.6` if Playground still loads a cached older file). **Production installs:** **`odd.zip`** on [Releases](https://github.com/RegionallyFamous/odd/releases/latest). **Bleeding edge:** use [`/go/dev`](https://odd.regionallyfamous.com/go/dev/) or [`site/playground/blueprint-dev.json`](https://odd.regionallyfamous.com/playground/blueprint-dev.json) (ODD `main` + pinned Desktop Mode 0.8.0; not tied to ODD releases).
+The hosted [Playground blueprint](https://odd.regionallyfamous.com/playground/blueprint.json?oddbp=v2-1.0.6) pins **[WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/)** to **0.8.2** via the official release zip URL (`resource: "url"` -> `downloads.wordpress.org/.../desktop-mode.0.8.2.zip`, matching `ODD_DESKTOP_MODE_PLAYGROUND_VERSION`) and **[ODD 1.0.6](https://github.com/RegionallyFamous/odd/releases/tag/v1.0.6)** to the release git ref in `blueprint.json` (peeled commit once the tag is available locally). Raw GitHub copy: [`blueprint.json`](https://raw.githubusercontent.com/RegionallyFamous/odd/main/blueprint.json) (add `?oddbp=v2-1.0.6` if Playground still loads a cached older file). **Production installs:** **`odd.zip`** on [Releases](https://github.com/RegionallyFamous/odd/releases/latest). **Bleeding edge:** use [`/go/dev`](https://odd.regionallyfamous.com/go/dev/) or [`site/playground/blueprint-dev.json`](https://odd.regionallyfamous.com/playground/blueprint-dev.json) (ODD `main` + pinned Desktop Mode 0.8.2; not tied to ODD releases).
 
 ---
 
@@ -63,7 +63,7 @@ Wallpapers, icon sets, and cursor sets preview instantly. Try a scene, theme, or
 
 First load takes ~20–30 seconds while Playground boots the site and installs the plugin. Throwaway — close the tab and it's gone.
 
-**Short links (GitHub Pages — same host as the hosted blueprint):** [`/go/`](https://odd.regionallyfamous.com/go/) redirects to that stable demo; [`/go/dev`](https://odd.regionallyfamous.com/go/dev/) opens a **dev** blueprint (pinned Desktop Mode 0.8.0 zip + ODD `main`). Full launcher pages: [`/playground/`](https://odd.regionallyfamous.com/playground/) and [`/playground/dev/`](https://odd.regionallyfamous.com/playground/dev/).
+**Short links (GitHub Pages — same host as the hosted blueprint):** [`/go/`](https://odd.regionallyfamous.com/go/) redirects to that stable demo; [`/go/dev`](https://odd.regionallyfamous.com/go/dev/) opens a **dev** blueprint (pinned Desktop Mode 0.8.2 zip + ODD `main`). Full launcher pages: [`/playground/`](https://odd.regionallyfamous.com/playground/) and [`/playground/dev/`](https://odd.regionallyfamous.com/playground/dev/).
 
 ### A real WordPress install
 
@@ -100,7 +100,7 @@ Anyone can ship a scene, icon set, cursor set, widget, or app as a single `.wp` 
 
 ## Useful Links
 
-- **Playground:** [Stable — short link `/go/`](https://odd.regionallyfamous.com/go/) (ODD **1.0.6** + Desktop Mode **0.8.0**) · [Trunk — `/go/dev`](https://odd.regionallyfamous.com/go/dev/) · [Launcher hub `/playground/`](https://odd.regionallyfamous.com/playground/) · [Trunk launcher `/playground/dev/`](https://odd.regionallyfamous.com/playground/dev/)
+- **Playground:** [Stable — short link `/go/`](https://odd.regionallyfamous.com/go/) (ODD **1.0.6** + Desktop Mode **0.8.2**) · [Trunk — `/go/dev`](https://odd.regionallyfamous.com/go/dev/) · [Launcher hub `/playground/`](https://odd.regionallyfamous.com/playground/) · [Trunk launcher `/playground/dev/`](https://odd.regionallyfamous.com/playground/dev/)
 - [ODD Shop State Machine](docs/store-state-machine.md)
 - [Release Runbook](docs/release-runbook.md)
 - [Building on ODD](docs/building-on-odd.md)

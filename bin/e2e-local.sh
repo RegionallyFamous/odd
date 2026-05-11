@@ -105,7 +105,7 @@ provision() {
 			--skip-email )
 	fi
 
-	( cd "${WP_DIR}" && e2e_wp plugin install desktop-mode --activate )
+	( cd "${WP_DIR}" && e2e_wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.0.8.2.zip --activate )
 
 	ODD_LINK="${WP_DIR}/wp-content/plugins/odd"
 	if [[ -L "${ODD_LINK}" ]] || [[ -d "${ODD_LINK}" ]]; then

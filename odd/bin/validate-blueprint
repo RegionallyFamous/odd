@@ -25,7 +25,10 @@ asserts the SHA matches `git rev-parse v$ODD_VERSION^{commit}` whenever
 a local `.git` checkout is available.
 WP Desktop Mode is pinned with `resource: "url"` to
 `https://downloads.wordpress.org/plugin/desktop-mode.{version}.zip` where `{version}`
-equals `ODD_DESKTOP_MODE_MIN_VERSION`. (Playground's JSON schema rejects
+equals `ODD_DESKTOP_MODE_PLAYGROUND_VERSION` when defined, otherwise
+`ODD_DESKTOP_MODE_MIN_VERSION`. The minimum stays separate from the hosted demo
+pin so we can keep supporting older host builds while making Playground
+deterministic on the current tested release. (Playground's JSON schema rejects
 `pluginData.version` on `wordpress.org/plugins`, so directory installs cannot pin.)
 
 Release blueprint pins must agree with values in `odd/odd.php` (checklist #8).
@@ -57,13 +60,13 @@ Checks (all emit bullets; any failure → exit code 1):
      wordpress.org` or HTTPS mirrors), never raw plugin source repos.
   8. Exactly one step installs pinned Desktop Mode: `pluginData` is
      `resource: "url"` with URL equal to downloads.wordpress.org
-     `/plugin/desktop-mode.{ODD_DESKTOP_MODE_MIN_VERSION}.zip` and
+     `/plugin/desktop-mode.{ODD_DESKTOP_MODE_PLAYGROUND_VERSION}.zip` and
      `options.targetFolderName` equals `desktop-mode`.
      RegionallyFamous/odd installs use either `refType: commit`
      (recommended) whose `ref` peels `v` + `ODD_VERSION`, or legacy
      `refType: tag` with `ref: v` + `ODD_VERSION`.
   9. Dev blueprints: Desktop Mode from the pinned release zip matching
-     `ODD_DESKTOP_MODE_MIN_VERSION` (targetFolderName desktop-mode);
+     `ODD_DESKTOP_MODE_PLAYGROUND_VERSION` (targetFolderName desktop-mode);
      ODD from `git:directory` **branch** `main` on
      `RegionallyFamous/odd` with `path` `odd`.
 """
@@ -86,7 +89,7 @@ PLUGIN_MAIN = REPO_ROOT / "odd" / "odd.php"
 
 
 ODD_CONST_RE = re.compile(
-    r"define\(\s*['\"]ODD_(VERSION|DESKTOP_MODE_MIN_VERSION)['\"]\s*,\s*['\"]"
+    r"define\(\s*['\"]ODD_(VERSION|DESKTOP_MODE_MIN_VERSION|DESKTOP_MODE_PLAYGROUND_VERSION)['\"]\s*,\s*['\"]"
     r"([^'\"]+)['\"]\s*\)",
 )
 
@@ -126,8 +129,8 @@ def desktop_mode_zip_url(dm_min: str) -> str:
     )
 
 
-def odd_php_constants() -> tuple[str, str]:
-    """Return (ODD_VERSION, ODD_DESKTOP_MODE_MIN_VERSION) from odd/odd.php."""
+def odd_php_constants() -> tuple[str, str, str]:
+    """Return (ODD_VERSION, Desktop Mode minimum, Playground pin)."""
     text = PLUGIN_MAIN.read_text(encoding="utf-8")
     found: dict[str, str] = {}
     for m in ODD_CONST_RE.finditer(text):
@@ -136,6 +139,8 @@ def odd_php_constants() -> tuple[str, str]:
             found["version"] = m.group(2)
         elif key == "desktop_mode_min_version":
             found["desktop"] = m.group(2)
+        elif key == "desktop_mode_playground_version":
+            found["desktop_playground"] = m.group(2)
     version = found.get("version")
     dm_min = found.get("desktop")
     if version is None or dm_min is None:
@@ -143,7 +148,7 @@ def odd_php_constants() -> tuple[str, str]:
             f"error: could not read ODD_VERSION and "
             f"ODD_DESKTOP_MODE_MIN_VERSION from {PLUGIN_MAIN}"
         )
-    return version, dm_min
+    return version, dm_min, found.get("desktop_playground", dm_min)
 
 
 def fail(problems: list[str]) -> None:
@@ -413,16 +418,16 @@ def main() -> int:
     if not PLUGIN_MAIN.is_file():
         print(f"error: missing {PLUGIN_MAIN}", file=sys.stderr)
         return 1
-    odd_version, dm_min = odd_php_constants()
+    odd_version, _dm_min, dm_pin = odd_php_constants()
     problems: list[str] = []
     total_steps = 0
     for path in (BLUEPRINT, SITE_BLUEPRINT):
-        file_problems, step_count = validate_file(path, odd_version, dm_min)
+        file_problems, step_count = validate_file(path, odd_version, dm_pin)
         problems.extend(file_problems)
         total_steps += step_count
 
     for path in (BLUEPRINT_DEV, SITE_BLUEPRINT_DEV):
-        file_problems, step_count = validate_dev_file(path, dm_min)
+        file_problems, step_count = validate_dev_file(path, dm_pin)
         problems.extend(file_problems)
         total_steps += step_count
 

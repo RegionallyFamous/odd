@@ -11,6 +11,9 @@ notes to GitHub Releases.
 <a id="unreleased"></a>
 ## [Unreleased]
 
+### Changed
+- **Playground pin:** the hosted stable and dev blueprints now pin WP Desktop Mode to the official **0.8.2** release zip while keeping the ODD runtime baseline at Desktop Mode **v0.8.0+**.
+
 <a id="v1.0.6"></a>
 ## [1.0.6] — 2026-05-11
 
@@ -19,7 +22,7 @@ notes to GitHub Releases.
 - **Playground scope sanitization:** the active Playground scope helper now sanitizes `REQUEST_URI` in a PHPCS-recognized expression without changing scoped URL behavior.
 
 ### Changed
-- **Stable Playground:** the public blueprint now installs ODD **1.0.6** with WP Desktop Mode pinned to the official **0.8.0** release zip.
+- **Stable Playground:** the public blueprint now installs ODD **1.0.6** with WP Desktop Mode pinned to the official **0.8.2** release zip.
 
 <a id="v1.0.5"></a>
 ## [1.0.5] — 2026-05-09

@@ -33,10 +33,46 @@ export async function goDesktopShell( page: Page ) {
 	await page.goto( '/wp-admin/index.php?desktop_mode_portal=1', { waitUntil: 'load', timeout: 45_000 } );
 	await page.waitForURL( /\/wp-admin/, { timeout: 45_000 } );
 	await expect( page.locator( '#desktop-mode-shell' ) ).toBeVisible( { timeout: 20_000 } );
+	await dismissDesktopModeWelcomeIfPresent( page );
 	await page.waitForFunction( () => {
 		const w = window as unknown as { __odd?: object };
 		return typeof w.__odd !== 'undefined';
 	}, { timeout: 30_000 } );
+}
+
+/**
+ * Desktop Mode 0.8.2+ renders a first-run welcome dialog in wp-admin.
+ * E2E enables Desktop Mode directly through user meta, so this is unrelated
+ * to the ODD interaction under test; dismiss it when present so it cannot
+ * intercept shop clicks.
+ */
+export async function dismissDesktopModeWelcomeIfPresent( page: Page ) {
+	const welcome = page
+		.locator( '.desktop-mode-welcome[data-slug="activation-welcome"], .desktop-mode-welcome' )
+		.first();
+	try {
+		await welcome.waitFor( { state: 'visible', timeout: 1_500 } );
+	} catch {
+		return;
+	}
+
+	const dismiss = welcome
+		.locator( '[data-desktop-mode-welcome-dismiss], [data-desktop-mode-welcome-cta]' )
+		.first();
+	if ( await dismiss.isVisible().catch( () => false ) ) {
+		await dismiss.click( { timeout: 5_000 } );
+	} else {
+		await page.keyboard.press( 'Escape' );
+	}
+
+	try {
+		await expect( welcome ).toHaveCount( 0, { timeout: 10_000 } );
+	} catch {
+		await page.evaluate( () => {
+			document.querySelectorAll( '.desktop-mode-welcome' ).forEach( ( el ) => el.remove() );
+			document.body.classList.remove( 'desktop-mode-welcome-open' );
+		} );
+	}
 }
 
 /**
@@ -92,6 +128,7 @@ export async function waitForWallpaperScenes( page: Page ) {
  * actually mounts (a single fire-and-forget call often no-ops in CI).
  */
 export async function openOddShop( page: Page ) {
+	await dismissDesktopModeWelcomeIfPresent( page );
 	await page.evaluate( () => {
 		function tryOpen() {
 			const api = ( window as unknown as { __odd?: { api?: { openPanel?: () => boolean } } } )
@@ -139,6 +176,7 @@ export async function openOddShop( page: Page ) {
 		}
 	} );
 	await expect( page.locator( '[data-odd-panel], .odd-panel' ).first() ).toBeVisible( { timeout: 20_000 } );
+	await dismissDesktopModeWelcomeIfPresent( page );
 }
 
 const SHOP_SECTION_ORDER = [
@@ -180,6 +218,7 @@ export async function exerciseOddShopInteractions( page: Page ) {
 
 	const content = shop.getByTestId( 'odd-shop-content' );
 	for ( const id of SHOP_SECTION_ORDER ) {
+		await dismissDesktopModeWelcomeIfPresent( page );
 		const nav = shop.getByTestId( `odd-shop-nav-${ id }` );
 		if ( ! await nav.isVisible() ) {
 			continue;

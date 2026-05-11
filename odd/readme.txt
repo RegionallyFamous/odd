@@ -66,7 +66,7 @@ Open ODD Shop → About → Copy diagnostics, then paste the markdown into a Git
 
 = 1.0.6 =
 
-Moves development tests out of the shipped plugin directory, removes the hidden language placeholder, hardens release zip validation against hidden files and test scaffolding, and clears the Playground scope sanitization warning reported by Plugin Check. Pins the public Playground blueprints to ODD 1.0.6 plus WP Desktop Mode 0.8.0.
+Moves development tests out of the shipped plugin directory, removes the hidden language placeholder, hardens release zip validation against hidden files and test scaffolding, and clears the Playground scope sanitization warning reported by Plugin Check. Pins the public Playground blueprints to ODD 1.0.6 plus WP Desktop Mode 0.8.2.
 
 = 1.0.5 =
 
