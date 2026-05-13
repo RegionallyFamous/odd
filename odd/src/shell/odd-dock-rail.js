@@ -18,7 +18,7 @@
 
 	function __( text ) {
 		if ( window.wp && window.wp.i18n && typeof window.wp.i18n.__ === 'function' ) {
-			return window.wp.i18n.__( text, 'odd' );
+			return window.wp.i18n.__( text, 'odd-outlandish-desktop-decorator' );
 		}
 		return text;
 	}
@@ -226,7 +226,7 @@
 			d.registerDockRailRenderer( {
 				id:          'odd-compact',
 				label:       __( 'ODD compact rail' ),
-				description: __( 'High-contrast icon mosaic with violet hover motion — swaps with the shipped strip in OS Settings → Dock.', 'odd' ),
+				description: __( 'High-contrast icon mosaic with violet hover motion — swaps with the shipped strip in OS Settings → Dock.', 'odd-outlandish-desktop-decorator' ),
 				icon:        'dashicons-art',
 				apiVersion:  1,
 				owner:       OWNER,

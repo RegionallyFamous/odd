@@ -13,16 +13,16 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 
 	public function set_up() {
 		parent::set_up();
-		// odd_icons_set_active_slug() writes to user meta and no-ops
+		// oddout_icons_set_active_slug() writes to user meta and no-ops
 		// when no user is logged in, so every filter test that wants
 		// an active set has to run as a real user.
 		$this->user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $this->user_id );
 
 		// The plugin ships no icon sets. Tests need to install
-		// one through the `odd_icon_set_registry` filter so
+		// one through the `oddout_icon_set_registry` filter so
 		// `pick_set_with_fallback()` finds something.
-		ODD_Registry_Fixtures::install_iconset( 'filament' );
+		ODDOUT_Registry_Fixtures::install_iconset( 'filament' );
 	}
 
 	public function tear_down() {
@@ -35,7 +35,7 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 	 * and a fallback — safe to run the filter tests against.
 	 */
 	protected function pick_set_with_fallback() {
-		foreach ( odd_icons_get_sets() as $set ) {
+		foreach ( oddout_icons_get_sets() as $set ) {
 			if ( ! empty( $set['icons']['fallback'] ) ) {
 				return $set['slug'];
 			}
@@ -44,20 +44,20 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 	}
 
 	public function test_menu_slug_to_key_mapping() {
-		$this->assertSame( 'dashboard', odd_icons_slug_to_key( 'index.php' ) );
-		$this->assertSame( 'posts', odd_icons_slug_to_key( 'edit.php' ) );
-		$this->assertSame( 'pages', odd_icons_slug_to_key( 'edit.php?post_type=page' ) );
-		$this->assertSame( 'media', odd_icons_slug_to_key( 'upload.php' ) );
-		$this->assertSame( 'settings', odd_icons_slug_to_key( 'options-general.php' ) );
-		$this->assertSame( 'recycle-bin', odd_icons_slug_to_key( 'desktop-mode-recycle-bin' ) );
-		$this->assertSame( 'posts', odd_icons_slug_to_key( 'edit.php?post_type=book' ), 'CPT edit screen routes to posts key.' );
-		$this->assertSame( '', odd_icons_slug_to_key( 'something-else' ) );
-		$this->assertSame( '', odd_icons_slug_to_key( '' ) );
+		$this->assertSame( 'dashboard', oddout_icons_slug_to_key( 'index.php' ) );
+		$this->assertSame( 'posts', oddout_icons_slug_to_key( 'edit.php' ) );
+		$this->assertSame( 'pages', oddout_icons_slug_to_key( 'edit.php?post_type=page' ) );
+		$this->assertSame( 'media', oddout_icons_slug_to_key( 'upload.php' ) );
+		$this->assertSame( 'settings', oddout_icons_slug_to_key( 'options-general.php' ) );
+		$this->assertSame( 'recycle-bin', oddout_icons_slug_to_key( 'desktop-mode-recycle-bin' ) );
+		$this->assertSame( 'posts', oddout_icons_slug_to_key( 'edit.php?post_type=book' ), 'CPT edit screen routes to posts key.' );
+		$this->assertSame( '', oddout_icons_slug_to_key( 'something-else' ) );
+		$this->assertSame( '', oddout_icons_slug_to_key( '' ) );
 	}
 
 	public function test_dock_item_filter_rewrites_icon_for_known_menu_slug() {
 		$set_slug = $this->pick_set_with_fallback();
-		odd_icons_set_active_slug( $set_slug );
+		oddout_icons_set_active_slug( $set_slug );
 
 		$item_before = array(
 			'icon' => 'original.svg',
@@ -72,7 +72,7 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 
 	public function test_dock_item_filter_falls_back_for_unknown_menu_slug() {
 		$set_slug = $this->pick_set_with_fallback();
-		odd_icons_set_active_slug( $set_slug );
+		oddout_icons_set_active_slug( $set_slug );
 
 		$item_before = array( 'icon' => 'original.svg' );
 		$item_after  = apply_filters( 'desktop_mode_dock_item', $item_before, 'third-party-plugin.php' );
@@ -82,7 +82,7 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 	}
 
 	public function test_dock_item_filter_is_noop_when_no_set_active() {
-		odd_icons_set_active_slug( 'none' );
+		oddout_icons_set_active_slug( 'none' );
 
 		$item_before = array( 'icon' => 'original.svg' );
 		$item_after  = apply_filters( 'desktop_mode_dock_item', $item_before, 'edit.php' );
@@ -92,7 +92,7 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 
 	public function test_desktop_icons_filter_skips_odd_control_panel() {
 		$set_slug = $this->pick_set_with_fallback();
-		odd_icons_set_active_slug( $set_slug );
+		oddout_icons_set_active_slug( $set_slug );
 
 		$registry_before = array(
 			'odd'   => array(
@@ -114,7 +114,7 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 
 	public function test_desktop_icons_filter_uses_recycle_bin_icon_dm07_ids() {
 		$set_slug = $this->pick_set_with_fallback();
-		odd_icons_set_active_slug( $set_slug );
+		oddout_icons_set_active_slug( $set_slug );
 
 		$registry_before = array(
 			'desktop-mode-recycle-bin' => array(
@@ -130,9 +130,9 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 	}
 
 	public function test_desktop_icons_filter_falls_back_when_recycle_bin_icon_is_missing() {
-		ODD_Registry_Fixtures::reset_caches();
+		ODDOUT_Registry_Fixtures::reset_caches();
 		add_filter(
-			'odd_icon_set_registry',
+			'oddout_icon_set_registry',
 			static function ( $sets ) {
 				$sets['minimal'] = array(
 					'slug'  => 'minimal',
@@ -145,8 +145,8 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 			},
 			30
 		);
-		odd_icons_get_sets( true );
-		odd_icons_set_active_slug( 'minimal' );
+		oddout_icons_get_sets( true );
+		oddout_icons_set_active_slug( 'minimal' );
 
 		$registry_before = array(
 			'trash' => array(
@@ -163,7 +163,7 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 
 	public function test_desktop_icons_filter_skips_odd_app_shortcuts() {
 		$set_slug = $this->pick_set_with_fallback();
-		odd_icons_set_active_slug( $set_slug );
+		oddout_icons_set_active_slug( $set_slug );
 
 		$registry_before = array(
 			'odd-app-board' => array(
@@ -185,7 +185,7 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 
 	public function test_desktop_icons_filter_handles_empty_registry() {
 		$set_slug = $this->pick_set_with_fallback();
-		odd_icons_set_active_slug( $set_slug );
+		oddout_icons_set_active_slug( $set_slug );
 
 		$this->assertSame( array(), apply_filters( 'desktop_mode_icons', array() ) );
 	}
@@ -223,7 +223,7 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 
 	public function test_shortcut_overlay_rewrites_recycle_bin_icon_like_registry_snapshot() {
 		$set_slug = $this->pick_set_with_fallback();
-		odd_icons_set_active_slug( $set_slug );
+		oddout_icons_set_active_slug( $set_slug );
 
 		$shape    = array(
 			'type'       => 'shortcut',
@@ -239,7 +239,7 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 			'icon'   => 'dashicons-trash',
 			'window' => 'desktop-mode-recycle-bin',
 		);
-		$after    = odd_icons_overlay_desktop_icons_on_shortcut_shape( $shape, $snapshot );
+		$after    = oddout_icons_overlay_desktop_icons_on_shortcut_shape( $shape, $snapshot );
 
 		$this->assertStringStartsWith(
 			'http',
@@ -259,7 +259,7 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 			'previewUrl' => '',
 			'exists'     => true,
 		);
-		$out     = odd_icons_mirror_https_shortcut_icon_into_preview_if_needed( $shapein );
+		$out     = oddout_icons_mirror_https_shortcut_icon_into_preview_if_needed( $shapein );
 
 		$this->assertSame( $icon, $out['previewUrl'] );
 		$this->assertSame( 'dashicons-media-default', $out['icon'] );

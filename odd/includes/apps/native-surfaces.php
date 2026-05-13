@@ -6,7 +6,7 @@
  *
  *   desktop_mode_register_window( 'odd-app-{slug}', [...] )
  *     Title bar reads the manifest's name; content renders through
- *     odd_apps_render_window_template() which injects a sandboxed
+ *     oddout_apps_render_window_template() which injects a sandboxed
  *     iframe pointing at /wp-json/odd/v1/apps/serve/{slug}/. The
  *     window is always registered so that `wp.desktop.openWindow(
  *     'odd-app-{slug}' )` (from the Shop, slash commands, or a
@@ -14,7 +14,7 @@
  *     surfaces below are off.
  *
  * The visible surfaces are opt-in per app and per user, via the
- * row's `surfaces` shape (see odd_apps_row_surfaces()):
+ * row's `surfaces` shape (see oddout_apps_row_surfaces()):
  *
  *   surfaces.taskbar → forwarded to register_window() as
  *     `placement => 'dock'`; Desktop Mode renders the dock
@@ -37,25 +37,25 @@ defined( 'ABSPATH' ) || exit;
 add_action(
 	'init',
 	function () {
-		if ( ! defined( 'ODD_APPS_ENABLED' ) || ! ODD_APPS_ENABLED ) {
+		if ( ! defined( 'ODDOUT_APPS_ENABLED' ) || ! ODDOUT_APPS_ENABLED ) {
 			return;
 		}
-		if ( ! odd_desktop_mode_available() ) {
+		if ( ! oddout_desktop_mode_available() ) {
 			return;
 		}
 
-		foreach ( odd_apps_list() as $row ) {
+		foreach ( oddout_apps_list() as $row ) {
 			if ( empty( $row['enabled'] ) ) {
 				continue;
 			}
-			odd_apps_register_surfaces( $row );
+			oddout_apps_register_surfaces( $row );
 		}
 	},
 	20
 );
 
-function odd_apps_register_surfaces( $row ) {
-	if ( ! odd_desktop_mode_available() ) {
+function oddout_apps_register_surfaces( $row ) {
+	if ( ! oddout_desktop_mode_available() ) {
 		return;
 	}
 
@@ -63,11 +63,11 @@ function odd_apps_register_surfaces( $row ) {
 	if ( '' === $slug ) {
 		return;
 	}
-	$manifest = odd_apps_manifest_load( $slug );
-	$surfaces = odd_apps_row_surfaces( $row );
+	$manifest = oddout_apps_manifest_load( $slug );
+	$surfaces = oddout_apps_row_surfaces( $row );
 
 	$window_id = 'odd-app-' . $slug;
-	$icon_url  = odd_apps_icon_url( $slug, $manifest );
+	$icon_url  = oddout_apps_icon_url( $slug, $manifest );
 	$name      = isset( $row['name'] ) ? $row['name'] : $slug;
 
 	$window_defaults = array(
@@ -75,7 +75,7 @@ function odd_apps_register_surfaces( $row ) {
 		'icon'       => $icon_url,
 		'script'     => 'odd-apps',
 		'template'   => function () use ( $slug, $manifest ) {
-			odd_apps_render_window_template( $slug, $manifest );
+			oddout_apps_render_window_template( $slug, $manifest );
 		},
 		'width'      => 860,
 		'height'     => 600,
@@ -139,7 +139,7 @@ function odd_apps_register_surfaces( $row ) {
  * inline script. That keeps CSP clean and means a broken panel JS
  * load leaves a visible placeholder rather than a silent window.
  */
-function odd_apps_render_window_template( $slug, $manifest ) {
+function oddout_apps_render_window_template( $slug, $manifest ) {
 	// Apps are served from /odd-app/{slug}/{path} via a direct
 	// request-URI match on `init` (priority 1), not from the REST
 	// namespace. Going through REST worked for the initial
@@ -154,7 +154,7 @@ function odd_apps_render_window_template( $slug, $manifest ) {
 	// back into /wp-json/odd/v1/ from their own code can read it via
 	// `new URLSearchParams( window.location.search ).get( '_wpnonce' )`
 	// and send it as X-WP-Nonce on their outgoing fetches.
-	$base_url  = odd_apps_cookieauth_url_for( $slug );
+	$base_url  = oddout_apps_cookieauth_url_for( $slug );
 	$serve_url = add_query_arg(
 		array(
 			'_wpnonce' => wp_create_nonce( 'wp_rest' ),
@@ -174,14 +174,14 @@ function odd_apps_render_window_template( $slug, $manifest ) {
 		<div class="odd-app-host__loading" style="position:absolute;inset:0;display:grid;place-items:center;color:#d0d0e0;font:13px/1.4 -apple-system,system-ui,sans-serif;opacity:.8">
 			<?php
 			/* translators: %s: app name */
-			printf( esc_html__( 'Loading %s…', 'odd' ), esc_html( $name ) );
+			printf( esc_html__( 'Loading %s…', 'odd-outlandish-desktop-decorator' ), esc_html( $name ) );
 			?>
 		</div>
 	</div>
 	<?php
 }
 
-function odd_apps_icon_url( $slug, $manifest ) {
+function oddout_apps_icon_url( $slug, $manifest ) {
 	$icon = isset( $manifest['icon'] ) ? (string) $manifest['icon'] : '';
 	if ( '' === $icon ) {
 		return '';
@@ -198,7 +198,7 @@ function odd_apps_icon_url( $slug, $manifest ) {
 		if ( '' === $safe ) {
 			return '';
 		}
-		return function_exists( 'odd_url_current_scheme' ) ? odd_url_current_scheme( $safe ) : $safe;
+		return function_exists( 'oddout_url_current_scheme' ) ? oddout_url_current_scheme( $safe ) : $safe;
 	}
 	// data: URIs would be ideal but WP Desktop Mode's dock sanitizer
 	// only accepts dashicon classes or http(s) URLs (see
@@ -210,16 +210,16 @@ function odd_apps_icon_url( $slug, $manifest ) {
 	// standard capability-gated /apps/serve route would 401 when the
 	// dock renders the tile. The /apps/icon route serves only the
 	// manifest's declared icon with no auth.
-	if ( function_exists( 'odd_apps_icon_file_path' ) && '' === odd_apps_icon_file_path( $slug, $manifest ) ) {
-		if ( function_exists( 'odd_apps_repair_from_catalog' ) ) {
-			$repair = odd_apps_repair_from_catalog( $slug, $icon );
+	if ( function_exists( 'oddout_apps_icon_file_path' ) && '' === oddout_apps_icon_file_path( $slug, $manifest ) ) {
+		if ( function_exists( 'oddout_apps_repair_from_catalog' ) ) {
+			$repair = oddout_apps_repair_from_catalog( $slug, $icon );
 			if ( true === $repair ) {
 				clearstatcache();
 			}
 		}
-		if ( '' === odd_apps_icon_file_path( $slug, $manifest ) ) {
+		if ( '' === oddout_apps_icon_file_path( $slug, $manifest ) ) {
 			return '';
 		}
 	}
-	return odd_https_rest_url( 'odd/v1/apps/icon/' . $slug );
+	return oddout_https_rest_url( 'odd/v1/apps/icon/' . $slug );
 }

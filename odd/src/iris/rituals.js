@@ -90,7 +90,7 @@
 	//
 	// Seven pointerdown→pointerup pairs (each under 50 ms, consecutive)
 	// on anything marked as an ODD desktop tile, within a 5 s window,
-	// unlocks `odd_wink_unlocked` on the user.
+	// unlocks `oddout_wink_unlocked` on the user.
 	function installSeven() {
 		var pairs = 0;
 		var firstAt = 0;

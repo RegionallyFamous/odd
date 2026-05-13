@@ -32,7 +32,7 @@ Status values:
 | AI provider/tool hooks | diagnostics-only | ODD can expose catalog/shop actions only when Desktop Mode's experimental AI APIs are present. |
 | Debug helpers: `desktop_mode_debug_publish()`, `desktop_mode_debug_session_for_request()` | diagnostics-only | ODD publishes local diagnostics into debug sessions when available. |
 | Recycle Bin hooks | supported | ODD adds a cross-link hint (`Open ODD Shop`) in the recycle bin + My WordPress templates; click handling lives in `odd-desktop-hooks`. |
-| Window chrome theme registration | supported | ODD registers PHP theme `odd/shop-chrome` (CSS token map) when `odd_desktop_mode_supports( 'window_chrome' )`. |
+| Window chrome theme registration | supported | ODD registers PHP theme `odd/shop-chrome` (CSS token map) when `oddout_desktop_mode_supports( 'window_chrome' )`. |
 | My WordPress hooks | supported | ODD injects a Shop cross-link via `desktop_mode_my_wordpress_template_html`. |
 | Presence hooks | diagnostics-only | ODD records presence transitions for debugging only. |
 | Planned window/body/context hooks | planned upstream | ODD will not ship dependencies on planned-only contracts. |

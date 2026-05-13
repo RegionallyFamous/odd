@@ -8,13 +8,13 @@
  * tests that want something in those registries install a cheap
  * in-memory fixture via these helpers.
  */
-class ODD_Registry_Fixtures {
+class ODDOUT_Registry_Fixtures {
 
 	/**
 	 * Install a synthetic scene descriptor through the
-	 * `odd_scene_registry` filter. Resets the wallpaper registry's
+	 * `oddout_scene_registry` filter. Resets the wallpaper registry's
 	 * per-request caches so the new entry is visible to
-	 * `odd_wallpaper_scenes()` + `odd_wallpaper_scene_slugs()`.
+	 * `oddout_wallpaper_scenes()` + `oddout_wallpaper_scene_slugs()`.
 	 *
 	 * The priority is `20` so tests that register their own filter at
 	 * the default priority `10` still take precedence where needed.
@@ -26,7 +26,7 @@ class ODD_Registry_Fixtures {
 	 */
 	public static function install_scene( $slug = 'flux' ) {
 		add_filter(
-			'odd_scene_registry',
+			'oddout_scene_registry',
 			static function ( $scenes ) use ( $slug ) {
 				$scenes[] = array(
 					'slug'          => $slug,
@@ -41,14 +41,14 @@ class ODD_Registry_Fixtures {
 			},
 			20
 		);
-		if ( function_exists( 'odd_wallpaper_scenes_reset' ) ) {
-			odd_wallpaper_scenes_reset();
+		if ( function_exists( 'oddout_wallpaper_scenes_reset' ) ) {
+			oddout_wallpaper_scenes_reset();
 		}
 	}
 
 	/**
 	 * Install a synthetic icon-set descriptor through the
-	 * `odd_icon_set_registry` filter. The filter runs after the disk
+	 * `oddout_icon_set_registry` filter. The filter runs after the disk
 	 * scan, so we can inject a descriptor that skips the usual
 	 * file-existence checks — `icons` values are treated as opaque
 	 * URLs by the dock-item + desktop-icons filters.
@@ -60,7 +60,7 @@ class ODD_Registry_Fixtures {
 	 */
 	public static function install_iconset( $slug = 'filament' ) {
 		add_filter(
-			'odd_icon_set_registry',
+			'oddout_icon_set_registry',
 			static function ( $sets ) use ( $slug ) {
 				$sets[ $slug ] = array(
 					'slug'        => $slug,
@@ -82,8 +82,8 @@ class ODD_Registry_Fixtures {
 			},
 			20
 		);
-		if ( function_exists( 'odd_icons_get_sets' ) ) {
-			odd_icons_get_sets( true );
+		if ( function_exists( 'oddout_icons_get_sets' ) ) {
+			oddout_icons_get_sets( true );
 		}
 	}
 
@@ -95,11 +95,11 @@ class ODD_Registry_Fixtures {
 	 * @return void
 	 */
 	public static function reset_caches() {
-		if ( function_exists( 'odd_wallpaper_scenes_reset' ) ) {
-			odd_wallpaper_scenes_reset();
+		if ( function_exists( 'oddout_wallpaper_scenes_reset' ) ) {
+			oddout_wallpaper_scenes_reset();
 		}
-		if ( function_exists( 'odd_icons_get_sets' ) ) {
-			odd_icons_get_sets( true );
+		if ( function_exists( 'oddout_icons_get_sets' ) ) {
+			oddout_icons_get_sets( true );
 		}
 	}
 }

@@ -191,7 +191,7 @@ need to integrate cleanly:
 - Inspect the stored manifest:
 
     ```bash
-    wp option get odd_widget_my-widget
+    wp option get oddout_widget_my-widget
     ```
 
 - If the widget doesn't show up in the Widgets department after

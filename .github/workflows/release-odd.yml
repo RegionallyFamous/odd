@@ -43,13 +43,13 @@ jobs:
       - name: Validate public Playground blueprint
         run: odd/bin/validate-blueprint
 
-      - name: Regenerate POT (odd/languages/odd.pot)
+      - name: Regenerate POT (odd/languages/odd-outlandish-desktop-decorator.pot)
         run: |
           # Makes sure the .pot translators pull from is always in
           # sync with the tagged source. Refuses to ship if it would
           # be empty (which means i18n regressed and nothing got
           # wrapped in __() anymore — a real bug).
-          odd/bin/make-pot --out odd/languages/odd.pot
+          odd/bin/make-pot --out odd/languages/odd-outlandish-desktop-decorator.pot
 
       - name: Build zip
         run: |
@@ -67,7 +67,7 @@ jobs:
         uses: WordPress/plugin-check-action@v1
         with:
           build-dir: './dist/plugin/odd'
-          slug: 'odd'
+          slug: 'odd-outlandish-desktop-decorator'
 
       - name: Upload zip for install-smoke
         uses: actions/upload-artifact@v7

@@ -250,7 +250,7 @@ keys keep their current values. Both keys are booleans.
 Serve a static file from an installed, enabled app's bundle. This is
 the REST fallback for app serving; the normal iframe path is
 `/odd-app/<slug>/...` so relative assets can load with cookie auth.
-Direct requests to `wp-content/odd-apps/` are blocked by an `.htaccess`
+Direct requests to `wp-content/uploads/odd/apps/` are blocked by an `.htaccess`
 that ODD writes on first install.
 
 **Auth:** logged-in + the app's normalized `capability` (default
@@ -394,24 +394,24 @@ call from a companion plugin, theme, or `mu-plugin`:
 
 ```php
 // Install
-$result = odd_apps_install( $tmp_path, $filename );
+$result = oddout_apps_install( $tmp_path, $filename );
 if ( is_wp_error( $result ) ) {
     // Handle error.
 }
 
 // Uninstall
-odd_apps_uninstall( 'my-app' );
+oddout_apps_uninstall( 'my-app' );
 
 // Enable / disable
-odd_apps_set_enabled( 'my-app', false );
+oddout_apps_set_enabled( 'my-app', false );
 
 // Read
-$rows     = odd_apps_list();
-$manifest = odd_apps_get( 'my-app' );
-$exists   = odd_apps_exists( 'my-app' );
+$rows     = oddout_apps_list();
+$manifest = oddout_apps_get( 'my-app' );
+$exists   = oddout_apps_exists( 'my-app' );
 ```
 
-All write helpers fire lifecycle `do_action( 'odd_app_*' )` hooks —
+All write helpers fire lifecycle `do_action( 'oddout_app_*' )` hooks —
 see [Building on ODD](building-on-odd.md#canonical-events) for the bus
 equivalents.
 

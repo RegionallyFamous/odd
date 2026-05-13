@@ -10,7 +10,7 @@ Walks `_tools/catalog-sources/` and emits:
         icons/<slug>.svg        64x64 Discover tile per bundle
 
 The plugin fetches `registry.json` over HTTPS and installs
-listed bundles through `odd_bundle_install()`. Every content change
+listed bundles through `oddout_bundle_install()`. Every content change
 is a commit to this repo; GitHub Pages republishes `site/` on push,
 which takes `odd.regionallyfamous.com/catalog/v1/` live with the new
 content — no plugin release required.

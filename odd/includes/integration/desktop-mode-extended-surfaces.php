@@ -11,7 +11,7 @@ defined( 'ABSPATH' ) || exit;
 /**
  * @return array<string,string>
  */
-function odd_dm_extended_window_theme_tokens() {
+function oddout_dm_extended_window_theme_tokens() {
 	return array(
 		'--desktop-mode-window-bg'     => '#fbfbfd',
 		'--desktop-mode-window-border' => 'rgba(106, 92, 255, 0.22)',
@@ -25,7 +25,7 @@ function odd_dm_extended_window_theme_tokens() {
 add_action(
 	'init',
 	static function () {
-		if ( ! function_exists( 'odd_desktop_mode_supports' ) || ! odd_desktop_mode_supports( 'window_chrome' ) ) {
+		if ( ! function_exists( 'oddout_desktop_mode_supports' ) || ! oddout_desktop_mode_supports( 'window_chrome' ) ) {
 			return;
 		}
 		if ( ! function_exists( 'desktop_mode_register_window_theme' ) ) {
@@ -34,9 +34,9 @@ add_action(
 		desktop_mode_register_window_theme(
 			array(
 				'id'       => 'odd/shop-chrome',
-				'label'    => __( 'ODD Shop', 'odd' ),
+				'label'    => __( 'ODD Shop', 'odd-outlandish-desktop-decorator' ),
 				'priority' => 80,
-				'tokens'   => odd_dm_extended_window_theme_tokens(),
+				'tokens'   => oddout_dm_extended_window_theme_tokens(),
 			)
 		);
 	},
@@ -52,7 +52,7 @@ add_filter(
 			wp_kses_post(
 				sprintf(
 					/* translators: %s: branded product name. */
-					__( 'Removed <strong>%s</strong> catalog wallpaper, icons, or apps? Re-install them anytime from <a href="#" class="odd-js-open-shop">Open ODD Shop</a>. Bin entries here remain WordPress content (posts, media, comments…).', 'odd' ),
+					__( 'Removed <strong>%s</strong> catalog wallpaper, icons, or apps? Re-install them anytime from <a href="#" class="odd-js-open-shop">Open ODD Shop</a>. Bin entries here remain WordPress content (posts, media, comments…).', 'odd-outlandish-desktop-decorator' ),
 					'ODD'
 				)
 			)
@@ -76,7 +76,7 @@ add_filter(
 			wp_kses_post(
 				sprintf(
 					/* translators: %s: branded product name. */
-					__( 'Browse catalogs and installers in <strong>%s Shop</strong> — <a href="#" class="odd-js-open-shop">open the shop window</a> while you work.', 'odd' ),
+					__( 'Browse catalogs and installers in <strong>%s Shop</strong> — <a href="#" class="odd-js-open-shop">open the shop window</a> while you work.', 'odd-outlandish-desktop-decorator' ),
 					'ODD'
 				)
 			)

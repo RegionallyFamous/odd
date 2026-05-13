@@ -246,3 +246,4 @@ jobs:
         uses: WordPress/plugin-check-action@v1
         with:
           build-dir: './dist/plugin/odd'
+          slug: 'odd-outlandish-desktop-decorator'

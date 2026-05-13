@@ -1,5 +1,5 @@
 === ODD — Outlandish Desktop Decorator ===
-Contributors: regionallyfamous
+Contributors: nickhamze, regionallyfamous
 Tags: wp-desktop-mode, desktop, wallpaper, widgets, apps
 Requires at least: 6.0
 Tested up to: 6.9
@@ -33,6 +33,29 @@ Fresh installs get a starter pack so the desktop looks complete immediately. Eve
 3. Enable desktop mode for your user.
 4. Open the ODD Shop from its desktop icon, taskbar icon, or `/odd-panel` command.
 
+== External services ==
+
+ODD connects to the public ODD catalog service at [odd.regionallyfamous.com/catalog/v1/](https://odd.regionallyfamous.com/catalog/v1/registry.json). The catalog is a static HTTPS endpoint hosted by Regionally Famous / Nick Hamze and is used to show Shop items, seed the starter pack, and download selected `.wp` bundles, previews, and icons.
+
+When an administrator opens or refreshes the ODD Shop, runs the starter pack, installs catalog content, or repairs an installed bundle from the catalog, the WordPress site sends HTTPS GET requests for static JSON and asset files. Those requests include normal web request metadata such as the site server's IP address, user agent, requested URL, and timestamp. ODD does not send site content, user account details, cookies, analytics events, license keys, or diagnostic reports to the catalog service.
+
+Service terms: [https://odd.regionallyfamous.com/terms/](https://odd.regionallyfamous.com/terms/)
+
+Privacy policy: [https://odd.regionallyfamous.com/privacy/](https://odd.regionallyfamous.com/privacy/)
+
+== Source and build tools ==
+
+The human-readable source code for this plugin is maintained at [https://github.com/RegionallyFamous/odd](https://github.com/RegionallyFamous/odd). The repository includes the source files, build scripts, catalog sources, and package metadata used to create the distributed plugin zip.
+
+The files in `apps/runtime/*.js` are generated JavaScript modules built from the public `react` and `react-dom` npm packages pinned in the repository. React and React DOM source code is maintained at [https://github.com/facebook/react](https://github.com/facebook/react), and the exact package versions are recorded in `package-lock.json`. The runtime files are rebuilt with `odd/bin/build-runtime`, which installs the pinned npm dependencies in a temporary directory and uses esbuild to create the small ESM runtime files used by sandboxed ODD apps.
+
+Typical build commands:
+
+1. `npm ci`
+2. `odd/bin/build-runtime`
+3. `python3 _tools/build-catalog.py`
+4. `odd/bin/build-zip`
+
 == Frequently Asked Questions ==
 
 = Does ODD work without WP Desktop Mode? =
@@ -41,7 +64,7 @@ No. ODD is a decorator and app-store layer for WP Desktop Mode. If Desktop Mode 
 
 = Does ODD call home? =
 
-ODD fetches the remote content catalog and downloads bundles only when you install content. It does not send telemetry, analytics, or error reports. Copy Diagnostics is local-only and user initiated.
+ODD fetches the public catalog and catalog assets described in the External services section. It does not send telemetry, analytics, license checks, or error reports. Copy Diagnostics is local-only and user initiated.
 
 = Can I install third-party content? =
 
@@ -66,7 +89,7 @@ Open ODD Shop → About → Copy diagnostics, then paste the markdown into a Git
 
 = 1.0.6 =
 
-Moves development tests out of the shipped plugin directory, removes the hidden language placeholder, hardens release zip validation against hidden files and test scaffolding, and clears the Playground scope sanitization warning reported by Plugin Check. Pins the public Playground blueprints to ODD 1.0.6 plus WP Desktop Mode 0.8.2.
+Addresses WordPress.org review feedback: documents the external catalog service and generated runtime source, uses the plugin slug text domain, stores installed content under uploads, avoids global PHP limit/user switching, adopts the longer `oddout` PHP prefix, and keeps development-only tests/hidden files out of the release zip.
 
 = 1.0.5 =
 

@@ -22,7 +22,7 @@ defined( 'ABSPATH' ) || exit;
  * short, friendly keys (`posts`, `pages`, `media`) instead of the
  * raw `edit.php` / `upload.php` / `edit.php?post_type=page` strings.
  */
-function odd_icons_slug_to_key( $slug ) {
+function oddout_icons_slug_to_key( $slug ) {
 	$slug = (string) $slug;
 	$map  = array(
 		'index.php'                => 'dashboard',
@@ -50,7 +50,7 @@ function odd_icons_slug_to_key( $slug ) {
 	return '';
 }
 
-function odd_icons_entry_recycle_key( $entry_id, $window, $title = '' ) {
+function oddout_icons_entry_recycle_key( $entry_id, $window, $title = '' ) {
 	$needles = array(
 		sanitize_key( (string) $entry_id ),
 		sanitize_key( (string) $window ),
@@ -74,16 +74,16 @@ add_filter(
 		if ( ! is_array( $item ) ) {
 			return $item;
 		}
-		$slug = odd_icons_get_active_slug();
+		$slug = oddout_icons_get_active_slug();
 		if ( '' === $slug ) {
 			return $item;
 		}
-		$set = odd_icons_get_set( $slug );
+		$set = oddout_icons_get_set( $slug );
 		if ( ! $set || empty( $set['icons'] ) ) {
 			return $item;
 		}
 
-		$key = odd_icons_slug_to_key( (string) $menu_slug );
+		$key = oddout_icons_slug_to_key( (string) $menu_slug );
 		if ( '' !== $key && ! empty( $set['icons'][ $key ] ) ) {
 			$item['icon'] = (string) $set['icons'][ $key ];
 			return $item;
@@ -105,11 +105,11 @@ add_filter(
 		if ( ! is_array( $registry ) || empty( $registry ) ) {
 			return $registry;
 		}
-		$slug = odd_icons_get_active_slug();
+		$slug = oddout_icons_get_active_slug();
 		if ( '' === $slug ) {
 			return $registry;
 		}
-		$set = odd_icons_get_set( $slug );
+		$set = oddout_icons_get_set( $slug );
 		if ( ! $set || empty( $set['icons'] ) ) {
 			return $registry;
 		}
@@ -127,9 +127,9 @@ add_filter(
 			if ( 0 === strpos( $window, 'odd-app-' ) ) {
 				continue;
 			}
-			$key = odd_icons_slug_to_key( $window );
+			$key = oddout_icons_slug_to_key( $window );
 			if ( '' === $key ) {
-				$key = odd_icons_entry_recycle_key(
+				$key = oddout_icons_entry_recycle_key(
 					$entry_id,
 					$window,
 					isset( $entry['title'] ) ? (string) $entry['title'] : ''
@@ -217,13 +217,14 @@ add_filter(
  *
  * @return array<string,string|bool|int>
  */
-function odd_icons_overlay_desktop_icons_on_shortcut_shape( array $shape, array $registry_entry ) {
+function oddout_icons_overlay_desktop_icons_on_shortcut_shape( array $shape, array $registry_entry ) {
 	$ref = isset( $shape['ref'] ) ? (string) $shape['ref'] : '';
 	if ( '' === $ref ) {
 		return $shape;
 	}
 
 	/** @var array<string, mixed> */
+	// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Desktop Mode owns this integration hook.
 	$singleton = apply_filters( 'desktop_mode_icons', array( $ref => $registry_entry ) );
 	if (
 		is_array( $singleton )
@@ -244,7 +245,7 @@ function odd_icons_overlay_desktop_icons_on_shortcut_shape( array $shape, array 
  *
  * @return array<string,string|bool|int>
  */
-function odd_icons_mirror_https_shortcut_icon_into_preview_if_needed( array $shape ) {
+function oddout_icons_mirror_https_shortcut_icon_into_preview_if_needed( array $shape ) {
 	$icon = isset( $shape['icon'] ) ? (string) $shape['icon'] : '';
 	if ( '' === $icon || ! preg_match( '#\Ahttps?://#i', $icon ) ) {
 		return $shape;
@@ -268,7 +269,7 @@ function odd_icons_mirror_https_shortcut_icon_into_preview_if_needed( array $sha
  *
  * @return mixed
  */
-function odd_normalize_desktop_file_shape_for_dm_files_layer( $shape ) {
+function oddout_normalize_desktop_file_shape_for_dm_files_layer( $shape ) {
 	if ( ! is_array( $shape ) ) {
 		return $shape;
 	}
@@ -281,19 +282,19 @@ function odd_normalize_desktop_file_shape_for_dm_files_layer( $shape ) {
 		if ( '' !== $ref ) {
 			$entry = desktop_mode_desktop_icon_registry( $ref );
 			if ( is_array( $entry ) ) {
-				$shape = odd_icons_overlay_desktop_icons_on_shortcut_shape( $shape, $entry );
+				$shape = oddout_icons_overlay_desktop_icons_on_shortcut_shape( $shape, $entry );
 			}
 		}
 	}
 
-	return odd_icons_mirror_https_shortcut_icon_into_preview_if_needed( $shape );
+	return oddout_icons_mirror_https_shortcut_icon_into_preview_if_needed( $shape );
 }
 
 add_filter(
 	'desktop_mode_file_serialize',
 	static function ( $shape, $_file = null ) {
 		unset( $_file );
-		return odd_normalize_desktop_file_shape_for_dm_files_layer( $shape );
+		return oddout_normalize_desktop_file_shape_for_dm_files_layer( $shape );
 	},
 	10,
 	2

@@ -37,14 +37,14 @@ bundle or companion plugin might touch:
 
 - REST namespace `odd/v1` and the endpoint shapes documented under
   `docs/app-rest-api.md`.
-- `odd_*_registry` filters for extension authors
-  (`odd_scene_registry`, `odd_widget_registry`, `odd_iconset_registry`,
-  `odd_command_registry`).
-- `odd_*_install` / `odd_*_uninstall` PHP entry points invoked from
+- `oddout_*_registry` filters for extension authors
+  (`oddout_scene_registry`, `oddout_widget_registry`, `oddout_iconset_registry`,
+  `oddout_command_registry`).
+- `oddout_*_install` / `oddout_*_uninstall` PHP entry points invoked from
   the bundle dispatcher.
-- Content directory layout under `wp-content/odd-apps/`,
-  `wp-content/odd-icon-sets/`, `wp-content/odd-scenes/`,
-  `wp-content/odd-widgets/`.
+- Content directory layout under `wp-content/uploads/odd/apps/`,
+  `wp-content/uploads/odd/icon-sets/`, `wp-content/uploads/odd/scenes/`,
+  `wp-content/uploads/odd/widgets/`.
 - `.wp` manifest shape (canonicalised in
   [`docs/schemas/manifest.schema.json`](schemas/manifest.schema.json)).
 

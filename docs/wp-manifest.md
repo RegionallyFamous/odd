@@ -237,14 +237,14 @@ one-time JS confirmation prompt (admins only).
 ## Runtime fields
 
 ODD writes a couple of additional fields into the stored manifest
-(e.g. `odd_app_<slug>`, `odd_scene_<slug>`) at install time. Do **not**
+(e.g. `oddout_app_<slug>`, `oddout_scene_<slug>`) at install time. Do **not**
 set these in your source `manifest.json` — they'll be overwritten:
 
 | Field       | Added by                           | Meaning                                       |
 |-------------|------------------------------------|-----------------------------------------------|
 | `installed` | Per-type installer                 | Unix timestamp of the install.                |
-| `enabled`   | Apps-only: `odd_apps_set_enabled`  | Whether the app is available to open and serve. |
-| `surfaces`  | Apps-only: `odd_apps_set_surfaces` | User-overridden `{ desktop, taskbar }` launch surfaces. |
+| `enabled`   | Apps-only: `oddout_apps_set_enabled`  | Whether the app is available to open and serve. |
+| `surfaces`  | Apps-only: `oddout_apps_set_surfaces` | User-overridden `{ desktop, taskbar }` launch surfaces. |
 
 These are exposed on `GET /odd/v1/bundles/<slug>` (and the older
 `GET /odd/v1/apps/<slug>`) so the Shop can flag state, but they're

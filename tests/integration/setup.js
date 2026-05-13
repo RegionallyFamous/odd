@@ -21,6 +21,7 @@ function installHooks() {
 function resetGlobals() {
 	try { delete window.__odd; } catch ( e ) { window.__odd = undefined; }
 	try { delete window.odd; } catch ( e ) { window.odd = undefined; }
+	try { delete window.oddout; } catch ( e ) { window.oddout = undefined; }
 	try { delete window.desktopModeConfig; } catch ( e ) { window.desktopModeConfig = undefined; }
 	installHooks();
 }

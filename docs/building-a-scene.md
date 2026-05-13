@@ -184,11 +184,11 @@ so the first tick after a pause won't jump.
   the canvas. Designed for subtlety — most of the motion should come
   from the scene, not the still layer.
 
-Installed bundles live at `wp-content/odd-scenes/<slug>/` and are
+Installed bundles live at `wp-content/uploads/odd/scenes/<slug>/` and are
 served publicly via `content_url()` (no admin auth required for the
 `.webp` files themselves). First-party scenes published through the
 remote catalog live at `https://odd.regionallyfamous.com/catalog/v1/bundles/scene-<slug>.wp`;
-when ODD installs one it extracts to the same `wp-content/odd-scenes/<slug>/`
+when ODD installs one it extracts to the same `wp-content/uploads/odd/scenes/<slug>/`
 path so runtime addressing is identical regardless of source.
 
 ### Regenerating previews automatically

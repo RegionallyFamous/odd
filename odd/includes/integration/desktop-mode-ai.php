@@ -17,17 +17,17 @@ defined( 'ABSPATH' ) || exit;
  * @param int   $user_id WordPress user ID.
  * @return array<string,mixed>
  */
-function odd_dm_ai_installed_bundles_summary( array $args, int $user_id ) {
+function oddout_dm_ai_installed_bundles_summary( array $args, int $user_id ) {
 	unset( $args );
 	if ( $user_id <= 0 ) {
 		$user_id = get_current_user_id();
 	}
 
-	$scene_slugs = function_exists( 'odd_wallpaper_scene_slugs' ) ? odd_wallpaper_scene_slugs() : array();
+	$scene_slugs = function_exists( 'oddout_wallpaper_scene_slugs' ) ? oddout_wallpaper_scene_slugs() : array();
 
 	$icon_slugs = array();
-	if ( function_exists( 'odd_icons_get_sets' ) ) {
-		foreach ( odd_icons_get_sets() as $set ) {
+	if ( function_exists( 'oddout_icons_get_sets' ) ) {
+		foreach ( oddout_icons_get_sets() as $set ) {
 			if ( empty( $set['slug'] ) ) {
 				continue;
 			}
@@ -36,16 +36,16 @@ function odd_dm_ai_installed_bundles_summary( array $args, int $user_id ) {
 	}
 
 	$widget_slugs = array();
-	if ( function_exists( 'odd_widgets_index_load' ) ) {
-		foreach ( array_keys( odd_widgets_index_load() ) as $wslug ) {
+	if ( function_exists( 'oddout_widgets_index_load' ) ) {
+		foreach ( array_keys( oddout_widgets_index_load() ) as $wslug ) {
 			$widget_slugs[] = (string) $wslug;
 		}
 		sort( $widget_slugs );
 	}
 
 	$app_slugs = array();
-	if ( function_exists( 'odd_apps_list' ) ) {
-		foreach ( odd_apps_list() as $row ) {
+	if ( function_exists( 'oddout_apps_list' ) ) {
+		foreach ( oddout_apps_list() as $row ) {
 			if ( empty( $row['slug'] ) ) {
 				continue;
 			}
@@ -54,8 +54,8 @@ function odd_dm_ai_installed_bundles_summary( array $args, int $user_id ) {
 	}
 
 	$cursors_slugs = array();
-	if ( function_exists( 'odd_cursors_get_sets' ) ) {
-		foreach ( odd_cursors_get_sets() as $row ) {
+	if ( function_exists( 'oddout_cursors_get_sets' ) ) {
+		foreach ( oddout_cursors_get_sets() as $row ) {
 			if ( empty( $row['slug'] ) ) {
 				continue;
 			}
@@ -65,8 +65,8 @@ function odd_dm_ai_installed_bundles_summary( array $args, int $user_id ) {
 	}
 
 	$active_scene = '';
-	if ( function_exists( 'odd_wallpaper_get_user_scene' ) ) {
-		$active_scene = (string) odd_wallpaper_get_user_scene( $user_id );
+	if ( function_exists( 'oddout_wallpaper_get_user_scene' ) ) {
+		$active_scene = (string) oddout_wallpaper_get_user_scene( $user_id );
 	}
 
 	return array(
@@ -82,7 +82,7 @@ function odd_dm_ai_installed_bundles_summary( array $args, int $user_id ) {
 add_action(
 	'init',
 	static function () {
-		if ( ! function_exists( 'odd_desktop_mode_supports' ) || ! odd_desktop_mode_supports( 'ai' ) ) {
+		if ( ! function_exists( 'oddout_desktop_mode_supports' ) || ! oddout_desktop_mode_supports( 'ai' ) ) {
 			return;
 		}
 		if ( ! function_exists( 'desktop_mode_register_ai_tool' ) ) {
@@ -90,15 +90,15 @@ add_action(
 		}
 		desktop_mode_register_ai_tool(
 			array(
-				'name'             => 'odd_installed_bundles_summary',
-				'description'      => __( 'Lists ODD-installed content: active wallpaper scene slug plus installed scene, icon set, widget, app, and cursor-set slugs for the requesting user.', 'odd' ),
+				'name'             => 'oddout_installed_bundles_summary',
+				'description'      => __( 'Lists ODD-installed content: active wallpaper scene slug plus installed scene, icon set, widget, app, and cursor-set slugs for the requesting user.', 'odd-outlandish-desktop-decorator' ),
 				'parameters'       => array(
 					'type'       => 'object',
 					'properties' => array(),
 				),
-				'handler'          => 'odd_dm_ai_installed_bundles_summary',
+				'handler'          => 'oddout_dm_ai_installed_bundles_summary',
 				'capability'       => 'read',
-				'progress_message' => __( 'Reading ODD catalog state…', 'odd' ),
+				'progress_message' => __( 'Reading ODD catalog state…', 'odd-outlandish-desktop-decorator' ),
 			)
 		);
 	},

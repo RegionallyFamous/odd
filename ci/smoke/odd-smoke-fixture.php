@@ -19,7 +19,7 @@
  *   bundles/<slug>-<type>-<v>.wp — on-disk .wp archives whose paths match
  *                                the download_url entries in registry.json.
  *
- * Matching is by URL path suffix so the real `ODD_CATALOG_URL` doesn't need
+ * Matching is by URL path suffix so the real `ODDOUT_CATALOG_URL` doesn't need
  * to be overridden — any GET to `/catalog/v1/registry.json` or
  * `/catalog/v1/bundles/<file>.wp` on any host resolves to the local file.
  *
@@ -70,13 +70,13 @@ add_filter(
 		// Catalog registry.
 		if ( false !== strpos( $path, '/catalog/v1/registry.json' ) ) {
 			$file = $root . '/registry.json';
-			return odd_smoke_serve_file( $file, 'application/json', $args );
+			return oddout_smoke_serve_file( $file, 'application/json', $args );
 		}
 
 		// Catalog bundle (.wp).
 		if ( preg_match( '#/catalog/v1/bundles/([^/]+\.wp)$#', $path, $m ) ) {
 			$file = $root . '/bundles/' . $m[1];
-			return odd_smoke_serve_file( $file, 'application/zip', $args );
+			return oddout_smoke_serve_file( $file, 'application/zip', $args );
 		}
 
 		// Catalog icon (optional — nothing in the installer reads these
@@ -84,7 +84,7 @@ add_filter(
 		if ( preg_match( '#/catalog/v1/icons/(.+)$#', $path, $m ) ) {
 			$file = $root . '/icons/' . $m[1];
 			if ( is_readable( $file ) ) {
-				return odd_smoke_serve_file( $file, 'image/svg+xml', $args );
+				return oddout_smoke_serve_file( $file, 'image/svg+xml', $args );
 			}
 		}
 
@@ -105,7 +105,7 @@ add_filter(
  * the `filename` contract and write the body to that path. Without this
  * the caller sees an empty tempfile and fails the magic-byte check.
  */
-function odd_smoke_serve_file( $file, $content_type, $args = array() ) {
+function oddout_smoke_serve_file( $file, $content_type, $args = array() ) {
 	if ( ! is_readable( $file ) ) {
 		return array(
 			'headers'  => array(),
@@ -155,4 +155,3 @@ function odd_smoke_serve_file( $file, $content_type, $args = array() ) {
 		'filename' => null,
 	);
 }
-

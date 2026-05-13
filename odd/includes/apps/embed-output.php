@@ -13,17 +13,17 @@ defined( 'ABSPATH' ) || exit;
 /**
  * REST API root URL for scripts inside `/odd-app/{slug}/` HTML (fetch bootstrap).
  *
- * `odd_https_rest_url()` aligns WordPress' REST root with HTTPS and any active
+ * `oddout_https_rest_url()` aligns WordPress' REST root with HTTPS and any active
  * Playground `/scope:{instance}/` prefix so iframe fetches stay same-instance.
  *
  * @return string Untrailingslashit REST root, e.g. https://host/scope:x/wp-json
  */
-function odd_apps_iframe_effective_rest_root() {
-	$base = untrailingslashit( esc_url_raw( odd_https_rest_url() ) );
-	$raw  = untrailingslashit( esc_url_raw( odd_url_current_scheme( rest_url() ) ) );
-	$base = (string) apply_filters( 'odd_apps_iframe_effective_rest_root', $base, $raw );
+function oddout_apps_iframe_effective_rest_root() {
+	$base = untrailingslashit( esc_url_raw( oddout_https_rest_url() ) );
+	$raw  = untrailingslashit( esc_url_raw( oddout_url_current_scheme( rest_url() ) ) );
+	$base = (string) apply_filters( 'oddout_apps_iframe_effective_rest_root', $base, $raw );
 
-	return function_exists( 'odd_url_current_scheme' ) ? odd_url_current_scheme( $base ) : $base;
+	return function_exists( 'oddout_url_current_scheme' ) ? oddout_url_current_scheme( $base ) : $base;
 }
 
 /**
@@ -31,9 +31,9 @@ function odd_apps_iframe_effective_rest_root() {
  *
  * @return string Quoted JSON string (no wrapping tags).
  */
-function odd_apps_iframe_rest_root_json() {
+function oddout_apps_iframe_rest_root_json() {
 	return wp_json_encode(
-		odd_apps_iframe_effective_rest_root(),
+		oddout_apps_iframe_effective_rest_root(),
 		JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_UNESCAPED_SLASHES
 	);
 }
@@ -44,10 +44,10 @@ function odd_apps_iframe_rest_root_json() {
  *
  * @return string HTML fragment (script element only).
  */
-function odd_apps_iframe_fetch_bootstrap_fragment() {
-	$j = odd_apps_iframe_rest_root_json();
+function oddout_apps_iframe_fetch_bootstrap_fragment() {
+	$j = oddout_apps_iframe_rest_root_json();
 
-	return '<script id="odd_apps_iframe_fetch_bootstrap">'
+	return '<script id="oddout_apps_iframe_fetch_bootstrap">'
 		. '(function(){var B=' . $j . ';var o=window.fetch;'
 		. 'window.fetch=function(I,i){if(typeof I==="string"){var j=I.indexOf("/odd/v1/apps/");'
 		. 'if(j!==-1&&I.slice(0,j).indexOf("wp-json")===-1){I=B+I.slice(j);}}'
@@ -62,14 +62,14 @@ function odd_apps_iframe_fetch_bootstrap_fragment() {
  *
  * @return string
  */
-function odd_apps_inject_iframe_fetch_bootstrap( $html ) {
+function oddout_apps_inject_iframe_fetch_bootstrap( $html ) {
 	if ( ! is_string( $html ) || '' === $html ) {
 		return $html;
 	}
-	if ( false !== strpos( $html, 'odd_apps_iframe_fetch_bootstrap' ) ) {
+	if ( false !== strpos( $html, 'oddout_apps_iframe_fetch_bootstrap' ) ) {
 		return $html;
 	}
-	$frag = odd_apps_iframe_fetch_bootstrap_fragment();
+	$frag = oddout_apps_iframe_fetch_bootstrap_fragment();
 	if ( false !== stripos( $html, '<head>' ) ) {
 		return preg_replace( '#<head>#i', "<head>\n" . $frag, $html, 1 );
 	}
@@ -90,8 +90,8 @@ function odd_apps_inject_iframe_fetch_bootstrap( $html ) {
  *
  * @return string HTML fragment (script element only).
  */
-function odd_apps_iframe_diagnostics_bootstrap_fragment() {
-	return '<script id="odd_apps_iframe_diagnostics_bootstrap">'
+function oddout_apps_iframe_diagnostics_bootstrap_fragment() {
+	return '<script id="oddout_apps_iframe_diagnostics_bootstrap">'
 		. '(function(){if(window.__oddAppDiagnostics&&window.__oddAppDiagnostics.installed)return;'
 		. 'var q=[];function C(v,n){v=String(v==null?"":v);return v.length>(n||1200)?v.slice(0,n||1200):v;}'
 		. 'function S(v){if(v instanceof Error)return(v.name||"Error")+": "+v.message+(v.stack?"\n"+v.stack:"");'
@@ -115,14 +115,14 @@ function odd_apps_iframe_diagnostics_bootstrap_fragment() {
  *
  * @return string
  */
-function odd_apps_inject_iframe_diagnostics_bootstrap( $html ) {
+function oddout_apps_inject_iframe_diagnostics_bootstrap( $html ) {
 	if ( ! is_string( $html ) || '' === $html ) {
 		return $html;
 	}
-	if ( false !== strpos( $html, 'odd_apps_iframe_diagnostics_bootstrap' ) ) {
+	if ( false !== strpos( $html, 'oddout_apps_iframe_diagnostics_bootstrap' ) ) {
 		return $html;
 	}
-	$frag = odd_apps_iframe_diagnostics_bootstrap_fragment();
+	$frag = oddout_apps_iframe_diagnostics_bootstrap_fragment();
 	if ( false !== stripos( $html, '<head>' ) ) {
 		return preg_replace( '#<head>#i', "<head>\n" . $frag, $html, 1 );
 	}
@@ -149,11 +149,11 @@ function odd_apps_inject_iframe_diagnostics_bootstrap( $html ) {
  *
  * @return string
  */
-function odd_apps_strip_iframe_document_base_tags( $html ) {
+function oddout_apps_strip_iframe_document_base_tags( $html ) {
 	if ( ! is_string( $html ) || '' === $html ) {
 		return $html;
 	}
-	if ( ! apply_filters( 'odd_apps_strip_iframe_base_tags', true ) ) {
+	if ( ! apply_filters( 'oddout_apps_strip_iframe_base_tags', true ) ) {
 		return $html;
 	}
 
@@ -168,11 +168,11 @@ function odd_apps_strip_iframe_document_base_tags( $html ) {
  *
  * @return string
  */
-function odd_apps_rewrite_iframe_absolute_asset_roots( $html ) {
+function oddout_apps_rewrite_iframe_absolute_asset_roots( $html ) {
 	if ( ! is_string( $html ) || '' === $html ) {
 		return $html;
 	}
-	if ( ! apply_filters( 'odd_apps_rewrite_iframe_root_asset_refs', true ) ) {
+	if ( ! apply_filters( 'oddout_apps_rewrite_iframe_root_asset_refs', true ) ) {
 		return $html;
 	}
 
@@ -198,11 +198,11 @@ function odd_apps_rewrite_iframe_absolute_asset_roots( $html ) {
  *
  * @return string
  */
-function odd_apps_transform_embed_bundle_output( $contents, $mime ) {
+function oddout_apps_transform_embed_bundle_output( $contents, $mime ) {
 	if ( ! is_string( $contents ) || '' === $contents ) {
 		return $contents;
 	}
-	if ( ! apply_filters( 'odd_apps_rewrite_embed_bundle_output', true ) ) {
+	if ( ! apply_filters( 'oddout_apps_rewrite_embed_bundle_output', true ) ) {
 		return $contents;
 	}
 
@@ -247,14 +247,14 @@ function odd_apps_transform_embed_bundle_output( $contents, $mime ) {
  *
  * @return string
  */
-function odd_apps_prepare_app_html_output( $raw ) {
-	$html = odd_apps_transform_embed_bundle_output( $raw, 'text/html; charset=utf-8' );
-	$html = odd_apps_strip_iframe_document_base_tags( $html );
-	$html = odd_apps_rewrite_iframe_absolute_asset_roots( $html );
-	$html = odd_apps_inject_iframe_diagnostics_bootstrap( $html );
-	$html = odd_apps_inject_iframe_fetch_bootstrap( $html );
-	if ( function_exists( 'odd_apps_inject_runtime_importmap' ) ) {
-		return odd_apps_inject_runtime_importmap( $html );
+function oddout_apps_prepare_app_html_output( $raw ) {
+	$html = oddout_apps_transform_embed_bundle_output( $raw, 'text/html; charset=utf-8' );
+	$html = oddout_apps_strip_iframe_document_base_tags( $html );
+	$html = oddout_apps_rewrite_iframe_absolute_asset_roots( $html );
+	$html = oddout_apps_inject_iframe_diagnostics_bootstrap( $html );
+	$html = oddout_apps_inject_iframe_fetch_bootstrap( $html );
+	if ( function_exists( 'oddout_apps_inject_runtime_importmap' ) ) {
+		return oddout_apps_inject_runtime_importmap( $html );
 	}
 
 	return $html;

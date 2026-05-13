@@ -18,7 +18,7 @@ add_filter(
 		}
 		$types[] = array(
 			'id'    => 'odd-muse',
-			'label' => __( 'ODD', 'odd' ),
+			'label' => __( 'ODD', 'odd-outlandish-desktop-decorator' ),
 			'icon'  => 'dashicons-art',
 			'tone'  => 'neutral',
 		);

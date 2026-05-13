@@ -147,11 +147,11 @@ jobs:
           # returns, state should be `installed`. The MU-plugin
           # intercepts the catalog HTTP calls so this is deterministic
           # and offline-safe. If for any reason activation skipped the
-          # install (odd_starter_ensure_installed returned null), the
+          # install (oddout_starter_ensure_installed returned null), the
           # `init`-level safety net would pick it up on the next
           # request — nudge it with a no-op wp eval so we don't race.
-          wp eval 'odd_starter_ensure_installed( true );'
-          wp eval '$s = odd_starter_get_state(); echo "starter state: " . $s["status"] . " (attempts=" . $s["attempts"] . ")\n"; if ( $s["last_error"] ) { echo "last error: " . $s["last_error"] . "\n"; } exit( "installed" === $s["status"] ? 0 : 1 );'
+          wp eval 'oddout_starter_ensure_installed( true );'
+          wp eval '$s = oddout_starter_get_state(); echo "starter state: " . $s["status"] . " (attempts=" . $s["attempts"] . ")\n"; if ( $s["last_error"] ) { echo "last error: " . $s["last_error"] . "\n"; } exit( "installed" === $s["status"] ? 0 : 1 );'
 
       - name: Assert starter pack populated the registries
         working-directory: /tmp/wp
@@ -159,15 +159,15 @@ jobs:
           # Starter pack ships a non-empty scene + icon set + cursor set (see
           # _tools/catalog-sources/starter-pack.json). After the run
           # the plugin registries should carry those slugs.
-          wp eval '$n = count( odd_wallpaper_scene_slugs() ); echo "scene slugs after starter: $n\n"; exit( $n >= 1 ? 0 : 1 );'
-          wp eval 'if ( ! function_exists( "odd_icons_get_sets" ) ) { echo "no icons API; skipping\n"; exit( 0 ); } $n = count( odd_icons_get_sets() ); echo "icon sets after starter: $n\n"; exit( $n >= 1 ? 0 : 1 );'
-          wp eval 'if ( ! function_exists( "odd_cursors_get_sets" ) ) { echo "no cursors API\n"; exit( 1 ); } $n = count( odd_cursors_get_sets() ); echo "cursor sets after starter: $n\n"; exit( $n >= 1 ? 0 : 1 );'
-          wp eval '$css = odd_cursors_build_css( odd_cursors_get_set( "oddlings-cursors" ) ); echo substr( $css, 0, 80 ) . "\n"; exit( false !== strpos( $css, "ODD custom cursors" ) ? 0 : 1 );'
+          wp eval '$n = count( oddout_wallpaper_scene_slugs() ); echo "scene slugs after starter: $n\n"; exit( $n >= 1 ? 0 : 1 );'
+          wp eval 'if ( ! function_exists( "oddout_icons_get_sets" ) ) { echo "no icons API; skipping\n"; exit( 0 ); } $n = count( oddout_icons_get_sets() ); echo "icon sets after starter: $n\n"; exit( $n >= 1 ? 0 : 1 );'
+          wp eval 'if ( ! function_exists( "oddout_cursors_get_sets" ) ) { echo "no cursors API\n"; exit( 1 ); } $n = count( oddout_cursors_get_sets() ); echo "cursor sets after starter: $n\n"; exit( $n >= 1 ? 0 : 1 );'
+          wp eval '$css = oddout_cursors_build_css( oddout_cursors_get_set( "oddlings-cursors" ) ); echo substr( $css, 0, 80 ) . "\n"; exit( false !== strpos( $css, "ODD custom cursors" ) ? 0 : 1 );'
 
       - name: Assert apps API is loaded
         working-directory: /tmp/wp
         run: |
-          wp eval 'exit( function_exists( "odd_apps_install" ) ? 0 : 1 );'
+          wp eval 'exit( function_exists( "oddout_apps_install" ) ? 0 : 1 );'
 
       - name: Assert dock filter registered
         working-directory: /tmp/wp
@@ -177,7 +177,7 @@ jobs:
       - name: Assert widget bundle API loaded
         working-directory: /tmp/wp
         run: |
-          wp eval 'exit( function_exists( "odd_widget_bundle_install" ) ? 0 : 1 );'
+          wp eval 'exit( function_exists( "oddout_widget_bundle_install" ) ? 0 : 1 );'
 
       - name: Assert native-window registered for the Control Panel
         working-directory: /tmp/wp
@@ -217,7 +217,7 @@ jobs:
                   fwrite( STDERR, "missing bundle: $wp_path\n" );
                   exit( 1 );
               }
-              $result = odd_bundle_install( $wp_path, basename( $wp_path ) );
+              $result = oddout_bundle_install( $wp_path, basename( $wp_path ) );
               if ( is_wp_error( $result ) ) {
                   fwrite( STDERR, "install failed for $slug: " . $result->get_error_code() . ' — ' . $result->get_error_message() . "\n" );
                   exit( 1 );
@@ -235,9 +235,9 @@ jobs:
           # registry filter, the hex icon set through the icons
           # registry, and the hello widget through the widgets index.
           # We hit each registry's accessor directly.
-          wp eval 'if ( ! array_key_exists( "example-hex", odd_icons_get_sets() ) ) { fwrite( STDERR, "example-hex did not register\n" ); exit( 1 ); } echo "example-hex registered\n";'
-          wp eval 'if ( ! function_exists( "odd_scenes_index_load" ) ) { echo "scenes index helper missing — skipping\n"; exit( 0 ); } $i = odd_scenes_index_load(); if ( empty( $i["example-rainbow"] ) ) { fwrite( STDERR, "example-rainbow did not register\n" ); exit( 1 ); } echo "example-rainbow registered\n";'
-          wp eval 'if ( ! function_exists( "odd_widgets_index_load" ) ) { echo "widgets index helper missing — skipping\n"; exit( 0 ); } $i = odd_widgets_index_load(); if ( empty( $i["example-hello"] ) ) { fwrite( STDERR, "example-hello did not register\n" ); exit( 1 ); } echo "example-hello registered\n";'
+          wp eval 'if ( ! array_key_exists( "example-hex", oddout_icons_get_sets() ) ) { fwrite( STDERR, "example-hex did not register\n" ); exit( 1 ); } echo "example-hex registered\n";'
+          wp eval 'if ( ! function_exists( "oddout_scenes_index_load" ) ) { echo "scenes index helper missing — skipping\n"; exit( 0 ); } $i = oddout_scenes_index_load(); if ( empty( $i["example-rainbow"] ) ) { fwrite( STDERR, "example-rainbow did not register\n" ); exit( 1 ); } echo "example-rainbow registered\n";'
+          wp eval 'if ( ! function_exists( "oddout_widgets_index_load" ) ) { echo "widgets index helper missing — skipping\n"; exit( 0 ); } $i = oddout_widgets_index_load(); if ( empty( $i["example-hello"] ) ) { fwrite( STDERR, "example-hello did not register\n" ); exit( 1 ); } echo "example-hello registered\n";'
 
       - name: Assert bundle catalog REST responds
         working-directory: /tmp/wp
@@ -391,9 +391,9 @@ jobs:
       - name: Assert no fatal and Desktop Mode reported missing
         working-directory: /tmp/wp
         run: |
-          wp eval 'exit( function_exists( "odd_desktop_mode_available" ) ? 0 : 1 );'
-          wp eval 'exit( odd_desktop_mode_available() ? 1 : 0 );' # should be false
-          wp eval '$m = odd_desktop_mode_missing_functions( "core" ); if ( empty( $m ) ) { exit( 1 ); } fwrite( STDOUT, "missing core: " . implode( ",", $m ) . "\n" ); exit( 0 );'
+          wp eval 'exit( function_exists( "oddout_desktop_mode_available" ) ? 0 : 1 );'
+          wp eval 'exit( oddout_desktop_mode_available() ? 1 : 0 );' # should be false
+          wp eval '$m = oddout_desktop_mode_missing_functions( "core" ); if ( empty( $m ) ) { exit( 1 ); } fwrite( STDOUT, "missing core: " . implode( ",", $m ) . "\n" ); exit( 0 );'
       - name: Assert degraded-mode init dispatches without fatal
         working-directory: /tmp/wp
         run: |
@@ -521,8 +521,8 @@ jobs:
       - name: Assert the bundled fallback registry carried the Shop
         working-directory: /tmp/wp
         run: |
-          wp eval 'delete_transient( ODD_CATALOG_TRANSIENT ); delete_option( ODD_CATALOG_STALE_OPTION );'
-          wp eval '$r = odd_catalog_load( true ); $n = isset( $r["bundles"] ) ? count( $r["bundles"] ) : 0; echo "bundles from load: $n\n"; exit( $n >= 1 ? 0 : 1 );'
+          wp eval 'delete_transient( ODDOUT_CATALOG_TRANSIENT ); delete_option( ODDOUT_CATALOG_STALE_OPTION );'
+          wp eval '$r = oddout_catalog_load( true ); $n = isset( $r["bundles"] ) ? count( $r["bundles"] ) : 0; echo "bundles from load: $n\n"; exit( $n >= 1 ? 0 : 1 );'
       - name: Scan debug.log for PHP errors under offline catalog
         working-directory: /tmp/wp
         run: |
@@ -539,7 +539,7 @@ jobs:
           fi
 
   # Degraded-mode smoke: a corrupted .wp bundle (wrong sha256) must be
-  # refused by odd_bundle_install() without fatalling. This protects
+  # refused by oddout_bundle_install() without fatalling. This protects
   # against a compromised or truncated remote mirror on first activation.
   install-smoke-bad-hash:
     runs-on: ubuntu-latest
@@ -618,7 +618,7 @@ jobs:
         run: |
           wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.0.8.2.zip --activate
           wp plugin install "$ODD_ZIP" --activate
-      - name: Assert odd_bundle_install rejects a corrupted .wp
+      - name: Assert oddout_bundle_install rejects a corrupted .wp
         working-directory: /tmp/wp
         run: |
           cat > /tmp/bad-hash.php <<'PHP'
@@ -627,7 +627,7 @@ jobs:
           $path = tempnam( sys_get_temp_dir(), 'badhash_' ) . '.wp';
           // Write garbage bytes — definitely not a real ZIP archive.
           file_put_contents( $path, "not a real zip archive\n" );
-          $result = odd_bundle_install( $path, 'bad.wp' );
+          $result = oddout_bundle_install( $path, 'bad.wp' );
           @unlink( $path );
           if ( ! is_wp_error( $result ) ) {
               fwrite( STDERR, "bad bundle was accepted — reliability gate failed\n" );

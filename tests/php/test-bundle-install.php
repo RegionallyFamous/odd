@@ -10,7 +10,7 @@
  * up as a failing assertion here rather than a 500 in the browser.
  */
 
-class Test_Bundle_Install extends ODD_REST_Test_Case {
+class Test_Bundle_Install extends ODDOUT_REST_Test_Case {
 
 	/**
 	 * @var array<array{slug:string, type:string}> Cleanup register.
@@ -19,7 +19,7 @@ class Test_Bundle_Install extends ODD_REST_Test_Case {
 
 	public function tear_down() {
 		foreach ( $this->installed as $row ) {
-			odd_bundle_uninstall( $row['slug'] );
+			oddout_bundle_uninstall( $row['slug'] );
 		}
 		$this->installed = array();
 		parent::tear_down();
@@ -105,7 +105,7 @@ class Test_Bundle_Install extends ODD_REST_Test_Case {
 
 	public function test_iconset_round_trip_install_register_uninstall() {
 		$zip = $this->make_iconset_zip( 'test-set' );
-		$res = odd_bundle_install( $zip, 'test-set.wp' );
+		$res = oddout_bundle_install( $zip, 'test-set.wp' );
 		@unlink( $zip );
 		$this->assertIsArray( $res, is_wp_error( $res ) ? $res->get_error_message() : 'icon-set install returned non-array' );
 		$this->assertSame( 'icon-set', $res['type'] );
@@ -114,21 +114,21 @@ class Test_Bundle_Install extends ODD_REST_Test_Case {
 			'type' => 'icon-set',
 		);
 
-		$sets  = odd_icons_get_sets( true );
+		$sets  = oddout_icons_get_sets( true );
 		$slugs = wp_list_pluck( $sets, 'slug' );
 		$this->assertContains( 'test-set', $slugs, 'installed icon set must surface in the icon registry' );
 
-		$uninstall = odd_bundle_uninstall( 'test-set' );
+		$uninstall = oddout_bundle_uninstall( 'test-set' );
 		$this->assertTrue( true === $uninstall || is_array( $uninstall ), is_wp_error( $uninstall ) ? $uninstall->get_error_message() : 'uninstall failed' );
 		$this->installed = array();
 
-		$slugs = wp_list_pluck( odd_icons_get_sets( true ), 'slug' );
+		$slugs = wp_list_pluck( oddout_icons_get_sets( true ), 'slug' );
 		$this->assertNotContains( 'test-set', $slugs, 'uninstalled icon set must vanish from the registry' );
 	}
 
 	public function test_scene_round_trip_install_register_uninstall() {
 		$zip = $this->make_scene_zip( 'test-scene' );
-		$res = odd_bundle_install( $zip, 'test-scene.wp' );
+		$res = oddout_bundle_install( $zip, 'test-scene.wp' );
 		@unlink( $zip );
 		$this->assertIsArray( $res, is_wp_error( $res ) ? $res->get_error_message() : 'scene install returned non-array' );
 		$this->assertSame( 'scene', $res['type'] );
@@ -137,23 +137,23 @@ class Test_Bundle_Install extends ODD_REST_Test_Case {
 			'type' => 'scene',
 		);
 
-		$scenes = apply_filters( 'odd_scene_registry', array() );
+		$scenes = apply_filters( 'oddout_scene_registry', array() );
 		$found  = false;
 		foreach ( $scenes as $s ) {
 			if ( isset( $s['slug'] ) && 'test-scene' === $s['slug'] ) {
 				$found = true;
 				break; }
 		}
-		$this->assertTrue( $found, 'installed scene must surface in odd_scene_registry' );
+		$this->assertTrue( $found, 'installed scene must surface in oddout_scene_registry' );
 
-		$uninstall = odd_bundle_uninstall( 'test-scene' );
+		$uninstall = oddout_bundle_uninstall( 'test-scene' );
 		$this->assertTrue( true === $uninstall || is_array( $uninstall ), is_wp_error( $uninstall ) ? $uninstall->get_error_message() : 'uninstall failed' );
 		$this->installed = array();
 	}
 
 	public function test_global_slug_uniqueness_across_types() {
 		$zip1 = $this->make_iconset_zip( 'shared-slug' );
-		$res1 = odd_bundle_install( $zip1, 'shared-slug.wp' );
+		$res1 = oddout_bundle_install( $zip1, 'shared-slug.wp' );
 		@unlink( $zip1 );
 		$this->assertIsArray( $res1 );
 		$this->installed[] = array(
@@ -165,7 +165,7 @@ class Test_Bundle_Install extends ODD_REST_Test_Case {
 		// be rejected by the global uniqueness gate, not by a per-type
 		// "already installed" check.
 		$zip2 = $this->make_scene_zip( 'shared-slug' );
-		$res2 = odd_bundle_install( $zip2, 'shared-slug.wp' );
+		$res2 = oddout_bundle_install( $zip2, 'shared-slug.wp' );
 		@unlink( $zip2 );
 		$this->assertWPError( $res2, 'second install with same slug must be rejected' );
 		$this->assertSame( 'slug_exists', $res2->get_error_code() );
@@ -173,7 +173,7 @@ class Test_Bundle_Install extends ODD_REST_Test_Case {
 
 	public function test_invalid_extension_rejected() {
 		$zip = $this->make_iconset_zip( 'ignore-me' );
-		$res = odd_bundle_install( $zip, 'ignore-me.zip' );
+		$res = oddout_bundle_install( $zip, 'ignore-me.zip' );
 		@unlink( $zip );
 		$this->assertWPError( $res );
 		$this->assertSame( 'invalid_extension', $res->get_error_code() );
@@ -191,7 +191,7 @@ class Test_Bundle_Install extends ODD_REST_Test_Case {
 				'../escape.txt' => 'nope',
 			)
 		);
-		$res = odd_bundle_install( $zip, 'bad-path.wp' );
+		$res = oddout_bundle_install( $zip, 'bad-path.wp' );
 		@unlink( $zip );
 		$this->assertWPError( $res );
 		$this->assertSame( 'path_traversal', $res->get_error_code() );
@@ -209,14 +209,14 @@ class Test_Bundle_Install extends ODD_REST_Test_Case {
 				'payload.php' => '<?php echo "nope";',
 			)
 		);
-		$res = odd_bundle_install( $zip, 'bad-php.wp' );
+		$res = oddout_bundle_install( $zip, 'bad-php.wp' );
 		@unlink( $zip );
 		$this->assertWPError( $res );
 		$this->assertSame( 'forbidden_file_type', $res->get_error_code() );
 	}
 
 	public function test_catalog_entry_requires_https_and_sha256() {
-		$missing_sha = odd_catalog_download_entry_file(
+		$missing_sha = oddout_catalog_download_entry_file(
 			array(
 				'type'         => 'widget',
 				'slug'         => 'missing-sha',
@@ -226,7 +226,7 @@ class Test_Bundle_Install extends ODD_REST_Test_Case {
 		$this->assertWPError( $missing_sha );
 		$this->assertSame( 'missing_sha256', $missing_sha->get_error_code() );
 
-		$insecure = odd_catalog_download_entry_file(
+		$insecure = oddout_catalog_download_entry_file(
 			array(
 				'type'         => 'widget',
 				'slug'         => 'insecure',
@@ -250,7 +250,7 @@ class Test_Bundle_Install extends ODD_REST_Test_Case {
 			),
 			array( 'index.html' => '<h1>legacy</h1>' )
 		);
-		$res = odd_bundle_install( $zip, 'legacy-app.wp' );
+		$res = oddout_bundle_install( $zip, 'legacy-app.wp' );
 		@unlink( $zip );
 		$this->assertIsArray( $res, is_wp_error( $res ) ? $res->get_error_message() : 'legacy install returned non-array' );
 		$this->assertSame( 'app', $res['type'] );
@@ -262,7 +262,7 @@ class Test_Bundle_Install extends ODD_REST_Test_Case {
 
 	public function test_catalog_download_manifest_type_must_match_catalog_row() {
 		$zip = $this->make_scene_zip( 'mismatch-scene' );
-		$res = odd_catalog_download_matches_entry(
+		$res = oddout_catalog_download_matches_entry(
 			$zip,
 			'mismatch-scene.wp',
 			array(
@@ -278,7 +278,7 @@ class Test_Bundle_Install extends ODD_REST_Test_Case {
 
 	public function test_catalog_download_manifest_slug_must_match_catalog_row() {
 		$zip = $this->make_scene_zip( 'actual-scene' );
-		$res = odd_catalog_download_matches_entry(
+		$res = oddout_catalog_download_matches_entry(
 			$zip,
 			'actual-scene.wp',
 			array(

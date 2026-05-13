@@ -9,16 +9,16 @@ class Test_ODD_Playground_Compat extends WP_UnitTestCase {
 		$server = $_SERVER;
 		try {
 			$_SERVER['HTTP_HOST'] = 'playground.wordpress.net';
-			$this->assertTrue( odd_is_playground_host() );
+			$this->assertTrue( oddout_is_playground_host() );
 
 			$_SERVER['HTTP_HOST'] = 'scope-demo.playground.wordpress.net';
-			$this->assertTrue( odd_is_playground_host() );
+			$this->assertTrue( oddout_is_playground_host() );
 
 			$_SERVER['HTTP_HOST'] = 'PLAYGROUND.WORDPRESS.NET';
-			$this->assertTrue( odd_is_playground_host() );
+			$this->assertTrue( oddout_is_playground_host() );
 
 			$_SERVER['HTTP_HOST'] = 'playground.wordpress.net:8443';
-			$this->assertTrue( odd_is_playground_host() );
+			$this->assertTrue( oddout_is_playground_host() );
 		} finally {
 			$_SERVER = $server;
 		}
@@ -28,13 +28,13 @@ class Test_ODD_Playground_Compat extends WP_UnitTestCase {
 		$server = $_SERVER;
 		try {
 			unset( $_SERVER['HTTP_HOST'] );
-			$this->assertFalse( odd_is_playground_host() );
+			$this->assertFalse( oddout_is_playground_host() );
 
 			$_SERVER['HTTP_HOST'] = 'example.test';
-			$this->assertFalse( odd_is_playground_host() );
+			$this->assertFalse( oddout_is_playground_host() );
 
 			$_SERVER['HTTP_HOST'] = 'not-playground.wordpress.net';
-			$this->assertFalse( odd_is_playground_host() );
+			$this->assertFalse( oddout_is_playground_host() );
 		} finally {
 			$_SERVER = $server;
 		}

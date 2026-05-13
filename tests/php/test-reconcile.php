@@ -9,8 +9,8 @@ class Test_Reconcile extends WP_UnitTestCase {
 
 	public function tear_down() {
 		foreach ( $this->installed as $slug ) {
-			if ( function_exists( 'odd_apps_uninstall' ) ) {
-				odd_apps_uninstall( $slug );
+			if ( function_exists( 'oddout_apps_uninstall' ) ) {
+				oddout_apps_uninstall( $slug );
 			}
 		}
 		$this->installed = array();
@@ -33,7 +33,7 @@ class Test_Reconcile extends WP_UnitTestCase {
 		$zip->addFromString( 'index.html', '<!doctype html><script type="module" src="./assets/missing.js"></script>' );
 		$zip->addFromString( 'icon.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64"/></svg>' );
 		$zip->close();
-		$res = odd_apps_install( $path, $slug . '.wp' );
+		$res = oddout_apps_install( $path, $slug . '.wp' );
 		@unlink( $path );
 		$this->assertIsArray( $res );
 		$this->installed[] = $slug;
@@ -42,7 +42,7 @@ class Test_Reconcile extends WP_UnitTestCase {
 	public function test_reconcile_reports_missing_index_assets_and_icon_health() {
 		$this->install_app_fixture( 'reconcile-missing-asset' );
 
-		$report = odd_reconcile_installed_content();
+		$report = oddout_reconcile_installed_content();
 		$this->assertArrayHasKey( 'apps', $report );
 		$app = null;
 		foreach ( $report['apps'] as $row ) {

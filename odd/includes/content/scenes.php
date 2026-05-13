@@ -12,8 +12,8 @@
  *   preview.webp           640×360, shown on Shop cards
  *   wallpaper.webp         1920×1080, the painted backdrop
  *
- * Installed scenes live at `wp-content/odd-scenes/<slug>/`. The
- * scene descriptor added to `odd_scene_registry` carries
+ * Installed scenes live at `uploads/odd/scenes/<slug>/`. The
+ * scene descriptor added to `oddout_scene_registry` carries
  * `previewUrl` + `wallpaperUrl` pointing at `content_url()` so the
  * static WebPs stream directly — no REST hop, no authenticated
  * serve endpoint. The scene `scene.js` gets enqueued on
@@ -30,44 +30,44 @@
 
 defined( 'ABSPATH' ) || exit;
 
-if ( ! defined( 'ODD_SCENES_DIR' ) ) {
-	define( 'ODD_SCENES_DIR', trailingslashit( WP_CONTENT_DIR ) . 'odd-scenes/' );
+if ( ! defined( 'ODDOUT_SCENES_DIR' ) ) {
+	define( 'ODDOUT_SCENES_DIR', oddout_storage_dir( 'scenes' ) );
 }
-if ( ! defined( 'ODD_SCENES_URL' ) ) {
-	define( 'ODD_SCENES_URL', trailingslashit( odd_url_current_scheme( content_url( 'odd-scenes' ) ) ) );
+if ( ! defined( 'ODDOUT_SCENES_URL' ) ) {
+	define( 'ODDOUT_SCENES_URL', oddout_storage_url( 'scenes' ) );
 }
-if ( ! defined( 'ODD_SCENES_OPTION_INDEX' ) ) {
-	define( 'ODD_SCENES_OPTION_INDEX', 'odd_scenes_index' );
+if ( ! defined( 'ODDOUT_SCENES_OPTION_INDEX' ) ) {
+	define( 'ODDOUT_SCENES_OPTION_INDEX', 'oddout_scenes_index' );
 }
 
-function odd_scenes_dir_for( $slug ) {
+function oddout_scenes_dir_for( $slug ) {
 	$slug = sanitize_key( (string) $slug );
-	return '' === $slug ? '' : ODD_SCENES_DIR . $slug . '/';
+	return '' === $slug ? '' : ODDOUT_SCENES_DIR . $slug . '/';
 }
 
-function odd_scenes_url_for( $slug ) {
+function oddout_scenes_url_for( $slug ) {
 	$slug = sanitize_key( (string) $slug );
-	return '' === $slug ? '' : ODD_SCENES_URL . $slug . '/';
+	return '' === $slug ? '' : ODDOUT_SCENES_URL . $slug . '/';
 }
 
-function odd_scenes_ensure_storage() {
-	if ( ! is_dir( ODD_SCENES_DIR ) ) {
-		wp_mkdir_p( ODD_SCENES_DIR );
+function oddout_scenes_ensure_storage() {
+	if ( ! is_dir( ODDOUT_SCENES_DIR ) ) {
+		wp_mkdir_p( ODDOUT_SCENES_DIR );
 	}
 }
 
-function odd_scenes_index_load() {
-	$raw = get_option( ODD_SCENES_OPTION_INDEX, array() );
+function oddout_scenes_index_load() {
+	$raw = get_option( ODDOUT_SCENES_OPTION_INDEX, array() );
 	return is_array( $raw ) ? $raw : array();
 }
 
-function odd_scenes_index_save( $index ) {
-	update_option( ODD_SCENES_OPTION_INDEX, is_array( $index ) ? $index : array(), false );
+function oddout_scenes_index_save( $index ) {
+	update_option( ODDOUT_SCENES_OPTION_INDEX, is_array( $index ) ? $index : array(), false );
 }
 
-function odd_scene_bundle_has( $slug ) {
+function oddout_scene_bundle_has( $slug ) {
 	$slug  = sanitize_key( (string) $slug );
-	$index = odd_scenes_index_load();
+	$index = oddout_scenes_index_load();
 	return isset( $index[ $slug ] );
 }
 
@@ -76,34 +76,34 @@ function odd_scene_bundle_has( $slug ) {
  * the manifest is parsed. Returns the normalised manifest or a
  * WP_Error.
  */
-function odd_scene_bundle_validate( $tmp_path, $filename, ZipArchive $zip, array $manifest ) {
-	$header = odd_content_validate_header( $manifest );
+function oddout_scene_bundle_validate( $tmp_path, $filename, ZipArchive $zip, array $manifest ) {
+	$header = oddout_content_validate_header( $manifest );
 	if ( is_wp_error( $header ) ) {
 		return $header;
 	}
 
 	$entry = isset( $manifest['entry'] ) ? (string) $manifest['entry'] : 'scene.js';
-	$entry = odd_content_sanitize_relative_path( $entry );
+	$entry = oddout_content_sanitize_relative_path( $entry );
 	if ( '' === $entry || '.js' !== strtolower( substr( $entry, -3 ) ) ) {
-		return new WP_Error( 'invalid_entry', __( 'Scene bundle entry must be a .js file.', 'odd' ) );
+		return new WP_Error( 'invalid_entry', __( 'Scene bundle entry must be a .js file.', 'odd-outlandish-desktop-decorator' ) );
 	}
 	if ( false === $zip->getFromName( $entry ) ) {
 		return new WP_Error(
 			'missing_entry',
-			sprintf( /* translators: %s entry path */ __( 'Entry file "%s" not found in bundle.', 'odd' ), $entry )
+			sprintf( /* translators: %s entry path */ __( 'Entry file "%s" not found in bundle.', 'odd-outlandish-desktop-decorator' ), $entry )
 		);
 	}
 
 	$preview = isset( $manifest['preview'] ) ? (string) $manifest['preview'] : 'preview.webp';
-	$preview = odd_content_sanitize_relative_path( $preview );
+	$preview = oddout_content_sanitize_relative_path( $preview );
 	if ( '' === $preview || false === $zip->getFromName( $preview ) ) {
-		return new WP_Error( 'missing_preview', __( 'Scene bundle is missing preview.webp.', 'odd' ) );
+		return new WP_Error( 'missing_preview', __( 'Scene bundle is missing preview.webp.', 'odd-outlandish-desktop-decorator' ) );
 	}
 
 	$wallpaper = isset( $manifest['wallpaper'] ) ? (string) $manifest['wallpaper'] : 'wallpaper.webp';
-	$wallpaper = odd_content_sanitize_relative_path( $wallpaper );
+	$wallpaper = oddout_content_sanitize_relative_path( $wallpaper );
 	if ( '' === $wallpaper || false === $zip->getFromName( $wallpaper ) ) {
-		return new WP_Error( 'missing_wallpaper', __( 'Scene bundle is missing wallpaper.webp.', 'odd' ) );
+		return new WP_Error( 'missing_wallpaper', __( 'Scene bundle is missing wallpaper.webp.', 'odd-outlandish-desktop-decorator' ) );
 	}
 
 	$tags = array();
@@ -117,7 +117,7 @@ function odd_scene_bundle_validate( $tmp_path, $filename, ZipArchive $zip, array
 
 	$fallback = isset( $manifest['fallbackColor'] ) ? trim( (string) $manifest['fallbackColor'] ) : '';
 	if ( '' !== $fallback && ! preg_match( '/^#[0-9A-Fa-f]{3,8}$/', $fallback ) ) {
-		return new WP_Error( 'invalid_fallback', __( 'fallbackColor must be a hex colour like #0a0a1f.', 'odd' ) );
+		return new WP_Error( 'invalid_fallback', __( 'fallbackColor must be a hex colour like #0a0a1f.', 'odd-outlandish-desktop-decorator' ) );
 	}
 
 	return array(
@@ -138,25 +138,24 @@ function odd_scene_bundle_validate( $tmp_path, $filename, ZipArchive $zip, array
 	);
 }
 
-function odd_scene_bundle_install( $tmp_path, array $manifest ) {
-	odd_scenes_ensure_storage();
+function oddout_scene_bundle_install( $tmp_path, array $manifest ) {
+	oddout_scenes_ensure_storage();
 	$slug = $manifest['slug'];
 
-	$extracted = odd_content_archive_extract( $tmp_path, ODD_SCENES_DIR, $slug );
+	$extracted = oddout_content_archive_extract( $tmp_path, ODDOUT_SCENES_DIR, $slug );
 	if ( is_wp_error( $extracted ) ) {
 		return $extracted;
 	}
 
-	$dir = odd_scenes_dir_for( $slug );
+	$dir = oddout_scenes_dir_for( $slug );
 
 	// Persist the normalised manifest alongside the author's source.
 	$canonical = wp_json_encode( $manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
 	if ( is_string( $canonical ) ) {
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents,WordPress.WP.AlternativeFunctions.file_put_contents_file_put_contents
-		file_put_contents( $dir . 'manifest.json', $canonical );
+		oddout_write_file( $dir . 'manifest.json', $canonical );
 	}
 
-	$index          = odd_scenes_index_load();
+	$index          = oddout_scenes_index_load();
 	$index[ $slug ] = array(
 		'slug'          => $slug,
 		'name'          => $manifest['name'],
@@ -171,7 +170,7 @@ function odd_scene_bundle_install( $tmp_path, array $manifest ) {
 		'wallpaper'     => $manifest['wallpaper'],
 		'installed'     => time(),
 	);
-	odd_scenes_index_save( $index );
+	oddout_scenes_index_save( $index );
 
 	// The scene registry memoises per request. A fresh page load
 	// picks up the new scene via the filter below; the install
@@ -179,23 +178,23 @@ function odd_scene_bundle_install( $tmp_path, array $manifest ) {
 	return true;
 }
 
-function odd_scene_bundle_uninstall( $slug ) {
+function oddout_scene_bundle_uninstall( $slug ) {
 	$slug = sanitize_key( (string) $slug );
 	if ( '' === $slug ) {
-		return new WP_Error( 'invalid_slug', __( 'Invalid slug.', 'odd' ) );
+		return new WP_Error( 'invalid_slug', __( 'Invalid slug.', 'odd-outlandish-desktop-decorator' ) );
 	}
-	$index = odd_scenes_index_load();
+	$index = oddout_scenes_index_load();
 	if ( ! isset( $index[ $slug ] ) ) {
-		return new WP_Error( 'not_installed', __( 'Scene is not installed.', 'odd' ) );
+		return new WP_Error( 'not_installed', __( 'Scene is not installed.', 'odd-outlandish-desktop-decorator' ) );
 	}
 
-	$dir = odd_scenes_dir_for( $slug );
+	$dir = oddout_scenes_dir_for( $slug );
 	if ( $dir && is_dir( $dir ) ) {
-		odd_content_rrmdir( rtrim( $dir, '/' ) );
+		oddout_content_rrmdir( rtrim( $dir, '/' ) );
 	}
 
 	unset( $index[ $slug ] );
-	odd_scenes_index_save( $index );
+	oddout_scenes_index_save( $index );
 
 	return true;
 }
@@ -211,12 +210,12 @@ function odd_scene_bundle_uninstall( $slug ) {
  * painted backdrop.
  */
 add_filter(
-	'odd_scene_registry',
+	'oddout_scene_registry',
 	function ( $registry ) {
 		if ( ! is_array( $registry ) ) {
 			$registry = array();
 		}
-		$index = odd_scenes_index_load();
+		$index = oddout_scenes_index_load();
 		if ( empty( $index ) ) {
 			return $registry;
 		}
@@ -241,8 +240,8 @@ add_filter(
 				'heroSafe'      => isset( $row['heroSafe'] ) ? (bool) $row['heroSafe'] : true,
 				'added'         => '',
 				'installed'     => true,
-				'previewUrl'    => odd_scenes_url_for( $slug ) . rawurlencode( isset( $row['preview'] ) ? $row['preview'] : 'preview.webp' ),
-				'wallpaperUrl'  => odd_scenes_url_for( $slug ) . rawurlencode( isset( $row['wallpaper'] ) ? $row['wallpaper'] : 'wallpaper.webp' ),
+				'previewUrl'    => oddout_scenes_url_for( $slug ) . rawurlencode( isset( $row['preview'] ) ? $row['preview'] : 'preview.webp' ),
+				'wallpaperUrl'  => oddout_scenes_url_for( $slug ) . rawurlencode( isset( $row['wallpaper'] ) ? $row['wallpaper'] : 'wallpaper.webp' ),
 			);
 		}
 		return $registry;
@@ -259,17 +258,17 @@ add_filter(
 add_action(
 	'admin_enqueue_scripts',
 	function () {
-		if ( ! odd_desktop_mode_available() ) {
+		if ( ! oddout_desktop_mode_available() ) {
 			return;
 		}
-		$index = odd_scenes_index_load();
+		$index = oddout_scenes_index_load();
 		if ( empty( $index ) ) {
 			return;
 		}
 		foreach ( $index as $slug => $row ) {
 			$entry = isset( $row['entry'] ) ? (string) $row['entry'] : 'scene.js';
-			$url   = odd_scenes_url_for( $slug ) . rawurlencode( $entry );
-			$ver   = isset( $row['version'] ) ? $row['version'] : ODD_VERSION;
+			$url   = oddout_scenes_url_for( $slug ) . rawurlencode( $entry );
+			$ver   = isset( $row['version'] ) ? $row['version'] : ODDOUT_VERSION;
 			wp_enqueue_script(
 				'odd-scene-' . $slug,
 				$url,

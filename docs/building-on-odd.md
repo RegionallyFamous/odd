@@ -41,8 +41,8 @@ Example — registering a scene directly in PHP (for reference only; the
 
 ```php
 add_action( 'plugins_loaded', function () {
-    if ( ! function_exists( 'odd_register_scene' ) ) return;
-    odd_register_scene( [
+    if ( ! function_exists( 'oddout_register_scene' ) ) return;
+    oddout_register_scene( [
         'slug'          => 'my-scene',
         'label'         => 'My Scene',
         'franchise'     => 'Mine',
@@ -152,19 +152,19 @@ callback; ODD never exposes a mutable global to mutate directly.
 
 | Registry          | PHP filter                | JS filter            | Helper (PHP)              |
 |-------------------|---------------------------|----------------------|---------------------------|
-| Scenes            | `odd_scene_registry`      | `odd.scenes`         | `odd_register_scene`      |
-| Icon sets         | `odd_icon_set_registry`   | `odd.iconSets`       | `odd_register_icon_set`   |
-| Muses             | `odd_muse_registry`       | `odd.muses`          | `odd_register_muse`       |
-| Commands          | `odd_command_registry`    | `odd.commands`       | `odd_register_command`    |
-| Widgets           | `odd_widget_registry`     | `odd.widgets`        | `odd_register_widget`     |
-| Rituals           | `odd_ritual_registry`     | `odd.rituals`        | `odd_register_ritual`     |
-| Motion primitives | `odd_motion_primitive_registry` | `odd.motionPrimitives` | `odd_register_motion_primitive` |
-| Apps              | `odd_app_registry`        | `odd.apps`           | `odd_register_app`        |
+| Scenes            | `oddout_scene_registry`      | `odd.scenes`         | `oddout_register_scene`      |
+| Icon sets         | `oddout_icon_set_registry`   | `odd.iconSets`       | `oddout_register_icon_set`   |
+| Muses             | `oddout_muse_registry`       | `odd.muses`          | `oddout_register_muse`       |
+| Commands          | `oddout_command_registry`    | `odd.commands`       | `oddout_register_command`    |
+| Widgets           | `oddout_widget_registry`     | `odd.widgets`        | `oddout_register_widget`     |
+| Rituals           | `oddout_ritual_registry`     | `odd.rituals`        | `oddout_register_ritual`     |
+| Motion primitives | `oddout_motion_primitive_registry` | `odd.motionPrimitives` | `oddout_register_motion_primitive` |
+| Apps              | `oddout_app_registry`        | `odd.apps`           | `oddout_register_app`        |
 
 ### PHP example
 
 ```php
-add_filter( 'odd_scene_registry', function ( $scenes ) {
+add_filter( 'oddout_scene_registry', function ( $scenes ) {
     $scenes[] = [
         'slug'          => 'my-scene',
         'label'         => 'My Scene',
@@ -175,7 +175,7 @@ add_filter( 'odd_scene_registry', function ( $scenes ) {
 } );
 ```
 
-The helper `odd_register_scene( $scene )` is a thin wrapper that wires
+The helper `oddout_register_scene( $scene )` is a thin wrapper that wires
 the filter for you. It upserts on `slug` — passing the same slug twice
 updates the existing row rather than duplicating it.
 
@@ -274,12 +274,12 @@ there's no memory cost.
 ## Migrations
 
 ODD runs versioned one-shot migrations on `admin_init`. Each migration
-gets a single schema version bump via `odd_schema_version` user meta.
+gets a single schema version bump via `oddout_schema_version` user meta.
 
-Add your own migration by hooking `odd_migrations`:
+Add your own migration by hooking `oddout_migrations`:
 
 ```php
-add_filter( 'odd_migrations', function ( $list ) {
+add_filter( 'oddout_migrations', function ( $list ) {
     $list[] = [
         'version' => 2,
         'name'    => 'my-migration',
@@ -394,11 +394,11 @@ registries (`muses`, `commands`, `widgets`, `rituals`,
 
 | Option                   | Purpose                                                   |
 |--------------------------|-----------------------------------------------------------|
-| `odd_apps_index`         | Flat `{ slug => index_row }` map. Autoloaded.             |
-| `odd_app_<slug>`         | Full manifest + runtime fields for one app. Lazy-loaded.  |
-| `odd_apps_shared_secret` | Optional shared secret for catalog auth (future use).     |
+| `oddout_apps_index`         | Flat `{ slug => index_row }` map. Autoloaded.             |
+| `oddout_app_<slug>`         | Full manifest + runtime fields for one app. Lazy-loaded.  |
+| `oddout_apps_shared_secret` | Optional shared secret for catalog auth (future use).     |
 
-Extracted bundles live in `wp-content/odd-apps/<slug>/`. A
+Extracted bundles live in `wp-content/uploads/odd/apps/<slug>/`. A
 `.htaccess` in that directory blocks direct HTTP access — every file
 is served through `GET /odd/v1/apps/serve/<slug>/<path>`, which
 re-runs capability and forbidden-extension checks on every request.
@@ -425,7 +425,7 @@ pre-populated from an app's manifest:
 }
 ```
 
-Entries are forwarded to the matching `odd_register_*` helper on
+Entries are forwarded to the matching `oddout_register_*` helper on
 install and re-applied on every pageload (at `init` priority 6), so an
 app's registrations stay in effect without a companion PHP plugin.
 Supported registries today: `muses`, `commands`, `widgets`, `rituals`,
@@ -458,21 +458,21 @@ an `appOpen.<slug>` voice line — per-slug overrides live in the app's
 ### PHP helpers
 
 ```php
-$result  = odd_apps_install( $tmp_path, $filename );       // array|WP_Error
-$done    = odd_apps_uninstall( $slug );                    // true|WP_Error
-$ok      = odd_apps_set_enabled( $slug, $bool );           // true|WP_Error
-$ok      = odd_apps_set_surfaces( $slug, $surfaces );      // true|WP_Error
-$s       = odd_apps_row_surfaces( $row );                  // { desktop: bool, taskbar: bool }
-$rows    = odd_apps_list();                                // array of index rows (surfaces backfilled)
-$m       = odd_apps_get( $slug );                          // full manifest|[]
-$is      = odd_apps_exists( $slug );                       // bool
+$result  = oddout_apps_install( $tmp_path, $filename );       // array|WP_Error
+$done    = oddout_apps_uninstall( $slug );                    // true|WP_Error
+$ok      = oddout_apps_set_enabled( $slug, $bool );           // true|WP_Error
+$ok      = oddout_apps_set_surfaces( $slug, $surfaces );      // true|WP_Error
+$s       = oddout_apps_row_surfaces( $row );                  // { desktop: bool, taskbar: bool }
+$rows    = oddout_apps_list();                                // array of index rows (surfaces backfilled)
+$m       = oddout_apps_get( $slug );                          // full manifest|[]
+$is      = oddout_apps_exists( $slug );                       // bool
 ```
 
-All writers fire the matching `odd_app_*` WP action (`odd_app_installed`,
-`odd_app_uninstalled`, `odd_app_enabled`, `odd_app_disabled`,
-`odd_app_surfaces_changed`) in addition to the JS bus events above.
+All writers fire the matching `oddout_app_*` WP action (`oddout_app_installed`,
+`oddout_app_uninstalled`, `oddout_app_enabled`, `oddout_app_disabled`,
+`oddout_app_surfaces_changed`) in addition to the JS bus events above.
 Third-party registrations can also be injected directly via the
-`odd_app_registry` filter.
+`oddout_app_registry` filter.
 
 ### App surfaces
 
@@ -505,8 +505,8 @@ Under the hood this forwards into Desktop Mode's stable
 registers no custom dock filters and no click handlers — Desktop Mode
 paints the pill and wires its `onOpen` call to the window manager.
 
-`odd_app_surfaces_changed` fires after a successful
-`odd_apps_set_surfaces()` call. Handlers receive
+`oddout_app_surfaces_changed` fires after a successful
+`oddout_apps_set_surfaces()` call. Handlers receive
 `( string $slug, array $surfaces )` where `$surfaces` is the clean,
 normalized `{ desktop: bool, taskbar: bool }` shape. The REST route
 that the Shop calls (`POST /odd/v1/apps/{slug}/toggle` with a
@@ -551,7 +551,7 @@ The harness provides `resetOdd`, `seedConfig`, `loadFoundation`, and
   ODD's 1.x contract. Breaking changes land on major bumps only.
 - Store shape is considered public — additions are fine, removals
   require a major.
-- PHP helper function names (`odd_register_*`) are stable and callable
+- PHP helper function names (`oddout_register_*`) are stable and callable
   from any WordPress context (plugins, themes, `mu-plugins`).
 
 If you ship an ODD extension, please drop an issue in

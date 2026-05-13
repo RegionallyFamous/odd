@@ -22,7 +22,7 @@
 
 	var wpI18nOdd = window.wp && window.wp.i18n;
 	function __( s ) {
-		return ( wpI18nOdd && typeof wpI18nOdd.__ === 'function' ) ? wpI18nOdd.__( s, 'odd' ) : s;
+		return ( wpI18nOdd && typeof wpI18nOdd.__ === 'function' ) ? wpI18nOdd.__( s, 'odd-outlandish-desktop-decorator' ) : s;
 	}
 
 	window.desktopModeNativeWindows = window.desktopModeNativeWindows || {};

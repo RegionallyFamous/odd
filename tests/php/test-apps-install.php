@@ -8,7 +8,7 @@
  * directory and index clean.
  */
 
-class Test_Apps_Install extends ODD_REST_Test_Case {
+class Test_Apps_Install extends ODDOUT_REST_Test_Case {
 
 	/**
 	 * @var string[] Slugs installed during a test, drained on tear_down.
@@ -17,7 +17,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 
 	public function tear_down() {
 		foreach ( $this->installed as $slug ) {
-			odd_apps_uninstall( $slug );
+			oddout_apps_uninstall( $slug );
 		}
 		$this->installed = array();
 		parent::tear_down();
@@ -61,7 +61,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 			$overrides
 		);
 		$zip      = $this->build_wp_zip( $manifest, array( 'index.html' => '<!doctype html><h1>hi</h1>' ) );
-		$res      = odd_apps_install( $zip, $slug . '.wp' );
+		$res      = oddout_apps_install( $zip, $slug . '.wp' );
 		@unlink( $zip );
 		return $res;
 	}
@@ -131,7 +131,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 		$this->assertIsArray( $res, is_wp_error( $res ) ? $res->get_error_message() : 'install returned non-array' );
 		$this->installed[] = 'hello-odd';
 
-		$list  = odd_apps_list();
+		$list  = oddout_apps_list();
 		$slugs = wp_list_pluck( $list, 'slug' );
 		$this->assertContains( 'hello-odd', $slugs );
 	}
@@ -145,7 +145,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 			),
 			array( 'index.html' => '<h1>x</h1>' )
 		);
-		$res = odd_apps_install( $zip, 'x.zip' );
+		$res = oddout_apps_install( $zip, 'x.zip' );
 		@unlink( $zip );
 		$this->assertWPError( $res );
 		$this->assertSame( 'invalid_extension', $res->get_error_code() );
@@ -156,7 +156,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 			array( 'name' => 'X' ), // no slug, no version
 			array( 'index.html' => '<h1>x</h1>' )
 		);
-		$res = odd_apps_install( $zip, 'x.wp' );
+		$res = oddout_apps_install( $zip, 'x.wp' );
 		@unlink( $zip );
 		$this->assertWPError( $res );
 		$this->assertSame( 'missing_manifest_field', $res->get_error_code() );
@@ -171,7 +171,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 			),
 			array( 'index.html' => '<h1>x</h1>' )
 		);
-		$res = odd_apps_install( $zip, 'x.wp' );
+		$res = oddout_apps_install( $zip, 'x.wp' );
 		@unlink( $zip );
 		$this->assertWPError( $res );
 		$this->assertSame( 'invalid_slug', $res->get_error_code() );
@@ -189,7 +189,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 				'evil.php'   => '<?php echo "pwned"; ?>',
 			)
 		);
-		$res = odd_apps_install( $zip, 'forbidden-x.wp' );
+		$res = oddout_apps_install( $zip, 'forbidden-x.wp' );
 		@unlink( $zip );
 		$this->assertWPError( $res );
 		$this->assertSame( 'forbidden_file_type', $res->get_error_code() );
@@ -205,7 +205,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 			),
 			array( 'index.html' => '<h1>x</h1>' )
 		);
-		$res = odd_apps_install( $zip, 'missing-entry.wp' );
+		$res = oddout_apps_install( $zip, 'missing-entry.wp' );
 		@unlink( $zip );
 		$this->assertWPError( $res );
 		$this->assertSame( 'missing_entry', $res->get_error_code() );
@@ -221,7 +221,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 			),
 			array( 'index.html' => '<h1>x</h1>' )
 		);
-		$res = odd_apps_install( $zip, 'traversal-entry.wp' );
+		$res = oddout_apps_install( $zip, 'traversal-entry.wp' );
 		@unlink( $zip );
 		$this->assertWPError( $res );
 		$this->assertSame( 'invalid_entry', $res->get_error_code() );
@@ -237,12 +237,12 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 	}
 
 	public function test_uninstall_is_idempotent_for_missing_slug() {
-		$res = odd_apps_uninstall( 'never-installed' );
+		$res = oddout_apps_uninstall( 'never-installed' );
 		$this->assertTrue( $res );
 	}
 
 	public function test_set_enabled_errors_for_missing_app() {
-		$res = odd_apps_set_enabled( 'no-such-app', false );
+		$res = oddout_apps_set_enabled( 'no-such-app', false );
 		$this->assertWPError( $res );
 		$this->assertSame( 'not_installed', $res->get_error_code() );
 	}
@@ -270,7 +270,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 		$this->assertIsArray( $res, is_wp_error( $res ) ? $res->get_error_message() : 'install returned non-array' );
 		$this->installed[] = 'low-cap-app';
 
-		$index = odd_apps_index_load();
+		$index = oddout_apps_index_load();
 		$this->assertSame( 'manage_options', $index['low-cap-app']['capability'] );
 
 		$sub = self::factory()->user->create( array( 'role' => 'subscriber' ) );
@@ -282,15 +282,15 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 
 	public function test_app_capability_filter_can_allow_deliberate_lower_privilege_apps() {
 		add_filter(
-			'odd_app_allowed_capabilities',
+			'oddout_app_allowed_capabilities',
 			static function ( $allowed ) {
 				$allowed[] = 'read';
 				return $allowed;
 			}
 		);
 
-		$this->assertSame( 'read', odd_apps_normalize_capability( 'read' ) );
-		remove_all_filters( 'odd_app_allowed_capabilities' );
+		$this->assertSame( 'read', oddout_apps_normalize_capability( 'read' ) );
+		remove_all_filters( 'oddout_app_allowed_capabilities' );
 	}
 
 	public function test_rest_delete_requires_manage_options() {
@@ -319,7 +319,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 	}
 
 	public function test_app_cookieauth_csp_keeps_compat_allowances_but_blocks_plugins() {
-		$csp = odd_apps_cookieauth_csp( 'csp-app', array() );
+		$csp = oddout_apps_cookieauth_csp( 'csp-app', array() );
 
 		$this->assertStringContainsString( "script-src 'self' 'unsafe-inline' https:", $csp );
 		$this->assertStringContainsString( "object-src 'none'", $csp );
@@ -328,60 +328,60 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 	}
 
 	public function test_odd_apps_is_html_mime_matches_charset_suffix() {
-		$this->assertTrue( odd_apps_is_html_mime( 'text/html; charset=utf-8' ) );
-		$this->assertTrue( odd_apps_is_html_mime( 'TEXT/HTML' ) );
-		$this->assertTrue( odd_apps_is_html_mime( 'application/xhtml+xml; charset=utf-8' ) );
-		$this->assertFalse( odd_apps_is_html_mime( 'application/javascript; charset=utf-8' ) );
+		$this->assertTrue( oddout_apps_is_html_mime( 'text/html; charset=utf-8' ) );
+		$this->assertTrue( oddout_apps_is_html_mime( 'TEXT/HTML' ) );
+		$this->assertTrue( oddout_apps_is_html_mime( 'application/xhtml+xml; charset=utf-8' ) );
+		$this->assertFalse( oddout_apps_is_html_mime( 'application/javascript; charset=utf-8' ) );
 	}
 
 	public function test_cookieauth_strip_home_prefix_root_untouched() {
-		$this->assertSame( '/odd-app/board/', odd_apps_cookieauth_strip_home_path_prefix( '/odd-app/board/', '/' ) );
-		$this->assertSame( '/odd-app/board/', odd_apps_cookieauth_strip_home_path_prefix( '/odd-app/board/', '' ) );
+		$this->assertSame( '/odd-app/board/', oddout_apps_cookieauth_strip_home_path_prefix( '/odd-app/board/', '/' ) );
+		$this->assertSame( '/odd-app/board/', oddout_apps_cookieauth_strip_home_path_prefix( '/odd-app/board/', '' ) );
 	}
 
 	public function test_cookieauth_strip_home_prefix_subdirectory_and_runtime() {
 		$this->assertSame(
 			'/odd-app/board/',
-			odd_apps_cookieauth_strip_home_path_prefix( '/blog/odd-app/board/', '/blog' )
+			oddout_apps_cookieauth_strip_home_path_prefix( '/blog/odd-app/board/', '/blog' )
 		);
 		$this->assertSame(
 			'/odd-app/board/',
-			odd_apps_cookieauth_strip_home_path_prefix( '/blog/odd-app/board/', '/blog/' )
+			oddout_apps_cookieauth_strip_home_path_prefix( '/blog/odd-app/board/', '/blog/' )
 		);
 		$this->assertSame(
 			'/odd-app-runtime/react.js',
-			odd_apps_cookieauth_strip_home_path_prefix( '/scoped/wp/odd-app-runtime/react.js', '/scoped/wp' )
+			oddout_apps_cookieauth_strip_home_path_prefix( '/scoped/wp/odd-app-runtime/react.js', '/scoped/wp' )
 		);
 	}
 
 	public function test_cookieauth_strip_home_prefix_requires_segment_boundary() {
 		$this->assertSame(
 			'/bloggers/page/',
-			odd_apps_cookieauth_strip_home_path_prefix( '/bloggers/page/', '/blog' )
+			oddout_apps_cookieauth_strip_home_path_prefix( '/bloggers/page/', '/blog' )
 		);
 	}
 
 	public function test_cookieauth_strip_home_prefix_exact_home_maps_to_slash() {
 		$this->assertSame(
 			'/',
-			odd_apps_cookieauth_strip_home_path_prefix( '/blog', '/blog' )
+			oddout_apps_cookieauth_strip_home_path_prefix( '/blog', '/blog' )
 		);
 	}
 
 	public function test_cookieauth_strip_playground_scope_prefix() {
 		$this->assertSame(
 			'/odd-app/board/',
-			odd_apps_cookieauth_strip_playground_scope_prefix( '/scope:brave-quiet-road/odd-app/board/' )
+			oddout_apps_cookieauth_strip_playground_scope_prefix( '/scope:brave-quiet-road/odd-app/board/' )
 		);
 		$this->assertSame(
 			'/odd-app-runtime/react.js',
-			odd_apps_cookieauth_strip_playground_scope_prefix( '/scope:x9/odd-app-runtime/react.js' )
+			oddout_apps_cookieauth_strip_playground_scope_prefix( '/scope:x9/odd-app-runtime/react.js' )
 		);
-		$this->assertSame( '/', odd_apps_cookieauth_strip_playground_scope_prefix( '/scope:only' ) );
-		$this->assertSame( '/odd-app/foo/', odd_apps_cookieauth_strip_playground_scope_prefix( '/odd-app/foo/' ) );
+		$this->assertSame( '/', oddout_apps_cookieauth_strip_playground_scope_prefix( '/scope:only' ) );
+		$this->assertSame( '/odd-app/foo/', oddout_apps_cookieauth_strip_playground_scope_prefix( '/odd-app/foo/' ) );
 		$this->assertSame(
 			'/odd-app/board/',
-			odd_apps_cookieauth_strip_playground_scope_prefix( '/scope:kind_modern_forest.v1/odd-app/board/' )
+			oddout_apps_cookieauth_strip_playground_scope_prefix( '/scope:kind_modern_forest.v1/odd-app/board/' )
 		);
 	}
 
@@ -389,7 +389,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 		$this->with_request_uri(
 			'/scope:pg-scope-xyz/wp-admin/index.php?desktop_mode_portal=1',
 			function () {
-				$url   = odd_url_with_playground_scope( 'http://example.test/wp/odd-app/board/?foo=bar#frag' );
+				$url   = oddout_url_with_playground_scope( 'http://example.test/wp/odd-app/board/?foo=bar#frag' );
 				$parts = wp_parse_url( $url );
 
 				$this->assertSame( 'example.test', $parts['host'] );
@@ -397,7 +397,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 				$this->assertSame( 'foo=bar', $parts['query'] );
 				$this->assertSame( 'frag', $parts['fragment'] );
 
-				$already_scoped = odd_url_with_playground_scope( 'https://example.test/scope:existing/odd-app/board/' );
+				$already_scoped = oddout_url_with_playground_scope( 'https://example.test/scope:existing/odd-app/board/' );
 				$already_parts  = wp_parse_url( $already_scoped );
 				$this->assertSame( '/scope:existing/odd-app/board/', $already_parts['path'] );
 			}
@@ -408,7 +408,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 		$this->with_request_uri(
 			'/wp-admin/index.php',
 			function () {
-				$url   = odd_url_with_playground_scope( 'https://example.test/odd-app/board/' );
+				$url   = oddout_url_with_playground_scope( 'https://example.test/odd-app/board/' );
 				$parts = wp_parse_url( $url );
 
 				$this->assertSame( '/odd-app/board/', $parts['path'] );
@@ -421,7 +421,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 			'/scope:pg-scope-xyz/wp-admin/index.php?desktop_mode_portal=1',
 			function () {
 				$this->assert_url_path_has_scope_and_suffix(
-					odd_apps_cookieauth_url_for( 'board' ),
+					oddout_apps_cookieauth_url_for( 'board' ),
 					'scope:pg-scope-xyz',
 					'/odd-app/board/'
 				);
@@ -433,7 +433,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 		$this->with_request_uri(
 			'/scope:pg-scope-xyz/odd-app/board/',
 			function () {
-				$html = odd_apps_runtime_importmap_html();
+				$html = oddout_apps_runtime_importmap_html();
 				$this->assertSame( 1, preg_match( '#<script type="importmap">(.+)</script>#', $html, $matches ) );
 
 				$decoded = json_decode( $matches[1], true );
@@ -472,7 +472,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 		$this->with_request_uri(
 			'/scope:pg-scope-xyz/odd-app/board/',
 			function () {
-				$result = odd_apps_rewrite_runtime_bare_imports(
+				$result = oddout_apps_rewrite_runtime_bare_imports(
 					'import React from "react";'
 					. 'import{jsx}from"react/jsx-runtime";'
 					. 'import"react-dom";'
@@ -493,7 +493,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 			'/scope:pg-scope-xyz/wp-admin/index.php?desktop_mode_portal=1',
 			function () {
 				$this->assert_rest_url_has_scope_and_route(
-					odd_https_rest_url( 'odd/v1/apps' ),
+					oddout_https_rest_url( 'odd/v1/apps' ),
 					'scope:pg-scope-xyz',
 					'odd/v1/apps'
 				);
@@ -505,7 +505,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 		$this->with_request_uri(
 			'/scope:pg-scope-xyz/odd-app/ledger/?_wpnonce=fake',
 			function () {
-				$root = odd_apps_iframe_effective_rest_root();
+				$root = oddout_apps_iframe_effective_rest_root();
 				$this->assert_rest_root_has_scope( $root, 'scope:pg-scope-xyz' );
 			}
 		);
@@ -526,7 +526,7 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 				'assets/app.js' => 'import React from "react"; console.log(React);',
 			)
 		);
-		$res = odd_apps_install( $zip, 'diag-app.wp' );
+		$res = oddout_apps_install( $zip, 'diag-app.wp' );
 		@unlink( $zip );
 		$this->assertIsArray( $res, is_wp_error( $res ) ? $res->get_error_message() : 'install returned non-array' );
 		$this->installed[] = 'diag-app';
@@ -565,14 +565,14 @@ class Test_Apps_Install extends ODD_REST_Test_Case {
 			. '<script type="module" src="/@vite/client"></script>'
 			. '</head><body></body></html>';
 
-		$result = odd_apps_prepare_app_html_output( $raw );
+		$result = oddout_apps_prepare_app_html_output( $raw );
 
 		$this->assertStringNotContainsString( '<base', $result );
 		$this->assertStringContainsString( 'href="./assets/index.css"', $result );
 		$this->assertStringContainsString( 'src="./chunks/main.js"', $result );
 		$this->assertStringContainsString( 'src="./@vite/client"', $result );
-		$this->assertStringContainsString( 'odd_apps_iframe_fetch_bootstrap', $result );
-		$this->assertStringContainsString( 'odd_apps_iframe_diagnostics_bootstrap', $result );
+		$this->assertStringContainsString( 'oddout_apps_iframe_fetch_bootstrap', $result );
+		$this->assertStringContainsString( 'oddout_apps_iframe_diagnostics_bootstrap', $result );
 		$this->assertStringContainsString( 'I.slice(j)', $result );
 		$this->assertStringContainsString( 'wp-json', $result );
 	}

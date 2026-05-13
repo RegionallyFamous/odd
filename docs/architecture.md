@@ -20,32 +20,32 @@ installs on demand from the ODD Shop.
 
 ```
 odd/                                the plugin — JS/PHP/CSS only, no bundled content
-├── odd.php                         bootstrap + ODD_VERSION constant
+├── odd.php                         bootstrap + ODDOUT_VERSION constant
 ├── includes/
 │   ├── enqueue.php                 odd-api / odd / odd-panel / odd-commands / odd-desktop-hooks handles
 │   ├── rest.php                    /odd/v1/prefs (GET+POST)
 │   ├── migrate.php                 activation-time b-roll → odd migration (idempotent)
-│   ├── migrations.php              versioned per-user migration runner (odd_schema_version)
+│   ├── migrations.php              versioned per-user migration runner (oddout_schema_version)
 │   ├── native-window.php           desktop_mode_register_window('odd', ...)
 │   ├── starter-pack.php            inline starter install + backoff + retry REST
 │   ├── content/
 │   │   ├── catalog.php             remote registry fetch + transient cache + install-from-catalog REST
-│   │   ├── scenes.php              installed-scene bundle loader (filter → odd_scene_registry)
+│   │   ├── scenes.php              installed-scene bundle loader (filter → oddout_scene_registry)
 │   │   ├── iconsets.php            installed-icon-set bundle loader
 │   │   ├── cursor-sets.php         installed-cursor-set bundle loader
 │   │   ├── widgets.php             installed-widget bundle loader + enqueue
 │   │   └── bundle.php              universal .wp installer (validate + extract + register)
 │   ├── wallpaper/
-│   │   ├── registry.php            filter-driven odd_wallpaper_scenes()
-│   │   └── prefs.php               per-user pref getters (odd_wallpaper_*)
+│   │   ├── registry.php            filter-driven oddout_wallpaper_scenes()
+│   │   └── prefs.php               per-user pref getters (oddout_wallpaper_*)
 │   ├── icons/
 │   │   ├── registry.php            installed-icon-set manifest reader + tint pipeline
 │   │   └── dock-filter.php         desktop_mode_dock_item + desktop_mode_icons @ priority 20
 │   └── apps/
 │       ├── bootstrap.php           feature flag + require_once list
-│       ├── storage.php             odd_apps_index + odd_app_{slug} + .htaccess
+│       ├── storage.php             oddout_apps_index + oddout_app_{slug} + .htaccess
 │       ├── loader.php              zip validate + extract pipeline
-│       ├── registry.php            install / uninstall / enable / list + odd_app_registry filter
+│       ├── registry.php            install / uninstall / enable / list + oddout_app_registry filter
 │       ├── rest.php                installed app /odd/v1/apps/* routes
 │       ├── native-surfaces.php     per-app desktop icon + native window registration
 └── src/
@@ -73,7 +73,7 @@ _tools/                             author-side content, never shipped to users
 site/                               GitHub Pages deploy target
 ├── index.html  styles.css  wild.js marketing site
 ├── catalog/v1/
-│   ├── registry.json               remote catalog manifest (consumed by odd_catalog_load())
+│   ├── registry.json               remote catalog manifest (consumed by oddout_catalog_load())
 │   ├── registry.schema.json
 │   ├── bundles/<type>-<slug>.wp    deterministic ZIP archives
 │   └── icons/<slug>.svg            tile-sized catalog preview icons
@@ -89,14 +89,14 @@ odd/bin/
 ├── check-zip-contents              release package required/forbidden file checks
 ├── validate-catalog                schema + SHA256 + determinism + starter-pack resolution
 ├── build-previews                  reads _tools/catalog-sources/scenes/**, writes preview.webp
-├── make-pot                        regenerates odd/languages/odd.pot
-└── check-version                   asserts Version: header == ODD_VERSION constant
+├── make-pot                        regenerates odd/languages/odd-outlandish-desktop-decorator.pot
+└── check-version                   asserts Version: header == ODDOUT_VERSION constant
 ```
 
 Extracted bundles (installed by users) live **outside** the plugin at
-`wp-content/odd-apps/<slug>/`, `wp-content/odd-scenes/<slug>/`,
-`wp-content/odd-icon-sets/<slug>/`, `wp-content/odd-cursor-sets/<slug>/`,
-`wp-content/odd-widgets/<slug>/`.
+`wp-content/uploads/odd/apps/<slug>/`, `wp-content/uploads/odd/scenes/<slug>/`,
+`wp-content/uploads/odd/icon-sets/<slug>/`, `wp-content/uploads/odd/cursor-sets/<slug>/`,
+`wp-content/uploads/odd/widgets/<slug>/`.
 They survive plugin reinstalls.
 
 ## Single-window contract
@@ -142,13 +142,13 @@ button to ODD windows.
 
 | Key             | Shape                                                       | Written to           |
 |-----------------|-------------------------------------------------------------|----------------------|
-| `wallpaper`     | scene slug, validated against `odd_wallpaper_scene_slugs()` | `odd_wallpaper`      |
-| `favorites`     | `slug[]` capped to 50                                       | `odd_favorites`      |
-| `recents`       | `slug[]` capped to 12                                       | `odd_recents`        |
-| `shuffle`       | `{ enabled: bool, minutes: 1..240 }`                        | `odd_shuffle`        |
-| `audioReactive` | bool                                                        | `odd_audio_reactive` |
-| `iconSet`       | set slug or `"none"`                                        | `odd_icon_set`       |
-| `cursorSet`     | set slug or `"none"`                                        | `odd_cursor_set`     |
+| `wallpaper`     | scene slug, validated against `oddout_wallpaper_scene_slugs()` | `oddout_wallpaper`      |
+| `favorites`     | `slug[]` capped to 50                                       | `oddout_favorites`      |
+| `recents`       | `slug[]` capped to 12                                       | `oddout_recents`        |
+| `shuffle`       | `{ enabled: bool, minutes: 1..240 }`                        | `oddout_shuffle`        |
+| `audioReactive` | bool                                                        | `oddout_audio_reactive` |
+| `iconSet`       | set slug or `"none"`                                        | `oddout_icon_set`       |
+| `cursorSet`     | set slug or `"none"`                                        | `oddout_cursor_set`     |
 
 Permission callback across the whole namespace is `is_user_logged_in`,
 with per-endpoint capability escalation where needed
@@ -159,15 +159,15 @@ with per-endpoint capability escalation where needed
 `includes/content/catalog.php`:
 
 ```php
-odd_catalog_load();          // wp_remote_get(ODD_CATALOG_URL) + transient cache (12h, stale/fallback-on-fail)
-odd_catalog_starter_pack();  // reads starter_pack block from the registry
-odd_catalog_install_entry( $row ); // download_url() + SHA256 + catalog/manifest match + odd_bundle_install()
+oddout_catalog_load();          // wp_remote_get(ODDOUT_CATALOG_URL) + transient cache (12h, stale/fallback-on-fail)
+oddout_catalog_starter_pack();  // reads starter_pack block from the registry
+oddout_catalog_install_entry( $row ); // download_url() + SHA256 + catalog/manifest match + oddout_bundle_install()
 ```
 
 | Constant             | Default                                                     | Override via             |
 |----------------------|-------------------------------------------------------------|--------------------------|
-| `ODD_CATALOG_URL`    | `https://odd.regionallyfamous.com/catalog/v1/registry.json` | `odd_catalog_url` filter |
-| `odd_catalog` transient | 12 hours                                                 | `delete_transient('odd_catalog')` or `POST /odd/v1/bundles/refresh` |
+| `ODDOUT_CATALOG_URL`    | `https://odd.regionallyfamous.com/catalog/v1/registry.json` | `oddout_catalog_url` filter |
+| `oddout_catalog` transient | 12 hours                                                 | `delete_transient('oddout_catalog')` or `POST /odd/v1/bundles/refresh` |
 
 Downloads are HTTPS-only by default; SHA256 is compared against the
 registry entry before extraction, and the downloaded archive manifest
@@ -181,22 +181,22 @@ capability boundary as install actions.
 `includes/starter-pack.php` — **no cron, install inline**:
 
 ```php
-register_activation_hook( ODD_PLUGIN_FILE, 'odd_activate_install_starter' );
-// ↓ synchronously runs odd_starter_ensure_installed( force=true )
+register_activation_hook( ODD_PLUGIN_FILE, 'oddout_activate_install_starter' );
+// ↓ synchronously runs oddout_starter_ensure_installed( force=true )
 
-add_action( 'init', 'odd_starter_safety_net', 20 );
+add_action( 'init', 'oddout_starter_safety_net', 20 );
 // ↓ on every request, privileged users retry pending installs inline
 
-function odd_starter_ensure_installed( $force = false ) {
+function oddout_starter_ensure_installed( $force = false ) {
     // No-op fast if: already installed, another request is running
     // (lock auto-expires after 240 s), or we're inside the backoff
     // window ($force=true skips the last check).
-    // Otherwise: take the lock, run odd_starter_install_now(),
+    // Otherwise: take the lock, run oddout_starter_install_now(),
     // persist state=installed|failed, release the lock.
 }
 ```
 
-Retry is inline, not scheduled. State lives in `odd_starter_state`:
+Retry is inline, not scheduled. State lives in `oddout_starter_state`:
 `{ status, attempts, last_attempt, last_error, installed, prefs_set }`.
 Backoff on failure (attempts 1→6): immediate, 30 s, 2 min, 10 min, 1 h,
 6 h — enforced against `last_attempt` at the start of each safety-net
@@ -223,7 +223,7 @@ after the POST succeeds. Re-render happens server-side through two
 filters in `includes/icons/dock-filter.php`:
 
 - `desktop_mode_dock_item` (priority 20, 2-arg): per-tile swap keyed by
-  `odd_icons_slug_to_key( $menu_slug )`, e.g. `edit.php` → `posts`.
+  `oddout_icons_slug_to_key( $menu_slug )`, e.g. `edit.php` → `posts`.
   Falls back to the set's `fallback` icon when a set ships no specific
   match.
 - `desktop_mode_icons` (priority 20): re-skins desktop shortcuts by the
@@ -240,10 +240,10 @@ surgery was unreliable. Don't regress.
 Every icon set declares an `accent` hex in its manifest. For sets whose
 SVGs opt in by using `stroke="currentColor"` / `fill="currentColor"`:
 
-1. `odd_icons_tint_svg_data_uri()` in `includes/icons/registry.php`
+1. `oddout_icons_tint_svg_data_uri()` in `includes/icons/registry.php`
    reads the SVG, substitutes `currentColor` with the manifest hex,
    returns a `data:image/svg+xml;utf8,…` URI.
-2. `odd_icons_get_sets()` returns tinted data URIs in the `icons` map
+2. `oddout_icons_get_sets()` returns tinted data URIs in the `icons` map
    instead of plain URLs.
 3. Dock + desktop-icon filters and the panel thumb grid all consume
    the same field — one manifest edit retints the entire set.
@@ -287,7 +287,7 @@ The shared mount runner in `src/wallpaper/index.js` owns:
 - The `desktop-mode.wallpaper.visibility` subscription +
   `document.visibilitychange` pause
 - Per-minute `env.tod` recompute, rolling-FPS `env.perfTier` sampler
-- The shuffle scheduler (every `odd_shuffle.minutes`)
+- The shuffle scheduler (every `oddout_shuffle.minutes`)
 - Audio analyser sampling
 - The built-in `odd-pending` gradient fallback scene — painted in the
   window between activation and the starter pack completing, so a
@@ -327,14 +327,14 @@ clamps it to 2.5 before `tick` receives it.
 ```
 ODD Shop → Install (remote catalog)
   → POST /odd/v1/bundles/install-from-catalog
-  → odd_catalog_install_entry( $row )
+  → oddout_catalog_install_entry( $row )
        download_url() → SHA256 verify + catalog/manifest slug/type match
-       → odd_apps_validate_archive()  ZIP integrity, limits, forbidden exts,
+       → oddout_apps_validate_archive()  ZIP integrity, limits, forbidden exts,
                                       path traversal, symlinks, manifest shape
-       → odd_apps_extract_archive()   unzip to .tmp-<slug>-<rand>/, symlink sweep,
-                                      atomic rename into wp-content/odd-apps/<slug>/
-       → odd_apps_install()           write odd_apps_index + odd_app_<slug>,
-                                      fire odd_app_installed action,
+       → oddout_apps_extract_archive()   unzip to .tmp-<slug>-<rand>/, symlink sweep,
+                                      atomic rename into wp-content/uploads/odd/apps/<slug>/
+       → oddout_apps_install()           write oddout_apps_index + oddout_app_<slug>,
+                                      fire oddout_app_installed action,
                                       re-apply manifest.extensions
   → native-surfaces.php (init)        desktop_mode_register_window('odd-app-<slug>'),
                                       desktop_mode_register_icon('odd-app-<slug>')
@@ -357,36 +357,37 @@ validation.
 
 | Option                    | Autoload | Purpose                                                |
 |---------------------------|----------|--------------------------------------------------------|
-| `odd_apps_index`          | no       | Flat `{ slug => index_row }`. Fast path for listing.   |
-| `odd_app_<slug>`          | no       | Full manifest + runtime fields for one app.            |
-| `odd_apps_shared_secret`  | no       | Optional shared secret for signed app URLs. |
-| `odd_apps_install_lock_<slug>` | no  | Transient lock — `add_option` guard against concurrent installs. |
-| `odd_catalog`             | yes      | 12-hour transient cache of the remote registry.        |
-| `odd_starter_state`       | yes      | Starter-pack runner state + last error + attempt count. |
+| `oddout_apps_index`          | no       | Flat `{ slug => index_row }`. Fast path for listing.   |
+| `oddout_app_<slug>`          | no       | Full manifest + runtime fields for one app.            |
+| `oddout_apps_shared_secret`  | no       | Optional shared secret for signed app URLs. |
+| `oddout_apps_install_lock_<slug>` | no  | Transient lock — `add_option` guard against concurrent installs. |
+| `oddout_catalog`             | yes      | 12-hour transient cache of the remote registry.        |
+| `oddout_starter_state`       | yes      | Starter-pack runner state + last error + attempt count. |
 
 No custom tables. Migrations are per-user, run via the
-`odd_migrations` filter → `includes/migrations.php` pipeline.
+`oddout_migrations` filter → `includes/migrations.php` pipeline.
 
 ### File layout on disk
 
 ```
 wp-content/
-├── odd-apps/
-│   ├── .htaccess                    "Require all denied" / "Deny from all"
-│   ├── <slug>/                      extracted bundle — manifest.json + assets
-│   └── .tmp-<slug>-<rand>/          transient staging dir (removed after extract)
-├── odd-scenes/<slug>/               scene.js + preview.webp + wallpaper.webp + manifest.json
-├── odd-icon-sets/<slug>/            manifest.json + SVG icons
-├── odd-cursor-sets/<slug>/          manifest.json + SVG cursors
-└── odd-widgets/<slug>/              widget.js + widget.css + manifest.json
+└── uploads/odd/
+    ├── apps/
+    │   ├── .htaccess                "Require all denied" / "Deny from all"
+    │   ├── <slug>/                  extracted bundle — manifest.json + assets
+    │   └── .tmp-<slug>-<rand>/      transient staging dir (removed after extract)
+    ├── scenes/<slug>/               scene.js + preview.webp + wallpaper.webp + manifest.json
+    ├── icon-sets/<slug>/            manifest.json + SVG icons
+    ├── cursor-sets/<slug>/          manifest.json + SVG cursors
+    └── widgets/<slug>/              widget.js + widget.css + manifest.json
 ```
 
 `.htaccess` is written on first app install and blocks direct HTTP
-access to the `odd-apps/` tree. App files are served through the
+access to the `uploads/odd/apps/` tree. App files are served through the
 cookie-auth `/odd-app/<slug>/...` path, with `/apps/serve/...` kept as
 the REST fallback/diagnostic path, so capability and forbidden-extension
 checks apply per request. Scenes, icon sets, cursor sets, and widgets
-are served via `content_url()` directly — they ship no PHP and their
+are served from URLs derived from `wp_upload_dir()` directly — they ship no PHP and their
 public visibility is equivalent to any other `wp-content/` asset.
 
 ### File serving (apps only)
@@ -434,9 +435,9 @@ after 12 hours.
 
 ### `manifest.extensions` re-application
 
-On every pageload (`init` priority 6), `odd_apps_apply_manifest_extensions`
+On every pageload (`init` priority 6), `oddout_apps_apply_manifest_extensions`
 walks every enabled app's manifest and forwards each
-`extensions.<registry>[]` entry to the matching `odd_register_*()`
+`extensions.<registry>[]` entry to the matching `oddout_register_*()`
 helper (`muses`, `commands`, `widgets`, `rituals`, `motionPrimitives`).
 Each registration is tagged `source: "app:<slug>"`; malformed entries
 are skipped silently.
@@ -465,14 +466,14 @@ plugin.
 
 `ci/smoke/odd-smoke-fixture.php` is an MU-plugin loaded only by
 `.github/workflows/install-smoke.yml`. It hooks `pre_http_request`
-and, when ODD calls `wp_remote_get( ODD_CATALOG_URL )` or tries to
+and, when ODD calls `wp_remote_get( ODDOUT_CATALOG_URL )` or tries to
 download a bundle, serves a locally-built fixture from
 `ODD_SMOKE_FIXTURE_ROOT` instead of reaching the live GitHub Pages
 deploy.
 
-Activation itself runs `odd_starter_ensure_installed( true )` inline,
+Activation itself runs `oddout_starter_ensure_installed( true )` inline,
 so by the time `wp plugin activate odd` returns the starter pack is
-already installed. The workflow then reads `odd_starter_get_state()`
+already installed. The workflow then reads `oddout_starter_get_state()`
 and asserts `status === 'installed'`. Determinism of the catalog
 build is enforced by `ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog`.
 
@@ -481,7 +482,7 @@ build is enforced by `ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog`.
 ODD replaced two earlier plugins, `b-roll` (wallpapers) and
 `b-roll-icons` (dock icons). An activation-time migration in
 `includes/migrate.php` copies every `b_roll_*` / `b_roll_icons_set`
-user_meta key into the matching `odd_*` key non-destructively, and
+user_meta key into the matching `oddout_*` key non-destructively, and
 rewrites each user's `desktop_mode_os_settings.wallpaper` from
 `'b-roll'` to `'odd'` so WP Desktop Mode picks up the renamed
 wallpaper.

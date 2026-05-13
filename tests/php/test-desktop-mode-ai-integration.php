@@ -1,11 +1,11 @@
 <?php
 /**
- * @covers odd_dm_ai_installed_bundles_summary
+ * @covers oddout_dm_ai_installed_bundles_summary
  */
-class ODD_Desktop_Mode_AI_Integration_Test extends WP_UnitTestCase {
+class ODDOUT_Desktop_Mode_AI_Integration_Test extends WP_UnitTestCase {
 
 	public function test_installed_bundles_summary_returns_expected_shape() {
-		$payload = odd_dm_ai_installed_bundles_summary( array(), 1 );
+		$payload = oddout_dm_ai_installed_bundles_summary( array(), 1 );
 
 		$this->assertIsArray( $payload );
 		foreach (

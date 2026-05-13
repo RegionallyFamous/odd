@@ -14,7 +14,7 @@
  *
  *   iris.say( bucket, opts )  — route a bucket through the active
  *                               muse, through safeCall, honoring
- *                               the `odd_mascot_quiet` pref.
+ *                               the `oddout_mascot_quiet` pref.
  *   iris.labels               — shorthand UI strings.
  *   iris.activeMuse()         — { slug, label, voice } currently
  *                               driving the voice (defaults Iris).

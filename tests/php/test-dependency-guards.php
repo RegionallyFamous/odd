@@ -9,7 +9,7 @@
  *   1. The guard helpers themselves — required vs optional host APIs,
  *      missing-function reporting, capability groups.
  *   2. Integration touchpoints that must no-op when host APIs are
- *      absent: odd_apps_register_surfaces(), the OS-settings seeder
+ *      absent: oddout_apps_register_surfaces(), the OS-settings seeder
  *      in the starter pack runner, and the hooks registered from
  *      includes/native-window.php / includes/apps/native-surfaces.php.
  *
@@ -24,7 +24,7 @@
 class Test_Dependency_Guards extends WP_UnitTestCase {
 
 	public function test_required_functions_list_is_stable() {
-		$required = odd_desktop_mode_required_functions();
+		$required = oddout_desktop_mode_required_functions();
 		$this->assertIsArray( $required );
 		$this->assertContains( 'desktop_mode_is_enabled', $required );
 		$this->assertContains( 'desktop_mode_register_window', $required );
@@ -32,17 +32,17 @@ class Test_Dependency_Guards extends WP_UnitTestCase {
 	}
 
 	public function test_capability_groups_are_defined() {
-		$core          = odd_desktop_mode_capability_functions( 'core' );
-		$os_settings   = odd_desktop_mode_capability_functions( 'os_settings' );
-		$registry      = odd_desktop_mode_capability_functions( 'registry' );
-		$commands      = odd_desktop_mode_capability_functions( 'commands' );
-		$settings      = odd_desktop_mode_capability_functions( 'settings' );
-		$titlebar      = odd_desktop_mode_capability_functions( 'titlebar' );
-		$dock_rail     = odd_desktop_mode_capability_functions( 'dock_rail' );
-		$debug         = odd_desktop_mode_capability_functions( 'debug' );
-		$ai            = odd_desktop_mode_capability_functions( 'ai' );
-		$window_chrome = odd_desktop_mode_capability_functions( 'window_chrome' );
-		$unknown       = odd_desktop_mode_capability_functions( 'does-not-exist' );
+		$core          = oddout_desktop_mode_capability_functions( 'core' );
+		$os_settings   = oddout_desktop_mode_capability_functions( 'os_settings' );
+		$registry      = oddout_desktop_mode_capability_functions( 'registry' );
+		$commands      = oddout_desktop_mode_capability_functions( 'commands' );
+		$settings      = oddout_desktop_mode_capability_functions( 'settings' );
+		$titlebar      = oddout_desktop_mode_capability_functions( 'titlebar' );
+		$dock_rail     = oddout_desktop_mode_capability_functions( 'dock_rail' );
+		$debug         = oddout_desktop_mode_capability_functions( 'debug' );
+		$ai            = oddout_desktop_mode_capability_functions( 'ai' );
+		$window_chrome = oddout_desktop_mode_capability_functions( 'window_chrome' );
+		$unknown       = oddout_desktop_mode_capability_functions( 'does-not-exist' );
 		$this->assertNotEmpty( $core );
 		$this->assertContains( 'desktop_mode_get_os_settings', $os_settings );
 		$this->assertContains( 'desktop_mode_save_os_settings', $os_settings );
@@ -62,35 +62,35 @@ class Test_Dependency_Guards extends WP_UnitTestCase {
 	}
 
 	public function test_available_matches_missing_report() {
-		$missing   = odd_desktop_mode_missing_functions( 'core' );
-		$available = odd_desktop_mode_available();
-		$this->assertSame( odd_desktop_mode_version_available() && array() === $missing, $available );
+		$missing   = oddout_desktop_mode_missing_functions( 'core' );
+		$available = oddout_desktop_mode_available();
+		$this->assertSame( oddout_desktop_mode_version_available() && array() === $missing, $available );
 	}
 
 	public function test_desktop_mode_minimum_version_is_080() {
-		$this->assertSame( '0.8.0', odd_desktop_mode_min_version() );
+		$this->assertSame( '0.8.0', oddout_desktop_mode_min_version() );
 		if ( defined( 'DESKTOP_MODE_VERSION' ) ) {
 			$this->assertSame(
 				version_compare( DESKTOP_MODE_VERSION, '0.8.0', '>=' ),
-				odd_desktop_mode_version_available()
+				oddout_desktop_mode_version_available()
 			);
 		} else {
-			$this->assertSame( '', odd_desktop_mode_version() );
-			$this->assertFalse( odd_desktop_mode_version_available() );
+			$this->assertSame( '', oddout_desktop_mode_version() );
+			$this->assertFalse( oddout_desktop_mode_version_available() );
 		}
 	}
 
 	public function test_supports_matches_missing_report_for_os_settings() {
-		$missing   = odd_desktop_mode_missing_functions( 'os_settings' );
-		$supported = odd_desktop_mode_supports( 'os_settings' );
-		$this->assertSame( odd_desktop_mode_version_available() && array() === $missing, $supported );
+		$missing   = oddout_desktop_mode_missing_functions( 'os_settings' );
+		$supported = oddout_desktop_mode_supports( 'os_settings' );
+		$this->assertSame( oddout_desktop_mode_version_available() && array() === $missing, $supported );
 	}
 
 	public function test_guard_fully_resolves_when_host_absent() {
-		if ( odd_desktop_mode_available() ) {
+		if ( oddout_desktop_mode_available() ) {
 			$this->markTestSkipped( 'Host Desktop Mode loaded; degraded-path test skipped.' );
 		}
-		$missing = odd_desktop_mode_missing_functions( 'core' );
+		$missing = oddout_desktop_mode_missing_functions( 'core' );
 		$this->assertNotEmpty( $missing );
 		foreach ( $missing as $fn ) {
 			$this->assertFalse( function_exists( $fn ), 'Missing function must actually be missing.' );
@@ -98,13 +98,13 @@ class Test_Dependency_Guards extends WP_UnitTestCase {
 	}
 
 	public function test_apps_register_surfaces_is_noop_without_host() {
-		if ( defined( 'ODD_TEST_DM_STUBS' ) || odd_desktop_mode_available() ) {
+		if ( defined( 'ODDOUT_TEST_DM_STUBS' ) || oddout_desktop_mode_available() ) {
 			$this->markTestSkipped( 'Host APIs are present (stubs or real); degraded-path test skipped.' );
 		}
 		// The call below would normally hit desktop_mode_register_window/
 		// desktop_mode_register_icon. With the guard, it must exit
 		// silently instead of fatalling on a missing function.
-		odd_apps_register_surfaces(
+		oddout_apps_register_surfaces(
 			array(
 				'slug'    => 'guard-test-app',
 				'enabled' => true,
@@ -115,23 +115,23 @@ class Test_Dependency_Guards extends WP_UnitTestCase {
 	}
 
 	public function test_starter_seed_host_wallpaper_is_noop_without_host() {
-		if ( odd_desktop_mode_supports( 'os_settings' ) ) {
+		if ( oddout_desktop_mode_supports( 'os_settings' ) ) {
 			$this->markTestSkipped( 'Host OS-settings API available; degraded-path test skipped.' );
 		}
 		$user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
-		$this->assertFalse( odd_starter_seed_host_wallpaper( $user_id ) );
+		$this->assertFalse( oddout_starter_seed_host_wallpaper( $user_id ) );
 	}
 
 	public function test_ensure_host_engine_selected_is_noop_without_host() {
-		if ( odd_desktop_mode_supports( 'os_settings' ) || odd_desktop_mode_supports( 'wallpaper' ) ) {
+		if ( oddout_desktop_mode_supports( 'os_settings' ) || oddout_desktop_mode_supports( 'wallpaper' ) ) {
 			$this->markTestSkipped( 'Host OS-settings + wallpaper APIs available; degraded-path test skipped.' );
 		}
 		$user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
-		$this->assertFalse( odd_wallpaper_ensure_host_engine_selected( $user_id ) );
+		$this->assertFalse( oddout_wallpaper_ensure_host_engine_selected( $user_id ) );
 	}
 
 	public function test_admin_notice_renders_when_host_is_missing() {
-		if ( odd_desktop_mode_available() ) {
+		if ( oddout_desktop_mode_available() ) {
 			$this->markTestSkipped( 'Host Desktop Mode loaded; admin notice suppressed.' );
 		}
 		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
@@ -144,7 +144,7 @@ class Test_Dependency_Guards extends WP_UnitTestCase {
 	}
 
 	public function test_init_hook_does_not_call_missing_host_apis() {
-		if ( odd_desktop_mode_available() ) {
+		if ( oddout_desktop_mode_available() ) {
 			$this->markTestSkipped( 'Host Desktop Mode loaded; degraded-path test skipped.' );
 		}
 		// Re-firing init is safe here: the guard makes every

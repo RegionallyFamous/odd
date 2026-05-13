@@ -8,7 +8,7 @@ they track different numbers on different cadences.
 
 | Number | Source of truth | Bumped when |
 |--------|-----------------|-------------|
-| `ODD_VERSION` (plugin) | `odd/odd.php` header + constant (kept in sync by `odd/bin/check-version`) | Any plugin release — bug fix, runtime feature, API change, or other shipped zip change. |
+| `ODDOUT_VERSION` (plugin) | `odd/odd.php` header + constant (kept in sync by `odd/bin/check-version`) | Any plugin release — bug fix, runtime feature, API change, or other shipped zip change. |
 | `window.__odd.api.version` (extension surface) | `API_VERSION` constant in `odd/src/shared/api.js` | Only when the surface described in [api-versioning.md](api-versioning.md) changes. |
 
 Since the 1.0 baseline, shipping new scenes / icon sets / cursor sets / widgets / apps doesn't
@@ -23,7 +23,7 @@ minor (new feature) and API minor (new surface).
 Use the Pages/catalog path when the change is limited to catalog content:
 new or updated bundles, widget card art, icon/cursor previews, metadata,
 starter-pack slugs, or other registry fields that older plugin versions
-already understand. Do **not** bump `ODD_VERSION`, add a plugin
+already understand. Do **not** bump `ODDOUT_VERSION`, add a plugin
 `CHANGELOG.md` entry, or tag a GitHub plugin release for these changes.
 Merge to `main`; `.github/workflows/pages.yml` rebuilds and validates
 `site/catalog/v1/`, then publishes it to GitHub Pages.
@@ -75,7 +75,7 @@ Automated in `odd/bin/bump-version`:
 
 ```sh
 odd/bin/bump-version 1.0.1
-# edits odd/odd.php header + ODD_VERSION constant
+# edits odd/odd.php header + ODDOUT_VERSION constant
 odd/bin/check-version --expect 1.0.1
 odd/bin/check-plugin-metadata
 # updates CHANGELOG.md scaffold
@@ -86,7 +86,7 @@ git tag v1.0.1
 git push origin main v1.0.1
 ```
 
-The `.github/workflows/release-odd.yml` workflow fires on the tag: runs the reusable CI quality gates, checks plugin metadata, builds + validates the remote catalog (`python3 _tools/build-catalog.py && ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog`), validates the Playground blueprint, regenerates `odd/languages/odd.pot`, runs `odd/bin/build-zip`, validates zip contents, runs Plugin Check, runs install-smoke, and `gh release create --latest=true` with a post-upload HTTP probe.
+The `.github/workflows/release-odd.yml` workflow fires on the tag: runs the reusable CI quality gates, checks plugin metadata, builds + validates the remote catalog (`python3 _tools/build-catalog.py && ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog`), validates the Playground blueprint, regenerates `odd/languages/odd-outlandish-desktop-decorator.pot`, runs `odd/bin/build-zip`, validates zip contents, runs Plugin Check, runs install-smoke, and `gh release create --latest=true` with a post-upload HTTP probe.
 
 The `.github/workflows/pages.yml` workflow runs independently on any push to `main` that touches `site/`, `_tools/catalog-sources/`, or `_tools/build-catalog.py` — it rebuilds the catalog, validates it, and publishes `site/` (marketing + catalog) to GitHub Pages. Content releases (a new scene / icon set / widget / app) ship through Pages, not through the plugin release flow.
 

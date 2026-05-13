@@ -1,6 +1,6 @@
 <?php
 /**
- * Adversarial corpus for {@see odd_iconset_svg_scrub()}. Each case must
+ * Adversarial corpus for {@see oddout_iconset_svg_scrub()}. Each case must
  * either return WP_Error (rejected) or a string with no live script
  * surface (script tags / on*= removed).
  */
@@ -53,8 +53,8 @@ class Test_Odd_Svg_Scrub_Fuzz extends WP_UnitTestCase {
 	 * @dataProvider adversarial_svg_corpus
 	 */
 	public function test_scrub_never_allows_script_or_on_handlers( $svg ) {
-		require_once ODD_DIR . 'includes/content/iconsets.php';
-		$result = odd_iconset_svg_scrub( $svg );
+		require_once ODDOUT_DIR . 'includes/content/iconsets.php';
+		$result = oddout_iconset_svg_scrub( $svg );
 		if ( is_wp_error( $result ) ) {
 			$this->assertInstanceOf( WP_Error::class, $result );
 			return;
@@ -89,8 +89,8 @@ class Test_Odd_Svg_Scrub_Fuzz extends WP_UnitTestCase {
 	 * @dataProvider rejected_svg_payloads
 	 */
 	public function test_active_svg_surfaces_are_rejected( $svg ) {
-		require_once ODD_DIR . 'includes/content/iconsets.php';
-		$result = odd_iconset_svg_scrub( $svg );
+		require_once ODDOUT_DIR . 'includes/content/iconsets.php';
+		$result = oddout_iconset_svg_scrub( $svg );
 		$this->assertWPError( $result );
 	}
 }

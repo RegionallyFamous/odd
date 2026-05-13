@@ -5,7 +5,7 @@
  * the WP REST server.
  */
 
-abstract class ODD_REST_Test_Case extends WP_UnitTestCase {
+abstract class ODDOUT_REST_Test_Case extends WP_UnitTestCase {
 	/**
 	 * @var int
 	 */

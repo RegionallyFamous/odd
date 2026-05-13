@@ -13,14 +13,14 @@ add_action(
 			'/cursors/active\.css',
 			array(
 				'methods'             => 'GET',
-				'callback'            => 'odd_cursors_rest_active_css',
+				'callback'            => 'oddout_cursors_rest_active_css',
 				'permission_callback' => '__return_true',
 			)
 		);
 	}
 );
 
-function odd_cursors_css_url_value( array $cursor, $fallback ) {
+function oddout_cursors_css_url_value( array $cursor, $fallback ) {
 	$url     = isset( $cursor['url'] ) ? esc_url_raw( (string) $cursor['url'] ) : '';
 	$hotspot = isset( $cursor['hotspot'] ) && is_array( $cursor['hotspot'] ) ? array_values( $cursor['hotspot'] ) : array( 0, 0 );
 	$x       = isset( $hotspot[0] ) ? (int) $hotspot[0] : 0;
@@ -28,32 +28,32 @@ function odd_cursors_css_url_value( array $cursor, $fallback ) {
 	if ( '' === $url ) {
 		return $fallback;
 	}
-	$url = odd_cursors_url_current_scheme( $url );
+	$url = oddout_cursors_url_current_scheme( $url );
 	return sprintf( 'url("%s") %d %d, %s', esc_url_raw( $url ), $x, $y, $fallback );
 }
 
-function odd_cursors_css_cursor( array $set, $kind, $fallback ) {
+function oddout_cursors_css_cursor( array $set, $kind, $fallback ) {
 	$cursors = isset( $set['cursors'] ) && is_array( $set['cursors'] ) ? $set['cursors'] : array();
 	if ( isset( $cursors[ $kind ] ) && is_array( $cursors[ $kind ] ) ) {
-		return odd_cursors_css_url_value( $cursors[ $kind ], $fallback );
+		return oddout_cursors_css_url_value( $cursors[ $kind ], $fallback );
 	}
 	if ( 'default' !== $kind && isset( $cursors['default'] ) && is_array( $cursors['default'] ) ) {
-		return odd_cursors_css_url_value( $cursors['default'], $fallback );
+		return oddout_cursors_css_url_value( $cursors['default'], $fallback );
 	}
 	return $fallback;
 }
 
-function odd_cursors_build_css( array $set ) {
-	$default     = odd_cursors_css_cursor( $set, 'default', 'default' );
-	$pointer     = odd_cursors_css_cursor( $set, 'pointer', 'pointer' );
-	$text        = odd_cursors_css_cursor( $set, 'text', 'text' );
-	$grab        = odd_cursors_css_cursor( $set, 'grab', 'grab' );
-	$grabbing    = odd_cursors_css_cursor( $set, 'grabbing', 'grabbing' );
-	$crosshair   = odd_cursors_css_cursor( $set, 'crosshair', 'crosshair' );
-	$not_allowed = odd_cursors_css_cursor( $set, 'not-allowed', 'not-allowed' );
-	$wait        = odd_cursors_css_cursor( $set, 'wait', 'wait' );
-	$help        = odd_cursors_css_cursor( $set, 'help', 'help' );
-	$progress    = odd_cursors_css_cursor( $set, 'progress', 'progress' );
+function oddout_cursors_build_css( array $set ) {
+	$default     = oddout_cursors_css_cursor( $set, 'default', 'default' );
+	$pointer     = oddout_cursors_css_cursor( $set, 'pointer', 'pointer' );
+	$text        = oddout_cursors_css_cursor( $set, 'text', 'text' );
+	$grab        = oddout_cursors_css_cursor( $set, 'grab', 'grab' );
+	$grabbing    = oddout_cursors_css_cursor( $set, 'grabbing', 'grabbing' );
+	$crosshair   = oddout_cursors_css_cursor( $set, 'crosshair', 'crosshair' );
+	$not_allowed = oddout_cursors_css_cursor( $set, 'not-allowed', 'not-allowed' );
+	$wait        = oddout_cursors_css_cursor( $set, 'wait', 'wait' );
+	$help        = oddout_cursors_css_cursor( $set, 'help', 'help' );
+	$progress    = oddout_cursors_css_cursor( $set, 'progress', 'progress' );
 
 	return implode(
 		"\n",
@@ -96,12 +96,12 @@ function odd_cursors_build_css( array $set ) {
 	);
 }
 
-function odd_cursors_rest_active_css( WP_REST_Request $request ) {
+function oddout_cursors_rest_active_css( WP_REST_Request $request ) {
 	$slug = $request->get_param( 'set' );
-	$slug = is_string( $slug ) ? sanitize_key( $slug ) : odd_cursors_get_active_slug();
-	$set  = '' === $slug ? null : odd_cursors_get_set( $slug );
-	$css  = $set ? odd_cursors_build_css( $set ) : '';
-	$etag = '"' . md5( ( defined( 'ODD_VERSION' ) ? ODD_VERSION : '0' ) . '|' . $slug . '|' . $css ) . '"';
+	$slug = is_string( $slug ) ? sanitize_key( $slug ) : oddout_cursors_get_active_slug();
+	$set  = '' === $slug ? null : oddout_cursors_get_set( $slug );
+	$css  = $set ? oddout_cursors_build_css( $set ) : '';
+	$etag = '"' . md5( ( defined( 'ODDOUT_VERSION' ) ? ODDOUT_VERSION : '0' ) . '|' . $slug . '|' . $css ) . '"';
 
 	while ( ob_get_level() > 0 ) {
 		@ob_end_clean();
@@ -116,6 +116,6 @@ function odd_cursors_rest_active_css( WP_REST_Request $request ) {
 		status_header( 304 );
 		exit;
 	}
-	echo $css; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSS generated from validated URLs and integer hotspots.
+	oddout_emit_raw_response( $css );
 	exit;
 }

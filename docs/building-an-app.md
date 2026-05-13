@@ -524,15 +524,15 @@ curl -X POST https://example.com/wp-json/odd/v1/apps/my-app/toggle \
 From PHP:
 
 ```php
-$result = odd_bundle_install( $tmp_path, $filename );
+$result = oddout_bundle_install( $tmp_path, $filename );
 if ( is_wp_error( $result ) ) {
     // Handle the error.
 } else {
     // $result is [ 'slug' => ..., 'type' => 'app', 'manifest' => [...] ].
 }
 
-odd_bundle_uninstall( 'my-app' );
-odd_apps_set_enabled( 'my-app', false );
+oddout_bundle_uninstall( 'my-app' );
+oddout_apps_set_enabled( 'my-app', false );
 ```
 
 ### Updating an existing app
@@ -567,19 +567,19 @@ Common HTTP status codes you'll see from the serve endpoint:
 Inspect the stored manifest for an installed app:
 
 ```bash
-wp option get odd_app_my-app
+wp option get oddout_app_my-app
 ```
 
 Inspect the index:
 
 ```bash
-wp option get odd_apps_index
+wp option get oddout_apps_index
 ```
 
 List files on disk:
 
 ```bash
-find "$(wp eval 'echo WP_CONTENT_DIR;')/odd-apps/my-app/" -type f
+find "$(wp eval '$u = wp_upload_dir( null, false ); echo $u[\"basedir\"];')/odd/apps/my-app/" -type f
 ```
 
 Host-side debug helper (debug mode on — see [Building on ODD](building-on-odd.md#debug-inspector)):

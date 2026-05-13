@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit;
  * @param bool $probe_catalog Whether to HTTP-probe the catalog registry URL.
  * @return array
  */
-function odd_e2e_diagnostics_payload( $probe_catalog = false ) {
+function oddout_e2e_diagnostics_payload( $probe_catalog = false ) {
 	$uid = get_current_user_id();
 
 	if ( ! function_exists( 'get_plugins' ) ) {
@@ -47,10 +47,10 @@ function odd_e2e_diagnostics_payload( $probe_catalog = false ) {
 	$dm_mode = get_user_meta( $uid, 'desktop_mode_mode', true );
 
 	$catalog_url = '';
-	if ( function_exists( 'odd_catalog_url' ) ) {
-		$catalog_url = odd_catalog_url();
-	} elseif ( defined( 'ODD_CATALOG_URL' ) ) {
-		$catalog_url = ODD_CATALOG_URL;
+	if ( function_exists( 'oddout_catalog_url' ) ) {
+		$catalog_url = oddout_catalog_url();
+	} elseif ( defined( 'ODDOUT_CATALOG_URL' ) ) {
+		$catalog_url = ODDOUT_CATALOG_URL;
 	}
 	$catalog_row = array(
 		'url' => $catalog_url,
@@ -72,9 +72,9 @@ function odd_e2e_diagnostics_payload( $probe_catalog = false ) {
 		);
 	}
 
-	$scenes = function_exists( 'odd_wallpaper_scene_slugs' ) ? odd_wallpaper_scene_slugs() : array();
+	$scenes = function_exists( 'oddout_wallpaper_scene_slugs' ) ? oddout_wallpaper_scene_slugs() : array();
 
-	$starter_key = defined( 'ODD_STARTER_OPTION' ) ? ODD_STARTER_OPTION : 'odd_starter_state';
+	$starter_key = defined( 'ODDOUT_STARTER_OPTION' ) ? ODDOUT_STARTER_OPTION : 'oddout_starter_state';
 	$starter     = get_option( $starter_key, null );
 
 	$out = array(
@@ -90,9 +90,9 @@ function odd_e2e_diagnostics_payload( $probe_catalog = false ) {
 			'software' => isset( $_SERVER['SERVER_SOFTWARE'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_SOFTWARE'] ) ) : '',
 		),
 		'odd'         => array(
-			'version'        => ODD_VERSION,
-			'desktopModeMin' => ODD_DESKTOP_MODE_MIN_VERSION,
-			'appsEnabled'    => defined( 'ODD_APPS_ENABLED' ) && ODD_APPS_ENABLED,
+			'version'        => ODDOUT_VERSION,
+			'desktopModeMin' => ODDOUT_DESKTOP_MODE_MIN_VERSION,
+			'appsEnabled'    => defined( 'ODDOUT_APPS_ENABLED' ) && ODDOUT_APPS_ENABLED,
 		),
 		'plugins'     => $active,
 		'user'        => array(
@@ -104,11 +104,11 @@ function odd_e2e_diagnostics_payload( $probe_catalog = false ) {
 		'wallpaper'   => array(
 			'sceneSlugs' => array_values( $scenes ),
 			'count'      => count( $scenes ),
-			'activeSlug' => function_exists( 'odd_wallpaper_get_user_scene' ) ? (string) odd_wallpaper_get_user_scene( $uid ) : '',
+			'activeSlug' => function_exists( 'oddout_wallpaper_get_user_scene' ) ? (string) oddout_wallpaper_get_user_scene( $uid ) : '',
 		),
 		'catalog'     => $catalog_row,
 		'transients'  => array(
-			'oddCatalogV1' => function_exists( 'odd_catalog_meta' ) ? odd_catalog_meta() : null,
+			'oddCatalogV1' => function_exists( 'oddout_catalog_meta' ) ? oddout_catalog_meta() : null,
 		),
 	);
 
@@ -116,7 +116,7 @@ function odd_e2e_diagnostics_payload( $probe_catalog = false ) {
 		$out['wpDebug'] = true;
 	}
 
-	return apply_filters( 'odd_e2e_diagnostics', $out, $probe_catalog );
+	return apply_filters( 'oddout_e2e_diagnostics', $out, $probe_catalog );
 }
 
 /**
@@ -125,9 +125,9 @@ function odd_e2e_diagnostics_payload( $probe_catalog = false ) {
  * @param WP_REST_Request $request Request.
  * @return WP_REST_Response|WP_Error
  */
-function odd_rest_e2e_diagnostics_get( WP_REST_Request $request ) {
+function oddout_rest_e2e_diagnostics_get( WP_REST_Request $request ) {
 	$probe = filter_var( $request->get_param( 'probe' ), FILTER_VALIDATE_BOOLEAN );
-	$data  = odd_e2e_diagnostics_payload( $probe );
+	$data  = oddout_e2e_diagnostics_payload( $probe );
 	return rest_ensure_response( $data );
 }
 
@@ -142,7 +142,7 @@ add_action(
 				'permission_callback' => static function () {
 					return current_user_can( 'manage_options' );
 				},
-				'callback'            => 'odd_rest_e2e_diagnostics_get',
+				'callback'            => 'oddout_rest_e2e_diagnostics_get',
 				'args'                => array(
 					'probe' => array(
 						'type'    => 'boolean',

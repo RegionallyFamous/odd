@@ -5,7 +5,7 @@
 An icon set re-skins the WP Desktop dock and the desktop shortcuts
 with a themed pack of SVGs. Drop a `.wp` on the ODD Shop and ODD
 scans the manifest, scrubs every SVG, copies the set into
-`wp-content/odd-icon-sets/`, and makes it selectable from the Icon
+`wp-content/uploads/odd/icon-sets/`, and makes it selectable from the Icon
 Sets department — no WordPress plugin, no custom PHP.
 
 Icon sets ship **no JavaScript**, so they install without a consent
@@ -89,7 +89,7 @@ third-party sets can omit those and ODD will fall back gracefully.
 ### Why these keys?
 
 The dock + desktop-shortcut filters map every WordPress menu slug to
-stable logical keys via `odd_icons_slug_to_key()`:
+stable logical keys via `oddout_icons_slug_to_key()`:
 
 | Key           | Required | Maps to                                   |
 |---------------|----------|-------------------------------------------|
@@ -199,13 +199,13 @@ the `dashboard` icon stands in. A preview image usually works best as:
 - Inspect the stored manifest:
 
     ```bash
-    wp option get odd_icon_set_my-icons
+    wp option get oddout_icon_set_my-icons
     ```
 
 - List installed files on disk:
 
     ```bash
-    find "$(wp eval 'echo WP_CONTENT_DIR;')/odd-icon-sets/my-icons/" -type f
+    find "$(wp eval '$u = wp_upload_dir( null, false ); echo $u[\"basedir\"];')/odd/icon-sets/my-icons/" -type f
     ```
 
 - If the tinted-SVG endpoint 404s on one of your icons, double-check

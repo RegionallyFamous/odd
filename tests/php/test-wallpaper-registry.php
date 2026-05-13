@@ -8,7 +8,7 @@
  * tree at `_tools/catalog-sources/scenes/<slug>/meta.json` to prove
  * the on-disk content that WILL ship as remote bundles stays
  * well-formed, and then separately exercise the filter contract so
- * a bundle publishing a scene through `odd_scene_registry` works.
+ * a bundle publishing a scene through `oddout_scene_registry` works.
  */
 
 class Test_Wallpaper_Registry extends WP_UnitTestCase {
@@ -54,17 +54,17 @@ class Test_Wallpaper_Registry extends WP_UnitTestCase {
 		// ODD no longer seeds scenes from the plugin. Without
 		// installed bundles the registry starts empty; the built-in
 		// "pending" fallback lives entirely in JS for first-paint.
-		remove_all_filters( 'odd_scene_registry' );
-		odd_wallpaper_scenes_reset();
-		$scenes = odd_wallpaper_scenes();
+		remove_all_filters( 'oddout_scene_registry' );
+		oddout_wallpaper_scenes_reset();
+		$scenes = oddout_wallpaper_scenes();
 		$this->assertIsArray( $scenes );
 		$this->assertCount( 0, $scenes, 'Empty plugin should ship zero scenes.' );
 	}
 
 	public function test_scene_registry_honours_filter() {
-		remove_all_filters( 'odd_scene_registry' );
+		remove_all_filters( 'oddout_scene_registry' );
 		add_filter(
-			'odd_scene_registry',
+			'oddout_scene_registry',
 			function ( $scenes ) {
 				$scenes[] = array(
 					'slug'          => 'sample',
@@ -78,11 +78,11 @@ class Test_Wallpaper_Registry extends WP_UnitTestCase {
 				return $scenes;
 			}
 		);
-		odd_wallpaper_scenes_reset();
+		oddout_wallpaper_scenes_reset();
 
-		$slugs = odd_wallpaper_scene_slugs();
+		$slugs = oddout_wallpaper_scene_slugs();
 		$this->assertContains( 'sample', $slugs );
-		$this->assertSame( 'sample', odd_wallpaper_default_scene() );
+		$this->assertSame( 'sample', oddout_wallpaper_default_scene() );
 	}
 
 	public function test_catalog_source_scenes_are_well_formed() {

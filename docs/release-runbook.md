@@ -25,7 +25,7 @@ odd/bin/validate-blueprint
 npm test -- --run
 composer phpcs
 odd/bin/check-licenses
-odd/bin/make-pot --out odd/languages/odd.pot
+odd/bin/make-pot --out odd/languages/odd-outlandish-desktop-decorator.pot
 odd/bin/build-zip
 odd/bin/check-zip-contents --list
 ```
@@ -60,7 +60,7 @@ that card assets stay small enough for Shop use. If it fails on card size,
 recompress the source `card.webp` files under `_tools/catalog-sources/` and
 rebuild instead of raising the limit.
 
-Do not bump `ODD_VERSION`, tag a GitHub release, or edit `CHANGELOG.md` for
+Do not bump `ODDOUT_VERSION`, tag a GitHub release, or edit `CHANGELOG.md` for
 catalog-only changes.
 
 ## Playground Smoke
@@ -140,7 +140,7 @@ catalog-only changes.
 1. Trust the first `WP_Error` code: `sha256_mismatch`, `path_traversal`,
    `forbidden_file_type`, `catalog_slug_mismatch`, and `catalog_type_mismatch`
    are security blockers, not retry noise.
-2. Check that no partial bundle directory remains under `wp-content/odd-*`.
+2. Check that no partial bundle directory remains under `wp-content/uploads/odd/*`.
 3. Rebuild the bundle from `_tools/catalog-sources/` and rerun catalog
    validation.
 

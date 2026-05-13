@@ -4,12 +4,12 @@
  *
  * Covers the pure helpers introduced for per-slug tracking:
  *
- *   - odd_starter_merge_slug_results() never downgrades a 'done' slug.
- *   - odd_starter_compute_status() derives the top-level status
+ *   - oddout_starter_merge_slug_results() never downgrades a 'done' slug.
+ *   - oddout_starter_compute_status() derives the top-level status
  *     from the per-slug map as `installed`, `partial`, `failed`, or
  *     `pending`.
  *
- * The installer itself (odd_starter_install_now) is exercised by
+ * The installer itself (oddout_starter_install_now) is exercised by
  * install-smoke.yml against the fixture catalog; this PHPUnit layer
  * pins the state-transition rules so partial-install reliability
  * is testable without real network I/O.
@@ -18,14 +18,14 @@
 class Test_Starter_State extends WP_UnitTestCase {
 
 	public function tear_down() {
-		if ( function_exists( 'odd_starter_reset' ) ) {
-			odd_starter_reset();
+		if ( function_exists( 'oddout_starter_reset' ) ) {
+			oddout_starter_reset();
 		}
 		parent::tear_down();
 	}
 
 	public function test_initial_state_is_pending_and_has_slug_map() {
-		$state = odd_starter_get_state();
+		$state = oddout_starter_get_state();
 		$this->assertSame( 'pending', $state['status'] );
 		$this->assertSame( 0, $state['attempts'] );
 		$this->assertIsArray( $state['slugs'] );
@@ -33,8 +33,8 @@ class Test_Starter_State extends WP_UnitTestCase {
 	}
 
 	public function test_merge_slug_results_marks_new_done_entries() {
-		$state = odd_starter_get_state();
-		$state = odd_starter_merge_slug_results(
+		$state = oddout_starter_get_state();
+		$state = oddout_starter_merge_slug_results(
 			$state,
 			array(
 				'alpha' => array( 'status' => 'done' ),
@@ -50,12 +50,12 @@ class Test_Starter_State extends WP_UnitTestCase {
 	}
 
 	public function test_merge_slug_results_is_monotonic_for_done() {
-		$state = odd_starter_get_state();
-		$state = odd_starter_merge_slug_results(
+		$state = oddout_starter_get_state();
+		$state = oddout_starter_merge_slug_results(
 			$state,
 			array( 'alpha' => array( 'status' => 'done' ) )
 		);
-		$state = odd_starter_merge_slug_results(
+		$state = oddout_starter_merge_slug_results(
 			$state,
 			array(
 				'alpha' => array(
@@ -69,8 +69,8 @@ class Test_Starter_State extends WP_UnitTestCase {
 	}
 
 	public function test_merge_slug_results_allows_failed_to_done_upgrade() {
-		$state = odd_starter_get_state();
-		$state = odd_starter_merge_slug_results(
+		$state = oddout_starter_get_state();
+		$state = oddout_starter_merge_slug_results(
 			$state,
 			array(
 				'alpha' => array(
@@ -79,7 +79,7 @@ class Test_Starter_State extends WP_UnitTestCase {
 				),
 			)
 		);
-		$state = odd_starter_merge_slug_results(
+		$state = oddout_starter_merge_slug_results(
 			$state,
 			array( 'alpha' => array( 'status' => 'done' ) )
 		);
@@ -93,7 +93,7 @@ class Test_Starter_State extends WP_UnitTestCase {
 				'b' => array( 'status' => 'done' ),
 			),
 		);
-		$this->assertSame( 'installed', odd_starter_compute_status( $state, array( 'a', 'b' ) ) );
+		$this->assertSame( 'installed', oddout_starter_compute_status( $state, array( 'a', 'b' ) ) );
 	}
 
 	public function test_compute_status_partial_when_some_done_and_some_failed() {
@@ -103,7 +103,7 @@ class Test_Starter_State extends WP_UnitTestCase {
 				'b' => array( 'status' => 'failed' ),
 			),
 		);
-		$this->assertSame( 'partial', odd_starter_compute_status( $state, array( 'a', 'b' ) ) );
+		$this->assertSame( 'partial', oddout_starter_compute_status( $state, array( 'a', 'b' ) ) );
 	}
 
 	public function test_compute_status_partial_when_some_done_and_some_pending() {
@@ -112,7 +112,7 @@ class Test_Starter_State extends WP_UnitTestCase {
 				'a' => array( 'status' => 'done' ),
 			),
 		);
-		$this->assertSame( 'partial', odd_starter_compute_status( $state, array( 'a', 'b' ) ) );
+		$this->assertSame( 'partial', oddout_starter_compute_status( $state, array( 'a', 'b' ) ) );
 	}
 
 	public function test_compute_status_failed_when_no_successes() {
@@ -122,11 +122,11 @@ class Test_Starter_State extends WP_UnitTestCase {
 				'b' => array( 'status' => 'failed' ),
 			),
 		);
-		$this->assertSame( 'failed', odd_starter_compute_status( $state, array( 'a', 'b' ) ) );
+		$this->assertSame( 'failed', oddout_starter_compute_status( $state, array( 'a', 'b' ) ) );
 	}
 
 	public function test_compute_status_pending_when_nothing_attempted() {
 		$state = array( 'slugs' => array() );
-		$this->assertSame( 'pending', odd_starter_compute_status( $state, array( 'a' ) ) );
+		$this->assertSame( 'pending', oddout_starter_compute_status( $state, array( 'a' ) ) );
 	}
 }

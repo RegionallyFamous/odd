@@ -127,7 +127,7 @@ describe( 'ODD Shop · install flows', () => {
 				slug:      'gusts',
 				type:      'scene',
 				manifest:  { slug: 'gusts', label: 'Gusts' },
-				entry_url: '/wp-content/odd-scenes/gusts/scene.js',
+				entry_url: '/wp-content/uploads/odd/scenes/gusts/scene.js',
 				row:       { slug: 'gusts', label: 'Gusts', installed: true },
 			} ),
 		} ) );
@@ -144,7 +144,7 @@ describe( 'ODD Shop · install flows', () => {
 
 		const scr = document.head.querySelector( 'script[data-odd-scene-slug="gusts"]' );
 		expect( scr, 'scene entry <script> must be injected' ).toBeTruthy();
-		expect( scr.getAttribute( 'src' ) ).toBe( '/wp-content/odd-scenes/gusts/scene.js' );
+		expect( scr.getAttribute( 'src' ) ).toBe( '/wp-content/uploads/odd/scenes/gusts/scene.js' );
 
 		scr.onload();
 		await new Promise( ( r ) => setTimeout( r, 30 ) );
@@ -256,7 +256,7 @@ describe( 'ODD Shop · install flows', () => {
 				slug:      'clock',
 				type:      'widget',
 				manifest:  { slug: 'clock', label: 'Clock' },
-				entry_url: '/wp-content/odd-widgets/clock/widget.js',
+				entry_url: '/wp-content/uploads/odd/widgets/clock/widget.js',
 				row:       { id: 'odd/clock', slug: 'clock', label: 'Clock', installed: true },
 			} ),
 		} ) );
@@ -276,7 +276,7 @@ describe( 'ODD Shop · install flows', () => {
 
 		const scr = document.head.querySelector( 'script[data-odd-widget-slug="clock"]' );
 		expect( scr, 'widget entry <script> must be injected' ).toBeTruthy();
-		expect( scr.getAttribute( 'src' ) ).toBe( '/wp-content/odd-widgets/clock/widget.js' );
+		expect( scr.getAttribute( 'src' ) ).toBe( '/wp-content/uploads/odd/widgets/clock/widget.js' );
 
 		scr.onload();
 		await new Promise( ( r ) => setTimeout( r, 30 ) );
@@ -304,7 +304,7 @@ describe( 'ODD Shop · install flows', () => {
 				slug:      'broken',
 				type:      'widget',
 				manifest:  { slug: 'broken', label: 'Broken' },
-				entry_url: '/wp-content/odd-widgets/broken/widget.js',
+				entry_url: '/wp-content/uploads/odd/widgets/broken/widget.js',
 				row:       { id: 'odd/broken', slug: 'broken', label: 'Broken', installed: true },
 			} ),
 		} ) );

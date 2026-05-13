@@ -117,11 +117,11 @@ provision() {
 
 	( cd "${WP_DIR}" && e2e_wp user meta update 1 desktop_mode_mode 1 )
 
-	( cd "${WP_DIR}" && e2e_wp eval '$r = odd_starter_install_now(); if (is_wp_error($r)) { fwrite(STDERR, $r->get_error_message() . "\n"); exit(1); } var_export($r);' )
+	( cd "${WP_DIR}" && e2e_wp eval '$r = oddout_starter_install_now(); if (is_wp_error($r)) { fwrite(STDERR, $r->get_error_message() . "\n"); exit(1); } var_export($r);' )
 
 	# Small catalog app used by Playwright to assert the iframe serve path (avoid UI install:
 	# `wp server` can return 5xx on long admin-ajax/REST requests; CLI install matches CI reliability).
-	( cd "${WP_DIR}" && e2e_wp eval '$reg = odd_catalog_refresh(); $slug = "board"; if (function_exists("odd_bundle_catalog_installed_versions") && array_key_exists($slug, odd_bundle_catalog_installed_versions())) { fwrite(STDOUT, "e2e: app already installed\n"); exit(0); } $entry = null; foreach ((array) ($reg["bundles"] ?? array()) as $e) { if ((isset($e["type"], $e["slug"]) && $e["type"] === "app" && $e["slug"] === $slug)) { $entry = $e; break; } } if (!$entry) { fwrite(STDERR, "e2e: catalog missing app {$slug}\n"); exit(1);} $r = odd_catalog_install_entry($entry); if (is_wp_error($r)) { fwrite(STDERR, $r->get_error_message() . "\n"); exit(1);} var_export($r);' )
+	( cd "${WP_DIR}" && e2e_wp eval '$reg = oddout_catalog_refresh(); $slug = "board"; if (function_exists("oddout_bundle_catalog_installed_versions") && array_key_exists($slug, oddout_bundle_catalog_installed_versions())) { fwrite(STDOUT, "e2e: app already installed\n"); exit(0); } $entry = null; foreach ((array) ($reg["bundles"] ?? array()) as $e) { if ((isset($e["type"], $e["slug"]) && $e["type"] === "app" && $e["slug"] === $slug)) { $entry = $e; break; } } if (!$entry) { fwrite(STDERR, "e2e: catalog missing app {$slug}\n"); exit(1);} $r = oddout_catalog_install_entry($entry); if (is_wp_error($r)) { fwrite(STDERR, $r->get_error_message() . "\n"); exit(1);} var_export($r);' )
 
 	( cd "${WP_DIR}" && e2e_wp user meta update 1 desktop_mode_os_settings '{"wallpaper":"odd"}' --format=json )
 

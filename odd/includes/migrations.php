@@ -3,16 +3,16 @@
  * ODD — schema migrations.
  *
  * Runs a versioned list of one-shot migrations on each login. Schema
- * version is tracked per-user via the `odd_schema_version` meta key;
+ * version is tracked per-user via the `oddout_schema_version` meta key;
  * each migration bumps it by one. No-op migrations are cheap and
  * exercise the runner so problems surface early.
  *
  * Migrations ship as `migration_<n>_<label>()` callables. Core
  * migrations live in this file; feature submodules register their own
- * by appending to the `odd_migrations` filter. Keep the list append-
+ * by appending to the `oddout_migrations` filter. Keep the list append-
  * only: never edit a past migration, only add a new one at the tail.
  *
- * Index of every core-shipped migration (source of truth — ODD_SCHEMA_VERSION
+ * Index of every core-shipped migration (source of truth — ODDOUT_SCHEMA_VERSION
  * below must equal the highest entry here):
  *
  *   1  baseline                   odd/includes/migrations.php
@@ -20,50 +20,50 @@
  *   3  empty_slot                odd/includes/migrations.php (no-op placeholder)
  *   4  reserved                  odd/includes/migrations.php (no-op)
  * Third-party plugins can register higher-numbered migrations via
- * `add_filter( 'odd_migrations', … )`; see docs/building-on-odd.md.
+ * `add_filter( 'oddout_migrations', … )`; see docs/building-on-odd.md.
  */
 
 defined( 'ABSPATH' ) || exit;
 
-if ( ! defined( 'ODD_SCHEMA_VERSION' ) ) {
-	define( 'ODD_SCHEMA_VERSION', 4 );
+if ( ! defined( 'ODDOUT_SCHEMA_VERSION' ) ) {
+	define( 'ODDOUT_SCHEMA_VERSION', 4 );
 }
 
-function odd_migrations_all() {
+function oddout_migrations_all() {
 	/**
 	 * Filter the ordered list of migrations to run.
 	 *
 	 * Core ships a numbered list; third-party code can append additional
 	 * callables by adding to this array at a higher version number. The
 	 * runner processes them in ascending numeric order and bumps
-	 * `odd_schema_version` after each successful step.
+	 * `oddout_schema_version` after each successful step.
 	 *
 	 * @since 0.16.0
 	 *
 	 * @param array<int, callable> $migrations Version => callable map.
 	 */
 	return (array) apply_filters(
-		'odd_migrations',
+		'oddout_migrations',
 		array(
-			1 => 'odd_migration_1_baseline',
-			2 => 'odd_migration_2_apps_baseline',
-			3 => 'odd_migration_3_empty_slot',
-			4 => 'odd_migration_4_reserved',
+			1 => 'oddout_migration_1_baseline',
+			2 => 'oddout_migration_2_apps_baseline',
+			3 => 'oddout_migration_3_empty_slot',
+			4 => 'oddout_migration_4_reserved',
 		)
 	);
 }
 
-function odd_run_migrations( $user_id = 0 ) {
+function oddout_run_migrations( $user_id = 0 ) {
 	$user_id = $user_id ? (int) $user_id : get_current_user_id();
 	if ( $user_id <= 0 ) {
 		return;
 	}
-	$current = (int) get_user_meta( $user_id, 'odd_schema_version', true );
-	$target  = (int) ODD_SCHEMA_VERSION;
+	$current = (int) get_user_meta( $user_id, 'oddout_schema_version', true );
+	$target  = (int) ODDOUT_SCHEMA_VERSION;
 	if ( $current >= $target ) {
 		return;
 	}
-	$migrations = odd_migrations_all();
+	$migrations = oddout_migrations_all();
 	ksort( $migrations );
 	foreach ( $migrations as $version => $callable ) {
 		if ( $version <= $current ) {
@@ -90,17 +90,17 @@ function odd_run_migrations( $user_id = 0 ) {
 		if ( false === $result ) {
 			return;
 		}
-		update_user_meta( $user_id, 'odd_schema_version', $version );
+		update_user_meta( $user_id, 'oddout_schema_version', $version );
 	}
 }
 
 /**
- * Baseline. Sets `odd_schema_version = 1` for every user that logs
+ * Baseline. Sets `oddout_schema_version = 1` for every user that logs
  * in after the migration runner ships, without touching any data.
  * Exists so the runner is exercised on every install — if the meta
  * key or update path ever breaks, the next release catches it.
  */
-function odd_migration_1_baseline( $user_id ) {
+function oddout_migration_1_baseline( $user_id ) {
 	unset( $user_id );
 	// Intentionally no-op. The runner updates the version marker.
 }
@@ -110,10 +110,10 @@ function odd_migration_1_baseline( $user_id ) {
  * every user that logs in after the apps engine ships. Idempotent and cheap
  * if the file already exists.
  */
-function odd_migration_2_apps_baseline( $user_id ) {
+function oddout_migration_2_apps_baseline( $user_id ) {
 	unset( $user_id );
-	if ( function_exists( 'odd_apps_ensure_storage' ) ) {
-		odd_apps_ensure_storage();
+	if ( function_exists( 'oddout_apps_ensure_storage' ) ) {
+		oddout_apps_ensure_storage();
 	}
 }
 
@@ -121,14 +121,14 @@ function odd_migration_2_apps_baseline( $user_id ) {
  * Empty placeholder for migration slot 3 (reserved — older installs may already
  * have advanced past this step).
  */
-function odd_migration_3_empty_slot( $user_id ) {
+function oddout_migration_3_empty_slot( $user_id ) {
 	unset( $user_id );
 }
 
 /**
  * Reserved schema step (no-op — keeps numbering stable vs early pre-release installs).
  */
-function odd_migration_4_reserved( $user_id ) {
+function oddout_migration_4_reserved( $user_id ) {
 	unset( $user_id );
 }
 
@@ -147,7 +147,7 @@ add_action(
 		if ( ! is_user_logged_in() ) {
 			return;
 		}
-		odd_run_migrations();
+		oddout_run_migrations();
 	},
 	5
 );

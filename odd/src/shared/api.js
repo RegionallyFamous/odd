@@ -368,7 +368,7 @@
 		}, 'api.openPanel' );
 	}
 
-	// API compatibility version. Separate from ODD_VERSION so plugin
+	// API compatibility version. Separate from ODDOUT_VERSION so plugin
 	// patch releases don't force downstream extensions to re-test. We
 	// bump this when the surface described in the docstring above
 	// changes in a way extensions can observe. See

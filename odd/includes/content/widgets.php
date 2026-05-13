@@ -11,7 +11,7 @@
  *   assets/*               (optional) static files referenced by widget.css / widget.js
  *   preview.webp           (optional) 640×360, shown on Shop cards
  *
- * Installed widgets live at `wp-content/odd-widgets/<slug>/`. Each
+ * Installed widgets live at `uploads/odd/widgets/<slug>/`. Each
  * `widget.js` is enqueued on `admin_enqueue_scripts` so it runs
  * after `desktop-mode` initialises, which is enough for
  * `wp.desktop.registerWidget()` to hook the widget into the desktop
@@ -26,70 +26,70 @@
 
 defined( 'ABSPATH' ) || exit;
 
-if ( ! defined( 'ODD_WIDGETS_DIR' ) ) {
-	define( 'ODD_WIDGETS_DIR', trailingslashit( WP_CONTENT_DIR ) . 'odd-widgets/' );
+if ( ! defined( 'ODDOUT_WIDGETS_DIR' ) ) {
+	define( 'ODDOUT_WIDGETS_DIR', oddout_storage_dir( 'widgets' ) );
 }
-if ( ! defined( 'ODD_WIDGETS_URL' ) ) {
-	define( 'ODD_WIDGETS_URL', trailingslashit( odd_url_current_scheme( content_url( 'odd-widgets' ) ) ) );
+if ( ! defined( 'ODDOUT_WIDGETS_URL' ) ) {
+	define( 'ODDOUT_WIDGETS_URL', oddout_storage_url( 'widgets' ) );
 }
-if ( ! defined( 'ODD_WIDGETS_OPTION_INDEX' ) ) {
-	define( 'ODD_WIDGETS_OPTION_INDEX', 'odd_widgets_index' );
+if ( ! defined( 'ODDOUT_WIDGETS_OPTION_INDEX' ) ) {
+	define( 'ODDOUT_WIDGETS_OPTION_INDEX', 'oddout_widgets_index' );
 }
 
-function odd_widgets_dir_for( $slug ) {
+function oddout_widgets_dir_for( $slug ) {
 	$slug = sanitize_key( (string) $slug );
-	return '' === $slug ? '' : ODD_WIDGETS_DIR . $slug . '/';
+	return '' === $slug ? '' : ODDOUT_WIDGETS_DIR . $slug . '/';
 }
 
-function odd_widgets_url_for( $slug ) {
+function oddout_widgets_url_for( $slug ) {
 	$slug = sanitize_key( (string) $slug );
-	return '' === $slug ? '' : ODD_WIDGETS_URL . $slug . '/';
+	return '' === $slug ? '' : ODDOUT_WIDGETS_URL . $slug . '/';
 }
 
-function odd_widgets_ensure_storage() {
-	if ( ! is_dir( ODD_WIDGETS_DIR ) ) {
-		wp_mkdir_p( ODD_WIDGETS_DIR );
+function oddout_widgets_ensure_storage() {
+	if ( ! is_dir( ODDOUT_WIDGETS_DIR ) ) {
+		wp_mkdir_p( ODDOUT_WIDGETS_DIR );
 	}
 }
 
-function odd_widgets_index_load() {
-	$raw = get_option( ODD_WIDGETS_OPTION_INDEX, array() );
+function oddout_widgets_index_load() {
+	$raw = get_option( ODDOUT_WIDGETS_OPTION_INDEX, array() );
 	return is_array( $raw ) ? $raw : array();
 }
 
-function odd_widgets_index_save( $index ) {
-	update_option( ODD_WIDGETS_OPTION_INDEX, is_array( $index ) ? $index : array(), false );
+function oddout_widgets_index_save( $index ) {
+	update_option( ODDOUT_WIDGETS_OPTION_INDEX, is_array( $index ) ? $index : array(), false );
 }
 
-function odd_widget_bundle_has( $slug ) {
+function oddout_widget_bundle_has( $slug ) {
 	$slug  = sanitize_key( (string) $slug );
-	$index = odd_widgets_index_load();
+	$index = oddout_widgets_index_load();
 	return isset( $index[ $slug ] );
 }
 
-function odd_widget_bundle_validate( $tmp_path, $filename, ZipArchive $zip, array $manifest ) {
-	$header = odd_content_validate_header( $manifest );
+function oddout_widget_bundle_validate( $tmp_path, $filename, ZipArchive $zip, array $manifest ) {
+	$header = oddout_content_validate_header( $manifest );
 	if ( is_wp_error( $header ) ) {
 		return $header;
 	}
 
 	$entry = isset( $manifest['entry'] ) ? (string) $manifest['entry'] : 'widget.js';
-	$entry = odd_content_sanitize_relative_path( $entry );
+	$entry = oddout_content_sanitize_relative_path( $entry );
 	if ( '' === $entry || '.js' !== strtolower( substr( $entry, -3 ) ) ) {
-		return new WP_Error( 'invalid_entry', __( 'Widget bundle entry must be a .js file.', 'odd' ) );
+		return new WP_Error( 'invalid_entry', __( 'Widget bundle entry must be a .js file.', 'odd-outlandish-desktop-decorator' ) );
 	}
 	if ( false === $zip->getFromName( $entry ) ) {
 		return new WP_Error(
 			'missing_entry',
-			sprintf( /* translators: %s entry path */ __( 'Entry file "%s" not found in bundle.', 'odd' ), $entry )
+			sprintf( /* translators: %s entry path */ __( 'Entry file "%s" not found in bundle.', 'odd-outlandish-desktop-decorator' ), $entry )
 		);
 	}
 
 	$preview = '';
 	if ( ! empty( $manifest['preview'] ) ) {
-		$preview_rel = odd_content_sanitize_relative_path( (string) $manifest['preview'] );
+		$preview_rel = oddout_content_sanitize_relative_path( (string) $manifest['preview'] );
 		if ( '' === $preview_rel || false === $zip->getFromName( $preview_rel ) ) {
-			return new WP_Error( 'invalid_preview', __( 'Preview file is not present in the bundle.', 'odd' ) );
+			return new WP_Error( 'invalid_preview', __( 'Preview file is not present in the bundle.', 'odd-outlandish-desktop-decorator' ) );
 		}
 		$preview = $preview_rel;
 	}
@@ -104,11 +104,11 @@ function odd_widget_bundle_validate( $tmp_path, $filename, ZipArchive $zip, arra
 	}
 	$css_paths = array();
 	foreach ( $css_decl as $css_one ) {
-		$css_rel = odd_content_sanitize_relative_path( (string) $css_one );
+		$css_rel = oddout_content_sanitize_relative_path( (string) $css_one );
 		if ( '' === $css_rel || '.css' !== strtolower( substr( $css_rel, -4 ) ) ) {
 			return new WP_Error(
 				'invalid_css',
-				__( 'Widget manifest lists an invalid CSS path.', 'odd' ),
+				__( 'Widget manifest lists an invalid CSS path.', 'odd-outlandish-desktop-decorator' ),
 				array( 'status' => 400 )
 			);
 		}
@@ -117,7 +117,7 @@ function odd_widget_bundle_validate( $tmp_path, $filename, ZipArchive $zip, arra
 				'missing_css',
 				sprintf(
 					/* translators: %s: relative path inside the .wp bundle */
-					__( 'CSS file "%s" is not present in the bundle.', 'odd' ),
+					__( 'CSS file "%s" is not present in the bundle.', 'odd-outlandish-desktop-decorator' ),
 					$css_rel
 				),
 				array( 'status' => 400 )
@@ -141,24 +141,23 @@ function odd_widget_bundle_validate( $tmp_path, $filename, ZipArchive $zip, arra
 	);
 }
 
-function odd_widget_bundle_install( $tmp_path, array $manifest ) {
-	odd_widgets_ensure_storage();
+function oddout_widget_bundle_install( $tmp_path, array $manifest ) {
+	oddout_widgets_ensure_storage();
 	$slug = $manifest['slug'];
 
-	$extracted = odd_content_archive_extract( $tmp_path, ODD_WIDGETS_DIR, $slug );
+	$extracted = oddout_content_archive_extract( $tmp_path, ODDOUT_WIDGETS_DIR, $slug );
 	if ( is_wp_error( $extracted ) ) {
 		return $extracted;
 	}
 
-	$dir = odd_widgets_dir_for( $slug );
+	$dir = oddout_widgets_dir_for( $slug );
 
 	$canonical = wp_json_encode( $manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
 	if ( is_string( $canonical ) ) {
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents,WordPress.WP.AlternativeFunctions.file_put_contents_file_put_contents
-		file_put_contents( $dir . 'manifest.json', $canonical );
+		oddout_write_file( $dir . 'manifest.json', $canonical );
 	}
 
-	$index          = odd_widgets_index_load();
+	$index          = oddout_widgets_index_load();
 	$css_for_index  = isset( $manifest['css'] ) && is_array( $manifest['css'] ) ? $manifest['css'] : array();
 	$index[ $slug ] = array(
 		'slug'      => $slug,
@@ -171,28 +170,28 @@ function odd_widget_bundle_install( $tmp_path, array $manifest ) {
 		'css'       => $css_for_index,
 		'installed' => time(),
 	);
-	odd_widgets_index_save( $index );
+	oddout_widgets_index_save( $index );
 
 	return true;
 }
 
-function odd_widget_bundle_uninstall( $slug ) {
+function oddout_widget_bundle_uninstall( $slug ) {
 	$slug = sanitize_key( (string) $slug );
 	if ( '' === $slug ) {
-		return new WP_Error( 'invalid_slug', __( 'Invalid slug.', 'odd' ) );
+		return new WP_Error( 'invalid_slug', __( 'Invalid slug.', 'odd-outlandish-desktop-decorator' ) );
 	}
-	$index = odd_widgets_index_load();
+	$index = oddout_widgets_index_load();
 	if ( ! isset( $index[ $slug ] ) ) {
-		return new WP_Error( 'not_installed', __( 'Widget is not installed.', 'odd' ) );
+		return new WP_Error( 'not_installed', __( 'Widget is not installed.', 'odd-outlandish-desktop-decorator' ) );
 	}
 
-	$dir = odd_widgets_dir_for( $slug );
+	$dir = oddout_widgets_dir_for( $slug );
 	if ( $dir && is_dir( $dir ) ) {
-		odd_content_rrmdir( rtrim( $dir, '/' ) );
+		oddout_content_rrmdir( rtrim( $dir, '/' ) );
 	}
 
 	unset( $index[ $slug ] );
-	odd_widgets_index_save( $index );
+	oddout_widgets_index_save( $index );
 
 	return true;
 }
@@ -208,7 +207,7 @@ function odd_widget_bundle_uninstall( $slug ) {
  * @param array  $row  Index row.
  * @return string[]    Sanitized relative paths that exist under the widget dir.
  */
-function odd_widget_stylesheet_paths_for( $slug, array $row ) {
+function oddout_widget_stylesheet_paths_for( $slug, array $row ) {
 	$slug = sanitize_key( (string) $slug );
 	if ( '' === $slug ) {
 		return array();
@@ -217,10 +216,10 @@ function odd_widget_stylesheet_paths_for( $slug, array $row ) {
 	$paths = isset( $row['css'] ) && is_array( $row['css'] ) ? $row['css'] : array();
 
 	if ( empty( $paths ) ) {
-		$dir           = odd_widgets_dir_for( $slug );
+		$dir           = oddout_widgets_dir_for( $slug );
 		$manifest_path = $dir . 'manifest.json';
 		if ( $dir && is_readable( $manifest_path ) ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local manifest beside odd_widgets_dir_for().
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local manifest beside oddout_widgets_dir_for().
 			$raw = file_get_contents( $manifest_path );
 			if ( is_string( $raw ) ) {
 				$manifest = json_decode( $raw, true );
@@ -235,11 +234,11 @@ function odd_widget_stylesheet_paths_for( $slug, array $row ) {
 		}
 	}
 
-	$dir   = odd_widgets_dir_for( $slug );
+	$dir   = oddout_widgets_dir_for( $slug );
 	$out   = array();
 	$paths = is_array( $paths ) ? $paths : array();
 	foreach ( $paths as $rel ) {
-		$rel = odd_content_sanitize_relative_path( (string) $rel );
+		$rel = oddout_content_sanitize_relative_path( (string) $rel );
 		if ( '' === $rel ) {
 			continue;
 		}
@@ -260,18 +259,18 @@ function odd_widget_stylesheet_paths_for( $slug, array $row ) {
 add_action(
 	'admin_enqueue_scripts',
 	function () {
-		if ( ! odd_desktop_mode_available() ) {
+		if ( ! oddout_desktop_mode_available() ) {
 			return;
 		}
-		$index = odd_widgets_index_load();
+		$index = oddout_widgets_index_load();
 		if ( empty( $index ) ) {
 			return;
 		}
 		foreach ( $index as $slug => $row ) {
-			$ver = isset( $row['version'] ) ? $row['version'] : ODD_VERSION;
-			foreach ( odd_widget_stylesheet_paths_for( $slug, $row ) as $idx => $css_rel ) {
+			$ver = isset( $row['version'] ) ? $row['version'] : ODDOUT_VERSION;
+			foreach ( oddout_widget_stylesheet_paths_for( $slug, $row ) as $idx => $css_rel ) {
 				$css_handle = 'odd-widget-' . $slug . '-style-' . (int) $idx;
-				$css_url    = odd_widgets_url_for( $slug ) . rawurlencode( $css_rel );
+				$css_url    = oddout_widgets_url_for( $slug ) . rawurlencode( $css_rel );
 				wp_enqueue_style(
 					$css_handle,
 					$css_url,
@@ -281,7 +280,7 @@ add_action(
 				);
 			}
 			$entry = isset( $row['entry'] ) ? (string) $row['entry'] : 'widget.js';
-			$url   = odd_widgets_url_for( $slug ) . rawurlencode( $entry );
+			$url   = oddout_widgets_url_for( $slug ) . rawurlencode( $entry );
 			wp_enqueue_script(
 				'odd-widget-' . $slug,
 				$url,

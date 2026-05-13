@@ -8,11 +8,11 @@ This doc records the steps and the current state of ODD's submission to https://
 - [x] `readme.txt` written per plugin directory conventions ([`odd/readme.txt`](../odd/readme.txt))
 - [x] Plugin header fields are complete and match the readme (verified by `odd/bin/check-version` and `odd/bin/check-plugin-metadata`)
 - [x] Text domain declared and wired to `load_plugin_textdomain` + `wp_set_script_translations`
-- [x] `languages/odd.pot` regenerated at release time
+- [x] `languages/odd-outlandish-desktop-decorator.pot` regenerated at release time
 - [x] Zero runtime dependencies shipped in the zip. Scenes load Pixi via CDN at runtime; installed bundles carry their own assets (see [ADR 0005](adr/0005-remote-catalog-empty-plugin.md)).
 - [x] Licensing of every first-party catalog asset recorded in [`LICENSES.md`](../LICENSES.md), all CC0-1.0 or GPL-compatible
 - [x] No server-side telemetry ([ADR 0004](adr/0004-zero-server-side-telemetry.md))
-- [x] Remote catalog is a single HTTPS JSON fetch to a static GitHub Pages URL, configurable via `ODD_CATALOG_URL` for enterprise mirrors ([ADR 0005](adr/0005-remote-catalog-empty-plugin.md))
+- [x] Remote catalog is a single HTTPS JSON fetch to a static GitHub Pages URL, configurable via `ODDOUT_CATALOG_URL` for enterprise mirrors ([ADR 0005](adr/0005-remote-catalog-empty-plugin.md))
 - [ ] Submitted to the plugin directory for review (manual step, done via https://wordpress.org/plugins/developers/add/)
 - [ ] SVN trunk seeded once the submission is approved (manual, see below)
 - [ ] Screenshots captured and uploaded to `assets/` in SVN (5 screenshots listed in readme.txt)
@@ -83,7 +83,7 @@ Common feedback from the WP.org plugin review team + how ODD answers it:
 - **"Don't bundle frameworks you load from CDN."** We don't bundle Pixi; scenes load it via `wp_enqueue_script` against jsdelivr, and the plugin zip stays under the 2 MB `zip-budget` cap because user-facing content installs from the remote catalog.
 - **"Escape everything."** See PHPCS-enforced WordPress-Extra ruleset in `phpcs.xml`; the `phpcs` CI job blocks unescaped output.
 - **"Call `load_plugin_textdomain` on `init` and pass the `languages/` folder."** See `odd/odd.php`.
-- **"No opaque remote calls."** ODD makes exactly one kind of remote call: `wp_remote_get( ODD_CATALOG_URL )` to load the content catalog (a static JSON file at `odd.regionallyfamous.com/catalog/v1/registry.json`), and subsequent `download_url()` calls for bundles the user chooses to install from the Shop. Every URL, the transient cache window, and an opt-out (`define( 'ODD_CATALOG_URL', false )` or filter) are documented in `odd/readme.txt`.
+- **"No opaque remote calls."** ODD makes exactly one kind of remote call: `wp_remote_get( ODDOUT_CATALOG_URL )` to load the content catalog (a static JSON file at `odd.regionallyfamous.com/catalog/v1/registry.json`), and subsequent `download_url()` calls for bundles the user chooses to install from the Shop. Every URL, the transient cache window, and an opt-out (`define( 'ODDOUT_CATALOG_URL', false )` or filter) are documented in `odd/readme.txt`.
 
 ## After approval
 

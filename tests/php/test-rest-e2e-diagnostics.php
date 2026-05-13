@@ -3,7 +3,7 @@
  * REST: GET /odd/v1/e2e-diagnostics
  */
 
-class Test_REST_E2E_Diagnostics extends ODD_REST_Test_Case {
+class Test_REST_E2E_Diagnostics extends ODDOUT_REST_Test_Case {
 
 	public function test_get_requires_login() {
 		$this->log_out();
@@ -32,7 +32,7 @@ class Test_REST_E2E_Diagnostics extends ODD_REST_Test_Case {
 		$this->assertArrayHasKey( 'siteUrl', $data['wordpress'] );
 		$this->assertArrayHasKey( 'odd', $data );
 		$this->assertArrayHasKey( 'version', $data['odd'] );
-		$this->assertSame( ODD_VERSION, $data['odd']['version'] );
+		$this->assertSame( ODDOUT_VERSION, $data['odd']['version'] );
 		$this->assertArrayHasKey( 'plugins', $data );
 		$this->assertIsArray( $data['plugins'] );
 		$this->assertArrayHasKey( 'wallpaper', $data );

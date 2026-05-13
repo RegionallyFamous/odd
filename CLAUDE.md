@@ -24,7 +24,7 @@ All four are managed from a single native WP Desktop Mode window (the **ODD Shop
 
 ```
 odd/
-├── odd.php bootstrap: ODD_VERSION + require_once list
+├── odd.php bootstrap: ODDOUT_VERSION + require_once list
 ├── includes/
 │ ├── enqueue.php odd-api, odd, odd-panel, odd-commands script handles
 │ ├── rest.php /odd/v1/prefs (GET+POST)
@@ -32,13 +32,13 @@ odd/
 │ ├── starter-pack.php inline starter install + retry REST
 │ ├── content/
 │ │ ├── catalog.php wp_remote_get(registry.json) + 12h transient cache
-│ │ ├── scenes.php odd_scene_registry filter from installed bundles
-│ │ ├── iconsets.php odd_icon_sets filter from installed bundles
+│ │ ├── scenes.php oddout_scene_registry filter from installed bundles
+│ │ ├── iconsets.php oddout_icon_sets filter from installed bundles
 │ │ ├── widgets.php widget self-enqueue from installed bundles
 │ │ └── apps.php app registration from installed bundles
 │ ├── wallpaper/
-│ │ ├── registry.php filter-driven odd_wallpaper_scenes()
-│ │ └── prefs.php odd_wallpaper_* user-meta helpers
+│ │ ├── registry.php filter-driven oddout_wallpaper_scenes()
+│ │ └── prefs.php oddout_wallpaper_* user-meta helpers
 │ └── icons/
 │ ├── registry.php scans wp-content/odd-icon-sets/*/manifest.json
 │ └── dock-filter.php desktop_mode_dock_item + desktop_mode_icons @ priority 20
@@ -87,20 +87,20 @@ The panel body is rendered by `window.desktop_mode_native_windows.odd = body => 
 ### Single REST namespace
 
 `POST /wp-json/odd/v1/prefs` accepts any subset of:
-- `wallpaper` — scene slug; validated against `odd_wallpaper_scene_slugs()`; written to `odd_wallpaper`.
-- `favorites` — slug[] capped to 50; written to `odd_favorites`.
-- `recents` — slug[] capped to 12; written to `odd_recents`.
-- `shuffle` — `{ enabled: bool, minutes: int 1..240 }`; written to `odd_shuffle`.
-- `audioReactive` — bool; written to `odd_audio_reactive`.
-- `iconSet` — set slug (or `"none"`); written to `odd_icon_set`.
-- `theme` — `light|dark|auto`; written to `odd_shop_theme` and applied as `data-odd-theme` on the Shop root.
-- `chaosMode` — bool; written to `odd_chaos` and applied as `data-odd-chaos` on the Shop root.
+- `wallpaper` — scene slug; validated against `oddout_wallpaper_scene_slugs()`; written to `oddout_wallpaper`.
+- `favorites` — slug[] capped to 50; written to `oddout_favorites`.
+- `recents` — slug[] capped to 12; written to `oddout_recents`.
+- `shuffle` — `{ enabled: bool, minutes: int 1..240 }`; written to `oddout_shuffle`.
+- `audioReactive` — bool; written to `oddout_audio_reactive`.
+- `iconSet` — set slug (or `"none"`); written to `oddout_icon_set`.
+- `theme` — `light|dark|auto`; written to `oddout_shop_theme` and applied as `data-odd-theme` on the Shop root.
+- `chaosMode` — bool; written to `oddout_chaos` and applied as `data-odd-chaos` on the Shop root.
 
 `GET /wp-json/odd/v1/prefs` returns the current user's prefs plus the registry of installed scenes and icon sets.
 
 ### ODD Shop v2 chrome
 
-The Shop redesign is gated by the `odd_shop_v2` filter (default `true`). The root keeps the existing `odd-panel odd-shop` classes and data hooks, plus `data-odd-shop-v2`, `data-odd-theme`, and `data-odd-chaos`.
+The Shop redesign is gated by the `oddout_shop_v2` filter (default `true`). The root keeps the existing `odd-panel odd-shop` classes and data hooks, plus `data-odd-shop-v2`, `data-odd-theme`, and `data-odd-chaos`.
 
 Shop-only assets live in `odd/assets/shop/`:
 - `brand-mark.svg` — animated iris topbar mark.
@@ -123,11 +123,11 @@ Permission callbacks are `is_user_logged_in`. The panel also ships the same stat
 
 ### Remote catalog fetch
 
-`includes/content/catalog.php` defines `ODD_CATALOG_URL` (default: `https://odd.regionallyfamous.com/catalog/v1/registry.json`, filterable via `odd_catalog_url`). `odd_catalog_load()` fetches it with `wp_remote_get()` and caches the payload in the `odd_catalog` transient for 12h. On fetch failure it returns the stale transient so the Shop stays usable offline. Downloads verify `sha256` from the registry before calling `odd_bundle_install()`.
+`includes/content/catalog.php` defines `ODDOUT_CATALOG_URL` (default: `https://odd.regionallyfamous.com/catalog/v1/registry.json`, filterable via `oddout_catalog_url`). `oddout_catalog_load()` fetches it with `wp_remote_get()` and caches the payload in the `oddout_catalog` transient for 12h. On fetch failure it returns the stale transient so the Shop stays usable offline. Downloads verify `sha256` from the registry before calling `oddout_bundle_install()`.
 
 ### Starter pack
 
-`register_activation_hook` runs `odd_starter_ensure_installed( true )` inline. No cron — the activating admin is already on a privileged page, so the installer downloads + extracts the starter-pack bundles right there. The runner loads the remote catalog, resolves the slugs listed in the catalog's top-level `starter_pack` (currently `{ scenes: ['oddling-desktop'], iconSets: ['oddlings'], widgets: [], apps: [] }`), calls `odd_catalog_install_entry()` for each, and writes initial per-user preferences. State lives in the `odd_starter_state` option. If activation fails (catalog down, loopback blocked), a safety-net hook on `init` runs the installer inline on the next privileged page load — gated by exponential backoff (0s → 30s → 2 min → 10 min → 1 h → 6 h) against `last_attempt` so it doesn't thrash a chronically-failing catalog. The running state acts as a lock (auto-expires after 240 s) so concurrent admin tabs don't double-install.
+`register_activation_hook` runs `oddout_starter_ensure_installed( true )` inline. No cron — the activating admin is already on a privileged page, so the installer downloads + extracts the starter-pack bundles right there. The runner loads the remote catalog, resolves the slugs listed in the catalog's top-level `starter_pack` (currently `{ scenes: ['oddling-desktop'], iconSets: ['oddlings'], widgets: [], apps: [] }`), calls `oddout_catalog_install_entry()` for each, and writes initial per-user preferences. State lives in the `oddout_starter_state` option. If activation fails (catalog down, loopback blocked), a safety-net hook on `init` runs the installer inline on the next privileged page load — gated by exponential backoff (0s → 30s → 2 min → 10 min → 1 h → 6 h) against `last_attempt` so it doesn't thrash a chronically-failing catalog. The running state acts as a lock (auto-expires after 240 s) so concurrent admin tabs don't double-install.
 
 ### Live scene swaps
 
@@ -139,7 +139,7 @@ The wallpaper runtime also exposes `window.__odd.mountSceneInto(container, slug,
 
 Icon-set changes trigger a 180 ms fade + `window.location.reload()` after the POST succeeds. Re-render happens server-side through the two filters in `includes/icons/dock-filter.php`:
 
-- `desktop_mode_dock_item` priority 20, two-arg: per-tile swap keyed by `odd_icons_slug_to_key( $menu_slug )` (e.g. `edit.php` → `posts`). Falls back to the set's `fallback` icon when a set ships no specific match.
+- `desktop_mode_dock_item` priority 20, two-arg: per-tile swap keyed by `oddout_icons_slug_to_key( $menu_slug )` (e.g. `edit.php` → `posts`). Falls back to the set's `fallback` icon when a set ships no specific match.
 - `desktop_mode_icons` priority 20: re-skins desktop shortcuts by the same key logic, but **skips** the ODD Shop icon itself so it stays recognizable regardless of the active set.
 
 Server-side mapping is canonical; client-side live-swap via JS DOM surgery proved unreliable in earlier iterations and shouldn't be revisited.
@@ -171,7 +171,7 @@ Every `_tools/catalog-sources/scenes/<slug>/scene.js` self-registers:
 
 Scenes should read their wallpaper URL from `window.odd.sceneMap[slug].wallpaperUrl` so installed bundles can point at their own URL. `env` carries `{ app, PIXI, ctx, helpers, dt, parallax: {x,y}, reducedMotion, tod, todPhase, season, audio: {enabled, level, bass, mid, high}, perfTier: 'high'|'normal'|'low' }`. Scenes that ignore the new fields are unaffected.
 
-The shared mount runner in `src/wallpaper/index.js` owns Pixi app creation (`await app.init`, `app.canvas`), the visibility hook (`desktop-mode.wallpaper.visibility`), the `document.visibilitychange` pause, per-minute `env.tod` recompute, the rolling-FPS `env.perfTier` sampler, the shuffle scheduler (every `odd_shuffle.minutes`), and audio analyser sampling. The runner also registers a built-in `odd-pending` gradient scene so the desktop has something to paint between activation and first starter-pack install.
+The shared mount runner in `src/wallpaper/index.js` owns Pixi app creation (`await app.init`, `app.canvas`), the visibility hook (`desktop-mode.wallpaper.visibility`), the `document.visibilitychange` pause, per-minute `env.tod` recompute, the rolling-FPS `env.perfTier` sampler, the shuffle scheduler (every `oddout_shuffle.minutes`), and audio analyser sampling. The runner also registers a built-in `odd-pending` gradient scene so the desktop has something to paint between activation and first starter-pack install.
 
 **Swap-in-place** — the same `PIXI.Application` is reused across scene swaps. `app.stage.removeChildren()` runs between swaps; scenes must tolerate a fresh-but-reused app. Anything allocated outside the Pixi scene graph (timers, `window` listeners) belongs in `cleanup`.
 
@@ -228,13 +228,13 @@ Slugs here must resolve to a catalog entry — the validator refuses to ship a s
 ### Local iteration
 
 1. `git clone` into `wp-content/plugins/odd/` (or symlink).
-2. Activate ODD alongside WP Desktop Mode. The starter pack installs inline during the activation hook (no cron); if it failed you can force a retry with `wp eval 'odd_starter_ensure_installed( true );'`.
+2. Activate ODD alongside WP Desktop Mode. The starter pack installs inline during the activation hook (no cron); if it failed you can force a retry with `wp eval 'oddout_starter_ensure_installed( true );'`.
 3. Plugin itself is no-build — plain JS loaded via `wp_enqueue_script`. Content bundles are built with `python3 _tools/build-catalog.py`.
 4. For a full validation pass: `odd/bin/check-version && odd/bin/check-plugin-metadata && python3 _tools/build-catalog.py && ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog && npm test && odd/bin/build-zip && odd/bin/check-zip-contents`.
 
 ### Cut a release
 
-1. Bump `Version:` header + `ODD_VERSION` constant in `odd/odd.php`.
+1. Bump `Version:` header + `ODDOUT_VERSION` constant in `odd/odd.php`.
 2. `odd/bin/check-version --expect X.Y.Z && odd/bin/check-plugin-metadata` to confirm metadata matches.
 3. Commit, push, tag: `git tag vX.Y.Z && git push origin main vX.Y.Z`.
 4. `.github/workflows/release-odd.yml` fires on the tag: reusable CI gates, catalog build + validate, Plugin Check, `odd/bin/build-zip`, zip contents check, `gh release create … --latest=true`, and the install-smoke suite against a hermetic MU-plugin fixture.
@@ -265,9 +265,9 @@ Slugs here must resolve to a catalog entry — the validator refuses to ship a s
 
 Version lives in two places inside `odd/odd.php` — keep them in sync on release:
 - the `Version:` header (`* Version: X.Y.Z`)
-- the `ODD_VERSION` constant (`define( 'ODD_VERSION', 'X.Y.Z' );`)
+- the `ODDOUT_VERSION` constant (`define( 'ODDOUT_VERSION', 'X.Y.Z' );`)
 
-All other script/style/REST calls compute their cache-busting version from `ODD_VERSION` at runtime.
+All other script/style/REST calls compute their cache-busting version from `ODDOUT_VERSION` at runtime.
 
 ## Gotchas
 
@@ -276,7 +276,7 @@ All other script/style/REST calls compute their cache-busting version from `ODD_
 - **Catalog determinism.** `_tools/build-catalog.py` must produce byte-identical output on repeat runs. `ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog` enforces this in CI. Non-determinism usually comes from mtimes in zip entries or unsorted iteration.
 - **GitHub release asset uploads** sometimes 409 "Error creating policy" right after release creation. The release workflow retries once after a 3 s pause.
 - **Playground + CORS.** `raw.githubusercontent.com` and `github.com/*/releases/download/…` both serve with `access-control-allow-origin: *`. Other hosts usually don't — check with `curl -H "Origin: https://playground.wordpress.net" -I <url>` before pointing a blueprint at a new URL. `odd.regionallyfamous.com/catalog/v1/` (GitHub Pages) does serve `*`, which is why the remote catalog works from Playground.
-- **Starter-pack retry backoff.** The starter install is inline and cron-free, but failed catalog fetches back off before retrying. Use `POST /odd/v1/starter/retry` or `wp eval 'odd_starter_ensure_installed( true );'` to force an immediate retry while debugging.
+- **Starter-pack retry backoff.** The starter install is inline and cron-free, but failed catalog fetches back off before retrying. Use `POST /odd/v1/starter/retry` or `wp eval 'oddout_starter_ensure_installed( true );'` to force an immediate retry while debugging.
 - **`desktop-mode.wallpaper.visibility` payload shape** is `{ id, state: 'hidden' | 'visible' }` per the recipe example. The `onVis` handler silently no-ops on anything else.
 
 ## File layout

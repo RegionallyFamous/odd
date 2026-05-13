@@ -28,7 +28,7 @@
  * admin tabs from racing each other. A per-request in-memory guard
  * keeps the safety net from firing twice on a single request.
  *
- * State shape, persisted to the `odd_starter_state` option:
+ * State shape, persisted to the `oddout_starter_state` option:
  *
  *   {
  *     "status":       "pending" | "running" | "installed" | "failed",
@@ -45,8 +45,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-if ( ! defined( 'ODD_STARTER_OPTION' ) ) {
-	define( 'ODD_STARTER_OPTION', 'odd_starter_state' );
+if ( ! defined( 'ODDOUT_STARTER_OPTION' ) ) {
+	define( 'ODDOUT_STARTER_OPTION', 'oddout_starter_state' );
 }
 
 /**
@@ -54,8 +54,8 @@ if ( ! defined( 'ODD_STARTER_OPTION' ) ) {
  * consider the lock stale and retry. Sized for a slow catalog host +
  * a few bundle downloads (~3 × 60s default download_url timeout).
  */
-if ( ! defined( 'ODD_STARTER_LOCK_TTL' ) ) {
-	define( 'ODD_STARTER_LOCK_TTL', 240 );
+if ( ! defined( 'ODDOUT_STARTER_LOCK_TTL' ) ) {
+	define( 'ODDOUT_STARTER_LOCK_TTL', 240 );
 }
 
 /**
@@ -63,7 +63,7 @@ if ( ! defined( 'ODD_STARTER_LOCK_TTL' ) ) {
  * (1-based). Used to gate the `init` safety net so a chronically
  * failing catalog host doesn't hammer every page load.
  */
-function odd_starter_backoff_seconds() {
+function oddout_starter_backoff_seconds() {
 	return array(
 		1 => 0,               // first attempt: immediate
 		2 => 30,              // 30s
@@ -74,8 +74,8 @@ function odd_starter_backoff_seconds() {
 	);
 }
 
-function odd_starter_get_state() {
-	$state = get_option( ODD_STARTER_OPTION, null );
+function oddout_starter_get_state() {
+	$state = get_option( ODDOUT_STARTER_OPTION, null );
 	if ( ! is_array( $state ) ) {
 		$state = array();
 	}
@@ -95,7 +95,7 @@ function odd_starter_get_state() {
 			//   attempted_at: unix timestamp,
 			// }. Successful entries are never downgraded; retries
 			// only re-attempt 'pending' and 'failed'. See
-			// odd_starter_merge_slug_results().
+			// oddout_starter_merge_slug_results().
 			'slugs'        => array(),
 		)
 	);
@@ -110,12 +110,12 @@ function odd_starter_get_state() {
  * successful attempt can flip pending/failed → done; a failed attempt
  * can only flip pending → failed (never overwrite a prior done).
  *
- * @param array                $state   Starter state as returned by odd_starter_get_state().
+ * @param array                $state   Starter state as returned by oddout_starter_get_state().
  * @param array<string,array>  $results Keyed by slug; each value
  *                                      is { status, error?, attempted_at? }.
  * @return array Updated state with merged slugs map.
  */
-function odd_starter_merge_slug_results( array $state, array $results ) {
+function oddout_starter_merge_slug_results( array $state, array $results ) {
 	$slugs = isset( $state['slugs'] ) && is_array( $state['slugs'] ) ? $state['slugs'] : array();
 	$now   = time();
 	foreach ( $results as $slug => $row ) {
@@ -153,7 +153,7 @@ function odd_starter_merge_slug_results( array $state, array $results ) {
  * @param string[] $wanted Expected slug list (empty means "trust slugs map").
  * @return string
  */
-function odd_starter_compute_status( array $state, array $wanted = array() ) {
+function oddout_starter_compute_status( array $state, array $wanted = array() ) {
 	$slugs = isset( $state['slugs'] ) && is_array( $state['slugs'] ) ? $state['slugs'] : array();
 	if ( empty( $wanted ) ) {
 		$wanted = array_keys( $slugs );
@@ -187,12 +187,12 @@ function odd_starter_compute_status( array $state, array $wanted = array() ) {
 	return 'pending';
 }
 
-function odd_starter_save_state( array $state ) {
-	update_option( ODD_STARTER_OPTION, $state, false );
+function oddout_starter_save_state( array $state ) {
+	update_option( ODDOUT_STARTER_OPTION, $state, false );
 }
 
-function odd_starter_reset() {
-	delete_option( ODD_STARTER_OPTION );
+function oddout_starter_reset() {
+	delete_option( ODDOUT_STARTER_OPTION );
 }
 
 /**
@@ -202,8 +202,8 @@ function odd_starter_reset() {
  * slow/unreachable the error is captured to state and the `init`
  * safety net retries on the next page load.
  */
-function odd_activate_install_starter() {
-	$state = odd_starter_get_state();
+function oddout_activate_install_starter() {
+	$state = oddout_starter_get_state();
 	// Reactivations on an already-installed site are no-ops.
 	if ( 'installed' === $state['status'] ) {
 		return;
@@ -217,20 +217,11 @@ function odd_activate_install_starter() {
 	$state['attempts']     = 0;
 	$state['last_attempt'] = 0;
 	$state['last_error']   = '';
-	odd_starter_save_state( $state );
+	oddout_starter_save_state( $state );
 
-	// Give the installer a generous runtime budget. Some hosts cap
-	// the activation request at 30s; bumping the ceiling when the
-	// function is available is free when it works and silently
-	// ignored when safe_mode / disable_functions prevents it.
-	// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- disabled function throws a warning we don't care about.
-	if ( function_exists( 'set_time_limit' ) ) {
-		@set_time_limit( 180 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,Squiz.PHP.DiscouragedFunctions.Discouraged
-	}
-
-	odd_starter_ensure_installed( true );
+	oddout_starter_ensure_installed( true );
 }
-register_activation_hook( ODD_FILE, 'odd_activate_install_starter' );
+register_activation_hook( ODDOUT_FILE, 'oddout_activate_install_starter' );
 
 /**
  * ODD seeds WP Desktop Mode's host wallpaper setting to "odd" so the
@@ -240,8 +231,8 @@ register_activation_hook( ODD_FILE, 'odd_activate_install_starter' );
  * only users currently pointing at ODD; leave every other wallpaper choice
  * untouched.
  */
-function odd_deactivate_restore_host_wallpaper() {
-	$default_wallpaper = odd_starter_host_default_wallpaper();
+function oddout_deactivate_restore_host_wallpaper() {
+	$default_wallpaper = oddout_starter_host_default_wallpaper();
 	if ( '' === $default_wallpaper || 'odd' === $default_wallpaper ) {
 		$default_wallpaper = 'dark';
 	}
@@ -258,17 +249,17 @@ function odd_deactivate_restore_host_wallpaper() {
 		);
 		foreach ( $users as $u ) {
 			$uid      = (int) $u->ID;
-			$settings = odd_starter_get_host_settings_for_user( $uid );
+			$settings = oddout_starter_get_host_settings_for_user( $uid );
 			if ( ! is_array( $settings ) || ( isset( $settings['wallpaper'] ) ? (string) $settings['wallpaper'] : '' ) !== 'odd' ) {
 				continue;
 			}
 			$settings['wallpaper'] = $default_wallpaper;
-			odd_starter_save_host_settings_for_user( $uid, $settings );
+			oddout_starter_save_host_settings_for_user( $uid, $settings );
 		}
 		$offset += $number;
 	} while ( count( $users ) === $number );
 }
-register_deactivation_hook( ODD_FILE, 'odd_deactivate_restore_host_wallpaper' );
+register_deactivation_hook( ODDOUT_FILE, 'oddout_deactivate_restore_host_wallpaper' );
 
 /**
  * Core entry point: bring the site to a fully-installed starter-pack
@@ -282,13 +273,13 @@ register_deactivation_hook( ODD_FILE, 'odd_deactivate_restore_host_wallpaper' );
  *         array when we ran and succeeded, WP_Error when we ran and
  *         failed, null when we didn't run (locked or backoff).
  */
-function odd_starter_ensure_installed( $force = false ) {
+function oddout_starter_ensure_installed( $force = false ) {
 	static $ran_this_request = false;
 	if ( $ran_this_request ) {
 		return null;
 	}
 
-	$state = odd_starter_get_state();
+	$state = oddout_starter_get_state();
 	if ( 'installed' === $state['status'] ) {
 		return null;
 	}
@@ -296,11 +287,11 @@ function odd_starter_ensure_installed( $force = false ) {
 	$now = time();
 
 	// Running-lock: another request is mid-install. Treat the lock
-	// as stale after ODD_STARTER_LOCK_TTL seconds (a hung PHP worker
+	// as stale after ODDOUT_STARTER_LOCK_TTL seconds (a hung PHP worker
 	// or a killed activation can leave status=running behind).
 	if ( 'running' === $state['status'] ) {
 		$age = $now - (int) $state['last_attempt'];
-		if ( $age < ODD_STARTER_LOCK_TTL ) {
+		if ( $age < ODDOUT_STARTER_LOCK_TTL ) {
 			return null;
 		}
 	}
@@ -311,7 +302,7 @@ function odd_starter_ensure_installed( $force = false ) {
 	// activation hook and the REST retry endpoint both pass
 	// $force=true, bypassing backoff but still respecting the lock.
 	if ( ! $force && in_array( $state['status'], array( 'failed', 'partial' ), true ) ) {
-		$backoff = odd_starter_backoff_seconds();
+		$backoff = oddout_starter_backoff_seconds();
 		$want    = max( 1, (int) $state['attempts'] + 1 );
 		$delay   = isset( $backoff[ $want ] ) ? $backoff[ $want ] : end( $backoff );
 		if ( $now - (int) $state['last_attempt'] < (int) $delay ) {
@@ -325,28 +316,28 @@ function odd_starter_ensure_installed( $force = false ) {
 	$state['status']       = 'running';
 	$state['attempts']     = (int) $state['attempts'] + 1;
 	$state['last_attempt'] = $now;
-	odd_starter_save_state( $state );
+	oddout_starter_save_state( $state );
 
 	$prior_slugs = isset( $state['slugs'] ) && is_array( $state['slugs'] ) ? $state['slugs'] : array();
-	$run         = odd_starter_install_now( $prior_slugs );
+	$run         = oddout_starter_install_now( $prior_slugs );
 
 	// Refetch in case another request stomped state while we ran.
-	$after = odd_starter_get_state();
+	$after = oddout_starter_get_state();
 
 	// Fatal: we couldn't even load the catalog. Leave prior
 	// per-slug state intact, just mark the top-level status.
 	if ( ! empty( $run['fatal'] ) && is_wp_error( $run['fatal'] ) ) {
 		$after['status']     = 'failed';
 		$after['last_error'] = $run['fatal']->get_error_message();
-		odd_starter_save_state( $after );
+		oddout_starter_save_state( $after );
 		return $run['fatal'];
 	}
 
 	// Fold per-slug results into monotonic state.
-	$after = odd_starter_merge_slug_results( $after, $run['results'] );
+	$after = oddout_starter_merge_slug_results( $after, $run['results'] );
 
 	$wanted             = isset( $run['wanted'] ) ? (array) $run['wanted'] : array();
-	$after['status']    = odd_starter_compute_status( $after, $wanted );
+	$after['status']    = oddout_starter_compute_status( $after, $wanted );
 	$after['prefs_set'] = $after['prefs_set'] || (bool) $run['prefs_set'];
 	$after['catalog']   = isset( $run['catalog'] ) && is_array( $run['catalog'] ) ? $run['catalog'] : array();
 
@@ -377,7 +368,7 @@ function odd_starter_ensure_installed( $force = false ) {
 	}
 	$after['installed'] = $installed_flat;
 
-	odd_starter_save_state( $after );
+	oddout_starter_save_state( $after );
 
 	if ( ! empty( $run_errors ) ) {
 		return new WP_Error(
@@ -398,16 +389,16 @@ function odd_starter_ensure_installed( $force = false ) {
 }
 
 /**
- * Back-compat alias. Older code and CI shims call `odd_starter_run()`.
+ * Back-compat alias. Older code and CI shims call `oddout_starter_run()`.
  * Keep it as a thin forwarder so nothing downstream breaks.
  */
-function odd_starter_run() {
-	odd_starter_ensure_installed( false );
+function oddout_starter_run() {
+	oddout_starter_ensure_installed( false );
 }
 
 /**
  * The actual installer. Walks the starter pack from the loaded
- * catalog, calls odd_catalog_install_entry() for each bundle that
+ * catalog, calls oddout_catalog_install_entry() for each bundle that
  * isn't already installed, and sets initial user prefs.
  *
  * Monotonic: returns per-slug results so the caller can fold them
@@ -416,7 +407,7 @@ function odd_starter_run() {
  * single aggregate error.
  *
  * The caller is expected to pass the prior monotonic `slugs` map
- * (from odd_starter_get_state()) so retries only touch pending /
+ * (from oddout_starter_get_state()) so retries only touch pending /
  * failed slugs — already-done slugs are not re-attempted, even when
  * the installed-on-disk detection says otherwise.
  *
@@ -428,7 +419,7 @@ function odd_starter_run() {
  *   fatal:     WP_Error|null (only when we couldn't even evaluate wanted slugs),
  * }
  */
-function odd_starter_install_now( array $prior_slugs = array() ) {
+function oddout_starter_install_now( array $prior_slugs = array() ) {
 	$out = array(
 		'results'   => array(),
 		'wanted'    => array(),
@@ -436,19 +427,19 @@ function odd_starter_install_now( array $prior_slugs = array() ) {
 		'fatal'     => null,
 		'catalog'   => array(),
 	);
-	if ( ! function_exists( 'odd_catalog_load' ) || ! function_exists( 'odd_catalog_install_entry' ) ) {
+	if ( ! function_exists( 'oddout_catalog_load' ) || ! function_exists( 'oddout_catalog_install_entry' ) ) {
 		$out['fatal'] = new WP_Error( 'catalog_unavailable', 'Catalog module not loaded.' );
 		return $out;
 	}
 	// Prefer any usable cached/stale/fallback catalog first. A fresh
 	// remote fetch is only forced when that tier is empty or the
 	// starter slugs point at rows that are not present.
-	$registry = odd_catalog_load( false );
+	$registry = oddout_catalog_load( false );
 	if ( empty( $registry['bundles'] ) ) {
-		$registry = odd_catalog_load( true );
+		$registry = oddout_catalog_load( true );
 		if ( empty( $registry['bundles'] ) ) {
 			$out['fatal']   = new WP_Error( 'empty_catalog', 'Catalog returned no bundles from remote, stale, or fallback sources.' );
-			$out['catalog'] = function_exists( 'odd_catalog_meta' ) ? odd_catalog_meta() : array();
+			$out['catalog'] = function_exists( 'oddout_catalog_meta' ) ? oddout_catalog_meta() : array();
 			return $out;
 		}
 	}
@@ -466,17 +457,17 @@ function odd_starter_install_now( array $prior_slugs = array() ) {
 	}
 	$want_slugs     = array_values( array_filter( array_unique( $want_slugs ) ) );
 	$out['wanted']  = $want_slugs;
-	$out['catalog'] = function_exists( 'odd_catalog_meta' ) ? odd_catalog_meta() : array();
+	$out['catalog'] = function_exists( 'oddout_catalog_meta' ) ? oddout_catalog_meta() : array();
 
 	if ( empty( $want_slugs ) ) {
 		// No starter pack defined. Apply prefs and report success
-		// with an empty slug set; odd_starter_compute_status will
+		// with an empty slug set; oddout_starter_compute_status will
 		// decide the top-level status.
-		$out['prefs_set'] = odd_starter_apply_prefs( $starter );
+		$out['prefs_set'] = oddout_starter_apply_prefs( $starter );
 		return $out;
 	}
 
-	$already_installed_on_disk = odd_bundle_catalog_installed_slugs();
+	$already_installed_on_disk = oddout_bundle_catalog_installed_slugs();
 	$now                       = time();
 	$available_rows            = array();
 	foreach ( isset( $registry['bundles'] ) && is_array( $registry['bundles'] ) ? $registry['bundles'] : array() as $row ) {
@@ -486,10 +477,10 @@ function odd_starter_install_now( array $prior_slugs = array() ) {
 	}
 
 	if ( ! empty( $want_slugs ) && count( array_intersect( $want_slugs, array_keys( $available_rows ) ) ) < count( $want_slugs ) ) {
-		$refreshed = odd_catalog_load( true );
+		$refreshed = oddout_catalog_load( true );
 		if ( ! empty( $refreshed['bundles'] ) ) {
 			$registry       = $refreshed;
-			$out['catalog'] = function_exists( 'odd_catalog_meta' ) ? odd_catalog_meta() : $out['catalog'];
+			$out['catalog'] = function_exists( 'oddout_catalog_meta' ) ? oddout_catalog_meta() : $out['catalog'];
 		}
 	}
 
@@ -514,7 +505,7 @@ function odd_starter_install_now( array $prior_slugs = array() ) {
 			);
 			continue;
 		}
-		$row = odd_catalog_row_for( $slug );
+		$row = oddout_catalog_row_for( $slug );
 		if ( null === $row ) {
 			$out['results'][ $slug ] = array(
 				'status'       => 'failed',
@@ -523,7 +514,7 @@ function odd_starter_install_now( array $prior_slugs = array() ) {
 			);
 			continue;
 		}
-		$res = odd_catalog_install_entry( $row );
+		$res = oddout_catalog_install_entry( $row );
 		if ( is_wp_error( $res ) ) {
 			$out['results'][ $slug ] = array(
 				'status'       => 'failed',
@@ -539,7 +530,7 @@ function odd_starter_install_now( array $prior_slugs = array() ) {
 		);
 	}
 
-	$out['prefs_set'] = odd_starter_apply_prefs( $starter );
+	$out['prefs_set'] = oddout_starter_apply_prefs( $starter );
 	return $out;
 }
 
@@ -550,9 +541,9 @@ function odd_starter_install_now( array $prior_slugs = array() ) {
  *
  * Two layers get seeded:
  *
- *   1. ODD's *inner* prefs — `odd_wallpaper` (which scene renders
- *      inside ODD's card), `odd_icon_set` (which dock re-skin is
- *      active), and `odd_cursor_set` (which cursor theme is
+ *   1. ODD's *inner* prefs — `oddout_wallpaper` (which scene renders
+ *      inside ODD's card), `oddout_icon_set` (which dock re-skin is
+ *      active), and `oddout_cursor_set` (which cursor theme is
  *      active). These are pure user meta.
  *
  *   2. WP Desktop Mode's *outer* wallpaper selection — the host
@@ -569,7 +560,7 @@ function odd_starter_install_now( array $prior_slugs = array() ) {
  * We write at the user-meta level so individual users can still pick
  * something else later; this just seeds the initial state.
  */
-function odd_starter_apply_prefs( array $starter ) {
+function oddout_starter_apply_prefs( array $starter ) {
 	$default_scene   = ! empty( $starter['scenes'] ) ? sanitize_key( (string) $starter['scenes'][0] ) : '';
 	$default_iconset = ! empty( $starter['iconSets'] ) ? sanitize_key( (string) $starter['iconSets'][0] ) : '';
 	$default_cursor  = ! empty( $starter['cursorSets'] ) ? sanitize_key( (string) $starter['cursorSets'][0] ) : '';
@@ -587,26 +578,26 @@ function odd_starter_apply_prefs( array $starter ) {
 	foreach ( $users as $u ) {
 		$uid = (int) $u->ID;
 		if ( '' !== $default_scene ) {
-			$current = get_user_meta( $uid, 'odd_wallpaper', true );
+			$current = get_user_meta( $uid, 'oddout_wallpaper', true );
 			if ( '' === $current ) {
-				update_user_meta( $uid, 'odd_wallpaper', $default_scene );
+				update_user_meta( $uid, 'oddout_wallpaper', $default_scene );
 				$wrote = true;
 			}
-			if ( odd_starter_seed_host_wallpaper( $uid ) ) {
+			if ( oddout_starter_seed_host_wallpaper( $uid ) ) {
 				$wrote = true;
 			}
 		}
 		if ( '' !== $default_iconset ) {
-			$current = get_user_meta( $uid, 'odd_icon_set', true );
+			$current = get_user_meta( $uid, 'oddout_icon_set', true );
 			if ( '' === $current ) {
-				update_user_meta( $uid, 'odd_icon_set', $default_iconset );
+				update_user_meta( $uid, 'oddout_icon_set', $default_iconset );
 				$wrote = true;
 			}
 		}
 		if ( '' !== $default_cursor ) {
-			$current = get_user_meta( $uid, 'odd_cursor_set', true );
+			$current = get_user_meta( $uid, 'oddout_cursor_set', true );
 			if ( '' === $current ) {
-				update_user_meta( $uid, 'odd_cursor_set', $default_cursor );
+				update_user_meta( $uid, 'oddout_cursor_set', $default_cursor );
 				$wrote = true;
 			}
 		}
@@ -614,11 +605,11 @@ function odd_starter_apply_prefs( array $starter ) {
 	return $wrote;
 }
 
-function odd_starter_host_settings_meta_key() {
+function oddout_starter_host_settings_meta_key() {
 	return defined( 'DESKTOP_MODE_OS_SETTINGS_META_KEY' ) ? DESKTOP_MODE_OS_SETTINGS_META_KEY : 'desktop_mode_os_settings';
 }
 
-function odd_starter_host_default_wallpaper() {
+function oddout_starter_host_default_wallpaper() {
 	if ( function_exists( 'desktop_mode_default_os_settings' ) ) {
 		$defaults = desktop_mode_default_os_settings();
 		return isset( $defaults['wallpaper'] ) ? sanitize_key( (string) $defaults['wallpaper'] ) : 'dark';
@@ -626,7 +617,7 @@ function odd_starter_host_default_wallpaper() {
 	return 'dark';
 }
 
-function odd_starter_get_host_settings_for_user( $user_id ) {
+function oddout_starter_get_host_settings_for_user( $user_id ) {
 	$user_id = (int) $user_id;
 	if ( $user_id <= 0 ) {
 		return null;
@@ -634,11 +625,11 @@ function odd_starter_get_host_settings_for_user( $user_id ) {
 	if ( function_exists( 'desktop_mode_get_os_settings' ) ) {
 		return desktop_mode_get_os_settings( $user_id );
 	}
-	$settings = get_user_meta( $user_id, odd_starter_host_settings_meta_key(), true );
+	$settings = get_user_meta( $user_id, oddout_starter_host_settings_meta_key(), true );
 	return is_array( $settings ) ? $settings : null;
 }
 
-function odd_starter_save_host_settings_for_user( $user_id, array $settings ) {
+function oddout_starter_save_host_settings_for_user( $user_id, array $settings ) {
 	$user_id = (int) $user_id;
 	if ( $user_id <= 0 ) {
 		return false;
@@ -646,7 +637,7 @@ function odd_starter_save_host_settings_for_user( $user_id, array $settings ) {
 	if ( function_exists( 'desktop_mode_save_os_settings' ) ) {
 		return (bool) desktop_mode_save_os_settings( $user_id, $settings );
 	}
-	return (bool) update_user_meta( $user_id, odd_starter_host_settings_meta_key(), $settings );
+	return (bool) update_user_meta( $user_id, oddout_starter_host_settings_meta_key(), $settings );
 }
 
 /**
@@ -669,22 +660,22 @@ function odd_starter_save_host_settings_for_user( $user_id, array $settings ) {
  * @param int $user_id
  * @return bool
  */
-function odd_starter_seed_host_wallpaper( $user_id ) {
+function oddout_starter_seed_host_wallpaper( $user_id ) {
 	$user_id = (int) $user_id;
 	if ( $user_id <= 0 ) {
 		return false;
 	}
-	if ( ! function_exists( 'odd_desktop_mode_supports' ) || ! odd_desktop_mode_supports( 'os_settings' ) || ! odd_desktop_mode_supports( 'wallpaper' ) ) {
+	if ( ! function_exists( 'oddout_desktop_mode_supports' ) || ! oddout_desktop_mode_supports( 'os_settings' ) || ! oddout_desktop_mode_supports( 'wallpaper' ) ) {
 		return false;
 	}
 
-	$current = odd_starter_get_host_settings_for_user( $user_id );
+	$current = oddout_starter_get_host_settings_for_user( $user_id );
 	if ( ! is_array( $current ) ) {
 		return false;
 	}
 
 	$current_wallpaper = isset( $current['wallpaper'] ) ? (string) $current['wallpaper'] : '';
-	$default_wallpaper = odd_starter_host_default_wallpaper();
+	$default_wallpaper = oddout_starter_host_default_wallpaper();
 
 	// Already on ODD — nothing to do.
 	if ( 'odd' === $current_wallpaper ) {
@@ -699,32 +690,32 @@ function odd_starter_seed_host_wallpaper( $user_id ) {
 	$next              = $current;
 	$next['wallpaper'] = 'odd';
 
-	return odd_starter_save_host_settings_for_user( $user_id, $next );
+	return oddout_starter_save_host_settings_for_user( $user_id, $next );
 }
 
 /**
  * Select the ODD canvas wallpaper in WP Desktop Mode so the scene engine mounts.
  *
  * Used when the user picks an ODD scene via REST — unlike
- * odd_starter_seed_host_wallpaper() this always targets `"odd"` whenever
+ * oddout_starter_seed_host_wallpaper() this always targets `"odd"` whenever
  * host APIs exist, so users who left the shell on `"dark"` still get a
  * working canvas after choosing a scene in the Shop.
  *
  * @param int $user_id User ID.
  * @return bool Whether a write occurred.
  */
-function odd_wallpaper_ensure_host_engine_selected( $user_id ) {
+function oddout_wallpaper_ensure_host_engine_selected( $user_id ) {
 	$user_id = (int) $user_id;
 	if ( $user_id <= 0 ) {
 		return false;
 	}
-	if ( ! function_exists( 'odd_desktop_mode_supports' )
-		|| ! odd_desktop_mode_supports( 'os_settings' )
-		|| ! odd_desktop_mode_supports( 'wallpaper' ) ) {
+	if ( ! function_exists( 'oddout_desktop_mode_supports' )
+		|| ! oddout_desktop_mode_supports( 'os_settings' )
+		|| ! oddout_desktop_mode_supports( 'wallpaper' ) ) {
 		return false;
 	}
 
-	$current = odd_starter_get_host_settings_for_user( $user_id );
+	$current = oddout_starter_get_host_settings_for_user( $user_id );
 	if ( ! is_array( $current ) && function_exists( 'desktop_mode_default_os_settings' ) ) {
 		$defaults = desktop_mode_default_os_settings();
 		$current  = is_array( $defaults ) ? $defaults : null;
@@ -740,13 +731,13 @@ function odd_wallpaper_ensure_host_engine_selected( $user_id ) {
 	$next              = $current;
 	$next['wallpaper'] = 'odd';
 
-	return odd_starter_save_host_settings_for_user( $user_id, $next );
+	return oddout_starter_save_host_settings_for_user( $user_id, $next );
 }
 
-function odd_starter_get_state_for_rest() {
-	$state    = odd_starter_get_state();
-	$registry = function_exists( 'odd_catalog_load' ) ? odd_catalog_load( false ) : array();
-	$meta     = function_exists( 'odd_catalog_meta' ) ? odd_catalog_meta() : array();
+function oddout_starter_get_state_for_rest() {
+	$state    = oddout_starter_get_state();
+	$registry = function_exists( 'oddout_catalog_load' ) ? oddout_catalog_load( false ) : array();
+	$meta     = function_exists( 'oddout_catalog_meta' ) ? oddout_catalog_meta() : array();
 	$starter  = isset( $registry['starter_pack'] ) && is_array( $registry['starter_pack'] ) ? $registry['starter_pack'] : array();
 	$rows     = array();
 	foreach ( isset( $registry['bundles'] ) && is_array( $registry['bundles'] ) ? $registry['bundles'] : array() as $row ) {
@@ -786,14 +777,14 @@ function odd_starter_get_state_for_rest() {
  * Mode users typically land on the frontend and never visit wp-admin.
  * Privilege check (`activate_plugins` / `manage_options`) keeps
  * anonymous frontend traffic from triggering network I/O. Backoff is
- * enforced by `odd_starter_ensure_installed()` so a chronically
+ * enforced by `oddout_starter_ensure_installed()` so a chronically
  * failing catalog doesn't run on every request.
  */
-function odd_starter_safety_net() {
+function oddout_starter_safety_net() {
 	if ( ( defined( 'DOING_CRON' ) && DOING_CRON ) || ( defined( 'WP_INSTALLING' ) && WP_INSTALLING ) ) {
 		return;
 	}
-	$state = odd_starter_get_state();
+	$state = oddout_starter_get_state();
 	if ( 'installed' === $state['status'] ) {
 		return;
 	}
@@ -803,9 +794,9 @@ function odd_starter_safety_net() {
 	if ( ! current_user_can( 'activate_plugins' ) && ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
-	odd_starter_ensure_installed( false );
+	oddout_starter_ensure_installed( false );
 }
-add_action( 'init', 'odd_starter_safety_net', 20 );
+add_action( 'init', 'oddout_starter_safety_net', 20 );
 
 /**
  * Clean up any starter-pack cron events from old development installs that
@@ -814,13 +805,13 @@ add_action( 'init', 'odd_starter_safety_net', 20 );
 add_action(
 	'init',
 	function () {
-		if ( get_option( 'odd_starter_cron_cleaned', '' ) === ODD_VERSION ) {
+		if ( get_option( 'oddout_starter_cron_cleaned', '' ) === ODDOUT_VERSION ) {
 			return;
 		}
 		if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
-			wp_clear_scheduled_hook( 'odd_install_starter_pack' );
+			wp_clear_scheduled_hook( 'oddout_install_starter_pack' );
 		}
-		update_option( 'odd_starter_cron_cleaned', ODD_VERSION, false );
+		update_option( 'oddout_starter_cron_cleaned', ODDOUT_VERSION, false );
 	},
 	5
 );
@@ -838,7 +829,7 @@ add_action(
 			array(
 				'methods'             => 'GET',
 				'callback'            => function () {
-					return rest_ensure_response( odd_starter_get_state_for_rest() );
+					return rest_ensure_response( oddout_starter_get_state_for_rest() );
 				},
 				'permission_callback' => 'is_user_logged_in',
 			)
@@ -849,12 +840,12 @@ add_action(
 			array(
 				'methods'             => 'POST',
 				'callback'            => function () {
-					$rl = function_exists( 'odd_bundle_rate_limit_check' ) ? odd_bundle_rate_limit_check( 'starter_retry' ) : true;
+					$rl = function_exists( 'oddout_bundle_rate_limit_check' ) ? oddout_bundle_rate_limit_check( 'starter_retry' ) : true;
 					if ( is_wp_error( $rl ) ) {
 						return $rl;
 					}
-					$result = odd_starter_ensure_installed( true );
-					$state  = odd_starter_get_state();
+					$result = oddout_starter_ensure_installed( true );
+					$state  = oddout_starter_get_state();
 					if ( is_wp_error( $result ) ) {
 						return new WP_Error(
 							'starter_failed',

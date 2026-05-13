@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate `languages/odd.pot` from PHP __() / _e() / _x() / _n()
+"""Generate `languages/odd-outlandish-desktop-decorator.pot` from PHP __() / _e() / _x() / _n()
 calls and JS wp.i18n.__() / _x() / _n() calls across the plugin.
 
 We ship our own minimal generator so the release workflow doesn't
@@ -10,7 +10,7 @@ skipped and left to translators to handle manually from msgctxt
 entries we do emit.
 
 Usage:
-  odd/bin/make-pot [--out languages/odd.pot]
+  odd/bin/make-pot [--out languages/odd-outlandish-desktop-decorator.pot]
 
 Exits non-zero if:
   - the output file cannot be written
@@ -29,6 +29,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 PLUGIN_ROOT = HERE.parent
 REPO_ROOT = PLUGIN_ROOT.parent
+TEXT_DOMAIN = 'odd-outlandish-desktop-decorator'
 
 PHP_CALL_RE = re.compile(
     r"""\b(?P<func>__|_e|_x|_ex|_n|_nx|esc_html__|esc_html_e|esc_attr__|esc_attr_e)\s*\(\s*""",
@@ -76,9 +77,9 @@ def scan_php(text: str) -> list[dict]:
             continue
         entry, _end = parsed
         func = m.group('func')
-        # Require odd textdomain on last arg for _e/__/esc_* family
+        # Require the plugin text domain on the last string arg for gettext calls.
         textdomain = entry['args'][-1] if len(entry['args']) >= 2 else None
-        if textdomain is not None and textdomain != 'odd':
+        if textdomain is not None and textdomain != TEXT_DOMAIN:
             continue
         hits.append({'func': func, 'args': entry['args']})
     return hits
@@ -91,7 +92,7 @@ def scan_js(text: str) -> list[dict]:
             continue
         entry, _end = parsed
         textdomain = entry['args'][-1] if len(entry['args']) >= 2 else None
-        if textdomain is not None and textdomain != 'odd':
+        if textdomain is not None and textdomain != TEXT_DOMAIN:
             continue
         hits.append({'func': m.group('func'), 'args': entry['args']})
     return hits
@@ -108,7 +109,7 @@ def escape_po(s: str) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument('--out', default=str(PLUGIN_ROOT / 'languages' / 'odd.pot'))
+    ap.add_argument('--out', default=str(PLUGIN_ROOT / 'languages' / 'odd-outlandish-desktop-decorator.pot'))
     args = ap.parse_args()
 
     entries: dict[tuple[str, str | None, str], set[tuple[str, int]]] = {}

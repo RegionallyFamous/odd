@@ -6,15 +6,15 @@
 class Test_Cursors extends WP_UnitTestCase {
 
 	public function tear_down() {
-		remove_all_filters( 'odd_cursor_set_registry' );
-		delete_transient( odd_cursors_registry_transient_key() );
-		odd_cursors_get_sets( true );
+		remove_all_filters( 'oddout_cursor_set_registry' );
+		delete_transient( oddout_cursors_registry_transient_key() );
+		oddout_cursors_get_sets( true );
 		parent::tear_down();
 	}
 
 	private function add_fixture_cursor_set() {
 		add_filter(
-			'odd_cursor_set_registry',
+			'oddout_cursor_set_registry',
 			static function ( $sets ) {
 				$sets['test-cursors'] = array(
 					'slug'        => 'test-cursors',
@@ -39,12 +39,12 @@ class Test_Cursors extends WP_UnitTestCase {
 				return $sets;
 			}
 		);
-		odd_cursors_get_sets( true );
+		oddout_cursors_get_sets( true );
 	}
 
 	public function test_registry_accepts_filtered_cursor_sets() {
 		$this->add_fixture_cursor_set();
-		$set = odd_cursors_get_set( 'test-cursors' );
+		$set = oddout_cursors_get_set( 'test-cursors' );
 		$this->assertIsArray( $set );
 		$this->assertSame( 'Test Cursors', $set['label'] );
 		$this->assertArrayHasKey( 'default', $set['cursors'] );
@@ -55,14 +55,14 @@ class Test_Cursors extends WP_UnitTestCase {
 		$user_id = self::factory()->user->create();
 		wp_set_current_user( $user_id );
 
-		$this->assertTrue( odd_cursors_set_active_slug( 'test-cursors', $user_id ) );
-		$this->assertSame( 'test-cursors', odd_cursors_get_active_slug( $user_id ) );
-		$this->assertFalse( odd_cursors_set_active_slug( 'missing-cursors', $user_id ) );
+		$this->assertTrue( oddout_cursors_set_active_slug( 'test-cursors', $user_id ) );
+		$this->assertSame( 'test-cursors', oddout_cursors_get_active_slug( $user_id ) );
+		$this->assertFalse( oddout_cursors_set_active_slug( 'missing-cursors', $user_id ) );
 	}
 
 	public function test_css_builder_outputs_cursor_rules_with_hotspots() {
 		$this->add_fixture_cursor_set();
-		$css = odd_cursors_build_css( odd_cursors_get_set( 'test-cursors' ) );
+		$css = oddout_cursors_build_css( oddout_cursors_get_set( 'test-cursors' ) );
 
 		$this->assertStringContainsString( 'url("https://example.com/default.svg") 2 3, default', $css );
 		$this->assertStringContainsString( 'url("https://example.com/text.svg") 16 16, text', $css );
@@ -74,7 +74,7 @@ class Test_Cursors extends WP_UnitTestCase {
 
 	public function test_cursor_css_keeps_descendant_roles_out_of_the_cascade_contract() {
 		$this->add_fixture_cursor_set();
-		$css = odd_cursors_build_css( odd_cursors_get_set( 'test-cursors' ) );
+		$css = oddout_cursors_build_css( oddout_cursors_get_set( 'test-cursors' ) );
 
 		$this->assertStringNotContainsString( '[data-odd-cursor="grab"] *', $css );
 		$this->assertStringNotContainsString( '[data-odd-cursor="pointer"] *', $css );
@@ -82,7 +82,7 @@ class Test_Cursors extends WP_UnitTestCase {
 
 	public function test_native_window_chrome_gets_cursor_coverage() {
 		$this->add_fixture_cursor_set();
-		$css = odd_cursors_build_css( odd_cursors_get_set( 'test-cursors' ) );
+		$css = oddout_cursors_build_css( oddout_cursors_get_set( 'test-cursors' ) );
 
 		$this->assertStringContainsString(
 			'[data-window-id], [data-windowid], [data-desktop-window-id], [data-native-window-id]',
@@ -96,10 +96,10 @@ class Test_Cursors extends WP_UnitTestCase {
 		$this->add_fixture_cursor_set();
 		$user_id = self::factory()->user->create();
 		wp_set_current_user( $user_id );
-		odd_cursors_set_active_slug( 'test-cursors', $user_id );
+		oddout_cursors_set_active_slug( 'test-cursors', $user_id );
 
-		$version  = odd_cursors_stylesheet_version( 'test-cursors' );
-		$contract = odd_cursors_shell_contract( 'test-cursors' );
+		$version  = oddout_cursors_stylesheet_version( 'test-cursors' );
+		$contract = oddout_cursors_shell_contract( 'test-cursors' );
 
 		$this->assertMatchesRegularExpression( '/^[a-f0-9]{16}$/', $version );
 		$this->assertSame( 'test-cursors', $contract['slug'] );
@@ -116,12 +116,12 @@ class Test_Cursors extends WP_UnitTestCase {
 			$_SERVER['HTTP_HOST'] = 'playground.wordpress.net';
 
 			$this->assertSame(
-				'https://playground.wordpress.net/scope:test/wp-content/odd-cursor-sets/default.svg',
-				odd_cursors_url_current_scheme( 'http://playground.wordpress.net/scope:test/wp-content/odd-cursor-sets/default.svg' )
+				'https://playground.wordpress.net/scope:test/wp-content/uploads/odd/cursor-sets/default.svg',
+				oddout_cursors_url_current_scheme( 'http://playground.wordpress.net/scope:test/wp-content/uploads/odd/cursor-sets/default.svg' )
 			);
 			$this->assertSame(
 				'https://example.com/default.svg',
-				odd_cursors_url_current_scheme( 'https://example.com/default.svg' )
+				oddout_cursors_url_current_scheme( 'https://example.com/default.svg' )
 			);
 		} finally {
 			$_SERVER = $server;
@@ -135,10 +135,10 @@ class Test_Cursors extends WP_UnitTestCase {
 			$_SERVER['HTTP_X_FORWARDED_PROTO'] = 'http, https';
 			unset( $_SERVER['HTTPS'], $_SERVER['SERVER_PORT'] );
 
-			$this->assertTrue( odd_request_uses_https() );
+			$this->assertTrue( oddout_request_uses_https() );
 			$this->assertSame(
 				'https://example.test/wp-content/plugins/odd/src/panel/index.js',
-				odd_url_current_scheme( 'http://example.test/wp-content/plugins/odd/src/panel/index.js' )
+				oddout_url_current_scheme( 'http://example.test/wp-content/plugins/odd/src/panel/index.js' )
 			);
 		} finally {
 			$_SERVER = $server;
@@ -151,10 +151,10 @@ class Test_Cursors extends WP_UnitTestCase {
 			$_SERVER['HTTP_HOST'] = 'example.test';
 			unset( $_SERVER['HTTPS'], $_SERVER['HTTP_X_FORWARDED_PROTO'], $_SERVER['SERVER_PORT'] );
 
-			$this->assertFalse( odd_request_uses_https() );
+			$this->assertFalse( oddout_request_uses_https() );
 			$this->assertSame(
 				'http://example.test/wp-content/plugins/odd/src/panel/index.js',
-				odd_url_current_scheme( 'http://example.test/wp-content/plugins/odd/src/panel/index.js' )
+				oddout_url_current_scheme( 'http://example.test/wp-content/plugins/odd/src/panel/index.js' )
 			);
 		} finally {
 			$_SERVER = $server;
@@ -171,7 +171,7 @@ class Test_Cursors extends WP_UnitTestCase {
 			$_SERVER['HTTP_X_FORWARDED_PROTO'] = 'https';
 			unset( $_SERVER['HTTPS'], $_SERVER['SERVER_PORT'] );
 
-			$url = odd_https_rest_url( 'odd/v1/prefs' );
+			$url = oddout_https_rest_url( 'odd/v1/prefs' );
 			$this->assertStringStartsWith( 'https://', $url );
 			$parts = wp_parse_url( $url );
 			$this->assertIsArray( $parts, $url );

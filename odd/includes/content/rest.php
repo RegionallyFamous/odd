@@ -26,7 +26,7 @@ add_action(
 			'/bundles/upload',
 			array(
 				'methods'             => 'POST',
-				'callback'            => 'odd_bundle_rest_upload',
+				'callback'            => 'oddout_bundle_rest_upload',
 				'permission_callback' => $manage_cb,
 			)
 		);
@@ -36,7 +36,7 @@ add_action(
 			'/bundles/(?P<slug>[a-z0-9-]+)',
 			array(
 				'methods'             => 'DELETE',
-				'callback'            => 'odd_bundle_rest_delete',
+				'callback'            => 'oddout_bundle_rest_delete',
 				'permission_callback' => $manage_cb,
 			)
 		);
@@ -47,8 +47,8 @@ add_action(
  * Accept a multipart file upload, dispatch to the type-specific
  * installer, and respond with { installed, slug, type, manifest }.
  */
-function odd_bundle_rest_upload( WP_REST_Request $req ) {
-	$rl = odd_bundle_rate_limit_check( 'bundle_upload' );
+function oddout_bundle_rest_upload( WP_REST_Request $req ) {
+	$rl = oddout_bundle_rate_limit_check( 'bundle_upload' );
 	if ( is_wp_error( $rl ) ) {
 		return $rl;
 	}
@@ -57,7 +57,7 @@ function odd_bundle_rest_upload( WP_REST_Request $req ) {
 	if ( empty( $files['file'] ) || ! isset( $files['file']['tmp_name'] ) ) {
 		return new WP_Error(
 			'no_file',
-			__( 'No file uploaded. Use multipart field "file".', 'odd' ),
+			__( 'No file uploaded. Use multipart field "file".', 'odd-outlandish-desktop-decorator' ),
 			array( 'status' => 400 )
 		);
 	}
@@ -65,7 +65,7 @@ function odd_bundle_rest_upload( WP_REST_Request $req ) {
 	$tmp  = $file['tmp_name'];
 	$name = $file['name'];
 
-	$result = odd_bundle_install( $tmp, $name );
+	$result = oddout_bundle_install( $tmp, $name );
 	if ( is_wp_error( $result ) ) {
 		$data           = $result->get_error_data();
 		$data           = is_array( $data ) ? $data : array();
@@ -85,11 +85,11 @@ function odd_bundle_rest_upload( WP_REST_Request $req ) {
 		// `state.cfg.installedWidgets` / `scenes` / `iconSets` /
 		// `apps` so the unified grid can re-render with the new
 		// tile without a page reload.
-		'entry_url' => odd_bundle_entry_url_for( $result['manifest'] ),
-		'row'       => odd_bundle_panel_row_for( $result['manifest'] ),
+		'entry_url' => oddout_bundle_entry_url_for( $result['manifest'] ),
+		'row'       => oddout_bundle_panel_row_for( $result['manifest'] ),
 	);
-	if ( 'app' === $result['type'] && function_exists( 'odd_apps_serve_url_for_rest_payload' ) ) {
-		$serve = odd_apps_serve_url_for_rest_payload( $result['slug'] );
+	if ( 'app' === $result['type'] && function_exists( 'oddout_apps_serve_url_for_rest_payload' ) ) {
+		$serve = oddout_apps_serve_url_for_rest_payload( $result['slug'] );
 		if ( '' !== $serve ) {
 			$out['serve_url'] = $serve;
 		}
@@ -97,9 +97,9 @@ function odd_bundle_rest_upload( WP_REST_Request $req ) {
 	return rest_ensure_response( $out );
 }
 
-function odd_bundle_rest_delete( WP_REST_Request $req ) {
+function oddout_bundle_rest_delete( WP_REST_Request $req ) {
 	$slug   = sanitize_key( (string) $req['slug'] );
-	$result = odd_bundle_uninstall( $slug );
+	$result = oddout_bundle_uninstall( $slug );
 	if ( is_wp_error( $result ) ) {
 		$data           = $result->get_error_data();
 		$data           = is_array( $data ) ? $data : array();

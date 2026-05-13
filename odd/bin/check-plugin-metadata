@@ -20,6 +20,7 @@ PLUGIN = PLUGIN_DIR / "odd.php"
 README_TXT = PLUGIN_DIR / "readme.txt"
 README_MD = REPO_ROOT / "README.md"
 CHANGELOG = REPO_ROOT / "CHANGELOG.md"
+PLUGIN_SLUG = "odd-outlandish-desktop-decorator"
 
 REQUIRED_HEADER_FIELDS = (
     "Plugin Name",
@@ -87,12 +88,18 @@ def main() -> int:
         return fail(f"odd.php plugin header is missing: {', '.join(missing)}")
 
     version = header["Version"]
-    if version != constant(plugin, "ODD_VERSION"):
-        return fail("odd.php Version header and ODD_VERSION constant disagree")
+    if version != constant(plugin, "ODDOUT_VERSION"):
+        return fail("odd.php Version header and ODDOUT_VERSION constant disagree")
+    if header["Text Domain"] != PLUGIN_SLUG:
+        return fail(f"odd.php Text Domain must match WordPress.org slug {PLUGIN_SLUG!r}")
 
     stable = readme_field(readme_txt, "Stable tag")
     if stable != version:
         return fail(f"readme.txt Stable tag {stable!r} does not match Version {version!r}")
+    contributors = readme_field(readme_txt, "Contributors") or ""
+    contributor_names = {name.strip() for name in contributors.split(",")}
+    if "nickhamze" not in contributor_names:
+        return fail("readme.txt Contributors must include WordPress.org owner username nickhamze")
 
     wp_min = header["Requires at least"]
     php_min = header["Requires PHP"]
@@ -101,7 +108,7 @@ def main() -> int:
     if readme_field(readme_txt, "Requires PHP") != php_min:
         return fail("readme.txt Requires PHP does not match odd.php")
 
-    desktop_min = constant(plugin, "ODD_DESKTOP_MODE_MIN_VERSION")
+    desktop_min = constant(plugin, "ODDOUT_DESKTOP_MODE_MIN_VERSION")
     expected_requirement = f"WordPress {wp_min}+ · PHP {php_min}+ · WP Desktop Mode v{desktop_min}+"
     if expected_requirement not in readme_md:
         return fail(f"README.md does not contain requirement line: {expected_requirement}")
@@ -122,6 +129,16 @@ def main() -> int:
         return fail("readme.txt is missing FAQ section")
     if "== Upgrade Notice ==" not in readme_txt:
         return fail("readme.txt is missing Upgrade Notice section")
+    if "== External services ==" not in readme_txt:
+        return fail("readme.txt is missing External services disclosure")
+    if "https://odd.regionallyfamous.com/terms/" not in readme_txt:
+        return fail("readme.txt External services section is missing terms link")
+    if "https://odd.regionallyfamous.com/privacy/" not in readme_txt:
+        return fail("readme.txt External services section is missing privacy link")
+    if "== Source and build tools ==" not in readme_txt:
+        return fail("readme.txt is missing Source and build tools section")
+    if "https://github.com/facebook/react" not in readme_txt:
+        return fail("readme.txt must document the upstream React source for generated runtime JS")
 
     print(
         "OK: plugin metadata matches "

@@ -498,7 +498,7 @@
 						scriptsWithSrc: scripts,
 						moduleScripts: mod,
 						importMaps: imp,
-						bootstrap: !! doc.getElementById( 'odd_apps_iframe_fetch_bootstrap' ),
+						bootstrap: !! doc.getElementById( 'oddout_apps_iframe_fetch_bootstrap' ),
 					} );
 				} catch ( err ) {
 					appsLog( 'post-load peek threw', slugForMetric, err );

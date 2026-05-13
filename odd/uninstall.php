@@ -10,34 +10,34 @@
  * WHAT GETS REMOVED
  *
  *   Site options
- *     - odd_apps_index                 installed app catalog
- *     - odd_scenes_index               installed scene catalog (.wp-installed)
- *     - odd_icon_sets_index            installed icon-set catalog (.wp-installed)
- *     - odd_widgets_index              installed widget catalog (.wp-installed)
- *     - odd_apps_shared_secret         signed-URL shared secret
- *     - odd_starter_state              starter-pack runner state
- *     - odd_app_{slug}                 one row per installed app
- *     - odd_scene_{slug} / odd_icon_set_{slug} / odd_widget_{slug}
+ *     - oddout_apps_index                 installed app catalog
+ *     - oddout_scenes_index               installed scene catalog (.wp-installed)
+ *     - oddout_iconsets_index             installed icon-set catalog (.wp-installed)
+ *     - oddout_widgets_index              installed widget catalog (.wp-installed)
+ *     - oddout_apps_shared_secret         signed-URL shared secret
+ *     - oddout_starter_state              starter-pack runner state
+ *     - oddout_app_{slug}                 one row per installed app
+ *     - oddout_scene_{slug} / oddout_icon_set_{slug} / oddout_widget_{slug}
  *                                      one row per installed bundle
  *                                      of each universal-.wp type
  *
  *   Site transients
- *     - _transient_odd_icon_registry_v{version}    icon registry cache
- *     - _transient_odd_catalog                     remote catalog cache
+ *     - _transient_oddout_icon_registry_v{version}    icon registry cache
+ *     - _transient_oddout_catalog                     remote catalog cache
  *     - timeout rows for the above
  *
  *   User meta (all users)
- *     - odd_schema_version
- *     - any key starting with `odd_` (wallpaper, icon_set, favorites,
+ *     - oddout_schema_version
+ *     - any key starting with `oddout_` (wallpaper, icon_set, favorites,
  *       recents, shuffle, screensaver, audio_reactive, apps_pinned,
  *       initiated, mascot_quiet, wink_unlocked, …)
  *
  * WHAT DOESN'T GET REMOVED
  *
- *   - wp-content/odd-apps/         user-installed app bundles.
- *   - wp-content/odd-scenes/       user-installed scene bundles.
- *   - wp-content/odd-icon-sets/    user-installed icon-set bundles.
- *   - wp-content/odd-widgets/      user-installed widget bundles.
+ *   - uploads/odd/apps/            user-installed app bundles.
+ *   - uploads/odd/scenes/          user-installed scene bundles.
+ *   - uploads/odd/icon-sets/       user-installed icon-set bundles.
+ *   - uploads/odd/widgets/         user-installed widget bundles.
  *
  *     All four content directories are deliberately preserved so
  *     admins can keep their bundles around to reinstall later.
@@ -60,82 +60,82 @@ global $wpdb;
 
 // Known site-level option rows. All are autoload=no in production
 // (see odd/includes/apps/storage.php) but delete_option handles both states.
-$odd_known_options = array(
-	'odd_apps_index',
-	'odd_scenes_index',
-	'odd_icon_sets_index',
-	'odd_widgets_index',
-	'odd_apps_shared_secret',
-	'odd_starter_state',
+$oddout_known_options = array(
+	'oddout_apps_index',
+	'oddout_scenes_index',
+	'oddout_iconsets_index',
+	'oddout_widgets_index',
+	'oddout_apps_shared_secret',
+	'oddout_starter_state',
 );
-foreach ( $odd_known_options as $opt ) {
-	delete_option( $opt );
+foreach ( $oddout_known_options as $oddout_option ) {
+	delete_option( $oddout_option );
 }
 
 // Per-bundle option rows across all universal .wp types. A direct
 // LIKE query is the only way to sweep them without knowing the slug
 // set after the per-type index rows are already gone. Scoped to the
 // four prefixes so we don't clobber unrelated options like
-// `odd_apps_shared_secret` (already deleted above).
-$bundle_option_prefixes = array(
-	'odd_app_',
-	'odd_scene_',
-	'odd_icon_set_',
-	'odd_widget_',
+// `oddout_apps_shared_secret` (already deleted above).
+$oddout_bundle_option_prefixes = array(
+	'oddout_app_',
+	'oddout_scene_',
+	'oddout_icon_set_',
+	'oddout_widget_',
 );
-foreach ( $bundle_option_prefixes as $prefix ) {
+foreach ( $oddout_bundle_option_prefixes as $oddout_prefix ) {
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- uninstall must discover dynamic per-bundle option names.
-	$rows = $wpdb->get_col(
+	$oddout_rows = $wpdb->get_col(
 		$wpdb->prepare(
 			"SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
-			$wpdb->esc_like( $prefix ) . '%'
+			$wpdb->esc_like( $oddout_prefix ) . '%'
 		)
 	);
-	if ( is_array( $rows ) ) {
-		foreach ( $rows as $row ) {
-			delete_option( $row );
+	if ( is_array( $oddout_rows ) ) {
+		foreach ( $oddout_rows as $oddout_row ) {
+			delete_option( $oddout_row );
 		}
 	}
 }
 
-// Transients. The icon-registry transient is keyed by ODD_VERSION
+// Transients. The icon-registry transient is keyed by ODDOUT_VERSION
 // which we don't have at uninstall time, so match the family.
-$transient_prefixes = array(
-	'_transient_odd_',
-	'_transient_timeout_odd_',
+$oddout_transient_prefixes = array(
+	'_transient_oddout_',
+	'_transient_timeout_oddout_',
 );
-foreach ( $transient_prefixes as $prefix ) {
+foreach ( $oddout_transient_prefixes as $oddout_prefix ) {
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- uninstall must discover versioned transient names.
-	$rows = $wpdb->get_col(
+	$oddout_rows = $wpdb->get_col(
 		$wpdb->prepare(
 			"SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
-			$wpdb->esc_like( $prefix ) . '%'
+			$wpdb->esc_like( $oddout_prefix ) . '%'
 		)
 	);
-	if ( is_array( $rows ) ) {
-		foreach ( $rows as $row ) {
-			delete_option( $row );
+	if ( is_array( $oddout_rows ) ) {
+		foreach ( $oddout_rows as $oddout_row ) {
+			delete_option( $oddout_row );
 		}
 	}
 }
 
-// User meta sweep. One LIKE scan to capture every odd_* key; a
+// User meta sweep. One LIKE scan to capture every oddout_* key; a
 // second explicit delete for the schema version which doesn't fit
-// the prefix pattern cleanly (different naming, but odd_ prefix —
+// the prefix pattern cleanly (different naming, but oddout_ prefix —
 // so actually covered, but we keep the explicit pass for safety
 // if the prefix rule ever changes).
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- uninstall removes all ODD-owned user meta in one sweep.
 $wpdb->query(
 	$wpdb->prepare(
 		"DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE %s",
-		$wpdb->esc_like( 'odd_' ) . '%'
+		$wpdb->esc_like( 'oddout_' ) . '%'
 	)
 );
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit schema-version cleanup for uninstall completeness.
 $wpdb->query(
 	$wpdb->prepare(
 		"DELETE FROM {$wpdb->usermeta} WHERE meta_key = %s",
-		'odd_schema_version'
+		'oddout_schema_version'
 	)
 );
 

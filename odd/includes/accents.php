@@ -19,11 +19,11 @@ add_filter(
 		if ( ! is_array( $colors ) ) {
 			$colors = array();
 		}
-		if ( ! function_exists( 'odd_icons_get_sets' ) ) {
+		if ( ! function_exists( 'oddout_icons_get_sets' ) ) {
 			return $colors;
 		}
 
-		foreach ( odd_icons_get_sets() as $set ) {
+		foreach ( oddout_icons_get_sets() as $set ) {
 			$accent = isset( $set['accent'] ) ? $set['accent'] : '';
 			$slug   = isset( $set['slug'] ) ? $set['slug'] : '';
 			$label  = isset( $set['label'] ) ? $set['label'] : '';
@@ -36,7 +36,7 @@ add_filter(
 
 			$colors[] = array(
 				'id'    => 'odd-' . $slug,
-				'label' => sprintf( /* translators: %s: icon set label. */ __( 'ODD · %s', 'odd' ), $label ? $label : $slug ),
+				'label' => sprintf( /* translators: %s: icon set label. */ __( 'ODD · %s', 'odd-outlandish-desktop-decorator' ), $label ? $label : $slug ),
 				'value' => $accent,
 			);
 		}

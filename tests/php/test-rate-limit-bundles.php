@@ -13,25 +13,25 @@ class Test_Odd_Rate_Limit_Bundles extends WP_UnitTestCase {
 		parent::setUp();
 		$this->admin_id = $this->factory()->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $this->admin_id );
-		require_once ODD_DIR . 'includes/content/rate-limit.php';
+		require_once ODDOUT_DIR . 'includes/content/rate-limit.php';
 	}
 
 	public function test_rate_limit_allows_first_requests_in_bucket() {
-		delete_transient( 'odd_rl_v2_bundle_upload_' . $this->admin_id . '_' . (int) floor( time() / 60 ) );
+		delete_transient( 'oddout_rl_v2_bundle_upload_' . $this->admin_id . '_' . (int) floor( time() / 60 ) );
 		for ( $i = 0; $i < 5; $i++ ) {
-			$r = odd_bundle_rate_limit_check( 'bundle_upload' );
+			$r = oddout_bundle_rate_limit_check( 'bundle_upload' );
 			$this->assertNotInstanceOf( WP_Error::class, $r );
 		}
 	}
 
 	public function test_rate_limit_hits_429_over_cap() {
 		$bucket = (int) floor( time() / 60 );
-		delete_transient( 'odd_rl_v2_bundle_upload_' . $this->admin_id . '_' . $bucket );
+		delete_transient( 'oddout_rl_v2_bundle_upload_' . $this->admin_id . '_' . $bucket );
 		$max   = 10;
 		$round = 0;
 		$err   = null;
 		for ( $i = 0; $i < $max + 3; $i++ ) {
-			$r = odd_bundle_rate_limit_check( 'bundle_upload' );
+			$r = oddout_bundle_rate_limit_check( 'bundle_upload' );
 			if ( is_wp_error( $r ) ) {
 				$err = $r;
 				break;
@@ -48,18 +48,18 @@ class Test_Odd_Rate_Limit_Bundles extends WP_UnitTestCase {
 	public function test_rate_limit_covers_refresh_and_starter_retry_actions() {
 		foreach ( array( 'bundle_catalog_refresh', 'starter_retry' ) as $action ) {
 			$bucket = (int) floor( time() / 60 );
-			delete_transient( 'odd_rl_v2_' . $action . '_' . $this->admin_id . '_' . $bucket );
+			delete_transient( 'oddout_rl_v2_' . $action . '_' . $this->admin_id . '_' . $bucket );
 			add_filter(
-				'odd_bundle_rate_limit_max',
+				'oddout_bundle_rate_limit_max',
 				static function ( $max, $seen_action ) use ( $action ) {
 					return $seen_action === $action ? 1 : $max;
 				},
 				10,
 				2
 			);
-			$this->assertTrue( odd_bundle_rate_limit_check( $action ) );
-			$this->assertWPError( odd_bundle_rate_limit_check( $action ) );
-			remove_all_filters( 'odd_bundle_rate_limit_max' );
+			$this->assertTrue( oddout_bundle_rate_limit_check( $action ) );
+			$this->assertWPError( oddout_bundle_rate_limit_check( $action ) );
+			remove_all_filters( 'oddout_bundle_rate_limit_max' );
 		}
 	}
 }

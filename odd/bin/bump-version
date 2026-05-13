@@ -3,9 +3,9 @@
 
 Updates all declared versions in sync:
   1. `Version:` header in odd/odd.php
-  2. `ODD_VERSION` constant in odd/odd.php
+  2. `ODDOUT_VERSION` constant in odd/odd.php
   3. ODD Playground install: **`git:directory`** `refType: commit` with the peeled
-     SHA of **`v` + `ODD_VERSION`** when that tag exists locally; otherwise **`tag`**
+     SHA of **`v` + `ODDOUT_VERSION`** when that tag exists locally; otherwise **`tag`**
      + `v` + version until you tag and re-run bump (Playground avoids flaky tag packs).
 
 Usage:
@@ -35,7 +35,7 @@ SEMVER_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
 
 
 def bump_plugin(text: str, new_version: str) -> tuple[str, list[str]]:
-    """Replace the Version: header + ODD_VERSION constant in odd.php.
+    """Replace the Version: header + ODDOUT_VERSION constant in odd.php.
 
     Returns (new_text, summary_lines).
     """
@@ -52,14 +52,14 @@ def bump_plugin(text: str, new_version: str) -> tuple[str, list[str]]:
     lines.append("  odd.php: Version: header -> " + new_version)
 
     new_text, const_subs = re.subn(
-        r"(define\(\s*['\"]ODD_VERSION['\"]\s*,\s*['\"])[0-9]+\.[0-9]+\.[0-9]+(['\"]\s*\))",
+        r"(define\(\s*['\"]ODDOUT_VERSION['\"]\s*,\s*['\"])[0-9]+\.[0-9]+\.[0-9]+(['\"]\s*\))",
         lambda m: f"{m.group(1)}{new_version}{m.group(2)}",
         new_text,
         count=1,
     )
     if const_subs != 1:
-        raise SystemExit("error: could not find the ODD_VERSION constant in odd.php")
-    lines.append("  odd.php: ODD_VERSION constant -> " + new_version)
+        raise SystemExit("error: could not find the ODDOUT_VERSION constant in odd.php")
+    lines.append("  odd.php: ODDOUT_VERSION constant -> " + new_version)
 
     return new_text, lines
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Assert Version header + ODD_VERSION constant agree, and blueprint refs when tagged.
+"""Assert Version header + ODDOUT_VERSION constant agree, and blueprint refs when tagged.
 
 With --expect <x.y.z>, assert the plugin header and constant match that value.
 When Playground blueprints install ODD via a semver git **tag**, that tag must
@@ -74,13 +74,13 @@ def main() -> int:
 
     header = re.search(r"^\s*\*\s*Version:\s*([0-9]+\.[0-9]+\.[0-9]+)\s*$", text, re.MULTILINE)
     constant = re.search(
-        r"define\(\s*['\"]ODD_VERSION['\"]\s*,\s*['\"]([0-9]+\.[0-9]+\.[0-9]+)['\"]\s*\)",
+        r"define\(\s*['\"]ODDOUT_VERSION['\"]\s*,\s*['\"]([0-9]+\.[0-9]+\.[0-9]+)['\"]\s*\)",
         text,
     )
 
     found: dict[str, str | None] = {
         "Version: header": header.group(1) if header else None,
-        "ODD_VERSION": constant.group(1) if constant else None,
+        "ODDOUT_VERSION": constant.group(1) if constant else None,
     }
 
     blueprint_refs: dict[str, str] = {}

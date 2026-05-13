@@ -6,15 +6,15 @@
  * paths, sanitization and clamping.
  */
 
-class Test_REST_Prefs extends ODD_REST_Test_Case {
+class Test_REST_Prefs extends ODDOUT_REST_Test_Case {
 
 	public function set_up() {
 		parent::set_up();
 		// The plugin ships no scenes / icon sets of its own.
 		// Seed a fixture scene + icon set so the prefs controller has
 		// a non-empty catalog to serialize and validate against.
-		ODD_Registry_Fixtures::install_scene( 'flux' );
-		ODD_Registry_Fixtures::install_iconset( 'filament' );
+		ODDOUT_Registry_Fixtures::install_scene( 'flux' );
+		ODDOUT_Registry_Fixtures::install_iconset( 'filament' );
 	}
 
 	public function test_get_requires_login() {
@@ -69,21 +69,21 @@ class Test_REST_Prefs extends ODD_REST_Test_Case {
 	public function test_post_accepts_valid_wallpaper() {
 		$this->login_as();
 
-		$slugs = odd_wallpaper_scene_slugs();
+		$slugs = oddout_wallpaper_scene_slugs();
 		$this->assertNotEmpty( $slugs, 'Fixture safety: scene catalog must not be empty.' );
 		$target = $slugs[0];
 
 		$res = $this->dispatch_json( 'POST', '/odd/v1/prefs', array( 'wallpaper' => $target ) );
 		$this->assertSame( 200, $res->get_status() );
 		$this->assertSame( $target, $res->get_data()['wallpaper'] );
-		$this->assertSame( $target, get_user_meta( $this->admin_id, 'odd_wallpaper', true ) );
+		$this->assertSame( $target, get_user_meta( $this->admin_id, 'oddout_wallpaper', true ) );
 	}
 
 	public function test_post_rejects_unknown_wallpaper_slug() {
 		$this->login_as();
 		$res = $this->dispatch_json( 'POST', '/odd/v1/prefs', array( 'wallpaper' => '../etc/passwd' ) );
 		$this->assertSame( 400, $res->get_status() );
-		$this->assertSame( 'odd_invalid_wallpaper', $res->get_data()['code'] );
+		$this->assertSame( 'oddout_invalid_wallpaper', $res->get_data()['code'] );
 	}
 
 	public function test_post_clamps_shuffle_minutes() {
@@ -152,12 +152,12 @@ class Test_REST_Prefs extends ODD_REST_Test_Case {
 		$res = $this->dispatch_json( 'POST', '/odd/v1/prefs', array( 'shopTaskbar' => true ) );
 		$this->assertSame( 200, $res->get_status() );
 		$this->assertTrue( $res->get_data()['shopTaskbar'] );
-		$this->assertSame( '1', get_user_meta( $this->admin_id, 'odd_shop_taskbar', true ) );
+		$this->assertSame( '1', get_user_meta( $this->admin_id, 'oddout_shop_taskbar', true ) );
 
 		$res = $this->dispatch_json( 'POST', '/odd/v1/prefs', array( 'shopTaskbar' => false ) );
 		$this->assertSame( 200, $res->get_status() );
 		$this->assertFalse( $res->get_data()['shopTaskbar'] );
-		$this->assertSame( '0', get_user_meta( $this->admin_id, 'odd_shop_taskbar', true ) );
+		$this->assertSame( '0', get_user_meta( $this->admin_id, 'oddout_shop_taskbar', true ) );
 	}
 
 	public function test_post_updates_shop_desktop_pinned_preference() {
@@ -166,12 +166,12 @@ class Test_REST_Prefs extends ODD_REST_Test_Case {
 		$res = $this->dispatch_json( 'POST', '/odd/v1/prefs', array( 'shopDesktopPinned' => true ) );
 		$this->assertSame( 200, $res->get_status() );
 		$this->assertTrue( $res->get_data()['shopDesktopPinned'] );
-		$this->assertSame( '1', get_user_meta( $this->admin_id, 'odd_shop_desktop_pinned', true ) );
+		$this->assertSame( '1', get_user_meta( $this->admin_id, 'oddout_shop_desktop_pinned', true ) );
 
 		$res = $this->dispatch_json( 'POST', '/odd/v1/prefs', array( 'shopDesktopPinned' => false ) );
 		$this->assertSame( 200, $res->get_status() );
 		$this->assertFalse( $res->get_data()['shopDesktopPinned'] );
-		$this->assertSame( '0', get_user_meta( $this->admin_id, 'odd_shop_desktop_pinned', true ) );
+		$this->assertSame( '0', get_user_meta( $this->admin_id, 'oddout_shop_desktop_pinned', true ) );
 	}
 
 	public function test_post_round_trips_shop_theme_preference() {
@@ -180,7 +180,7 @@ class Test_REST_Prefs extends ODD_REST_Test_Case {
 		$res = $this->dispatch_json( 'POST', '/odd/v1/prefs', array( 'theme' => 'dark' ) );
 		$this->assertSame( 200, $res->get_status() );
 		$this->assertSame( 'dark', $res->get_data()['theme'] );
-		$this->assertSame( 'dark', get_user_meta( $this->admin_id, 'odd_shop_theme', true ) );
+		$this->assertSame( 'dark', get_user_meta( $this->admin_id, 'oddout_shop_theme', true ) );
 
 		$res = $this->dispatch_json( 'GET', '/odd/v1/prefs' );
 		$this->assertSame( 200, $res->get_status() );
@@ -192,13 +192,13 @@ class Test_REST_Prefs extends ODD_REST_Test_Case {
 
 		$res = $this->dispatch_json( 'POST', '/odd/v1/prefs', array( 'theme' => 'sepia' ) );
 		$this->assertSame( 400, $res->get_status() );
-		$this->assertSame( 'odd_invalid_theme', $res->get_data()['code'] );
+		$this->assertSame( 'oddout_invalid_theme', $res->get_data()['code'] );
 	}
 
 	public function test_post_caps_favorites_at_50() {
 		$this->login_as();
 
-		$slugs = odd_wallpaper_scene_slugs();
+		$slugs = oddout_wallpaper_scene_slugs();
 		$fav   = array();
 		for ( $i = 0; $i < 120; $i++ ) {
 			$fav[] = $slugs[ $i % count( $slugs ) ];
@@ -213,14 +213,14 @@ class Test_REST_Prefs extends ODD_REST_Test_Case {
 		$this->login_as();
 		$res = $this->dispatch_json( 'POST', '/odd/v1/prefs', array( 'iconSet' => 'does-not-exist' ) );
 		$this->assertSame( 400, $res->get_status() );
-		$this->assertSame( 'odd_invalid_icon_set', $res->get_data()['code'] );
+		$this->assertSame( 'oddout_invalid_icon_set', $res->get_data()['code'] );
 	}
 
 	public function test_post_accepts_partial_update_without_touching_other_keys() {
 		$this->login_as();
 
-		update_user_meta( $this->admin_id, 'odd_wallpaper', 'flux' );
-		update_user_meta( $this->admin_id, 'odd_audio_reactive', 1 );
+		update_user_meta( $this->admin_id, 'oddout_wallpaper', 'flux' );
+		update_user_meta( $this->admin_id, 'oddout_audio_reactive', 1 );
 
 		$res = $this->dispatch_json(
 			'POST',
@@ -229,7 +229,7 @@ class Test_REST_Prefs extends ODD_REST_Test_Case {
 		);
 		$this->assertSame( 200, $res->get_status() );
 		$this->assertFalse( $res->get_data()['audioReactive'] );
-		$this->assertSame( 'flux', get_user_meta( $this->admin_id, 'odd_wallpaper', true ) );
+		$this->assertSame( 'flux', get_user_meta( $this->admin_id, 'oddout_wallpaper', true ) );
 	}
 
 	public function test_post_requires_login() {

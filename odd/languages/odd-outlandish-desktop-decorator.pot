@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: odd\n"
 "Report-Msgid-Bugs-To: https://github.com/RegionallyFamous/odd/issues\n"
-"POT-Creation-Date: 2026-05-09 05:28-0500\n"
+"POT-Creation-Date: 2026-05-13 02:36-0500\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -337,6 +337,14 @@ msgstr ""
 msgid "Could not update surfaces."
 msgstr ""
 
+#: odd/includes/content/cursor-sets.php:152
+msgid "Could not write scrubbed cursor file."
+msgstr ""
+
+#: odd/includes/content/iconsets.php:222
+msgid "Could not write scrubbed icon file."
+msgstr ""
+
 #: odd/includes/content/cursor-sets.php:68
 msgid "Cursor file path is invalid."
 msgstr ""
@@ -357,7 +365,7 @@ msgstr ""
 msgid "Cursor set includes an unsupported cursor kind."
 msgstr ""
 
-#: odd/includes/content/cursor-sets.php:180
+#: odd/includes/content/cursor-sets.php:183
 msgid "Cursor set is not installed."
 msgstr ""
 
@@ -439,11 +447,11 @@ msgstr ""
 msgid "File is not a valid ZIP archive."
 msgstr ""
 
-#: odd/includes/content/iconsets.php:315
+#: odd/includes/content/iconsets.php:316
 msgid "File is not a well-formed SVG."
 msgstr ""
 
-#: odd/includes/content/iconsets.php:299
+#: odd/includes/content/iconsets.php:300
 msgid "File is not an SVG."
 msgstr ""
 
@@ -507,7 +515,7 @@ msgstr ""
 msgid "Icon set is missing required keys: %s"
 msgstr ""
 
-#: odd/includes/content/iconsets.php:258
+#: odd/includes/content/iconsets.php:259
 msgid "Icon set is not installed."
 msgstr ""
 
@@ -542,10 +550,10 @@ msgstr ""
 
 #: odd/includes/apps/loader.php:229
 #: odd/includes/content/archive.php:268
-#: odd/includes/content/cursor-sets.php:176
-#: odd/includes/content/iconsets.php:254
-#: odd/includes/content/scenes.php:185
-#: odd/includes/content/widgets.php:182
+#: odd/includes/content/cursor-sets.php:179
+#: odd/includes/content/iconsets.php:255
+#: odd/includes/content/scenes.php:184
+#: odd/includes/content/widgets.php:181
 msgid "Invalid slug."
 msgstr ""
 
@@ -749,35 +757,35 @@ msgstr ""
 msgid "Removed <strong>%s</strong> catalog wallpaper, icons, or apps? Re-install them anytime from <a href=\"#\" class=\"odd-js-open-shop\">Open ODD Shop</a>. Bin entries here remain WordPress content (posts, media, comments…)."
 msgstr ""
 
-#: odd/includes/content/iconsets.php:295
+#: odd/includes/content/iconsets.php:296
 msgid "SVG contains control bytes and cannot be installed."
 msgstr ""
 
-#: odd/includes/content/iconsets.php:442
+#: odd/includes/content/iconsets.php:443
 msgid "SVG contains disallowed attribute: %s"
 msgstr ""
 
-#: odd/includes/content/iconsets.php:429
+#: odd/includes/content/iconsets.php:430
 msgid "SVG contains disallowed element: %s"
 msgstr ""
 
-#: odd/includes/content/iconsets.php:439
+#: odd/includes/content/iconsets.php:440
 msgid "SVG event handler attributes are not allowed."
 msgstr ""
 
-#: odd/includes/content/iconsets.php:445
+#: odd/includes/content/iconsets.php:446
 msgid "SVG external references are not allowed."
 msgstr ""
 
-#: odd/includes/content/iconsets.php:448
+#: odd/includes/content/iconsets.php:449
 msgid "SVG external url() references are not allowed."
 msgstr ""
 
-#: odd/includes/content/iconsets.php:291
+#: odd/includes/content/iconsets.php:292
 msgid "SVG file is empty."
 msgstr ""
 
-#: odd/includes/content/iconsets.php:451
+#: odd/includes/content/iconsets.php:452
 msgid "SVG scriptable URL values are not allowed."
 msgstr ""
 
@@ -793,7 +801,7 @@ msgstr ""
 msgid "Scene bundle is missing wallpaper.webp."
 msgstr ""
 
-#: odd/includes/content/scenes.php:189
+#: odd/includes/content/scenes.php:188
 msgid "Scene is not installed."
 msgstr ""
 
@@ -821,7 +829,7 @@ msgstr ""
 msgid "Search the Shop"
 msgstr ""
 
-#: odd/includes/content/iconsets.php:303
+#: odd/includes/content/iconsets.php:304
 msgid "Server cannot safely validate SVG files."
 msgstr ""
 
@@ -977,7 +985,7 @@ msgstr ""
 msgid "Widget bundle entry must be a .js file."
 msgstr ""
 
-#: odd/includes/content/widgets.php:186
+#: odd/includes/content/widgets.php:185
 msgid "Widget is not installed."
 msgstr ""
 

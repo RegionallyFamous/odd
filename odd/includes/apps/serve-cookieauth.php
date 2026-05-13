@@ -11,7 +11,7 @@
  *
  * The REST serve route (`/wp-json/odd/v1/apps/serve/...`) requires a
  * rest_nonce because WP core's `rest_cookie_check_errors`
- * (wp-includes/rest-api.php) runs `wp_set_current_user(0)` whenever
+ * (wp-includes/rest-api.php) clears the current user whenever
  * a REST request has a login cookie but no nonce. The first request
  * succeeds (the nonce is in the iframe src query string) but every
  * subsequent asset fetch unsets the current user and 403s — the
@@ -63,7 +63,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * @return string Path beginning with '/' for `#^/odd-app/` regexes.
  */
-function odd_apps_cookieauth_strip_home_path_prefix( $req_path, $home_pt ) {
+function oddout_apps_cookieauth_strip_home_path_prefix( $req_path, $home_pt ) {
 	$path = (string) $req_path;
 	if ( '' !== $path && '/' !== $path[0] ) {
 		$path = '/' . $path;
@@ -100,7 +100,7 @@ function odd_apps_cookieauth_strip_home_path_prefix( $req_path, $home_pt ) {
  * @param string $req_path REQUEST_URI path (no query), with leading slash.
  * @return string Path with a single leading `/scope:…` segment removed when matched.
  */
-function odd_apps_cookieauth_strip_playground_scope_prefix( $req_path ) {
+function oddout_apps_cookieauth_strip_playground_scope_prefix( $req_path ) {
 	$path = (string) $req_path;
 	if ( '' !== $path && '/' !== $path[0] ) {
 		$path = '/' . $path;
@@ -128,12 +128,12 @@ function odd_apps_cookieauth_strip_playground_scope_prefix( $req_path ) {
  */
 add_action(
 	'init',
-	'odd_apps_cookieauth_maybe_serve',
+	'oddout_apps_cookieauth_maybe_serve',
 	1
 );
 
-function odd_apps_cookieauth_maybe_serve() {
-	if ( ! defined( 'ODD_APPS_ENABLED' ) || ! ODD_APPS_ENABLED ) {
+function oddout_apps_cookieauth_maybe_serve() {
+	if ( ! defined( 'ODDOUT_APPS_ENABLED' ) || ! ODDOUT_APPS_ENABLED ) {
 		return;
 	}
 
@@ -146,15 +146,15 @@ function odd_apps_cookieauth_maybe_serve() {
 	$path  = (string) $parts[0];
 
 	// Before site-path stripping — Playground scope is outside WP’s site_url path.
-	$path = odd_apps_cookieauth_strip_playground_scope_prefix( $path );
+	$path = oddout_apps_cookieauth_strip_playground_scope_prefix( $path );
 
 	// Optional one-shot JSON trace, gated on manage_options. Lets
-	// an admin hit /odd-app/<slug>/?odd_debug=1 and see the exact
+	// an admin hit /odd-app/<slug>/?oddout_debug=1 and see the exact
 	// branch this matcher took — including auth + capability
 	// decisions — without stopping the iframe to attach a debugger.
 	$debug_trace = array();
 	$debug_on    = false;
-	$debug_param = isset( $_GET['odd_debug'] ) ? sanitize_text_field( wp_unslash( $_GET['odd_debug'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$debug_param = isset( $_GET['oddout_debug'] ) ? sanitize_text_field( wp_unslash( $_GET['oddout_debug'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	if ( '1' === $debug_param ) {
 		$debug_on             = true;
 		$debug_trace['entry'] = array(
@@ -168,17 +168,17 @@ function odd_apps_cookieauth_maybe_serve() {
 	// REQUEST_URI is scoped to SITEURL — matching HOME would fail to peel
 	// /odd-app/.
 	$site_pt = wp_parse_url( site_url( '/' ), PHP_URL_PATH );
-	$path    = odd_apps_cookieauth_strip_home_path_prefix( $path, false === $site_pt ? '' : $site_pt );
+	$path    = oddout_apps_cookieauth_strip_home_path_prefix( $path, false === $site_pt ? '' : $site_pt );
 
 	// Runtime endpoint: serves React 19 ESM bundles + any shared chunks
 	// esbuild emitted alongside them. The app bundles' bare `react` /
 	// `react-dom` / `react/jsx-runtime` imports are rewritten by
-	// odd_apps_rewrite_runtime_bare_imports() to absolute URLs under
+	// oddout_apps_rewrite_runtime_bare_imports() to absolute URLs under
 	// /odd-app-runtime/, and the entry modules import their shared
 	// chunks with relative paths like `./chunk-AB12CDEF.js`, which
 	// the browser resolves back into this same endpoint.
 	if ( preg_match( '#^/odd-app-runtime/([a-zA-Z0-9._-]+\.js)$#', $path, $runtime_match ) ) {
-		odd_apps_serve_runtime_module( $runtime_match[1] );
+		oddout_apps_serve_runtime_module( $runtime_match[1] );
 		exit;
 	}
 
@@ -187,7 +187,7 @@ function odd_apps_cookieauth_maybe_serve() {
 		if ( $debug_on && false !== strpos( $path, 'odd-app' ) ) {
 			// Only emit when the request nominally targeted us —
 			// otherwise every unrelated page load would return JSON.
-			odd_apps_debug_emit(
+			oddout_apps_debug_emit(
 				array_merge(
 					$debug_trace,
 					array(
@@ -213,30 +213,29 @@ function odd_apps_cookieauth_maybe_serve() {
 	// callee's `is_array( $debug_trace )` gate actually gates. An
 	// earlier revision passed the bare `$debug_trace` array in both
 	// paths, which made `is_array()` always true inside
-	// odd_apps_serve_cookieauth() — so every `/odd-app/<slug>/`
+	// oddout_apps_serve_cookieauth() — so every `/odd-app/<slug>/`
 	// request emitted the debug-JSON envelope instead of the real
 	// HTML / asset response. That's the long-running "still white"
 	// regression: the iframe's body was literally the debug JSON
 	// trace, so nothing mounted and `#root` was missing entirely.
-	odd_apps_serve_cookieauth( $slug, $sub, $debug_on ? $debug_trace : null );
+	oddout_apps_serve_cookieauth( $slug, $sub, $debug_on ? $debug_trace : null );
 	exit;
 }
 
 /**
  * Emit a JSON debug payload and exit. Only reached when the caller
- * is logged in as manage_options AND passed `?odd_debug=1`, so no
+ * is logged in as manage_options AND passed `?oddout_debug=1`, so no
  * session info is exposed to anonymous visitors.
  *
  * @param array $data
  */
-function odd_apps_debug_emit( array $data ) {
+function oddout_apps_debug_emit( array $data ) {
 	$user_id = wp_validate_auth_cookie( '', 'logged_in' );
 	if ( ! $user_id ) {
 		status_header( 401 );
 		exit;
 	}
-	wp_set_current_user( $user_id );
-	if ( ! current_user_can( 'manage_options' ) ) {
+	if ( ! user_can( $user_id, 'manage_options' ) ) {
 		status_header( 403 );
 		exit;
 	}
@@ -244,10 +243,8 @@ function odd_apps_debug_emit( array $data ) {
 		@ob_end_clean();
 	}
 	nocache_headers();
-	header( 'Content-Type: application/json; charset=utf-8' );
 	header( 'X-Content-Type-Options: nosniff' );
-	echo wp_json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
-	exit;
+	wp_send_json( $data, 200, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
 }
 
 /**
@@ -256,20 +253,20 @@ function odd_apps_debug_emit( array $data ) {
  * @param string $slug App slug.
  * @param string $path Requested file path relative to the app root.
  */
-function odd_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
+function oddout_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 	// `$debug_trace` must be null to disable debug JSON output.
 	// An empty array still arms the debug emitter — callers must
 	// pass null explicitly. Belt-and-suspenders: also require the
-	// `?odd_debug=1` query to be present, so a stray non-null
+	// `?oddout_debug=1` query to be present, so a stray non-null
 	// value from a future caller can't accidentally leak JSON
 	// instead of the real response body.
 	$debug_on = is_array( $debug_trace )
-		&& isset( $_GET['odd_debug'] ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		&& '1' === sanitize_text_field( wp_unslash( $_GET['odd_debug'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		&& isset( $_GET['oddout_debug'] ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		&& '1' === sanitize_text_field( wp_unslash( $_GET['oddout_debug'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	$slug     = sanitize_key( $slug );
 	if ( '' === $slug ) {
 		if ( $debug_on ) {
-			odd_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'invalid_slug' ) ) );
+			oddout_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'invalid_slug' ) ) );
 		}
 		status_header( 404 );
 		exit;
@@ -284,27 +281,25 @@ function odd_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 	}
 	if ( ! $user_id ) {
 		if ( $debug_on ) {
-			odd_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'auth_missing' ) ) );
+			oddout_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'auth_missing' ) ) );
 		}
 		status_header( 401 );
 		exit;
 	}
-	wp_set_current_user( $user_id );
-
-	if ( ! function_exists( 'odd_apps_index_load' ) ) {
+	if ( ! function_exists( 'oddout_apps_index_load' ) ) {
 		// Registry wasn't loaded — this can happen during very early
 		// bootstrap errors. Fail closed rather than serve nothing.
 		if ( $debug_on ) {
-			odd_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'registry_not_loaded' ) ) );
+			oddout_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'registry_not_loaded' ) ) );
 		}
 		status_header( 500 );
 		exit;
 	}
 
-	$index = odd_apps_index_load();
+	$index = oddout_apps_index_load();
 	if ( ! isset( $index[ $slug ] ) ) {
 		if ( $debug_on ) {
-			odd_apps_debug_emit(
+			oddout_apps_debug_emit(
 				array_merge(
 					$debug_trace,
 					array(
@@ -319,28 +314,28 @@ function odd_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 	}
 	if ( empty( $index[ $slug ]['enabled'] ) ) {
 		if ( $debug_on ) {
-			odd_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'slug_disabled' ) ) );
+			oddout_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'slug_disabled' ) ) );
 		}
 		status_header( 404 );
 		exit;
 	}
-	$cap = function_exists( 'odd_apps_normalize_capability' )
-		? odd_apps_normalize_capability( isset( $index[ $slug ]['capability'] ) ? $index[ $slug ]['capability'] : '' )
+	$cap = function_exists( 'oddout_apps_normalize_capability' )
+		? oddout_apps_normalize_capability( isset( $index[ $slug ]['capability'] ) ? $index[ $slug ]['capability'] : '' )
 		: 'manage_options';
 	if ( $debug_on ) {
 		$debug_trace['required_cap'] = $cap;
-		$debug_trace['cap_ok']       = current_user_can( $cap );
+		$debug_trace['cap_ok']       = user_can( $user_id, $cap );
 	}
-	if ( ! current_user_can( $cap ) ) {
+	if ( ! user_can( $user_id, $cap ) ) {
 		if ( $debug_on ) {
-			odd_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'capability_denied' ) ) );
+			oddout_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'capability_denied' ) ) );
 		}
 		status_header( 403 );
 		exit;
 	}
 
 	if ( '' === $path ) {
-		$manifest = odd_apps_manifest_load( $slug );
+		$manifest = oddout_apps_manifest_load( $slug );
 		$path     = isset( $manifest['entry'] ) && $manifest['entry']
 			? (string) $manifest['entry']
 			: 'index.html';
@@ -356,16 +351,16 @@ function odd_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 		! preg_match( '#^[a-zA-Z0-9._/-]+$#', $path )
 	) {
 		if ( $debug_on ) {
-			odd_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'bad_path' ) ) );
+			oddout_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'bad_path' ) ) );
 		}
 		status_header( 400 );
 		exit;
 	}
 
 	$ext = strtolower( pathinfo( $path, PATHINFO_EXTENSION ) );
-	if ( in_array( $ext, odd_apps_forbidden_extensions(), true ) ) {
+	if ( in_array( $ext, oddout_apps_forbidden_extensions(), true ) ) {
 		if ( $debug_on ) {
-			odd_apps_debug_emit(
+			oddout_apps_debug_emit(
 				array_merge(
 					$debug_trace,
 					array(
@@ -379,12 +374,12 @@ function odd_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 		exit;
 	}
 
-	$base      = odd_apps_dir_for( $slug );
+	$base      = oddout_apps_dir_for( $slug );
 	$real_base = realpath( $base );
 	$full      = realpath( $base . $path );
 	if ( ( ! $real_base || ! $full ) && '' !== $path ) {
-		$repaired = function_exists( 'odd_apps_repair_from_catalog' )
-			? odd_apps_repair_from_catalog( $slug, $path )
+		$repaired = function_exists( 'oddout_apps_repair_from_catalog' )
+			? oddout_apps_repair_from_catalog( $slug, $path )
 			: false;
 		if ( $debug_on ) {
 			$debug_trace['repair_attempted'] = true;
@@ -403,20 +398,20 @@ function odd_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 	}
 	if ( ! $real_base || ! $full || 0 !== strpos( $full, $real_base ) ) {
 		if ( $debug_on ) {
-			odd_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'realpath_escape_or_missing' ) ) );
+			oddout_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'realpath_escape_or_missing' ) ) );
 		}
 		status_header( 404 );
 		exit;
 	}
 	if ( ! is_file( $full ) || ! is_readable( $full ) ) {
 		if ( $debug_on ) {
-			odd_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'file_not_found_or_unreadable' ) ) );
+			oddout_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'file_not_found_or_unreadable' ) ) );
 		}
 		status_header( 404 );
 		exit;
 	}
 
-	$mime = odd_apps_mime_for( $full );
+	$mime = oddout_apps_mime_for( $full );
 	$body = null;
 	$size = filesize( $full );
 
@@ -425,12 +420,12 @@ function odd_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 		$debug_trace['size']      = (int) $size;
 		$head                     = (string) @file_get_contents( $full, false, null, 0, 512 );
 		$debug_trace['body_head'] = $head;
-		odd_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'ok_would_serve' ) ) );
+		oddout_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'ok_would_serve' ) ) );
 	}
 
-	if ( odd_apps_is_html_mime( $mime ) ) {
-		$manifest = odd_apps_manifest_load( $slug );
-		$csp      = odd_apps_cookieauth_csp( $slug, is_array( $manifest ) ? $manifest : array() );
+	if ( oddout_apps_is_html_mime( $mime ) ) {
+		$manifest = oddout_apps_manifest_load( $slug );
+		$csp      = oddout_apps_cookieauth_csp( $slug, is_array( $manifest ) ? $manifest : array() );
 		if ( is_string( $csp ) && '' !== $csp ) {
 			header( 'Content-Security-Policy: ' . $csp );
 		}
@@ -442,14 +437,14 @@ function odd_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 		// their archives on disk.
 		$raw = file_get_contents( $full ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 		if ( false !== $raw ) {
-			if ( function_exists( 'odd_apps_prepare_app_html_output' ) ) {
-				$body = odd_apps_prepare_app_html_output( $raw );
+			if ( function_exists( 'oddout_apps_prepare_app_html_output' ) ) {
+				$body = oddout_apps_prepare_app_html_output( $raw );
 			} else {
-				$body = odd_apps_inject_runtime_importmap( $raw );
+				$body = oddout_apps_inject_runtime_importmap( $raw );
 			}
 			$size = strlen( $body );
 		}
-	} elseif ( odd_apps_is_js_mime( $mime ) ) {
+	} elseif ( oddout_apps_is_js_mime( $mime ) ) {
 		// Defense-in-depth for the same bare-import problem: rewrite
 		// `from"react"` / `from"react/jsx-runtime"` etc. inside JS
 		// chunks to absolute `/odd-app-runtime/*.js` URLs. The HTML
@@ -461,9 +456,9 @@ function odd_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 		// self-resolving regardless of import-map support or timing.
 		$raw = file_get_contents( $full ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 		if ( false !== $raw ) {
-			$body = odd_apps_rewrite_runtime_bare_imports( $raw );
-			if ( function_exists( 'odd_apps_transform_embed_bundle_output' ) ) {
-				$body = odd_apps_transform_embed_bundle_output( $body, $mime );
+			$body = oddout_apps_rewrite_runtime_bare_imports( $raw );
+			if ( function_exists( 'oddout_apps_transform_embed_bundle_output' ) ) {
+				$body = oddout_apps_transform_embed_bundle_output( $body, $mime );
 			}
 			$size = strlen( $body );
 		}
@@ -486,7 +481,7 @@ function odd_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 	header( 'X-Frame-Options: SAMEORIGIN' );
 	header( 'Permissions-Policy: camera=(), microphone=(), geolocation=()' );
 	if ( null !== $body ) {
-		echo $body; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		oddout_emit_raw_response( $body );
 	} else {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
 		$sent = readfile( $full );
@@ -506,9 +501,9 @@ function odd_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
  * `$_SERVER['REQUEST_URI']` we don't need permalinks configured or
  * rewrite rules flushed for it to work.
  */
-function odd_apps_cookieauth_url_for( $slug ) {
+function oddout_apps_cookieauth_url_for( $slug ) {
 	$slug = sanitize_key( (string) $slug );
-	return odd_url_with_playground_scope( site_url( '/odd-app/' . $slug . '/' ) );
+	return oddout_url_with_playground_scope( site_url( '/odd-app/' . $slug . '/' ) );
 }
 
 /**
@@ -517,25 +512,25 @@ function odd_apps_cookieauth_url_for( $slug ) {
  * @param string $slug App slug.
  * @return string Empty when slug invalid or apps are unavailable.
  */
-function odd_apps_serve_url_for_rest_payload( $slug ) {
+function oddout_apps_serve_url_for_rest_payload( $slug ) {
 	$slug = sanitize_key( (string) $slug );
-	if ( '' === $slug || ! function_exists( 'odd_apps_cookieauth_url_for' ) ) {
+	if ( '' === $slug || ! function_exists( 'oddout_apps_cookieauth_url_for' ) ) {
 		return '';
 	}
 	return esc_url_raw(
 		add_query_arg(
 			array( '_wpnonce' => wp_create_nonce( 'wp_rest' ) ),
-			odd_apps_cookieauth_url_for( $slug )
+			oddout_apps_cookieauth_url_for( $slug )
 		)
 	);
 }
 
-function odd_apps_runtime_importmap_html() {
+function oddout_apps_runtime_importmap_html() {
 	$imports = array(
-		'react'             => odd_url_with_playground_scope( site_url( '/odd-app-runtime/react.js' ) ),
-		'react-dom'         => odd_url_with_playground_scope( site_url( '/odd-app-runtime/react-dom.js' ) ),
-		'react-dom/client'  => odd_url_with_playground_scope( site_url( '/odd-app-runtime/react-dom-client.js' ) ),
-		'react/jsx-runtime' => odd_url_with_playground_scope( site_url( '/odd-app-runtime/react-jsx-runtime.js' ) ),
+		'react'             => oddout_url_with_playground_scope( site_url( '/odd-app-runtime/react.js' ) ),
+		'react-dom'         => oddout_url_with_playground_scope( site_url( '/odd-app-runtime/react-dom.js' ) ),
+		'react-dom/client'  => oddout_url_with_playground_scope( site_url( '/odd-app-runtime/react-dom-client.js' ) ),
+		'react/jsx-runtime' => oddout_url_with_playground_scope( site_url( '/odd-app-runtime/react-jsx-runtime.js' ) ),
 	);
 	return '<script type="importmap">' . wp_json_encode( array( 'imports' => $imports ) ) . '</script>';
 }
@@ -543,7 +538,7 @@ function odd_apps_runtime_importmap_html() {
 /**
  * Is this MIME a JavaScript module we should process for bare imports?
  */
-function odd_apps_is_js_mime( $mime ) {
+function oddout_apps_is_js_mime( $mime ) {
 	$mime = strtolower( (string) $mime );
 	if ( false !== strpos( $mime, ';' ) ) {
 		$mime = trim( substr( $mime, 0, strpos( $mime, ';' ) ) );
@@ -577,7 +572,7 @@ function odd_apps_is_js_mime( $mime ) {
  * filenames to match the runtime endpoint regex in the top-level
  * matcher (`/odd-app-runtime/react-jsx-runtime.js` etc.).
  */
-function odd_apps_rewrite_runtime_bare_imports( $js ) {
+function oddout_apps_rewrite_runtime_bare_imports( $js ) {
 	if ( ! is_string( $js ) || '' === $js ) {
 		return $js;
 	}
@@ -586,7 +581,7 @@ function odd_apps_rewrite_runtime_bare_imports( $js ) {
 	if ( false === strpos( $js, '"react' ) && false === strpos( $js, "'react" ) ) {
 		return $js;
 	}
-	$base = rtrim( odd_url_with_playground_scope( site_url( '/odd-app-runtime' ) ), '/' );
+	$base = rtrim( oddout_url_with_playground_scope( site_url( '/odd-app-runtime' ) ), '/' );
 	$re   = '#(\b(?:from|import)\s*)(["\'])(react(?:/jsx-runtime|-dom(?:/client)?)?)\2#';
 	return preg_replace_callback(
 		$re,
@@ -600,11 +595,11 @@ function odd_apps_rewrite_runtime_bare_imports( $js ) {
 	);
 }
 
-function odd_apps_inject_runtime_importmap( $html ) {
+function oddout_apps_inject_runtime_importmap( $html ) {
 	if ( false !== stripos( $html, 'type="importmap"' ) || false !== stripos( $html, "type='importmap'" ) ) {
 		return $html;
 	}
-	$map = odd_apps_runtime_importmap_html();
+	$map = oddout_apps_runtime_importmap_html();
 	if ( false !== stripos( $html, '<head>' ) ) {
 		return preg_replace( '#<head>#i', "<head>\n" . $map, $html, 1 );
 	}
@@ -619,8 +614,8 @@ function odd_apps_inject_runtime_importmap( $html ) {
  * ESM bundles. odd/bin/build-runtime regenerates these. Keeping the
  * directory centralised makes it easy to audit what's shipping.
  */
-function odd_apps_runtime_dir() {
-	return rtrim( ODD_DIR, '/\\' ) . '/apps/runtime';
+function oddout_apps_runtime_dir() {
+	return rtrim( ODDOUT_DIR, '/\\' ) . '/apps/runtime';
 }
 
 /**
@@ -636,14 +631,13 @@ function odd_apps_runtime_dir() {
  * wp.element is still React 18. Proxying produced a classic
  * "Cannot read properties of undefined (reading 'S')" at runtime.
  */
-function odd_apps_serve_runtime_module( $name ) {
+function oddout_apps_serve_runtime_module( $name ) {
 	$user_id = wp_validate_auth_cookie( '', 'logged_in' );
 	if ( ! $user_id ) {
 		status_header( 401 );
 		exit;
 	}
-	wp_set_current_user( $user_id );
-	if ( ! current_user_can( 'read' ) ) {
+	if ( ! user_can( $user_id, 'read' ) ) {
 		status_header( 403 );
 		exit;
 	}
@@ -654,7 +648,7 @@ function odd_apps_serve_runtime_module( $name ) {
 		exit;
 	}
 
-	$base_dir = odd_apps_runtime_dir();
+	$base_dir = oddout_apps_runtime_dir();
 	$full     = realpath( $base_dir . '/' . $name );
 	$root     = realpath( $base_dir );
 	if ( ! $root || ! $full || 0 !== strpos( $full, $root ) ) {
@@ -675,11 +669,11 @@ function odd_apps_serve_runtime_module( $name ) {
 	// esbuild emits relative imports between chunks (`./chunk-X.js`)
 	// and the app bundles import our entry files via absolute
 	// `/odd-app-runtime/*.js` paths that are rewritten in
-	// odd_apps_rewrite_runtime_bare_imports(). Run the same rewrite
+	// oddout_apps_rewrite_runtime_bare_imports(). Run the same rewrite
 	// here as a safety net: if a future build ever leaves a bare
 	// `react`/`react-dom` specifier in a runtime chunk (bug or a
 	// dependency change), the rewrite will still catch it.
-	$source = odd_apps_rewrite_runtime_bare_imports( $raw );
+	$source = oddout_apps_rewrite_runtime_bare_imports( $raw );
 
 	while ( ob_get_level() > 0 ) {
 		@ob_end_clean();
@@ -689,7 +683,7 @@ function odd_apps_serve_runtime_module( $name ) {
 	header( 'X-Content-Type-Options: nosniff' );
 	header( 'X-Robots-Tag: noindex, nofollow' );
 	header( 'Content-Length: ' . strlen( $source ) );
-	echo $source; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	oddout_emit_raw_response( $source );
 }
 
 /**
@@ -702,13 +696,13 @@ function odd_apps_serve_runtime_module( $name ) {
  * @param array<string, mixed> $manifest Parsed manifest.json.
  * @return string
  */
-function odd_apps_cookieauth_csp( $slug, array $manifest ) {
+function oddout_apps_cookieauth_csp( $slug, array $manifest ) {
 	$slug = sanitize_key( (string) $slug );
 	// phpcs:ignore WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound -- long policy string.
 	$default = "default-src 'self'; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data: https:; connect-src 'self' https:; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'";
-	$policy  = (string) apply_filters( 'odd_app_cookieauth_csp', $default, $slug, $manifest );
+	$policy  = (string) apply_filters( 'oddout_app_cookieauth_csp', $default, $slug, $manifest );
 	if ( ! empty( $manifest['csp'] ) && is_string( $manifest['csp'] ) ) {
-		$extra = odd_apps_sanitize_csp_fragment( $manifest['csp'] );
+		$extra = oddout_apps_sanitize_csp_fragment( $manifest['csp'] );
 		if ( '' !== $extra ) {
 			$policy .= '; ' . $extra;
 		}
@@ -722,7 +716,7 @@ function odd_apps_cookieauth_csp( $slug, array $manifest ) {
  * @param string $fragment User-supplied CSP fragment from manifest.
  * @return string
  */
-function odd_apps_sanitize_csp_fragment( $fragment ) {
+function oddout_apps_sanitize_csp_fragment( $fragment ) {
 	$s = preg_replace( '/[\x00-\x1F\x7F]/', '', (string) $fragment );
 	if ( strlen( $s ) > 2048 ) {
 		$s = substr( $s, 0, 2048 );

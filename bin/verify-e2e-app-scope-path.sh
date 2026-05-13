@@ -20,22 +20,22 @@ need_cmd php
 CHECKS='
 $_SERVER["REQUEST_URI"] = "/scope:kind-modern-forest/wp-admin/index.php";
 $scope_path = "/scope:kind-modern-forest/odd-app/board/index.html";
-echo "odd_scope_peel=" . odd_apps_cookieauth_strip_playground_scope_prefix( $scope_path ) . "\n";
-echo "odd_scope_iframe=" . odd_apps_cookieauth_url_for( "board" ) . "\n";
-echo "odd_scope_rest=" . odd_https_rest_url( "odd/v1/apps" ) . "\n";
-$map = odd_apps_runtime_importmap_html();
+echo "oddout_scope_peel=" . oddout_apps_cookieauth_strip_playground_scope_prefix( $scope_path ) . "\n";
+echo "oddout_scope_iframe=" . oddout_apps_cookieauth_url_for( "board" ) . "\n";
+echo "oddout_scope_rest=" . oddout_https_rest_url( "odd/v1/apps" ) . "\n";
+$map = oddout_apps_runtime_importmap_html();
 if ( preg_match( "#<script type=\"importmap\">(.+)</script>#", $map, $matches ) ) {
 	$decoded = json_decode( $matches[1], true );
-	echo "odd_scope_runtime_react=" . $decoded["imports"]["react"] . "\n";
-	echo "odd_scope_runtime_jsx=" . $decoded["imports"]["react/jsx-runtime"] . "\n";
+	echo "oddout_scope_runtime_react=" . $decoded["imports"]["react"] . "\n";
+	echo "oddout_scope_runtime_jsx=" . $decoded["imports"]["react/jsx-runtime"] . "\n";
 }
 $react_imports = "import React from \"react\";import{jsx}from\"react/jsx-runtime\";";
-echo "odd_scope_rewrite=" . odd_apps_rewrite_runtime_bare_imports( $react_imports ) . "\n";
+echo "oddout_scope_rewrite=" . oddout_apps_rewrite_runtime_bare_imports( $react_imports ) . "\n";
 '
 
 OUT="$( cd "${WP_DIR}" && php -d memory_limit=512M "$( command -v wp )" eval "${CHECKS}" 2>/dev/null )"
 
-EXP="odd_scope_peel=/odd-app/board/index.html"
+EXP="oddout_scope_peel=/odd-app/board/index.html"
 if [[ "${OUT}" != *"${EXP}"* ]]; then
 	echo "scope peel mismatch: expected ${EXP}" >&2
 	echo "${OUT}" >&2

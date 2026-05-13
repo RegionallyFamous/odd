@@ -4,7 +4,7 @@
  *
  * The plugin no longer ships scenes. The registry is fully
  * filter-driven; installed scene bundles add descriptors via the
- * `odd_scene_registry` filter (see includes/content/scenes.php). On
+ * `oddout_scene_registry` filter (see includes/content/scenes.php). On
  * a brand-new site with zero bundles this returns an empty list and
  * the wallpaper runtime falls back to its built-in "pending" scene
  * until the starter pack installer finishes.
@@ -22,19 +22,19 @@ defined( 'ABSPATH' ) || exit;
  */
 /**
  * Reset the per-request memoisation caches in this file. Exposed so
- * tests (and any extension that mutates `odd_scene_registry` filters
+ * tests (and any extension that mutates `oddout_scene_registry` filters
  * mid-request) can force a fresh rebuild.
  *
  * @since 1.0.0
  *
  * @return void
  */
-function odd_wallpaper_scenes_reset() {
-	odd_wallpaper_scenes( true );
-	odd_wallpaper_scene_slugs( true );
+function oddout_wallpaper_scenes_reset() {
+	oddout_wallpaper_scenes( true );
+	oddout_wallpaper_scene_slugs( true );
 }
 
-function odd_wallpaper_scenes( $reset = false ) {
+function oddout_wallpaper_scenes( $reset = false ) {
 	static $cache = null;
 	if ( $reset ) {
 		$cache = null;
@@ -53,7 +53,7 @@ function odd_wallpaper_scenes( $reset = false ) {
 		 *                        `label`, `franchise`, `tags`, `fallbackColor`,
 		 *                        `previewUrl`, `wallpaperUrl`.
 		 */
-		$cache = apply_filters( 'odd_scene_registry', array() );
+		$cache = apply_filters( 'oddout_scene_registry', array() );
 		if ( ! is_array( $cache ) ) {
 			$cache = array();
 		}
@@ -61,7 +61,7 @@ function odd_wallpaper_scenes( $reset = false ) {
 	return $cache;
 }
 
-function odd_wallpaper_scene_slugs( $reset = false ) {
+function oddout_wallpaper_scene_slugs( $reset = false ) {
 	static $slugs = null;
 	if ( $reset ) {
 		$slugs = null;
@@ -70,7 +70,7 @@ function odd_wallpaper_scene_slugs( $reset = false ) {
 		return $slugs;
 	}
 	$slugs = array();
-	foreach ( odd_wallpaper_scenes() as $scene ) {
+	foreach ( oddout_wallpaper_scenes() as $scene ) {
 		if ( isset( $scene['slug'] ) ) {
 			$slugs[] = $scene['slug'];
 		}
@@ -78,14 +78,14 @@ function odd_wallpaper_scene_slugs( $reset = false ) {
 	return $slugs;
 }
 
-function odd_wallpaper_default_scene() {
-	$slugs = odd_wallpaper_scene_slugs();
+function oddout_wallpaper_default_scene() {
+	$slugs = oddout_wallpaper_scene_slugs();
 	// Prefer the starter pack's first scene (oddling-desktop by
 	// default) so users hitting a mid-install admin load still get a
 	// sensible default. Falls back to the first installed scene
 	// otherwise.
-	if ( function_exists( 'odd_catalog_starter_pack' ) ) {
-		$starter = odd_catalog_starter_pack();
+	if ( function_exists( 'oddout_catalog_starter_pack' ) ) {
+		$starter = oddout_catalog_starter_pack();
 		if ( ! empty( $starter['scenes'] ) ) {
 			foreach ( (array) $starter['scenes'] as $slug ) {
 				if ( in_array( $slug, $slugs, true ) ) {
@@ -102,11 +102,11 @@ function odd_wallpaper_default_scene() {
 	return $slugs ? $slugs[0] : '';
 }
 
-function odd_wallpaper_sanitize_slug_list( $value, $cap ) {
+function oddout_wallpaper_sanitize_slug_list( $value, $cap ) {
 	if ( ! is_array( $value ) ) {
 		return array();
 	}
-	$valid = odd_wallpaper_scene_slugs();
+	$valid = oddout_wallpaper_scene_slugs();
 	$out   = array();
 	foreach ( $value as $item ) {
 		$slug = is_string( $item ) ? sanitize_key( $item ) : '';

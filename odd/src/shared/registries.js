@@ -17,7 +17,7 @@
  *   rituals           → odd.rituals
  *   motionPrimitives  → odd.motionPrimitives
  *
- * Each PHP side has the matching `odd_*_registry` filter (see
+ * Each PHP side has the matching `oddout_*_registry` filter (see
  * odd/includes/extensions.php) so registrations can happen either
  * server- or client-side, or both.
  */

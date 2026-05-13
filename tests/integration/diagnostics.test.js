@@ -39,8 +39,8 @@ describe( 'ODD diagnostics metrics', () => {
 		const html = [
 			'<!doctype html><html><head>',
 			'<script type="importmap">{"imports":{"react":"/odd-app-runtime/react.js"}}</script>',
-			'<script id="odd_apps_iframe_fetch_bootstrap"></script>',
-			'<script id="odd_apps_iframe_diagnostics_bootstrap"></script>',
+			'<script id="oddout_apps_iframe_fetch_bootstrap"></script>',
+			'<script id="oddout_apps_iframe_diagnostics_bootstrap"></script>',
 			'<script type="module" src="./assets/app.js"></script>',
 			'</head><body><div id="root"></div></body></html>',
 		].join( '' );

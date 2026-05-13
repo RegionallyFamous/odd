@@ -15,7 +15,7 @@ doesn't apply can be left unchecked with a note instead of force-checked.
 - [ ] If PHP logic changed, `composer phpunit` passes locally.
 - [ ] `CHANGELOG.md` has an entry under `## [Unreleased]` (unless this PR is purely internal — e.g. CI-only, test-only, or refactor).
 - [ ] Screenshot, screencast, or Playground link attached for any user-visible change.
-- [ ] Plugin version bumped in `odd/odd.php` (`Version:` header **and** `ODD_VERSION` constant) if this PR ships in a release.
+- [ ] Plugin version bumped in `odd/odd.php` (`Version:` header **and** `ODDOUT_VERSION` constant) if this PR ships in a release.
 
 ## Test plan
 

@@ -2,14 +2,14 @@
  * ODD state store (window.__odd.store)
  * ---------------------------------------------------------------
  * One source of truth for user prefs + registries + runtime state.
- * Hydrates from the inlined `window.odd` config (populated via
+ * Hydrates from the inlined `window.oddout` config (populated via
  * wp_localize_script on odd-api) and the host `desktopModeConfig`
  * blob. Subscribers can listen to the whole store ('*') or to a
  * dotted path ('user.wallpaper', 'registries.scenes', …).
  *
  * Every ODD surface — wallpaper engine, panel, widgets, commands —
  * is expected to read state from here rather than re-derive it from
- * `window.odd`. The store is the stable API; the localized config
+ * `window.oddout`. The store is the stable API; the localized config
  * is an implementation detail that can change shape.
  *
  * Shape:
@@ -28,6 +28,8 @@
 ( function () {
 	'use strict';
 	if ( typeof window === 'undefined' ) return;
+	window.oddout = ( window.oddout && typeof window.oddout === 'object' ) ? window.oddout : ( window.odd || {} );
+	window.odd = window.oddout;
 	window.__odd = window.__odd || {};
 	if ( window.__odd.store ) return;
 
@@ -174,7 +176,7 @@
 	function hydrate() {
 		if ( hydrated ) return state;
 		hydrated = true;
-		var cfg = window.odd || {};
+		var cfg = window.oddout || window.odd || {};
 		var wdc = window.desktopModeConfig || {};
 		var rm  = false;
 		try {
@@ -261,7 +263,7 @@
 		persistUser:   persistUser,
 	};
 
-	// Hydrate eagerly. The localized `window.odd` blob is inlined by
+	// Hydrate eagerly. The localized `window.oddout` blob is inlined by
 	// WordPress in the same <script> tag batch before this module runs.
 	hydrate();
 } )();

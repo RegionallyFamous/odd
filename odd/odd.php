@@ -10,7 +10,7 @@
  * Author URI:        https://github.com/regionallyfamous
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       odd
+ * Text Domain:       odd-outlandish-desktop-decorator
  *
  * Requires the WordPress Desktop Mode plugin to be active:
  * https://github.com/WordPress/desktop-mode
@@ -18,18 +18,98 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'ODD_VERSION', '1.0.6' );
-define( 'ODD_DESKTOP_MODE_MIN_VERSION', '0.8.0' );
-define( 'ODD_DESKTOP_MODE_PLAYGROUND_VERSION', '0.8.2' );
-define( 'ODD_FILE', __FILE__ );
-define( 'ODD_DIR', plugin_dir_path( __FILE__ ) );
+define( 'ODDOUT_VERSION', '1.0.6' );
+define( 'ODDOUT_DESKTOP_MODE_MIN_VERSION', '0.8.0' );
+define( 'ODDOUT_DESKTOP_MODE_PLAYGROUND_VERSION', '0.8.2' );
+define( 'ODDOUT_FILE', __FILE__ );
+define( 'ODDOUT_DIR', plugin_dir_path( __FILE__ ) );
+
+/**
+ * Return the writable ODD storage base under the current site's uploads folder.
+ *
+ * Installed catalog content is user data. Store it outside the plugin
+ * directory so upgrades cannot delete it, and derive the path via
+ * wp_upload_dir() for multisite/custom-content-dir compatibility.
+ *
+ * @return string Absolute directory path with trailing slash.
+ */
+function oddout_storage_base_dir() {
+	$uploads = wp_upload_dir( null, false );
+	$base    = isset( $uploads['basedir'] ) && is_string( $uploads['basedir'] ) ? $uploads['basedir'] : '';
+	if ( '' === $base ) {
+		$base = trailingslashit( ABSPATH ) . 'wp-content/uploads';
+	}
+	return trailingslashit( $base ) . 'odd/';
+}
+
+/**
+ * Return the public URL base matching oddout_storage_base_dir().
+ *
+ * @return string URL with trailing slash.
+ */
+function oddout_storage_base_url() {
+	$uploads = wp_upload_dir( null, false );
+	$base    = isset( $uploads['baseurl'] ) && is_string( $uploads['baseurl'] ) ? $uploads['baseurl'] : '';
+	if ( '' === $base ) {
+		$base = content_url( 'uploads' );
+	}
+	return trailingslashit( oddout_url_current_scheme( $base ) ) . 'odd/';
+}
+
+function oddout_storage_dir( $bucket ) {
+	$bucket = sanitize_key( (string) $bucket );
+	return '' === $bucket ? oddout_storage_base_dir() : oddout_storage_base_dir() . $bucket . '/';
+}
+
+function oddout_storage_url( $bucket ) {
+	$bucket = sanitize_key( (string) $bucket );
+	return '' === $bucket ? oddout_storage_base_url() : oddout_storage_base_url() . $bucket . '/';
+}
+
+/**
+ * Write a file through the WordPress filesystem abstraction.
+ *
+ * @param string $path     Absolute destination path.
+ * @param string $contents File bytes.
+ * @return bool
+ */
+function oddout_write_file( $path, $contents ) {
+	if ( '' === (string) $path ) {
+		return false;
+	}
+	if ( ! function_exists( 'WP_Filesystem' ) ) {
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+	}
+	global $wp_filesystem;
+	if ( empty( $wp_filesystem ) ) {
+		WP_Filesystem();
+	}
+	if ( empty( $wp_filesystem ) || ! method_exists( $wp_filesystem, 'put_contents' ) ) {
+		return false;
+	}
+	return (bool) $wp_filesystem->put_contents( $path, (string) $contents, defined( 'FS_CHMOD_FILE' ) ? FS_CHMOD_FILE : 0644 );
+}
+
+/**
+ * Emit exact bytes for authenticated asset endpoints.
+ *
+ * These responses are already constrained by MIME type, capability checks,
+ * archive validation, and realpath confinement. Generic HTML/JS/CSS escaping
+ * would corrupt app bundles, import maps, and generated stylesheets.
+ *
+ * @param string $body Response body.
+ */
+function oddout_emit_raw_response( $body ) {
+	// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- This helper is used only after endpoint-specific MIME, auth, and path validation; escaping would corrupt HTML/JS/CSS/image response bytes.
+	exit( (string) $body );
+}
 
 /**
  * True when HTTP_HOST is WordPress Playground (parent or playground-scoped).
  *
  * @return bool
  */
-function odd_is_playground_host() {
+function oddout_is_playground_host() {
 	$host = isset( $_SERVER['HTTP_HOST'] ) ? strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) ) : '';
 	$host = preg_replace( '/:\d+$/', '', $host );
 	if ( '' === $host ) {
@@ -39,7 +119,7 @@ function odd_is_playground_host() {
 	return 'playground.wordpress.net' === $host || ( strlen( $host ) > 25 && '.playground.wordpress.net' === substr( $host, -25 ) );
 }
 
-function odd_request_uses_https() {
+function oddout_request_uses_https() {
 	if ( is_ssl() ) {
 		return true;
 	}
@@ -59,10 +139,10 @@ function odd_request_uses_https() {
 		return true;
 	}
 
-	return odd_is_playground_host();
+	return oddout_is_playground_host();
 }
 
-function odd_url_current_scheme( $url ) {
+function oddout_url_current_scheme( $url ) {
 	$url = (string) $url;
 	if ( '' === $url ) {
 		return '';
@@ -71,7 +151,7 @@ function odd_url_current_scheme( $url ) {
 	if ( ! is_array( $parts ) || ! isset( $parts['scheme'] ) || 'http' !== strtolower( (string) $parts['scheme'] ) ) {
 		return $url;
 	}
-	return odd_request_uses_https() ? set_url_scheme( $url, 'https' ) : $url;
+	return oddout_request_uses_https() ? set_url_scheme( $url, 'https' ) : $url;
 }
 
 /**
@@ -85,8 +165,8 @@ function odd_url_current_scheme( $url ) {
  * @param string $url Absolute URL generated by WordPress.
  * @return string URL aligned to the request scheme and active Playground scope.
  */
-function odd_url_with_playground_scope( $url ) {
-	$url = odd_url_current_scheme( $url );
+function oddout_url_with_playground_scope( $url ) {
+	$url = oddout_url_current_scheme( $url );
 	if ( '' === $url ) {
 		return '';
 	}
@@ -136,55 +216,55 @@ function odd_url_with_playground_scope( $url ) {
  * @param string $path Optional path appended to the REST root (e.g. `odd/v1/prefs`).
  * @return string
  */
-function odd_https_rest_url( $path = '' ) {
-	return odd_url_with_playground_scope( rest_url( $path ) );
+function oddout_https_rest_url( $path = '' ) {
+	return oddout_url_with_playground_scope( rest_url( $path ) );
 }
 
-define( 'ODD_URL', untrailingslashit( odd_url_current_scheme( plugins_url( '', __FILE__ ) ) ) );
+define( 'ODDOUT_URL', untrailingslashit( oddout_url_current_scheme( plugins_url( '', __FILE__ ) ) ) );
 
-require_once ODD_DIR . 'includes/dependencies.php';
-require_once ODD_DIR . 'includes/playground-compat.php';
-require_once ODD_DIR . 'includes/extensions.php';
-require_once ODD_DIR . 'includes/migrations.php';
-require_once ODD_DIR . 'includes/wallpaper/registry.php';
-require_once ODD_DIR . 'includes/wallpaper/prefs.php';
-require_once ODD_DIR . 'includes/icons/registry.php';
-require_once ODD_DIR . 'includes/icons/dock-filter.php';
-require_once ODD_DIR . 'includes/cursors/registry.php';
-require_once ODD_DIR . 'includes/cursors/css-endpoint.php';
-require_once ODD_DIR . 'includes/cursors/inject.php';
-require_once ODD_DIR . 'includes/rest.php';
-require_once ODD_DIR . 'includes/accents.php';
-require_once ODD_DIR . 'includes/toasts.php';
-require_once ODD_DIR . 'includes/native-window.php';
-require_once ODD_DIR . 'includes/integration/desktop-mode-ai.php';
-require_once ODD_DIR . 'includes/integration/desktop-mode-extended-surfaces.php';
-require_once ODD_DIR . 'includes/apps/bootstrap.php';
+require_once ODDOUT_DIR . 'includes/dependencies.php';
+require_once ODDOUT_DIR . 'includes/playground-compat.php';
+require_once ODDOUT_DIR . 'includes/extensions.php';
+require_once ODDOUT_DIR . 'includes/migrations.php';
+require_once ODDOUT_DIR . 'includes/wallpaper/registry.php';
+require_once ODDOUT_DIR . 'includes/wallpaper/prefs.php';
+require_once ODDOUT_DIR . 'includes/icons/registry.php';
+require_once ODDOUT_DIR . 'includes/icons/dock-filter.php';
+require_once ODDOUT_DIR . 'includes/cursors/registry.php';
+require_once ODDOUT_DIR . 'includes/cursors/css-endpoint.php';
+require_once ODDOUT_DIR . 'includes/cursors/inject.php';
+require_once ODDOUT_DIR . 'includes/rest.php';
+require_once ODDOUT_DIR . 'includes/accents.php';
+require_once ODDOUT_DIR . 'includes/toasts.php';
+require_once ODDOUT_DIR . 'includes/native-window.php';
+require_once ODDOUT_DIR . 'includes/integration/desktop-mode-ai.php';
+require_once ODDOUT_DIR . 'includes/integration/desktop-mode-extended-surfaces.php';
+require_once ODDOUT_DIR . 'includes/apps/bootstrap.php';
 // Universal bundle installer. Requires the Apps bootstrap above so
-// the App type module can delegate to odd_apps_validate_archive() /
-// odd_apps_install() for back-compat.
-require_once ODD_DIR . 'includes/content/bootstrap.php';
-require_once ODD_DIR . 'includes/starter-pack.php';
-require_once ODD_DIR . 'includes/e2e-diagnostics.php';
-require_once ODD_DIR . 'includes/enqueue.php';
+// the App type module can delegate to oddout_apps_validate_archive() /
+// oddout_apps_install() for back-compat.
+require_once ODDOUT_DIR . 'includes/content/bootstrap.php';
+require_once ODDOUT_DIR . 'includes/starter-pack.php';
+require_once ODDOUT_DIR . 'includes/e2e-diagnostics.php';
+require_once ODDOUT_DIR . 'includes/enqueue.php';
 
 /**
  * Wire every registered ODD script handle up to `wp_set_script_translations`
  * so strings wrapped with
  * `wp.i18n.__()` in the panel / widgets honour the active locale.
  *
- * The JSON files live at `languages/odd-<locale>-<handle-md5>.json`
- * when they exist. `languages/odd.pot` is generated at release time
+ * The JSON files live at `languages/odd-outlandish-desktop-decorator-<locale>-<handle-md5>.json`
+ * when they exist. `languages/odd-outlandish-desktop-decorator.pot` is generated at release time
  * by `odd/bin/make-pot` and is the source template that translators
  * fork.
  */
 add_action(
 	'wp_enqueue_scripts',
 	static function () {
-		$langs_dir = ODD_DIR . 'languages';
+		$langs_dir = ODDOUT_DIR . 'languages';
 		foreach ( array( 'odd-panel', 'odd-commands', 'odd-api' ) as $handle ) {
 			if ( wp_script_is( $handle, 'registered' ) ) {
-				wp_set_script_translations( $handle, 'odd', $langs_dir );
+				wp_set_script_translations( $handle, 'odd-outlandish-desktop-decorator', $langs_dir );
 			}
 		}
 	},
@@ -193,10 +273,10 @@ add_action(
 add_action(
 	'admin_enqueue_scripts',
 	static function () {
-		$langs_dir = ODD_DIR . 'languages';
+		$langs_dir = ODDOUT_DIR . 'languages';
 		foreach ( array( 'odd-panel', 'odd-commands', 'odd-api' ) as $handle ) {
 			if ( wp_script_is( $handle, 'registered' ) ) {
-				wp_set_script_translations( $handle, 'odd', $langs_dir );
+				wp_set_script_translations( $handle, 'odd-outlandish-desktop-decorator', $langs_dir );
 			}
 		}
 	},

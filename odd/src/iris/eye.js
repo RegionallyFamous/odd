@@ -4,7 +4,7 @@
  * A lightweight, purely visual companion that responds to the
  * motion primitives. The canonical "eye" of ODD remains the
  * desktop-icon tile (see `odd/includes/native-window.php` →
- * `odd_control_icon_url`). This module adds an
+ * `oddout_control_icon_url`). This module adds an
  * ephemeral floating eye at the top-right of the viewport that
  * materializes only for rituals and occasional reactions, then
  * fades back out.

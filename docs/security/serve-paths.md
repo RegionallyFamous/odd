@@ -1,19 +1,19 @@
 # Serve paths — security audit
 
-> Scope: every code path that returns file bytes from `wp-content/odd-*/`
+> Scope: every code path that returns file bytes from `wp-content/uploads/odd/`
 > on an authenticated or public request. Last reviewed for the 1.0.0
 > reliability/security hardening pass.
 
 The universal `.wp` installer populates five per-type subtrees under
-`wp-content/`:
+`wp-content/uploads/odd/`:
 
 | Subtree                          | Source              | Contents                       |
 |----------------------------------|---------------------|--------------------------------|
-| `wp-content/odd-apps/<slug>/`    | v0.16.0 (pre-`.wp`) | HTML/JS/CSS bundle + manifest  |
-| `wp-content/odd-icon-sets/<slug>/` | 1.0 baseline      | SVG icons + `manifest.json`    |
-| `wp-content/odd-cursor-sets/<slug>/` | 1.0 baseline    | SVG cursors + `manifest.json`  |
-| `wp-content/odd-scenes/<slug>/`  | 1.0 baseline        | JS scene + preview + wallpaper |
-| `wp-content/odd-widgets/<slug>/` | v1.8.0              | JS/CSS widget + `manifest.json`|
+| `wp-content/uploads/odd/apps/<slug>/`    | v0.16.0 (pre-`.wp`) | HTML/JS/CSS bundle + manifest  |
+| `wp-content/uploads/odd/icon-sets/<slug>/` | 1.0 baseline      | SVG icons + `manifest.json`    |
+| `wp-content/uploads/odd/cursor-sets/<slug>/` | 1.0 baseline    | SVG cursors + `manifest.json`  |
+| `wp-content/uploads/odd/scenes/<slug>/`  | 1.0 baseline        | JS scene + preview + wallpaper |
+| `wp-content/uploads/odd/widgets/<slug>/` | v1.8.0              | JS/CSS widget + `manifest.json`|
 
 Under the 1.0 baseline every bundle that lands in these subtrees is either (a)
 uploaded by a logged-in admin through `POST /odd/v1/bundles/upload`
@@ -24,21 +24,21 @@ manifest must also match the catalog row's `slug` and `type`. A mismatch
 aborts the install — the archive is never written to the final content
 directory.
 
-Only `odd-apps/` has a bespoke serve endpoint (`serve-cookieauth.php`).
+Only `uploads/odd/apps/` has a bespoke serve endpoint (`serve-cookieauth.php`).
 The other four are served through standard WordPress infrastructure —
-`content_url()` emits public URLs, the underlying HTTP server hands
+upload URLs derived from `wp_upload_dir()` point at public files, the underlying HTTP server hands
 bytes back directly, and no ODD code ever opens those files in response
 to a per-request user input.
 
 ## Audit results
 
-### `odd-apps/` — custom serve path
+### `uploads/odd/apps/` — custom serve path
 
 **File:** [`odd/includes/apps/serve-cookieauth.php`](../../odd/includes/apps/serve-cookieauth.php)
 
 - [x] **Auth.** `wp_validate_auth_cookie` re-verifies the HMAC; no
-      bare-cookie trust. `wp_set_current_user` + `current_user_can(
-      normalized app capability )` enforces per-app capability, which
+      bare-cookie trust. `user_can( user_id, normalized app capability )`
+      enforces per-app capability without switching the global current user, which
       defaults to `manage_options` and cannot be lowered by a bundle
       manifest unless the site opts in with filters.
 - [x] **Path traversal.** The path component is regex-constrained to
@@ -46,23 +46,23 @@ to a per-request user input.
       rejected, null bytes are rejected. `realpath()` then anchors the
       resolved path under the app's own directory with a
       `strpos($full, $real_base) === 0` prefix check.
-- [x] **Scope.** `odd_apps_dir_for( $slug )` points exclusively into
-      `wp-content/odd-apps/`, so even a hypothetical slug-level escape
-      cannot reach `odd-icon-sets/`, `odd-scenes/`, or `odd-widgets/`.
-- [x] **Content-type confusion.** `odd_apps_mime_for()` picks MIME
+- [x] **Scope.** `oddout_apps_dir_for( $slug )` points exclusively into
+      `wp-content/uploads/odd/apps/`, so even a hypothetical slug-level escape
+      cannot reach `icon-sets/`, `scenes/`, or `widgets/`.
+- [x] **Content-type confusion.** `oddout_apps_mime_for()` picks MIME
       from extension; `X-Content-Type-Options: nosniff` is set. The
       forbidden-extension blocklist
-      (`odd_apps_forbidden_extensions()`) rejects `php`, `phtml`,
+      (`oddout_apps_forbidden_extensions()`) rejects `php`, `phtml`,
       `phar`, `htaccess`, etc.
-- [x] **Debug envelope leak.** `odd_apps_serve_cookieauth()` takes an
+- [x] **Debug envelope leak.** `oddout_apps_serve_cookieauth()` takes an
       explicit `null` default so stray callers can't accidentally
-      trigger JSON output; it also re-checks `$_GET['odd_debug']
+      trigger JSON output; it also re-checks `$_GET['oddout_debug']
       === '1'` and `manage_options` before emitting.
 - [x] **CSP.** HTML responses include a compatibility-safe CSP with
       `object-src 'none'`, same-origin framing, and explicit allowances
       for the static app patterns ODD supports.
 
-### `odd-icon-sets/` and `odd-cursor-sets/` — static visual assets
+### `uploads/odd/icon-sets/` and `uploads/odd/cursor-sets/` — static visual assets
 
 **Files:**
 [`odd/includes/content/iconsets.php`](../../odd/includes/content/iconsets.php),
@@ -70,7 +70,7 @@ to a per-request user input.
 [`odd/includes/icons/registry.php`](../../odd/includes/icons/registry.php),
 `GET /odd/v1/icons/{set}/{key}` (tinted SVG), and the cursor CSS endpoint.
 
-- [x] **Static URL = `content_url( 'odd-icon-sets/<slug>/<file>' )`.**
+- [x] **Static URL = `oddout_storage_url( 'icon-sets' ) . '<slug>/<file>'`.**
       No PHP handler; the web server serves SVGs directly. The universal
       archive validator rejects server-executable files and path traversal
       before extraction.
@@ -82,15 +82,15 @@ to a per-request user input.
       `foreignObject`, embedded images, event handlers, external
       references, or scriptable URL values.
 - [x] **No cross-subtree reads.** The registry only walks
-      `wp-content/odd-icon-sets/<slug>/<file>`; `realpath()` confines
+      `wp-content/uploads/odd/icon-sets/<slug>/<file>`; `realpath()` confines
       the read.
 
-### `odd-scenes/` — enqueue-only
+### `uploads/odd/scenes/` — enqueue-only
 
 **File:** [`odd/includes/content/scenes.php`](../../odd/includes/content/scenes.php)
 
 - [x] **No serve path.** Scenes are registered via `wp_enqueue_script`
-      pointing at `content_url('odd-scenes/<slug>/<entry>')`. The web
+      pointing at `oddout_storage_url('scenes') . '<slug>/<entry>')`. The web
       server returns the JS; no PHP handler takes a per-request slug.
 - [x] **Install-time scrubbing.** The archive installer validates
       `manifest.entry`, rejects symlinks, and rejects any file
@@ -99,12 +99,12 @@ to a per-request user input.
 - [x] **Runtime registration.** Scene JS registers onto
       `window.__odd.scenes` in an IIFE. No server-rendered markup.
 
-### `odd-widgets/` — enqueue-only
+### `uploads/odd/widgets/` — enqueue-only
 
 **File:** [`odd/includes/content/widgets.php`](../../odd/includes/content/widgets.php)
 
 - [x] **No serve path.** Same shape as scenes — `wp_enqueue_script`
-      targets `content_url('odd-widgets/<slug>/<entry>')`, no PHP
+      targets `oddout_storage_url('widgets') . '<slug>/<entry>')`, no PHP
       handler reads from the subtree.
 - [x] **Admin-trust model.** Widget JS can't be installed without
       `manage_options` + the one-time "trust this JS" confirmation
@@ -117,10 +117,10 @@ to a per-request user input.
 
 The universal `.wp` refactor and cursor-set work did **not** expand the
 app serve attack surface. Icon sets, cursor sets, scenes, and widgets
-are served by `content_url()` + the HTTP server and carry no custom PHP
+are served by uploads-derived URLs + the HTTP server and carry no custom PHP
 handler that joins a slug into a filesystem path. Apps are the only
 subtree with a bespoke serve endpoint, and that endpoint is scoped to
-`odd-apps/` via `odd_apps_dir_for()` + `realpath()`.
+`uploads/odd/apps/` via `oddout_apps_dir_for()` + `realpath()`.
 
 ## Follow-ups
 

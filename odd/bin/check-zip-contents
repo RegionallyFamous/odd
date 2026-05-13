@@ -12,7 +12,7 @@ REQUIRED = {
     "odd/odd.php",
     "odd/readme.txt",
     "odd/uninstall.php",
-    "odd/languages/odd.pot",
+    "odd/languages/odd-outlandish-desktop-decorator.pot",
     "odd/includes/dependencies.php",
     "odd/includes/enqueue.php",
     "odd/includes/content/bootstrap.php",

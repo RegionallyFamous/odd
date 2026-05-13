@@ -3,12 +3,12 @@
  * ODD icons — set registry.
  *
  * Walks `assets/icons/<slug>/manifest.json` at plugin boot and exposes:
- *   - odd_icons_get_sets()          full list (for the panel + REST).
- *   - odd_icons_get_set( $slug )    one entry, or null.
- *   - odd_icons_get_active_slug()   current user's pick, falling back
- *                                   to the `odd_icons_default_slug`
+ *   - oddout_icons_get_sets()          full list (for the panel + REST).
+ *   - oddout_icons_get_set( $slug )    one entry, or null.
+ *   - oddout_icons_get_active_slug()   current user's pick, falling back
+ *                                   to the `oddout_icons_default_slug`
  *                                   filter, else `''` (= pass-through).
- *   - odd_icons_set_active_slug()   save pick to user meta (odd_icon_set).
+ *   - oddout_icons_set_active_slug()   save pick to user meta (oddout_icon_set).
  *
  * Sets are directories containing manifest + SVGs, so instead of one
  * big JSON we scan the directory tree.
@@ -35,7 +35,7 @@ defined( 'ABSPATH' ) || exit;
  * is the runtime safety net for hand-edited JSON or broken
  * third-party content.
  */
-function odd_registry_bad_manifests( $path = null, $error = null ) {
+function oddout_registry_bad_manifests( $path = null, $error = null ) {
 	static $store = array();
 	if ( null !== $path ) {
 		if ( ! isset( $store[ $path ] ) ) {
@@ -45,10 +45,10 @@ function odd_registry_bad_manifests( $path = null, $error = null ) {
 	return $store;
 }
 
-function odd_registry_report_bad_manifest( $path, $error = '' ) {
-	$before = count( odd_registry_bad_manifests() );
-	odd_registry_bad_manifests( (string) $path, (string) $error );
-	$after = count( odd_registry_bad_manifests() );
+function oddout_registry_report_bad_manifest( $path, $error = '' ) {
+	$before = count( oddout_registry_bad_manifests() );
+	oddout_registry_bad_manifests( (string) $path, (string) $error );
+	$after = count( oddout_registry_bad_manifests() );
 	if ( $after === $before ) {
 		return; // Already reported this path.
 	}
@@ -56,21 +56,21 @@ function odd_registry_report_bad_manifest( $path, $error = '' ) {
 		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 		error_log( sprintf( '[ODD] manifest failed to parse: %s (%s)', $path, $error ) );
 	}
-	if ( 1 === $after && is_admin() && ! has_action( 'admin_notices', 'odd_registry_admin_notice_bad_manifests' ) ) {
-		add_action( 'admin_notices', 'odd_registry_admin_notice_bad_manifests' );
+	if ( 1 === $after && is_admin() && ! has_action( 'admin_notices', 'oddout_registry_admin_notice_bad_manifests' ) ) {
+		add_action( 'admin_notices', 'oddout_registry_admin_notice_bad_manifests' );
 	}
 }
 
-function odd_registry_admin_notice_bad_manifests() {
+function oddout_registry_admin_notice_bad_manifests() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
-	$list = odd_registry_bad_manifests();
+	$list = oddout_registry_bad_manifests();
 	if ( empty( $list ) ) {
 		return;
 	}
 	echo '<div class="notice notice-error"><p><strong>ODD</strong>: ';
-	echo esc_html__( 'One or more manifest.json files failed to parse and were ignored. Check the plugin folder:', 'odd' );
+	echo esc_html__( 'One or more manifest.json files failed to parse and were ignored. Check the plugin folder:', 'odd-outlandish-desktop-decorator' );
 	echo '</p><ul style="margin-left:2em;list-style:disc">';
 	foreach ( $list as $path => $error ) {
 		echo '<li><code>' . esc_html( (string) $path ) . '</code>';
@@ -100,7 +100,7 @@ function odd_registry_admin_notice_bad_manifests() {
  * resolves outside the set root. Paths are also required to be flat — sets
  * ship SVGs next to the manifest, no subdirectories, no symlinks to elsewhere.
  */
-function odd_icons_resolve_set_path( $set_dir, $rel ) {
+function oddout_icons_resolve_set_path( $set_dir, $rel ) {
 	$rel = (string) $rel;
 	if ( '' === $rel ) {
 		return '';
@@ -137,7 +137,7 @@ function odd_icons_resolve_set_path( $set_dir, $rel ) {
  * through the tinted-SVG REST endpoint or serve the static file
  * directly via plugins_url().
  */
-function odd_icons_svg_uses_current_color( $abs_path ) {
+function oddout_icons_svg_uses_current_color( $abs_path ) {
 	if ( ! is_readable( $abs_path ) ) {
 		return false;
 	}
@@ -152,41 +152,41 @@ function odd_icons_svg_uses_current_color( $abs_path ) {
  * Build the public REST URL for a tinted icon. Set and key are
  * sanitized inputs; the endpoint itself still re-validates both.
  */
-function odd_icons_tinted_svg_url( $set_slug, $key ) {
-	return odd_https_rest_url( 'odd/v1/icons/' . $set_slug . '/' . $key );
+function oddout_icons_tinted_svg_url( $set_slug, $key ) {
+	return oddout_https_rest_url( 'odd/v1/icons/' . $set_slug . '/' . $key );
 }
 
 /**
  * Transient key for the persisted icon registry. Keyed by
- * ODD_VERSION so a plugin update automatically busts the cache —
+ * ODDOUT_VERSION so a plugin update automatically busts the cache —
  * new / renamed / removed sets propagate without a manual flush.
  */
-function odd_icons_registry_transient_key() {
-	return 'odd_icon_registry_v' . ( defined( 'ODD_VERSION' ) ? ODD_VERSION : '0' );
+function oddout_icons_registry_transient_key() {
+	return 'oddout_icon_registry_v' . ( defined( 'ODDOUT_VERSION' ) ? ODDOUT_VERSION : '0' );
 }
 
 /**
  * Per-request cache-reset hook. The icon-set installer fires
- * `odd_icons_invalidate_cache` after install/uninstall so the static
+ * `oddout_icons_invalidate_cache` after install/uninstall so the static
  * below gets wiped on the same request the change happened.
  */
 add_action(
-	'odd_icons_invalidate_cache',
+	'oddout_icons_invalidate_cache',
 	function () {
-		odd_icons_get_sets( true );
+		oddout_icons_get_sets( true );
 	}
 );
 
-function odd_icons_get_sets( $reset = false ) {
+function oddout_icons_get_sets( $reset = false ) {
 	static $cache = null;
 	if ( $reset ) {
 		$cache = null;
 		// Also wipe the transient so the next scan is fully fresh —
 		// prevents stale persisted data from masking a cache-bust
 		// that happened out-of-band (e.g. a test fixture writing
-		// directly into wp-content/odd-icon-sets/).
+		// directly into uploads/odd/icon-sets/).
 		if ( function_exists( 'delete_transient' ) ) {
-			delete_transient( odd_icons_registry_transient_key() );
+			delete_transient( oddout_icons_registry_transient_key() );
 		}
 		// Fall through to rebuild + return fresh.
 	}
@@ -195,19 +195,19 @@ function odd_icons_get_sets( $reset = false ) {
 	}
 
 	// Persistent cache: the on-disk registry is fully determined by
-	// files under assets/icons/ + wp-content/odd-icon-sets/, which
+	// files under assets/icons/ + uploads/odd/icon-sets/, which
 	// only change on plugin update or `.wp` install/uninstall (the
 	// installer busts this transient explicitly). Hitting this
 	// transient avoids ~221 small file reads + 17 JSON parses per
 	// cold PHP worker for the built-ins.
 	//
 	// Third-party plugins that extend the registry via the
-	// `odd_icon_set_registry` filter still get called on every
+	// `oddout_icon_set_registry` filter still get called on every
 	// request — the disk scan is the only thing we memoize.
-	$transient_key = odd_icons_registry_transient_key();
+	$transient_key = oddout_icons_registry_transient_key();
 	$persisted     = get_transient( $transient_key );
 	if ( is_array( $persisted ) ) {
-		$filtered = apply_filters( 'odd_icon_set_registry', $persisted );
+		$filtered = apply_filters( 'oddout_icon_set_registry', $persisted );
 		$cache    = is_array( $filtered ) ? $filtered : $persisted;
 		return $cache;
 	}
@@ -216,7 +216,7 @@ function odd_icons_get_sets( $reset = false ) {
 
 	// Built-in sets: scanned from odd/assets/icons/<slug>/.
 	$sources = array();
-	$root    = ODD_DIR . 'assets/icons';
+	$root    = ODDOUT_DIR . 'assets/icons';
 	if ( is_dir( $root ) ) {
 		$dirs = glob( $root . '/*', GLOB_ONLYDIR );
 		if ( is_array( $dirs ) ) {
@@ -232,26 +232,26 @@ function odd_icons_get_sets( $reset = false ) {
 				$raw  = file_get_contents( $manifest_path );
 				$data = is_string( $raw ) ? json_decode( $raw, true ) : null;
 				if ( ! is_array( $data ) ) {
-					odd_registry_report_bad_manifest( $manifest_path, json_last_error_msg() );
+					oddout_registry_report_bad_manifest( $manifest_path, json_last_error_msg() );
 					continue;
 				}
 				$sources[ $slug ] = array(
 					'data'     => $data,
 					'base_dir' => $dir,
-					'base_url' => ODD_URL . '/assets/icons/' . rawurlencode( $slug ),
+					'base_url' => ODDOUT_URL . '/assets/icons/' . rawurlencode( $slug ),
 					'source'   => 'plugin',
 				);
 			}
 		}
 	}
 
-	// Installed sets: scanned from wp-content/odd-icon-sets/<slug>/.
+	// Installed sets: scanned from uploads/odd/icon-sets/<slug>/.
 	// Installed sets take precedence over built-ins on collision —
 	// the installer already refuses a slug that exists anywhere in
 	// the bundle namespace, but if a user drops a folder in by hand
 	// the installed copy wins.
-	if ( function_exists( 'odd_iconsets_scan_installed' ) ) {
-		foreach ( odd_iconsets_scan_installed() as $slug => $entry ) {
+	if ( function_exists( 'oddout_iconsets_scan_installed' ) ) {
+		foreach ( oddout_iconsets_scan_installed() as $slug => $entry ) {
 			$sources[ $slug ] = $entry;
 		}
 	}
@@ -266,14 +266,14 @@ function odd_icons_get_sets( $reset = false ) {
 		$icons = array();
 		if ( isset( $data['icons'] ) && is_array( $data['icons'] ) ) {
 			foreach ( $data['icons'] as $key => $rel ) {
-				$abs = odd_icons_resolve_set_path( $base_dir, $rel );
+				$abs = oddout_icons_resolve_set_path( $base_dir, $rel );
 				if ( '' === $abs || ! is_readable( $abs ) ) {
 					continue;
 				}
 				$basename  = basename( $abs );
 				$clean_key = sanitize_key( (string) $key );
-				if ( odd_icons_svg_uses_current_color( $abs ) ) {
-					$icons[ $clean_key ] = odd_icons_tinted_svg_url( $slug, $clean_key );
+				if ( oddout_icons_svg_uses_current_color( $abs ) ) {
+					$icons[ $clean_key ] = oddout_icons_tinted_svg_url( $slug, $clean_key );
 				} else {
 					$icons[ $clean_key ] = $base_url . '/' . rawurlencode( $basename );
 				}
@@ -282,10 +282,10 @@ function odd_icons_get_sets( $reset = false ) {
 
 		$preview = '';
 		if ( ! empty( $data['preview'] ) ) {
-			$preview_abs = odd_icons_resolve_set_path( $base_dir, $data['preview'] );
+			$preview_abs = oddout_icons_resolve_set_path( $base_dir, $data['preview'] );
 			if ( '' !== $preview_abs && is_readable( $preview_abs ) ) {
 				$preview_basename = basename( $preview_abs );
-				if ( odd_icons_svg_uses_current_color( $preview_abs ) ) {
+				if ( oddout_icons_svg_uses_current_color( $preview_abs ) ) {
 					$preview_key = '__preview__';
 					foreach ( (array) $data['icons'] as $k => $rel ) {
 						if ( basename( (string) $rel ) === $preview_basename ) {
@@ -293,7 +293,7 @@ function odd_icons_get_sets( $reset = false ) {
 							break;
 						}
 					}
-					$preview = odd_icons_tinted_svg_url( $slug, $preview_key );
+					$preview = oddout_icons_tinted_svg_url( $slug, $preview_key );
 				} else {
 					$preview = $base_url . '/' . rawurlencode( $preview_basename );
 				}
@@ -329,7 +329,7 @@ function odd_icons_get_sets( $reset = false ) {
 	 *
 	 * @param array $registry Map of slug → set descriptor.
 	 */
-	$filtered = apply_filters( 'odd_icon_set_registry', $cache );
+	$filtered = apply_filters( 'oddout_icon_set_registry', $cache );
 	if ( is_array( $filtered ) ) {
 		$cache = $filtered;
 	}
@@ -337,8 +337,8 @@ function odd_icons_get_sets( $reset = false ) {
 	return $cache;
 }
 
-function odd_icons_get_set( $slug ) {
-	$sets = odd_icons_get_sets();
+function oddout_icons_get_set( $slug ) {
+	$sets = oddout_icons_get_sets();
 	return isset( $sets[ $slug ] ) ? $sets[ $slug ] : null;
 }
 
@@ -346,41 +346,41 @@ function odd_icons_get_set( $slug ) {
  * Active set for the given (or current) user. `''` means "don't
  * re-skin the dock" — pass-through behaviour.
  */
-function odd_icons_get_active_slug( $user_id = 0 ) {
+function oddout_icons_get_active_slug( $user_id = 0 ) {
 	$user_id = $user_id ? (int) $user_id : get_current_user_id();
 	if ( $user_id > 0 ) {
-		$saved = get_user_meta( $user_id, 'odd_icon_set', true );
+		$saved = get_user_meta( $user_id, 'oddout_icon_set', true );
 		if ( is_string( $saved ) && '' !== $saved ) {
 			if ( 'none' === $saved ) {
 				return '';
 			}
-			$set = odd_icons_get_set( $saved );
+			$set = oddout_icons_get_set( $saved );
 			if ( $set ) {
 				return $saved;
 			}
 		}
 	}
 
-	$default = (string) apply_filters( 'odd_icons_default_slug', '' );
-	if ( '' !== $default && odd_icons_get_set( $default ) ) {
+	$default = (string) apply_filters( 'oddout_icons_default_slug', '' );
+	if ( '' !== $default && oddout_icons_get_set( $default ) ) {
 		return $default;
 	}
 	return '';
 }
 
-function odd_icons_set_active_slug( $slug, $user_id = 0 ) {
+function oddout_icons_set_active_slug( $slug, $user_id = 0 ) {
 	$user_id = $user_id ? (int) $user_id : get_current_user_id();
 	if ( $user_id <= 0 ) {
 		return false;
 	}
 	$slug = (string) $slug;
 	if ( 'none' === $slug ) {
-		return (bool) update_user_meta( $user_id, 'odd_icon_set', 'none' );
+		return (bool) update_user_meta( $user_id, 'oddout_icon_set', 'none' );
 	}
-	if ( '' !== $slug && ! odd_icons_get_set( $slug ) ) {
+	if ( '' !== $slug && ! oddout_icons_get_set( $slug ) ) {
 		return false;
 	}
-	return (bool) update_user_meta( $user_id, 'odd_icon_set', $slug );
+	return (bool) update_user_meta( $user_id, 'oddout_icon_set', $slug );
 }
 
 /**
@@ -398,7 +398,7 @@ function odd_icons_set_active_slug( $slug, $user_id = 0 ) {
  * Inputs are route-validated by regex (`[a-z0-9-]+`) and then
  * re-checked against the scanned registry so unknown sets/keys 404.
  * The SVG is always served from the realpath inside the set
- * directory (see odd_icons_resolve_set_path()), no arbitrary file
+ * directory (see oddout_icons_resolve_set_path()), no arbitrary file
  * traversal is possible.
  */
 add_action(
@@ -409,7 +409,7 @@ add_action(
 			'/icons/(?P<set>[a-z0-9-]+)/(?P<key>[a-z0-9-_]+)',
 			array(
 				'methods'             => 'GET',
-				'callback'            => 'odd_icons_rest_serve_tinted',
+				'callback'            => 'oddout_icons_rest_serve_tinted',
 				'permission_callback' => '__return_true',
 				'args'                => array(
 					'set' => array( 'type' => 'string' ),
@@ -420,36 +420,36 @@ add_action(
 	}
 );
 
-function odd_icons_rest_serve_tinted( WP_REST_Request $request ) {
+function oddout_icons_rest_serve_tinted( WP_REST_Request $request ) {
 	$set_slug = sanitize_key( (string) $request->get_param( 'set' ) );
 	$key      = sanitize_key( (string) $request->get_param( 'key' ) );
 
 	if ( '' === $set_slug || '' === $key ) {
-		return new WP_Error( 'odd_icon_invalid', __( 'Unknown icon.', 'odd' ), array( 'status' => 404 ) );
+		return new WP_Error( 'oddout_icon_invalid', __( 'Unknown icon.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 404 ) );
 	}
 
 	// Built-ins live under odd/assets/icons/; user-installed sets
-	// live under wp-content/odd-icon-sets/. The registry already
+	// live under uploads/odd/icon-sets/. The registry already
 	// merges both when building URLs, so the tinted-SVG endpoint
 	// has to look up both too.
-	$root = ODD_DIR . 'assets/icons/' . $set_slug;
-	if ( ! is_dir( $root ) && defined( 'ODD_ICONSETS_DIR' ) ) {
-		$installed_root = ODD_ICONSETS_DIR . $set_slug;
+	$root = ODDOUT_DIR . 'assets/icons/' . $set_slug;
+	if ( ! is_dir( $root ) && defined( 'ODDOUT_ICONSETS_DIR' ) ) {
+		$installed_root = ODDOUT_ICONSETS_DIR . $set_slug;
 		if ( is_dir( $installed_root ) ) {
 			$root = $installed_root;
 		}
 	}
 	if ( ! is_dir( $root ) ) {
-		return new WP_Error( 'odd_icon_invalid', __( 'Unknown icon set.', 'odd' ), array( 'status' => 404 ) );
+		return new WP_Error( 'oddout_icon_invalid', __( 'Unknown icon set.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 404 ) );
 	}
 	$manifest_path = $root . '/manifest.json';
 	if ( ! is_readable( $manifest_path ) ) {
-		return new WP_Error( 'odd_icon_invalid', __( 'Unknown icon set.', 'odd' ), array( 'status' => 404 ) );
+		return new WP_Error( 'oddout_icon_invalid', __( 'Unknown icon set.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 404 ) );
 	}
 	$raw  = file_get_contents( $manifest_path );
 	$data = is_string( $raw ) ? json_decode( $raw, true ) : null;
 	if ( ! is_array( $data ) || empty( $data['icons'] ) || ! is_array( $data['icons'] ) ) {
-		return new WP_Error( 'odd_icon_invalid', __( 'Unknown icon set.', 'odd' ), array( 'status' => 404 ) );
+		return new WP_Error( 'oddout_icon_invalid', __( 'Unknown icon set.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 404 ) );
 	}
 
 	$rel = null;
@@ -460,17 +460,17 @@ function odd_icons_rest_serve_tinted( WP_REST_Request $request ) {
 		}
 	}
 	if ( null === $rel ) {
-		return new WP_Error( 'odd_icon_invalid', __( 'Unknown icon.', 'odd' ), array( 'status' => 404 ) );
+		return new WP_Error( 'oddout_icon_invalid', __( 'Unknown icon.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 404 ) );
 	}
 
-	$abs = odd_icons_resolve_set_path( $root, $rel );
+	$abs = oddout_icons_resolve_set_path( $root, $rel );
 	if ( '' === $abs || ! is_readable( $abs ) ) {
-		return new WP_Error( 'odd_icon_invalid', __( 'Unknown icon.', 'odd' ), array( 'status' => 404 ) );
+		return new WP_Error( 'oddout_icon_invalid', __( 'Unknown icon.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 404 ) );
 	}
 
 	$svg = file_get_contents( $abs );
 	if ( false === $svg || '' === $svg ) {
-		return new WP_Error( 'odd_icon_invalid', __( 'Unknown icon.', 'odd' ), array( 'status' => 404 ) );
+		return new WP_Error( 'oddout_icon_invalid', __( 'Unknown icon.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 404 ) );
 	}
 
 	$accent = isset( $data['accent'] ) ? (string) $data['accent'] : '';
@@ -487,6 +487,6 @@ function odd_icons_rest_serve_tinted( WP_REST_Request $request ) {
 	header( 'Content-Type: image/svg+xml' );
 	header( 'Cache-Control: public, max-age=3600, immutable' );
 	header( 'X-Content-Type-Options: nosniff' );
-	echo $svg; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw SVG body, not HTML
+	oddout_emit_raw_response( $svg );
 	exit;
 }
