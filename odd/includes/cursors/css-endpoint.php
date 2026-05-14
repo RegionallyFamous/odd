@@ -56,16 +56,20 @@ function oddout_cursors_css_cursor( array $set, $kind, $fallback ) {
 }
 
 function oddout_cursors_build_css( array $set ) {
-	$default     = oddout_cursors_css_cursor( $set, 'default', 'default' );
-	$pointer     = oddout_cursors_css_cursor( $set, 'pointer', 'pointer' );
-	$text        = oddout_cursors_css_cursor( $set, 'text', 'text' );
-	$grab        = oddout_cursors_css_cursor( $set, 'grab', 'grab' );
-	$grabbing    = oddout_cursors_css_cursor( $set, 'grabbing', 'grabbing' );
-	$crosshair   = oddout_cursors_css_cursor( $set, 'crosshair', 'crosshair' );
-	$not_allowed = oddout_cursors_css_cursor( $set, 'not-allowed', 'not-allowed' );
-	$wait        = oddout_cursors_css_cursor( $set, 'wait', 'wait' );
-	$help        = oddout_cursors_css_cursor( $set, 'help', 'help' );
-	$progress    = oddout_cursors_css_cursor( $set, 'progress', 'progress' );
+	$default      = oddout_cursors_css_cursor( $set, 'default', 'default' );
+	$pointer      = oddout_cursors_css_cursor( $set, 'pointer', 'pointer' );
+	$text         = oddout_cursors_css_cursor( $set, 'text', 'text' );
+	$grab         = oddout_cursors_css_cursor( $set, 'grab', 'grab' );
+	$grabbing     = oddout_cursors_css_cursor( $set, 'grabbing', 'grabbing' );
+	$crosshair    = oddout_cursors_css_cursor( $set, 'crosshair', 'crosshair' );
+	$not_allowed  = oddout_cursors_css_cursor( $set, 'not-allowed', 'not-allowed' );
+	$wait         = oddout_cursors_css_cursor( $set, 'wait', 'wait' );
+	$help         = oddout_cursors_css_cursor( $set, 'help', 'help' );
+	$progress     = oddout_cursors_css_cursor( $set, 'progress', 'progress' );
+	$roots        = 'html, body, #wpwrap, #wpcontent, #wpbody, #wpbody-content, .desktop-mode, .desktop-mode-shell, #desktop-mode-shell, #wp-desktop-shell, .wp-desktop-shell, .wp-desktop-shell__body, #wp-desktop-area, .wp-desktop-area, #wp-desktop-wallpaper, .wp-desktop-wallpaper, #wp-desktop-dock, .wp-desktop-dock, #wp-desktop-widgets, .wp-desktop-widgets, .wp-desktop-widgets__list, [data-odd-cursor-root]';
+	$windows      = '[data-window-id], [data-windowid], [data-desktop-window-id], [data-native-window-id], .desktop-mode-window, .desktop-window, .wp-desktop-window, .wp-desktop-window__body, .wp-desktop-window__iframe';
+	$pointers     = 'a, button, .button, .button-primary, .button-secondary, [role="button"], summary, label[for], input[type="button"], input[type="submit"], input[type="reset"], select, option, .ab-item, .components-button, .wp-desktop-icon, .wp-desktop-dock__item, .wp-desktop-dock__item-primary, .wp-desktop-dock__item-new, .wp-desktop-window__btn, .wp-desktop-window__tab, .wp-desktop-window__meta-btn, .wp-desktop-window__menu-btn, .wp-desktop-window__menu-item, .wp-desktop-widgets__card-redock, .wp-desktop-widgets__card-close, .wp-desktop-widgets__add';
+	$grab_targets = '[draggable="true"], [data-drag], [data-drag-handle], .ui-sortable-handle, .components-draggable, .wp-desktop-window__titlebar, .wp-desktop-window__resize-handle, .wp-desktop-widgets__chrome, .wp-desktop-widgets__grip, .wp-desktop-widgets__resize';
 
 	return implode(
 		"\n",
@@ -83,8 +87,8 @@ function oddout_cursors_build_css( array $set ) {
 			'	--odd-cursor-help: ' . $help . ';',
 			'	--odd-cursor-progress: ' . $progress . ';',
 			'}',
-			'html, body, #wpwrap, #wpcontent, #wpbody, #wpbody-content, .desktop-mode, .desktop-mode-shell, #desktop-mode-shell, [data-odd-cursor-root] { cursor: var(--odd-cursor-default); }',
-			'[data-window-id], [data-windowid], [data-desktop-window-id], [data-native-window-id], .desktop-mode-window, .desktop-window { cursor: var(--odd-cursor-default); }',
+			$roots . ' { cursor: var(--odd-cursor-default); }',
+			$windows . ' { cursor: var(--odd-cursor-default); }',
 			'[data-odd-cursor="default"] { cursor: var(--odd-cursor-default); }',
 			'[data-odd-cursor="pointer"] { cursor: var(--odd-cursor-pointer); }',
 			'[data-odd-cursor="text"] { cursor: var(--odd-cursor-text); }',
@@ -95,10 +99,10 @@ function oddout_cursors_build_css( array $set ) {
 			'[data-odd-cursor="wait"] { cursor: var(--odd-cursor-wait); }',
 			'[data-odd-cursor="progress"] { cursor: var(--odd-cursor-progress); }',
 			'[data-odd-cursor="help"] { cursor: var(--odd-cursor-help); }',
-			'a, button, .button, .button-primary, .button-secondary, [role="button"], summary, label[for], input[type="button"], input[type="submit"], input[type="reset"], select, option, .ab-item, .components-button { cursor: var(--odd-cursor-pointer); }',
+			$pointers . ' { cursor: var(--odd-cursor-pointer); }',
 			'input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, [contenteditable="true"], [contenteditable=""], .CodeMirror, .components-text-control__input, .components-textarea-control__input, .block-editor-rich-text__editable, .editor-post-title__input { cursor: var(--odd-cursor-text); }',
-			'[draggable="true"], [data-drag], [data-drag-handle], .ui-sortable-handle, .components-draggable { cursor: var(--odd-cursor-grab); }',
-			'body.is-dragging, body.odd-is-dragging, body.desktop-mode-is-dragging, .is-dragging, .dragging, [aria-grabbed="true"] { cursor: var(--odd-cursor-grabbing); }',
+			$grab_targets . ' { cursor: var(--odd-cursor-grab); }',
+			'body.is-dragging, body.odd-is-dragging, body.desktop-mode-is-dragging, .is-dragging, .dragging, [aria-grabbed="true"], .wp-desktop-window--dragging, .wp-desktop-window--resizing, .wp-desktop-window--snap-drag { cursor: var(--odd-cursor-grabbing); }',
 			':disabled, [disabled], [aria-disabled="true"], .disabled, .is-disabled, .components-disabled, .odd-is-disabled { cursor: var(--odd-cursor-not-allowed); }',
 			'body.is-busy, body.odd-is-busy, .is-busy, .updating-message, .spinner.is-active, .components-spinner, [aria-busy="true"] { cursor: var(--odd-cursor-progress); }',
 			'body.odd-is-waiting, .odd-is-waiting, .waiting { cursor: var(--odd-cursor-wait); }',

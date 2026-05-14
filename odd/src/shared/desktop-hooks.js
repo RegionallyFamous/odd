@@ -461,17 +461,17 @@
 	function markWindowChrome( root ) {
 		if ( ! root || ! root.querySelectorAll ) return 0;
 		var count = 0;
-		var chrome = root.querySelectorAll( '.desktop-mode-window-titlebar, .desktop-mode-window-header, [data-window-titlebar], [data-window-header], [data-drag-handle], [data-resize-handle], [data-window-drag-handle], [data-window-resize-handle]' );
+		var chrome = root.querySelectorAll( '.desktop-mode-window-titlebar, .desktop-mode-window-header, .wp-desktop-window__titlebar, [data-window-titlebar], [data-window-header], [data-drag-handle], [data-resize-handle], [data-window-drag-handle], [data-window-resize-handle], .wp-desktop-window__resize-handle' );
 		for ( var i = 0; i < chrome.length; i++ ) {
 			markCursor( chrome[ i ], 'grab' );
 			count++;
 		}
-		var resize = root.querySelectorAll( '[data-resize-handle], [data-window-resize-handle]' );
+		var resize = root.querySelectorAll( '[data-resize-handle], [data-window-resize-handle], .wp-desktop-window__resize-handle' );
 		for ( var r = 0; r < resize.length; r++ ) {
 			markCursor( resize[ r ], 'grab' );
 			count++;
 		}
-		var buttons = root.querySelectorAll( 'button, [role="button"], a[href], [data-window-control], wpd-button, .components-button' );
+		var buttons = root.querySelectorAll( 'button, [role="button"], a[href], [data-window-control], wpd-button, .components-button, .wp-desktop-window__btn, .wp-desktop-window__tab, .wp-desktop-window__meta-btn, .wp-desktop-window__menu-btn, .wp-desktop-window__menu-item' );
 		for ( var j = 0; j < buttons.length; j++ ) {
 			markCursor( buttons[ j ], 'pointer' );
 			count++;
@@ -483,9 +483,21 @@
 	function markWidgetChrome( root ) {
 		if ( ! root || ! root.querySelectorAll ) return 0;
 		var count = 0;
-		var chrome = root.querySelectorAll( '.odd-widget__chrome, .odd-widget__move, [data-widget-chrome], [data-widget-drag-handle], [data-drag-handle]' );
+		var chrome = root.querySelectorAll( '.odd-widget__chrome, .odd-widget__move, .wp-desktop-widgets__chrome, .wp-desktop-widgets__grip, .wp-desktop-widgets__resize, [data-widget-chrome], [data-widget-drag-handle], [data-drag-handle]' );
 		for ( var i = 0; i < chrome.length; i++ ) {
 			markCursor( chrome[ i ], 'grab' );
+			count++;
+		}
+		count += markCursorDescendants( root );
+		return count;
+	}
+
+	function markDesktopChrome( root ) {
+		if ( ! root || ! root.querySelectorAll ) return 0;
+		var count = markWindowChrome( root ) + markWidgetChrome( root );
+		var pointers = root.querySelectorAll( '.wp-desktop-icon, .wp-desktop-dock__item, .wp-desktop-dock__item-primary, .wp-desktop-dock__item-new, .wp-desktop-widgets__card-redock, .wp-desktop-widgets__card-close, .wp-desktop-widgets__add' );
+		for ( var i = 0; i < pointers.length; i++ ) {
+			markCursor( pointers[ i ], 'pointer' );
 			count++;
 		}
 		count += markCursorDescendants( root );
@@ -803,9 +815,10 @@
 		} );
 		if ( typeof document !== 'undefined' ) {
 			ready( function () {
-				var roots = document.querySelectorAll ? document.querySelectorAll( '#desktop-mode-shell, .desktop-mode, .desktop-mode-shell, [data-window-id], [data-windowid], [data-desktop-window-id], [data-native-window-id]' ) : [];
+				var roots = document.querySelectorAll ? document.querySelectorAll( '#desktop-mode-shell, .desktop-mode, .desktop-mode-shell, #wp-desktop-shell, .wp-desktop-shell, .wp-desktop-shell__body, #wp-desktop-area, .wp-desktop-area, #wp-desktop-wallpaper, .wp-desktop-wallpaper, #wp-desktop-dock, .wp-desktop-dock, #wp-desktop-widgets, .wp-desktop-widgets, .wp-desktop-widgets__list, .wp-desktop-window, .wp-desktop-icons, [data-window-id], [data-windowid], [data-desktop-window-id], [data-native-window-id]' ) : [];
 				for ( var i = 0; i < roots.length; i++ ) {
 					markCursorRoot( roots[ i ] );
+					markDesktopChrome( roots[ i ] );
 					if ( ! observeCursorSurface( roots[ i ], { source: 'desktop-ready-sweep' } ) ) {
 						markWindowChrome( roots[ i ] );
 					}

@@ -94,8 +94,12 @@ class Test_Cursors extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'url("https://example.com/default.svg") 2 3, default', $css );
 		$this->assertStringContainsString( 'url("https://example.com/text.svg") 16 16, text', $css );
+		$this->assertStringContainsString( 'url("https://example.com/default.svg") 2 3, grab', $css );
 		$this->assertStringContainsString( '--odd-cursor-default:', $css );
 		$this->assertStringContainsString( '[data-odd-cursor="text"]', $css );
+		$this->assertStringContainsString( '#wp-desktop-area', $css );
+		$this->assertStringContainsString( '.wp-desktop-icon', $css );
+		$this->assertStringContainsString( '.wp-desktop-window__titlebar', $css );
 		$this->assertStringContainsString( 'input:not([type="button"])', $css );
 		$this->assertStringNotContainsString( '!important', $css );
 	}
@@ -116,6 +120,7 @@ class Test_Cursors extends WP_UnitTestCase {
 			'[data-window-id], [data-windowid], [data-desktop-window-id], [data-native-window-id]',
 			$css
 		);
+		$this->assertStringContainsString( '.wp-desktop-window', $css );
 		$this->assertStringNotContainsString( '.native-window-titlebar { cursor: var(--odd-cursor-grab); }', $css );
 		$this->assertStringNotContainsString( '[aria-label="Close"]', $css );
 	}

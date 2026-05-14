@@ -251,6 +251,29 @@ describe( 'Desktop Mode hook bridge', () => {
 		expect( widget.querySelector( '.odd-widget__move' ).getAttribute( 'data-odd-cursor' ) ).toBe( 'grab' );
 	} );
 
+	it( 'maps current WP Desktop Mode desktop area and icon surfaces', () => {
+		window.wp.desktop = { ready: ( cb ) => cb() };
+		const shell = document.createElement( 'div' );
+		shell.id = 'wp-desktop-shell';
+		const area = document.createElement( 'div' );
+		area.id = 'wp-desktop-area';
+		const icons = document.createElement( 'div' );
+		icons.className = 'wp-desktop-icons';
+		const icon = document.createElement( 'button' );
+		icon.className = 'wp-desktop-icon';
+		icons.appendChild( icon );
+		area.appendChild( icons );
+		shell.appendChild( area );
+		document.body.appendChild( shell );
+
+		loadDesktopHooks();
+
+		expect( shell.getAttribute( 'data-odd-cursor-root' ) ).toBe( 'true' );
+		expect( area.getAttribute( 'data-odd-cursor-root' ) ).toBe( 'true' );
+		expect( icons.getAttribute( 'data-odd-cursor-root' ) ).toBe( 'true' );
+		expect( icon.getAttribute( 'data-odd-cursor' ) ).toBe( 'pointer' );
+	} );
+
 	it( 'injects active cursor stylesheets into same-origin iframe ready payloads', () => {
 		window.wp.desktop = { ready: ( cb ) => cb() };
 		const injectInto = vi.fn();

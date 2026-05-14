@@ -289,18 +289,18 @@
 
 	function buttonLike( node ) {
 		var label = attr( node, 'aria-label' ).toLowerCase();
-		if ( matches( node, 'a[href], button, .button, .button-primary, .button-secondary, [role="button"], summary, label[for], input[type="button"], input[type="submit"], input[type="reset"], select, option, .ab-item, .components-button, wpd-button, [data-window-control], [data-window-action]' ) ) {
+		if ( matches( node, 'a[href], button, .button, .button-primary, .button-secondary, [role="button"], summary, label[for], input[type="button"], input[type="submit"], input[type="reset"], select, option, .ab-item, .components-button, wpd-button, [data-window-control], [data-window-action], .wp-desktop-icon, .wp-desktop-dock__item, .wp-desktop-dock__item-primary, .wp-desktop-dock__item-new, .wp-desktop-window__btn, .wp-desktop-window__tab, .wp-desktop-window__meta-btn, .wp-desktop-window__menu-btn, .wp-desktop-window__menu-item, .wp-desktop-widgets__card-redock, .wp-desktop-widgets__card-close, .wp-desktop-widgets__add' ) ) {
 			return true;
 		}
 		return label === 'close' || label === 'minimize' || label === 'maximize' || label === 'restore';
 	}
 
 	function resizeLike( node ) {
-		return matches( node, '[data-resize-handle], [data-window-resize-handle], .ui-resizable-handle, .resize-handle' );
+		return matches( node, '[data-resize-handle], [data-window-resize-handle], .ui-resizable-handle, .resize-handle, .wp-desktop-window__resize-handle, .wp-desktop-widgets__resize' );
 	}
 
 	function dragLike( node ) {
-		return matches( node, '[draggable="true"], [data-drag], [data-drag-handle], [data-window-drag-handle], [data-window-titlebar], [data-window-header], .desktop-mode-window-titlebar, .desktop-mode-window-header, .window-titlebar, .native-window-titlebar, .desktop-mode-window__titlebar, .desktop-window__titlebar' );
+		return matches( node, '[draggable="true"], [data-drag], [data-drag-handle], [data-window-drag-handle], [data-window-titlebar], [data-window-header], .desktop-mode-window-titlebar, .desktop-mode-window-header, .window-titlebar, .native-window-titlebar, .desktop-mode-window__titlebar, .desktop-window__titlebar, .wp-desktop-window__titlebar, .wp-desktop-widgets__chrome, .wp-desktop-widgets__grip' );
 	}
 
 	function nativeKind( cursor ) {
@@ -436,8 +436,48 @@
 
 	function sweepSurface( root ) {
 		if ( ! root || ! root.querySelectorAll ) return;
+		markDesktopSurfaces( root );
 		scanShadowRoots( root );
 		cleanupRemovedNodes( root.ownerDocument || document );
+	}
+
+	function desktopSurfaceSelector() {
+		return [
+			'#wp-desktop-shell',
+			'.wp-desktop-shell',
+			'.wp-desktop-shell__body',
+			'#wp-desktop-area',
+			'.wp-desktop-area',
+			'#wp-desktop-wallpaper',
+			'.wp-desktop-wallpaper',
+			'#wp-desktop-dock',
+			'.wp-desktop-dock',
+			'#wp-desktop-widgets',
+			'.wp-desktop-widgets',
+			'.wp-desktop-widgets__list',
+			'.wp-desktop-window',
+			'.wp-desktop-icons',
+			'.desktop-mode',
+			'.desktop-mode-shell',
+			'#desktop-mode-shell',
+		].join( ',' );
+	}
+
+	function markDesktopSurfaces( root ) {
+		if ( ! root || ! root.querySelectorAll ) return 0;
+		var selector = desktopSurfaceSelector();
+		var count = 0;
+		var nodes = [];
+		if ( matches( root, selector ) ) nodes.push( root );
+		var found = root.querySelectorAll( selector );
+		for ( var i = 0; i < found.length; i++ ) nodes.push( found[ i ] );
+		for ( var j = 0; j < nodes.length; j++ ) {
+			var node = markRoot( nodes[ j ] );
+			installListeners( node );
+			markInteractiveDescendants( node );
+			count++;
+		}
+		return count;
 	}
 
 	function observeSurface( root, meta ) {
@@ -529,6 +569,22 @@
 			'[aria-disabled="true"]',
 			'[disabled]',
 			'[aria-busy="true"]',
+			'.wp-desktop-icon',
+			'.wp-desktop-dock__item-primary',
+			'.wp-desktop-dock__item-new',
+			'.wp-desktop-window__btn',
+			'.wp-desktop-window__tab',
+			'.wp-desktop-window__meta-btn',
+			'.wp-desktop-window__menu-btn',
+			'.wp-desktop-window__menu-item',
+			'.wp-desktop-window__titlebar',
+			'.wp-desktop-window__resize-handle',
+			'.wp-desktop-widgets__chrome',
+			'.wp-desktop-widgets__grip',
+			'.wp-desktop-widgets__resize',
+			'.wp-desktop-widgets__card-redock',
+			'.wp-desktop-widgets__card-close',
+			'.wp-desktop-widgets__add',
 		].join( ',' );
 		var nodes = root.querySelectorAll( selectors );
 		for ( var i = 0; i < nodes.length; i++ ) {
@@ -536,7 +592,7 @@
 			if ( n.hasAttribute && n.hasAttribute( 'data-odd-cursor' ) ) continue;
 			if ( n.matches && n.matches( 'input:not([type]), input[type="text"], input[type="search"], input[type="email"], input[type="url"], input[type="password"], textarea, [contenteditable="true"], [contenteditable=""]' ) ) {
 				mark( n, 'text' );
-			} else if ( n.matches && n.matches( '[draggable="true"], [data-drag], [data-drag-handle]' ) ) {
+			} else if ( n.matches && n.matches( '[draggable="true"], [data-drag], [data-drag-handle], .wp-desktop-window__titlebar, .wp-desktop-window__resize-handle, .wp-desktop-widgets__chrome, .wp-desktop-widgets__grip, .wp-desktop-widgets__resize' ) ) {
 				mark( n, 'grab' );
 			} else if ( n.matches && n.matches( '[disabled], [aria-disabled="true"]' ) ) {
 				mark( n, 'not-allowed' );
@@ -580,7 +636,10 @@
 			setConfig( href, slug );
 		}
 		installListeners( doc );
-		if ( doc.body ) observeSurface( doc.body, { source: 'document' } );
+		if ( doc.body ) {
+			observeSurface( doc.body, { source: 'document' } );
+			markDesktopSurfaces( doc.body );
+		}
 		return link;
 	}
 
@@ -649,6 +708,14 @@
 		return out;
 	}
 
+	function desktopCoverage() {
+		if ( ! document.querySelectorAll ) return { roots: 0, icons: 0 };
+		return {
+			roots: document.querySelectorAll( '#wp-desktop-shell[data-odd-cursor-root], .wp-desktop-shell[data-odd-cursor-root], #wp-desktop-area[data-odd-cursor-root], .wp-desktop-area[data-odd-cursor-root]' ).length,
+			icons: document.querySelectorAll( '.wp-desktop-icon[data-odd-cursor="pointer"], .wp-desktop-dock__item-primary[data-odd-cursor="pointer"]' ).length,
+		};
+	}
+
 	function windowCoverage() {
 		if ( ! document.querySelectorAll ) return { roots: 0, iframes: 0 };
 		return {
@@ -673,12 +740,14 @@
 			shadowRoots:    state.shadowRoots.length,
 			bridged:        bridged.length,
 			semantics:      semanticCoverage(),
+			desktop:        desktopCoverage(),
 			windows:        windowCoverage(),
 			tokens:         configuredTokens(),
 			lastResolved:   state.lastResolved,
 			failures:       state.failures.slice(),
 			samples:        {
 				body:   sampleCursor( 'body' ),
+				desktop: sampleCursor( '#wp-desktop-area, .wp-desktop-area' ),
 				button: sampleCursor( 'button, a, [role="button"]' ),
 				input:  sampleCursor( 'input, textarea, [contenteditable="true"]' ),
 				card:   sampleCursor( '.odd-shop__card, .odd-catalog-row' ),
@@ -689,7 +758,10 @@
 	function boot() {
 		apply( configuredHref(), configuredSlug(), document );
 		installListeners( document );
-		if ( document.body ) observeSurface( document.body, { source: 'boot' } );
+		if ( document.body ) {
+			observeSurface( document.body, { source: 'boot' } );
+			markDesktopSurfaces( document.body );
+		}
 	}
 
 	window.__odd.cursors = {

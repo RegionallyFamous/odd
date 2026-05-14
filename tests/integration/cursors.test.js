@@ -131,6 +131,30 @@ describe( 'ODD cursor runtime', () => {
 		expect( window.__odd.cursors.status().semantics.pointer ).toBeGreaterThan( 0 );
 	} );
 
+	it( 'maps current WP Desktop Mode desktop surfaces on boot', () => {
+		const shell = document.createElement( 'div' );
+		shell.id = 'wp-desktop-shell';
+		const area = document.createElement( 'div' );
+		area.id = 'wp-desktop-area';
+		const icon = document.createElement( 'button' );
+		icon.className = 'wp-desktop-icon';
+		area.appendChild( icon );
+		shell.appendChild( area );
+		document.body.appendChild( shell );
+
+		loadRuntime();
+
+		expect( shell.getAttribute( 'data-odd-cursor-root' ) ).toBe( 'true' );
+		expect( area.getAttribute( 'data-odd-cursor-root' ) ).toBe( 'true' );
+		expect( icon.getAttribute( 'data-odd-cursor' ) ).toBe( 'pointer' );
+
+		area.dispatchEvent( new window.MouseEvent( 'pointerover', { bubbles: true, composed: true } ) );
+		expect( area.style.cursor ).toContain( 'default.svg' );
+		icon.dispatchEvent( new window.MouseEvent( 'pointerover', { bubbles: true, composed: true } ) );
+		expect( icon.style.cursor ).toContain( 'pointer.svg' );
+		expect( window.__odd.cursors.status().desktop.roots ).toBeGreaterThan( 0 );
+	} );
+
 	it( 'reports mapped Desktop Mode window roots in diagnostics', () => {
 		loadRuntime();
 		const win = document.createElement( 'div' );
