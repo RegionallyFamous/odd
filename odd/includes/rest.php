@@ -23,14 +23,14 @@ add_action(
 				array(
 					'methods'             => 'GET',
 					'permission_callback' => function () {
-						return is_user_logged_in();
+						return current_user_can( 'read' );
 					},
 					'callback'            => 'oddout_rest_prefs_get',
 				),
 				array(
 					'methods'             => 'POST',
 					'permission_callback' => function () {
-						return is_user_logged_in();
+						return current_user_can( 'read' );
 					},
 					'callback'            => 'oddout_rest_prefs_post',
 				),

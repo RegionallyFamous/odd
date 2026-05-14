@@ -37,7 +37,15 @@ function oddout_storage_base_dir() {
 	$uploads = wp_upload_dir( null, false );
 	$base    = isset( $uploads['basedir'] ) && is_string( $uploads['basedir'] ) ? $uploads['basedir'] : '';
 	if ( '' === $base ) {
-		$base = trailingslashit( ABSPATH ) . 'wp-content/uploads';
+		$path   = isset( $uploads['path'] ) && is_string( $uploads['path'] ) ? $uploads['path'] : '';
+		$subdir = isset( $uploads['subdir'] ) && is_string( $uploads['subdir'] ) ? $uploads['subdir'] : '';
+		if ( '' !== $path && '' !== $subdir && substr( $path, -strlen( $subdir ) ) === $subdir ) {
+			$path = substr( $path, 0, -strlen( $subdir ) );
+		}
+		$base = $path;
+	}
+	if ( '' === $base ) {
+		return '';
 	}
 	return trailingslashit( $base ) . 'odd/';
 }
@@ -51,19 +59,29 @@ function oddout_storage_base_url() {
 	$uploads = wp_upload_dir( null, false );
 	$base    = isset( $uploads['baseurl'] ) && is_string( $uploads['baseurl'] ) ? $uploads['baseurl'] : '';
 	if ( '' === $base ) {
-		$base = content_url( 'uploads' );
+		$url    = isset( $uploads['url'] ) && is_string( $uploads['url'] ) ? $uploads['url'] : '';
+		$subdir = isset( $uploads['subdir'] ) && is_string( $uploads['subdir'] ) ? $uploads['subdir'] : '';
+		if ( '' !== $url && '' !== $subdir && substr( $url, -strlen( $subdir ) ) === $subdir ) {
+			$url = substr( $url, 0, -strlen( $subdir ) );
+		}
+		$base = $url;
+	}
+	if ( '' === $base ) {
+		return '';
 	}
 	return trailingslashit( oddout_url_current_scheme( $base ) ) . 'odd/';
 }
 
 function oddout_storage_dir( $bucket ) {
 	$bucket = sanitize_key( (string) $bucket );
-	return '' === $bucket ? oddout_storage_base_dir() : oddout_storage_base_dir() . $bucket . '/';
+	$base   = oddout_storage_base_dir();
+	return '' === $base || '' === $bucket ? $base : $base . $bucket . '/';
 }
 
 function oddout_storage_url( $bucket ) {
 	$bucket = sanitize_key( (string) $bucket );
-	return '' === $bucket ? oddout_storage_base_url() : oddout_storage_base_url() . $bucket . '/';
+	$base   = oddout_storage_base_url();
+	return '' === $base || '' === $bucket ? $base : $base . $bucket . '/';
 }
 
 /**

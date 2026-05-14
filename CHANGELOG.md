@@ -11,7 +11,9 @@ notes to GitHub Releases.
 <a id="unreleased"></a>
 ## [Unreleased]
 
-No unreleased changes yet.
+### Fixed
+- **WordPress.org review readiness:** installed-content storage now derives only from WordPress upload-directory data, and REST routes that require logged-in access use explicit `current_user_can()` permission callbacks.
+- **Custom cursors:** installed cursor-set URLs stay absolute when an environment only exposes upload `path`/`url` fields instead of `basedir`/`baseurl`.
 
 <a id="v1.0.8"></a>
 ## [1.0.8] — 2026-05-13

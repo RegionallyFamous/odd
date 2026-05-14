@@ -21,7 +21,20 @@ class Test_Starter_State extends WP_UnitTestCase {
 		if ( function_exists( 'oddout_starter_reset' ) ) {
 			oddout_starter_reset();
 		}
+		wp_set_current_user( 0 );
+		remove_all_filters( 'pre_http_request' );
+		global $wp_rest_server;
+		$wp_rest_server = null;
 		parent::tear_down();
+	}
+
+	private function dispatch_starter_get() {
+		global $wp_rest_server;
+		$wp_rest_server = new WP_REST_Server();
+		do_action( 'rest_api_init' );
+
+		$request = new WP_REST_Request( 'GET', '/odd/v1/starter' );
+		return $wp_rest_server->dispatch( $request );
 	}
 
 	public function test_initial_state_is_pending_and_has_slug_map() {
@@ -30,6 +43,42 @@ class Test_Starter_State extends WP_UnitTestCase {
 		$this->assertSame( 0, $state['attempts'] );
 		$this->assertIsArray( $state['slugs'] );
 		$this->assertSame( array(), $state['slugs'] );
+	}
+
+	public function test_starter_rest_get_requires_login() {
+		wp_set_current_user( 0 );
+
+		$response = $this->dispatch_starter_get();
+
+		$this->assertSame( 401, $response->get_status() );
+	}
+
+	public function test_starter_rest_get_allows_subscribers_with_read_capability() {
+		add_filter(
+			'pre_http_request',
+			static function () {
+				return array(
+					'headers'  => array(),
+					'body'     => wp_json_encode(
+						array(
+							'version'      => 1,
+							'starter_pack' => array(),
+							'bundles'      => array(),
+						)
+					),
+					'response' => array(
+						'code'    => 200,
+						'message' => 'OK',
+					),
+				);
+			}
+		);
+		$user_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $user_id );
+
+		$response = $this->dispatch_starter_get();
+
+		$this->assertSame( 200, $response->get_status() );
 	}
 
 	public function test_merge_slug_results_marks_new_done_entries() {

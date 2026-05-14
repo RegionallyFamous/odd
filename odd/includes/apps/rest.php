@@ -72,7 +72,7 @@ add_action(
 				'methods'             => 'POST',
 				'callback'            => 'oddout_apps_rest_runtime_errors',
 				'permission_callback' => static function () {
-					return is_user_logged_in() && current_user_can( 'read' );
+					return current_user_can( 'read' );
 				},
 			)
 		);
@@ -85,21 +85,21 @@ add_action(
 					'methods'             => 'GET',
 					'callback'            => 'oddout_apps_rest_store_get',
 					'permission_callback' => static function () {
-						return is_user_logged_in() && current_user_can( 'read' );
+						return current_user_can( 'read' );
 					},
 				),
 				array(
 					'methods'             => array( 'PUT', 'POST' ),
 					'callback'            => 'oddout_apps_rest_store_put',
 					'permission_callback' => static function () {
-						return is_user_logged_in() && current_user_can( 'read' );
+						return current_user_can( 'read' );
 					},
 				),
 				array(
 					'methods'             => 'DELETE',
 					'callback'            => 'oddout_apps_rest_store_delete',
 					'permission_callback' => static function () {
-						return is_user_logged_in() && current_user_can( 'read' );
+						return current_user_can( 'read' );
 					},
 				),
 			)
@@ -113,14 +113,14 @@ add_action(
 					'methods'             => 'GET',
 					'callback'            => 'oddout_apps_rest_store_keys',
 					'permission_callback' => static function () {
-						return is_user_logged_in() && current_user_can( 'read' );
+						return current_user_can( 'read' );
 					},
 				),
 				array(
 					'methods'             => 'DELETE',
 					'callback'            => 'oddout_apps_rest_store_clear',
 					'permission_callback' => static function () {
-						return is_user_logged_in() && current_user_can( 'read' );
+						return current_user_can( 'read' );
 					},
 				),
 			)

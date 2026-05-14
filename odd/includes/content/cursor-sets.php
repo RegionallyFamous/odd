@@ -15,20 +15,35 @@ if ( ! defined( 'ODDOUT_CURSORSETS_OPTION_INDEX' ) ) {
 	define( 'ODDOUT_CURSORSETS_OPTION_INDEX', 'oddout_cursorsets_index' );
 }
 
+function oddout_cursorsets_base_dir() {
+	return function_exists( 'oddout_storage_dir' ) ? oddout_storage_dir( 'cursor-sets' ) : ODDOUT_CURSORSETS_DIR;
+}
+
+function oddout_cursorsets_base_url() {
+	return function_exists( 'oddout_storage_url' ) ? oddout_storage_url( 'cursor-sets' ) : ODDOUT_CURSORSETS_URL;
+}
+
 function oddout_cursorsets_dir_for( $slug ) {
 	$slug = sanitize_key( (string) $slug );
-	return '' === $slug ? '' : ODDOUT_CURSORSETS_DIR . $slug . '/';
+	$base = oddout_cursorsets_base_dir();
+	return '' === $slug || '' === $base ? '' : $base . $slug . '/';
 }
 
 function oddout_cursorsets_url_for( $slug ) {
 	$slug = sanitize_key( (string) $slug );
-	return '' === $slug ? '' : ODDOUT_CURSORSETS_URL . $slug . '/';
+	$base = oddout_cursorsets_base_url();
+	return '' === $slug || '' === $base ? '' : $base . $slug . '/';
 }
 
 function oddout_cursorsets_ensure_storage() {
-	if ( ! is_dir( ODDOUT_CURSORSETS_DIR ) ) {
-		wp_mkdir_p( ODDOUT_CURSORSETS_DIR );
+	$base = oddout_cursorsets_base_dir();
+	if ( '' === $base ) {
+		return false;
 	}
+	if ( ! is_dir( $base ) ) {
+		return wp_mkdir_p( $base );
+	}
+	return true;
 }
 
 function oddout_cursorsets_index_load() {
@@ -125,9 +140,11 @@ function oddout_cursorset_bundle_validate( $tmp_path, $filename, ZipArchive $zip
 }
 
 function oddout_cursorset_bundle_install( $tmp_path, array $manifest ) {
-	oddout_cursorsets_ensure_storage();
+	if ( ! oddout_cursorsets_ensure_storage() ) {
+		return new WP_Error( 'storage_unavailable', __( 'Cursor set storage is unavailable.', 'odd-outlandish-desktop-decorator' ) );
+	}
 	$slug      = $manifest['slug'];
-	$extracted = oddout_content_archive_extract( $tmp_path, ODDOUT_CURSORSETS_DIR, $slug );
+	$extracted = oddout_content_archive_extract( $tmp_path, oddout_cursorsets_base_dir(), $slug );
 	if ( is_wp_error( $extracted ) ) {
 		return $extracted;
 	}
@@ -200,11 +217,13 @@ function oddout_cursorsets_bust_registry_cache() {
 }
 
 function oddout_cursorsets_scan_installed() {
-	$out = array();
-	if ( ! is_dir( ODDOUT_CURSORSETS_DIR ) ) {
+	$out      = array();
+	$base_dir = oddout_cursorsets_base_dir();
+	$base_url = oddout_cursorsets_base_url();
+	if ( '' === $base_dir || '' === $base_url || ! is_dir( $base_dir ) ) {
 		return $out;
 	}
-	$dirs = glob( rtrim( ODDOUT_CURSORSETS_DIR, '/' ) . '/*', GLOB_ONLYDIR );
+	$dirs = glob( rtrim( $base_dir, '/' ) . '/*', GLOB_ONLYDIR );
 	if ( ! is_array( $dirs ) ) {
 		return $out;
 	}
@@ -228,7 +247,7 @@ function oddout_cursorsets_scan_installed() {
 		$out[ $slug ] = array(
 			'data'     => $data,
 			'base_dir' => $dir,
-			'base_url' => ODDOUT_CURSORSETS_URL . rawurlencode( $slug ),
+			'base_url' => untrailingslashit( $base_url ) . '/' . rawurlencode( $slug ),
 			'source'   => 'installed',
 		);
 	}

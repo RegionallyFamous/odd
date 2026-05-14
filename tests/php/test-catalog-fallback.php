@@ -14,6 +14,9 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		delete_transient( ODDOUT_CATALOG_TRANSIENT );
 		delete_option( ODDOUT_CATALOG_STALE_OPTION );
 		delete_option( ODDOUT_CATALOG_META_OPTION );
+		wp_set_current_user( 0 );
+		global $wp_rest_server;
+		$wp_rest_server = null;
 		// Blow the fallback loader's static cache between tests by
 		// flipping the filter — simplest way without adding a
 		// "reset" helper to the production surface.
@@ -167,6 +170,19 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'sha256', $data['bundles'][0] );
 		$this->assertSame( 'https://example.com/catalog-widget.svg', $data['bundles'][0]['icon_url'] );
 		$this->assertArrayNotHasKey( 'meta', $data );
+	}
+
+	public function test_catalog_rest_requires_login() {
+		wp_set_current_user( 0 );
+
+		global $wp_rest_server;
+		$wp_rest_server = new WP_REST_Server();
+		do_action( 'rest_api_init' );
+
+		$request  = new WP_REST_Request( 'GET', '/odd/v1/bundles/catalog' );
+		$response = $wp_rest_server->dispatch( $request );
+
+		$this->assertSame( 401, $response->get_status() );
 	}
 
 	public function test_catalog_normalise_preserves_card_url_for_shop_art() {

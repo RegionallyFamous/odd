@@ -4,12 +4,40 @@
  */
 
 class Test_Cursors extends WP_UnitTestCase {
+	/**
+	 * @var string
+	 */
+	private $temp_upload_base = '';
 
 	public function tear_down() {
 		remove_all_filters( 'oddout_cursor_set_registry' );
+		remove_all_filters( 'upload_dir' );
 		delete_transient( oddout_cursors_registry_transient_key() );
 		oddout_cursors_get_sets( true );
+		if ( '' !== $this->temp_upload_base && is_dir( $this->temp_upload_base ) ) {
+			$this->remove_dir( $this->temp_upload_base );
+		}
+		$this->temp_upload_base = '';
 		parent::tear_down();
+	}
+
+	private function remove_dir( $dir ) {
+		$dir = (string) $dir;
+		if ( '' === $dir || ! is_dir( $dir ) ) {
+			return;
+		}
+		$iterator = new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator( $dir, FilesystemIterator::SKIP_DOTS ),
+			RecursiveIteratorIterator::CHILD_FIRST
+		);
+		foreach ( $iterator as $file ) {
+			if ( $file->isDir() ) {
+				rmdir( $file->getPathname() );
+			} else {
+				unlink( $file->getPathname() );
+			}
+		}
+		rmdir( $dir );
 	}
 
 	private function add_fixture_cursor_set() {
@@ -126,6 +154,53 @@ class Test_Cursors extends WP_UnitTestCase {
 		} finally {
 			$_SERVER = $server;
 		}
+	}
+
+	public function test_installed_cursor_urls_remain_absolute_when_upload_baseurl_is_empty() {
+		$this->temp_upload_base = trailingslashit( sys_get_temp_dir() ) . 'odd-cursor-uploads-' . wp_generate_uuid4();
+		$set_dir                = $this->temp_upload_base . '/odd/cursor-sets/fancy';
+		wp_mkdir_p( $set_dir );
+		file_put_contents(
+			$set_dir . '/manifest.json',
+			wp_json_encode(
+				array(
+					'name'    => 'Fancy Cursors',
+					'label'   => 'Fancy Cursors',
+					'version' => '1.0.0',
+					'cursors' => array(
+						'default' => array(
+							'file'    => 'default.svg',
+							'hotspot' => array( 2, 3 ),
+						),
+					),
+				)
+			)
+		);
+		file_put_contents( $set_dir . '/default.svg', '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"></svg>' );
+
+		add_filter(
+			'upload_dir',
+			function ( $uploads ) {
+				$uploads['basedir'] = '';
+				$uploads['baseurl'] = '';
+				$uploads['path']    = $this->temp_upload_base . '/2026/05';
+				$uploads['url']     = 'https://cdn.example.test/uploads/2026/05';
+				$uploads['subdir']  = '/2026/05';
+				return $uploads;
+			}
+		);
+
+		$sets = oddout_cursors_get_sets( true );
+
+		$this->assertArrayHasKey( 'fancy', $sets );
+		$this->assertSame(
+			'https://cdn.example.test/uploads/odd/cursor-sets/fancy/default.svg',
+			$sets['fancy']['cursors']['default']['url']
+		);
+		$this->assertStringContainsString(
+			'url("https://cdn.example.test/uploads/odd/cursor-sets/fancy/default.svg") 2 3, default',
+			oddout_cursors_build_css( $sets['fancy'] )
+		);
 	}
 
 	public function test_shared_url_scheme_helper_respects_https_proxy_headers() {

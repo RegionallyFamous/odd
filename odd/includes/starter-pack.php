@@ -831,7 +831,9 @@ add_action(
 				'callback'            => function () {
 					return rest_ensure_response( oddout_starter_get_state_for_rest() );
 				},
-				'permission_callback' => 'is_user_logged_in',
+				'permission_callback' => function () {
+					return current_user_can( 'read' );
+				},
 			)
 		);
 		register_rest_route(

@@ -772,7 +772,7 @@ add_action(
 				'methods'             => 'GET',
 				'callback'            => 'oddout_bundle_rest_catalog',
 				'permission_callback' => function () {
-					return is_user_logged_in();
+					return current_user_can( 'read' );
 				},
 			)
 		);
