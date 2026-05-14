@@ -198,6 +198,9 @@ describe( 'ODD Shop · install flows', () => {
 	} );
 
 	it( 'cursor-set install updates the canonical card without reloading', async () => {
+		const applyCursor = vi.fn();
+		const clearCursor = vi.fn();
+		window.__odd = { cursors: { apply: applyCursor, clear: clearCursor } };
 		seed( {
 			bundleCatalog: {
 				scene: [],
@@ -215,7 +218,15 @@ describe( 'ODD Shop · install flows', () => {
 				type:      'cursor-set',
 				manifest:  { slug: 'oddlings-cursors', label: 'Oddlings Cursors' },
 				entry_url: null,
-				row:       { slug: 'oddlings-cursors', label: 'Oddlings Cursors', installed: true },
+				row:       {
+					slug:      'oddlings-cursors',
+					label:     'Oddlings Cursors',
+					installed: true,
+					cursors:   {
+						default: { url: '/cursor-default.svg', hotspot: [ 4, 4 ] },
+						pointer: { url: '/cursor-pointer.svg', hotspot: [ 18, 6 ] },
+					},
+				},
 			} ),
 		} ) );
 
@@ -235,6 +246,17 @@ describe( 'ODD Shop · install flows', () => {
 		const installedTile = host.querySelector( '[data-odd-shop-card][data-cursor-set-slug="oddlings-cursors"]' );
 		expect( installedTile, 'installed cursor set must appear in the grid' ).toBeTruthy();
 		expect( installedTile.querySelector( '.odd-shop__card-btn' ).textContent.trim() ).toBe( 'Preview' );
+		expect( window.odd.cursorSets.find( ( row ) => row.slug === 'oddlings-cursors' )?.cursors?.pointer?.url ).toBe( '/cursor-pointer.svg' );
+
+		installedTile.querySelector( '.odd-shop__card-btn' )
+			.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+
+		expect( applyCursor ).toHaveBeenCalledWith(
+			expect.stringContaining( 'set=oddlings-cursors' ),
+			'oddlings-cursors'
+		);
+		expect( window.odd.cursorSet ).toBe( 'oddlings-cursors' );
+		expect( window.odd.cursorStylesheet ).toContain( 'set=oddlings-cursors' );
 		expect( reloadSpy ).not.toHaveBeenCalled();
 		expect( window.sessionStorage.getItem( 'odd.justInstalled' ) ).toBeNull();
 	} );

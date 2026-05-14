@@ -84,14 +84,32 @@
 		return null;
 	}
 
-	function cursorValue( kind ) {
+	function cssVarCursorValue( kind, node ) {
+		var doc = nodeDoc( node );
+		var view = doc && doc.defaultView ? doc.defaultView : window;
+		var root = doc && doc.documentElement ? doc.documentElement : document.documentElement;
+		if ( ! view || ! view.getComputedStyle || ! root ) return '';
+		try {
+			var value = view.getComputedStyle( root ).getPropertyValue( '--odd-cursor-' + kind );
+			value = typeof value === 'string' ? value.trim() : '';
+			if ( value ) return value;
+			if ( kind !== 'default' ) {
+				value = view.getComputedStyle( root ).getPropertyValue( '--odd-cursor-default' );
+				return typeof value === 'string' ? value.trim() : '';
+			}
+		} catch ( e ) {}
+		return '';
+	}
+
+	function cursorValue( kind, node ) {
 		kind = semanticKinds[ kind ] ? kind : 'default';
 		var set = activeSet();
 		var cursors = set && set.cursors;
 		var spec = cursors && ( cursors[ kind ] || cursors.default );
 		if ( ! spec || ! spec.url ) {
 			var tokens = configuredTokens();
-			return typeof tokens[ kind ] === 'string' ? tokens[ kind ] : '';
+			if ( typeof tokens[ kind ] === 'string' && tokens[ kind ] ) return tokens[ kind ];
+			return cssVarCursorValue( kind, node );
 		}
 		var hotspot = Array.isArray( spec.hotspot ) ? spec.hotspot : [ 0, 0 ];
 		var x = parseInt( hotspot[ 0 ], 10 );
@@ -186,10 +204,15 @@
 		if ( ! node.__oddCursorBridged ) {
 			node.__oddCursorBridged = true;
 			node.__oddCursorOriginal = node.style.cursor || '';
+			node.__oddCursorOriginalPriority = node.style.getPropertyPriority ? node.style.getPropertyPriority( 'cursor' ) || '' : '';
 			bridged.push( node );
 		}
 		if ( node.__oddCursorValue !== value ) {
-			node.style.cursor = value;
+			if ( node.style.setProperty ) {
+				node.style.setProperty( 'cursor', value, 'important' );
+			} else {
+				node.style.cursor = value;
+			}
 			node.__oddCursorValue = value;
 			node.__oddCursorKind = kind || '';
 		}
@@ -197,15 +220,27 @@
 
 	function restoreNode( node ) {
 		if ( ! node || ! node.style || ! node.__oddCursorBridged ) return;
-		node.style.cursor = node.__oddCursorOriginal || '';
+		if ( node.__oddCursorOriginal ) {
+			if ( node.style.setProperty ) {
+				node.style.setProperty( 'cursor', node.__oddCursorOriginal, node.__oddCursorOriginalPriority || '' );
+			} else {
+				node.style.cursor = node.__oddCursorOriginal || '';
+			}
+		} else if ( node.style.removeProperty ) {
+			node.style.removeProperty( 'cursor' );
+		} else {
+			node.style.cursor = '';
+		}
 		try {
 			delete node.__oddCursorBridged;
 			delete node.__oddCursorOriginal;
+			delete node.__oddCursorOriginalPriority;
 			delete node.__oddCursorValue;
 			delete node.__oddCursorKind;
 		} catch ( e ) {
 			node.__oddCursorBridged = false;
 			node.__oddCursorOriginal = '';
+			node.__oddCursorOriginalPriority = '';
 			node.__oddCursorValue = '';
 			node.__oddCursorKind = '';
 		}
@@ -289,18 +324,18 @@
 
 	function buttonLike( node ) {
 		var label = attr( node, 'aria-label' ).toLowerCase();
-		if ( matches( node, 'a[href], button, .button, .button-primary, .button-secondary, [role="button"], summary, label[for], input[type="button"], input[type="submit"], input[type="reset"], select, option, .ab-item, .components-button, wpd-button, [data-window-control], [data-window-action], .wp-desktop-icon, .wp-desktop-dock__item, .wp-desktop-dock__item-primary, .wp-desktop-dock__item-new, .wp-desktop-window__btn, .wp-desktop-window__tab, .wp-desktop-window__meta-btn, .wp-desktop-window__menu-btn, .wp-desktop-window__menu-item, .wp-desktop-widgets__card-redock, .wp-desktop-widgets__card-close, .wp-desktop-widgets__add' ) ) {
+		if ( matches( node, 'a[href], button, .button, .button-primary, .button-secondary, [role="button"], summary, label[for], input[type="button"], input[type="submit"], input[type="reset"], select, option, .ab-item, .components-button, wpd-button, [data-window-control], [data-window-action], .desktop-mode-icon, .desktop-mode-file-tile, .desktop-mode-dock__item, .desktop-mode-dock__button, .desktop-mode-window__btn, .desktop-mode-window__tab, .desktop-mode-window__control, .desktop-mode-widgets__card-redock, .desktop-mode-widgets__card-close, .desktop-mode-widgets__add, .wp-desktop-icon, .wp-desktop-dock__item, .wp-desktop-dock__item-primary, .wp-desktop-dock__item-new, .wp-desktop-window__btn, .wp-desktop-window__tab, .wp-desktop-window__meta-btn, .wp-desktop-window__menu-btn, .wp-desktop-window__menu-item, .wp-desktop-widgets__card-redock, .wp-desktop-widgets__card-close, .wp-desktop-widgets__add' ) ) {
 			return true;
 		}
 		return label === 'close' || label === 'minimize' || label === 'maximize' || label === 'restore';
 	}
 
 	function resizeLike( node ) {
-		return matches( node, '[data-resize-handle], [data-window-resize-handle], .ui-resizable-handle, .resize-handle, .wp-desktop-window__resize-handle, .wp-desktop-widgets__resize' );
+		return matches( node, '[data-resize-handle], [data-window-resize-handle], .ui-resizable-handle, .resize-handle, .desktop-mode-window__resize-handle, .desktop-mode-widgets__resize, .wp-desktop-window__resize-handle, .wp-desktop-widgets__resize' );
 	}
 
 	function dragLike( node ) {
-		return matches( node, '[draggable="true"], [data-drag], [data-drag-handle], [data-window-drag-handle], [data-window-titlebar], [data-window-header], .desktop-mode-window-titlebar, .desktop-mode-window-header, .window-titlebar, .native-window-titlebar, .desktop-mode-window__titlebar, .desktop-window__titlebar, .wp-desktop-window__titlebar, .wp-desktop-widgets__chrome, .wp-desktop-widgets__grip' );
+		return matches( node, '[draggable="true"], [data-drag], [data-drag-handle], [data-window-drag-handle], [data-window-titlebar], [data-window-header], .desktop-mode-window-titlebar, .desktop-mode-window-header, .window-titlebar, .native-window-titlebar, .desktop-mode-window__titlebar, .desktop-mode-widgets__chrome, .desktop-mode-widgets__grip, .desktop-window__titlebar, .wp-desktop-window__titlebar, .wp-desktop-widgets__chrome, .wp-desktop-widgets__grip' );
 	}
 
 	function nativeKind( cursor ) {
@@ -383,7 +418,7 @@
 
 	function applyResolved( resolved ) {
 		if ( ! state.href || ! resolved || ! resolved.node || ! resolved.node.style ) return null;
-		var value = cursorValue( resolved.kind );
+		var value = cursorValue( resolved.kind, resolved.node );
 		if ( ! value ) return null;
 		rememberBridge( resolved.node, value, resolved.kind );
 		state.lastResolved = Object.assign( nodeSummary( resolved.node ), {
@@ -460,6 +495,17 @@
 			'.desktop-mode',
 			'.desktop-mode-shell',
 			'#desktop-mode-shell',
+			'.desktop-mode-shell__body',
+			'#desktop-mode-area',
+			'.desktop-mode-area',
+			'.desktop-mode-icons',
+			'#desktop-mode-wallpaper',
+			'.desktop-mode-wallpaper',
+			'#desktop-mode-side-dock',
+			'.desktop-mode-dock',
+			'.desktop-mode-widgets',
+			'.desktop-mode-widgets__list',
+			'.desktop-mode-window',
 		].join( ',' );
 	}
 
@@ -569,6 +615,21 @@
 			'[aria-disabled="true"]',
 			'[disabled]',
 			'[aria-busy="true"]',
+			'.desktop-mode-icon',
+			'.desktop-mode-file-tile',
+			'.desktop-mode-dock__item',
+			'.desktop-mode-dock__button',
+			'.desktop-mode-window__btn',
+			'.desktop-mode-window__tab',
+			'.desktop-mode-window__control',
+			'.desktop-mode-window__titlebar',
+			'.desktop-mode-window__resize-handle',
+			'.desktop-mode-widgets__chrome',
+			'.desktop-mode-widgets__grip',
+			'.desktop-mode-widgets__resize',
+			'.desktop-mode-widgets__card-redock',
+			'.desktop-mode-widgets__card-close',
+			'.desktop-mode-widgets__add',
 			'.wp-desktop-icon',
 			'.wp-desktop-dock__item-primary',
 			'.wp-desktop-dock__item-new',
@@ -592,7 +653,7 @@
 			if ( n.hasAttribute && n.hasAttribute( 'data-odd-cursor' ) ) continue;
 			if ( n.matches && n.matches( 'input:not([type]), input[type="text"], input[type="search"], input[type="email"], input[type="url"], input[type="password"], textarea, [contenteditable="true"], [contenteditable=""]' ) ) {
 				mark( n, 'text' );
-			} else if ( n.matches && n.matches( '[draggable="true"], [data-drag], [data-drag-handle], .wp-desktop-window__titlebar, .wp-desktop-window__resize-handle, .wp-desktop-widgets__chrome, .wp-desktop-widgets__grip, .wp-desktop-widgets__resize' ) ) {
+			} else if ( n.matches && n.matches( '[draggable="true"], [data-drag], [data-drag-handle], .desktop-mode-window__titlebar, .desktop-mode-window__resize-handle, .desktop-mode-widgets__chrome, .desktop-mode-widgets__grip, .desktop-mode-widgets__resize, .wp-desktop-window__titlebar, .wp-desktop-window__resize-handle, .wp-desktop-widgets__chrome, .wp-desktop-widgets__grip, .wp-desktop-widgets__resize' ) ) {
 				mark( n, 'grab' );
 			} else if ( n.matches && n.matches( '[disabled], [aria-disabled="true"]' ) ) {
 				mark( n, 'not-allowed' );
@@ -711,8 +772,8 @@
 	function desktopCoverage() {
 		if ( ! document.querySelectorAll ) return { roots: 0, icons: 0 };
 		return {
-			roots: document.querySelectorAll( '#wp-desktop-shell[data-odd-cursor-root], .wp-desktop-shell[data-odd-cursor-root], #wp-desktop-area[data-odd-cursor-root], .wp-desktop-area[data-odd-cursor-root]' ).length,
-			icons: document.querySelectorAll( '.wp-desktop-icon[data-odd-cursor="pointer"], .wp-desktop-dock__item-primary[data-odd-cursor="pointer"]' ).length,
+			roots: document.querySelectorAll( '#desktop-mode-shell[data-odd-cursor-root], .desktop-mode-shell[data-odd-cursor-root], #desktop-mode-area[data-odd-cursor-root], .desktop-mode-area[data-odd-cursor-root], #wp-desktop-shell[data-odd-cursor-root], .wp-desktop-shell[data-odd-cursor-root], #wp-desktop-area[data-odd-cursor-root], .wp-desktop-area[data-odd-cursor-root]' ).length,
+			icons: document.querySelectorAll( '.desktop-mode-icon[data-odd-cursor="pointer"], .desktop-mode-dock__item[data-odd-cursor="pointer"], .wp-desktop-icon[data-odd-cursor="pointer"], .wp-desktop-dock__item-primary[data-odd-cursor="pointer"]' ).length,
 		};
 	}
 
@@ -747,7 +808,7 @@
 			failures:       state.failures.slice(),
 			samples:        {
 				body:   sampleCursor( 'body' ),
-				desktop: sampleCursor( '#wp-desktop-area, .wp-desktop-area' ),
+				desktop: sampleCursor( '#desktop-mode-area, .desktop-mode-area, #wp-desktop-area, .wp-desktop-area' ),
 				button: sampleCursor( 'button, a, [role="button"]' ),
 				input:  sampleCursor( 'input, textarea, [contenteditable="true"]' ),
 				card:   sampleCursor( '.odd-shop__card, .odd-catalog-row' ),

@@ -12,6 +12,10 @@ function oddout_cursors_should_enqueue_admin() {
 	return '' !== oddout_cursors_get_active_slug();
 }
 
+function oddout_cursors_should_enqueue_runtime() {
+	return is_admin() && is_user_logged_in();
+}
+
 function oddout_cursors_enqueue_admin_stylesheet() {
 	if ( ! oddout_cursors_should_enqueue_admin() ) {
 		return;
@@ -24,10 +28,10 @@ function oddout_cursors_enqueue_admin_stylesheet() {
 		( defined( 'ODDOUT_VERSION' ) ? ODDOUT_VERSION : '0' ) . '-' . $slug
 	);
 }
-add_action( 'admin_enqueue_scripts', 'oddout_cursors_enqueue_admin_stylesheet', 1 );
+add_action( 'admin_enqueue_scripts', 'oddout_cursors_enqueue_admin_stylesheet', 1000 );
 
 function oddout_cursors_enqueue_runtime() {
-	if ( ! oddout_cursors_should_enqueue_admin() ) {
+	if ( ! oddout_cursors_should_enqueue_runtime() ) {
 		return;
 	}
 	wp_enqueue_script(

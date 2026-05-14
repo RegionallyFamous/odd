@@ -1786,6 +1786,22 @@
 			}
 		}
 
+		function syncWindowOddCursorState( slug, stylesheet ) {
+			var cleanSlug = ( typeof slug === 'string' && slug !== 'none' ) ? slug : '';
+			var href = typeof stylesheet === 'string' ? stylesheet : '';
+			var rows = Array.isArray( state.cfg.cursorSets )
+				? state.cfg.cursorSets.map( function ( row ) {
+					return row && typeof row === 'object' ? Object.assign( {}, row ) : row;
+				} )
+				: [];
+			[ window.odd, window.oddout ].forEach( function ( target ) {
+				if ( ! target || typeof target !== 'object' ) return;
+				target.cursorSet = cleanSlug;
+				target.cursorStylesheet = href;
+				target.cursorSets = rows.slice();
+			} );
+		}
+
 		function spliceInstalledRow( type, slug, row, manifest ) {
 			if ( ! slug ) return;
 			row = row && typeof row === 'object' ? Object.assign( {}, row ) : {};
@@ -1819,6 +1835,7 @@
 				cursorSets = cursorSets.filter( function ( s ) { return s && s.slug !== slug; } );
 				cursorSets.push( row );
 				state.cfg.cursorSets = cursorSets;
+				syncWindowOddCursorState( state.cfg.cursorSet, state.cfg.cursorStylesheet );
 				return;
 			}
 
@@ -4718,6 +4735,12 @@
 
 		function setActiveCursorLink( slug ) {
 			var href = cursorStylesheetUrl( slug );
+			if ( slug === 'none' || slug === '' ) {
+				state.cfg.cursorStylesheet = '';
+			} else {
+				state.cfg.cursorStylesheet = href;
+			}
+			syncWindowOddCursorState( slug, state.cfg.cursorStylesheet );
 			var cursors = window.__odd && window.__odd.cursors;
 			if ( cursors && typeof cursors.apply === 'function' && typeof cursors.clear === 'function' ) {
 				if ( slug === 'none' || slug === '' ) cursors.clear();
@@ -4735,11 +4758,6 @@
 					}
 					link.setAttribute( 'href', href );
 				}
-			}
-			if ( slug === 'none' || slug === '' ) {
-				state.cfg.cursorStylesheet = '';
-			} else {
-				state.cfg.cursorStylesheet = href;
 			}
 			if ( window.wp && window.wp.hooks && typeof window.wp.hooks.doAction === 'function' ) {
 				try { window.wp.hooks.doAction( 'odd.cursorSet', slug, state.cfg.cursorStylesheet ); } catch ( e ) {}
@@ -4794,6 +4812,14 @@
 				}
 				if ( data && typeof data.cursorStylesheet === 'string' ) {
 					state.cfg.cursorStylesheet = data.cursorStylesheet;
+				}
+				syncWindowOddCursorState( state.cfg.cursorSet, state.cfg.cursorStylesheet );
+				if ( window.__odd && window.__odd.cursors && typeof window.__odd.cursors.apply === 'function' ) {
+					if ( state.cfg.cursorSet ) {
+						window.__odd.cursors.apply( state.cfg.cursorStylesheet, state.cfg.cursorSet );
+					} else if ( typeof window.__odd.cursors.clear === 'function' ) {
+						window.__odd.cursors.clear();
+					}
 				}
 				state.preview = null;
 				playShopSound( 'success' );

@@ -31,6 +31,9 @@ describe( 'ODD cursor runtime', () => {
 	beforeEach( () => {
 		document.head.innerHTML = '';
 		document.body.innerHTML = '';
+		document.body.className = '';
+		document.documentElement.style.removeProperty( '--odd-cursor-default' );
+		document.documentElement.style.removeProperty( '--odd-cursor-pointer' );
 		delete document.__oddCursorBridge;
 		window.__odd = { debug: {} };
 		window.odd = {
@@ -110,6 +113,41 @@ describe( 'ODD cursor runtime', () => {
 
 		window.__odd.cursors.clear();
 		expect( item.style.cursor ).toBe( 'pointer' );
+	} );
+
+	it( 'uses important inline cursor priority inside Desktop Mode cursor resets', () => {
+		document.body.className = 'desktop-mode-active';
+		const reset = document.createElement( 'style' );
+		reset.textContent = 'body.desktop-mode-active, body.desktop-mode-active * { cursor: default !important; }';
+		document.head.appendChild( reset );
+		loadRuntime();
+		const item = document.createElement( 'button' );
+		item.textContent = 'Pinned';
+		document.body.appendChild( item );
+
+		window.__odd.cursors.bridgeTarget( item );
+
+		expect( item.style.cursor ).toContain( 'pointer.svg' );
+		expect( item.style.getPropertyPriority( 'cursor' ) ).toBe( 'important' );
+
+		window.__odd.cursors.clear();
+		expect( item.style.cursor ).toBe( '' );
+		expect( item.style.getPropertyPriority( 'cursor' ) ).toBe( '' );
+	} );
+
+	it( 'falls back to loaded stylesheet variables when cursor-set config is stale', () => {
+		window.odd.cursorSet = 'new-cursors';
+		window.odd.cursorSets = [];
+		document.documentElement.style.setProperty( '--odd-cursor-default', 'url("https://example.com/css-default.svg") 1 2, default' );
+		document.documentElement.style.setProperty( '--odd-cursor-pointer', 'url("https://example.com/css-pointer.svg") 3 4, pointer' );
+		loadRuntime();
+		const item = document.createElement( 'button' );
+		document.body.appendChild( item );
+
+		window.__odd.cursors.bridgeTarget( item );
+
+		expect( item.style.cursor ).toContain( 'css-pointer.svg' );
+		expect( item.style.cursor ).toContain( '3 4' );
 	} );
 
 	it( 'stamps semantic roles and resolves them through the runtime controller', () => {

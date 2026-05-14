@@ -97,11 +97,13 @@ class Test_Cursors extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'url("https://example.com/default.svg") 2 3, grab', $css );
 		$this->assertStringContainsString( '--odd-cursor-default:', $css );
 		$this->assertStringContainsString( '[data-odd-cursor="text"]', $css );
+		$this->assertStringContainsString( 'body.desktop-mode-active [data-odd-cursor="pointer"]', $css );
+		$this->assertStringContainsString( '.desktop-mode-icon', $css );
 		$this->assertStringContainsString( '#wp-desktop-area', $css );
 		$this->assertStringContainsString( '.wp-desktop-icon', $css );
 		$this->assertStringContainsString( '.wp-desktop-window__titlebar', $css );
 		$this->assertStringContainsString( 'input:not([type="button"])', $css );
-		$this->assertStringNotContainsString( '!important', $css );
+		$this->assertStringContainsString( 'cursor: var(--odd-cursor-pointer) !important;', $css );
 	}
 
 	public function test_cursor_css_keeps_descendant_roles_out_of_the_cascade_contract() {
