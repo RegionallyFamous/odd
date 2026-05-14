@@ -11,9 +11,15 @@ notes to GitHub Releases.
 <a id="unreleased"></a>
 ## [Unreleased]
 
+<a id="v1.0.9"></a>
+## [1.0.9] — 2026-05-14
+
 ### Fixed
 - **WordPress.org review readiness:** installed-content storage now derives only from WordPress upload-directory data, and REST routes that require logged-in access use explicit `current_user_can()` permission callbacks.
-- **Custom cursors:** installed cursor-set CSS now uses a public ODD REST asset endpoint instead of fragile uploads URLs.
+- **Custom cursors:** installed cursor-set CSS now uses a public ODD REST asset endpoint instead of fragile uploads URLs, wins against Desktop Mode's global cursor reset, and preserves themed pointer cursors when hovering icon images, labels, dock items, and window controls.
+
+### Changed
+- **Stable Playground:** the public blueprint now installs ODD **1.0.9** with WP Desktop Mode pinned to the official **0.8.2** release zip.
 
 <a id="v1.0.8"></a>
 ## [1.0.8] — 2026-05-13

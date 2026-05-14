@@ -26,8 +26,8 @@
       "pluginData": {
         "resource": "git:directory",
         "url": "https://github.com/RegionallyFamous/odd",
-        "ref": "e6cf0856ff76b76e348be86a6d47834ce1712d4d",
-        "refType": "commit",
+        "ref": "v1.0.9",
+        "refType": "tag",
         "path": "odd"
       },
       "options": {
