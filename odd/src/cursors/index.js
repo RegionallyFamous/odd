@@ -402,15 +402,25 @@
 	}
 
 	function resolvePath( path ) {
+		var target = null;
+		for ( var t = 0; t < path.length; t++ ) {
+			if ( path[ t ] && path[ t ].nodeType === 1 ) {
+				target = path[ t ];
+				break;
+			}
+		}
 		for ( var i = 0; i < path.length; i++ ) {
 			var node = path[ i ];
 			if ( ! node || node.nodeType !== 1 ) continue;
 			var role = roleForNode( node );
-			if ( role ) return role;
+			if ( role ) {
+				role.target = target || role.node;
+				return role;
+			}
 		}
 		for ( var j = 0; j < path.length; j++ ) {
 			if ( path[ j ] && path[ j ].nodeType === 1 ) {
-				return { kind: 'default', source: 'fallback', node: path[ j ] };
+				return { kind: 'default', source: 'fallback', node: path[ j ], target: target || path[ j ] };
 			}
 		}
 		return null;
@@ -420,10 +430,15 @@
 		if ( ! state.href || ! resolved || ! resolved.node || ! resolved.node.style ) return null;
 		var value = cursorValue( resolved.kind, resolved.node );
 		if ( ! value ) return null;
-		rememberBridge( resolved.node, value, resolved.kind );
-		state.lastResolved = Object.assign( nodeSummary( resolved.node ), {
+		var target = resolved.target && resolved.target.nodeType === 1 ? resolved.target : resolved.node;
+		rememberBridge( target, value, resolved.kind );
+		if ( target !== resolved.node ) {
+			rememberBridge( resolved.node, value, resolved.kind );
+		}
+		state.lastResolved = Object.assign( nodeSummary( target ), {
 			role: resolved.kind,
 			source: resolved.source,
+			roleOwner: nodeSummary( resolved.node ),
 			cursor: value,
 			time: Date.now ? Date.now() : 0,
 		} );

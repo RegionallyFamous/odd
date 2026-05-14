@@ -99,6 +99,7 @@ class Test_Cursors extends WP_UnitTestCase {
 		$this->assertStringContainsString( '[data-odd-cursor="text"]', $css );
 		$this->assertStringContainsString( 'body.desktop-mode-active [data-odd-cursor="pointer"]', $css );
 		$this->assertStringContainsString( '.desktop-mode-icon', $css );
+		$this->assertStringContainsString( 'body.desktop-mode-active .desktop-mode-icon *', $css );
 		$this->assertStringContainsString( '#wp-desktop-area', $css );
 		$this->assertStringContainsString( '.wp-desktop-icon', $css );
 		$this->assertStringContainsString( '.wp-desktop-window__titlebar', $css );
@@ -142,6 +143,22 @@ class Test_Cursors extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'set=test-cursors', $contract['stylesheet'] );
 		$this->assertArrayHasKey( 'default', $contract['tokens'] );
 		$this->assertStringContainsString( 'default.svg', $contract['tokens']['default'] );
+	}
+
+	public function test_cursor_stylesheet_version_changes_with_desktop_hover_contract() {
+		$this->add_fixture_cursor_set();
+		$version       = oddout_cursors_stylesheet_version( 'test-cursors' );
+		$legacy_parts  = array(
+			defined( 'ODDOUT_VERSION' ) ? ODDOUT_VERSION : '0',
+			'test-cursors',
+			'1.0.0',
+			'default:https://example.com/default.svg:2,3',
+			'text:https://example.com/text.svg:16,16',
+		);
+		$legacy_digest = substr( md5( implode( '|', $legacy_parts ) ), 0, 16 );
+
+		$this->assertMatchesRegularExpression( '/^[a-f0-9]{16}$/', $version );
+		$this->assertNotSame( $legacy_digest, $version );
 	}
 
 	public function test_cursor_urls_upgrade_for_playground_https_proxy() {

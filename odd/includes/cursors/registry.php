@@ -233,11 +233,12 @@ function oddout_cursors_stylesheet_version( $slug = null ) {
 	$slug = null === $slug ? oddout_cursors_get_active_slug() : sanitize_key( (string) $slug );
 	$set  = '' === $slug ? null : oddout_cursors_get_set( $slug );
 	if ( ! $set ) {
-		return ( defined( 'ODDOUT_VERSION' ) ? ODDOUT_VERSION : '0' ) . '-none';
+		return ( defined( 'ODDOUT_VERSION' ) ? ODDOUT_VERSION : '0' ) . '-desktop-hover2-none';
 	}
 
 	$parts = array(
 		defined( 'ODDOUT_VERSION' ) ? ODDOUT_VERSION : '0',
+		'desktop-hover2',
 		$slug,
 		isset( $set['version'] ) ? (string) $set['version'] : '',
 	);

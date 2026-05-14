@@ -135,6 +135,27 @@ describe( 'ODD cursor runtime', () => {
 		expect( item.style.getPropertyPriority( 'cursor' ) ).toBe( '' );
 	} );
 
+	it( 'bridges icon children that are under Desktop Mode cursor resets', () => {
+		document.body.className = 'desktop-mode-active';
+		const reset = document.createElement( 'style' );
+		reset.textContent = 'body.desktop-mode-active, body.desktop-mode-active * { cursor: default !important; }';
+		document.head.appendChild( reset );
+		const icon = document.createElement( 'button' );
+		icon.className = 'desktop-mode-icon';
+		const image = document.createElement( 'img' );
+		image.className = 'desktop-mode-icon__image';
+		icon.appendChild( image );
+		document.body.appendChild( icon );
+
+		loadRuntime();
+		window.__odd.cursors.bridgeTarget( image );
+
+		expect( image.style.cursor ).toContain( 'pointer.svg' );
+		expect( image.style.getPropertyPriority( 'cursor' ) ).toBe( 'important' );
+		expect( icon.style.cursor ).toContain( 'pointer.svg' );
+		expect( window.__odd.cursors.status().lastResolved.roleOwner.className ).toContain( 'desktop-mode-icon' );
+	} );
+
 	it( 'falls back to loaded stylesheet variables when cursor-set config is stale', () => {
 		window.odd.cursorSet = 'new-cursors';
 		window.odd.cursorSets = [];
