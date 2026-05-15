@@ -316,6 +316,75 @@ function oddout_catalog_drop_incompatible_rows( array $registry ) {
 	return $registry;
 }
 
+function oddout_catalog_bundle_type_count( array $registry, $type ) {
+	$count = 0;
+	if ( empty( $registry['bundles'] ) || ! is_array( $registry['bundles'] ) ) {
+		return 0;
+	}
+	foreach ( $registry['bundles'] as $entry ) {
+		if ( is_array( $entry ) && isset( $entry['type'] ) && (string) $entry['type'] === (string) $type ) {
+			++$count;
+		}
+	}
+	return $count;
+}
+
+function oddout_catalog_merge_fallback_icon_sets( array $registry ) {
+	if ( oddout_catalog_bundle_type_count( $registry, 'icon-set' ) > 0 || ! function_exists( 'oddout_catalog_fallback_load' ) ) {
+		return $registry;
+	}
+
+	$fallback = oddout_catalog_fallback_load();
+	if ( empty( $fallback['bundles'] ) || ! is_array( $fallback['bundles'] ) ) {
+		return $registry;
+	}
+
+	$seen = array();
+	if ( isset( $registry['bundles'] ) && is_array( $registry['bundles'] ) ) {
+		foreach ( $registry['bundles'] as $entry ) {
+			if ( is_array( $entry ) && ! empty( $entry['slug'] ) ) {
+				$seen[ sanitize_key( (string) $entry['slug'] ) ] = true;
+			}
+		}
+	} else {
+		$registry['bundles'] = array();
+	}
+
+	$merged_icon_sets = array();
+	foreach ( $fallback['bundles'] as $entry ) {
+		if ( ! is_array( $entry ) || ! isset( $entry['type'], $entry['slug'] ) || 'icon-set' !== (string) $entry['type'] ) {
+			continue;
+		}
+		if ( ! oddout_catalog_icon_set_row_is_supported( $entry ) ) {
+			continue;
+		}
+		$slug = sanitize_key( (string) $entry['slug'] );
+		if ( '' === $slug || isset( $seen[ $slug ] ) ) {
+			continue;
+		}
+		$registry['bundles'][]     = $entry;
+		$seen[ $slug ]             = true;
+		$merged_icon_sets[ $slug ] = true;
+	}
+
+	if ( ! empty( $merged_icon_sets ) ) {
+		$fallback_icon_sets = array_keys( $merged_icon_sets );
+		if ( isset( $fallback['starter_pack']['iconSets'] ) && is_array( $fallback['starter_pack']['iconSets'] ) ) {
+			$fallback_icon_sets = $fallback['starter_pack']['iconSets'];
+		}
+		$registry['starter_pack']['iconSets'] = array_values(
+			array_filter(
+				array_map( 'sanitize_key', $fallback_icon_sets ),
+				static function ( $slug ) use ( $merged_icon_sets ) {
+					return isset( $merged_icon_sets[ $slug ] );
+				}
+			)
+		);
+	}
+
+	return $registry;
+}
+
 function oddout_catalog_is_transient_download_error( WP_Error $error ) {
 	$code   = $error->get_error_code();
 	$data   = $error->get_error_data();
@@ -494,7 +563,7 @@ function oddout_catalog_load( $force = false ) {
 	if ( ! $force ) {
 		$fresh = get_transient( ODDOUT_CATALOG_TRANSIENT );
 		if ( is_array( $fresh ) ) {
-			$runtime = oddout_catalog_drop_incompatible_rows( $fresh );
+			$runtime = oddout_catalog_merge_fallback_icon_sets( oddout_catalog_drop_incompatible_rows( $fresh ) );
 			oddout_catalog_record_source( 'transient', $runtime );
 			return $runtime;
 		}
@@ -504,7 +573,7 @@ function oddout_catalog_load( $force = false ) {
 	$registry = oddout_catalog_fetch_remote( $url );
 
 	if ( ! is_wp_error( $registry ) ) {
-		$normalised = oddout_catalog_normalise( $registry );
+		$normalised = oddout_catalog_merge_fallback_icon_sets( oddout_catalog_normalise( $registry ) );
 		if ( ! oddout_catalog_should_accept_empty_remote( $normalised, $registry ) ) {
 			oddout_catalog_update_meta(
 				array(
@@ -548,7 +617,7 @@ function oddout_catalog_load( $force = false ) {
 	// still render what we knew last time.
 	$stale = get_option( ODDOUT_CATALOG_STALE_OPTION, array() );
 	if ( is_array( $stale ) && ! empty( $stale['bundles'] ) ) {
-		$runtime = oddout_catalog_drop_incompatible_rows( $stale );
+		$runtime = oddout_catalog_merge_fallback_icon_sets( oddout_catalog_drop_incompatible_rows( $stale ) );
 		oddout_catalog_record_source( 'stale_option', $runtime );
 		return $runtime;
 	}

@@ -283,6 +283,41 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		$this->assertSame( array( 'modern-icons' ), $registry['starter_pack']['iconSets'] );
 	}
 
+	public function test_catalog_merges_fallback_icon_sets_when_remote_icon_sets_are_legacy() {
+		$registry = oddout_catalog_normalise(
+			array(
+				'version'      => 1,
+				'starter_pack' => array(
+					'iconSets' => array( 'legacy-icons' ),
+				),
+				'bundles'      => array(
+					$this->catalog_row(
+						'legacy-icons',
+						array(
+							'type'     => 'icon-set',
+							'icon_url' => 'https://odd.regionallyfamous.com/catalog/v1/icons/iconset-legacy-icons.svg',
+						)
+					),
+					$this->catalog_row( 'still-valid-widget' ),
+				),
+			)
+		);
+		$merged   = oddout_catalog_merge_fallback_icon_sets( $registry );
+		$iconsets = array_values(
+			array_filter(
+				$merged['bundles'],
+				static function ( $row ) {
+					return is_array( $row ) && isset( $row['type'] ) && 'icon-set' === $row['type'];
+				}
+			)
+		);
+
+		$this->assertNotEmpty( $iconsets );
+		$this->assertSame( 'oddlings', $iconsets[0]['slug'] );
+		$this->assertStringEndsWith( '.webp', $iconsets[0]['icon_url'] );
+		$this->assertSame( array( 'oddlings' ), $merged['starter_pack']['iconSets'] );
+	}
+
 	public function test_catalog_rest_keeps_install_fields_for_admins() {
 		$raw = array(
 			'version' => 1,
