@@ -1,5 +1,5 @@
 === ODD — Outlandish Desktop Decorator ===
-Contributors: nickhamze, regionallyfamous
+Contributors: nickhamze
 Tags: wp-desktop-mode, desktop, wallpaper, widgets, apps
 Requires at least: 6.0
 Tested up to: 6.9
@@ -8,46 +8,104 @@ Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Install living wallpapers, icon sets, cursors, widgets, and tiny desktop apps for WP Desktop Mode from a safe remote catalog.
+Make WordPress feel like your digital home with living wallpapers, custom icons, playful cursors, desk widgets, and tiny apps for WP Desktop Mode.
 
 == Description ==
 
-ODD (Outlandish Desktop Decorator) layers on top of [WP Desktop Mode](https://github.com/WordPress/desktop-mode). Once both plugins are active, the WordPress admin becomes a desktop with a polished shop for visual themes, desktop widgets, and small tools.
+ODD turns your WordPress admin into a customizable desktop you actually want to spend time in.
 
-ODD ships as a lightweight runtime. The content lives in a remote catalog at [odd.regionallyfamous.com/catalog/v1/](https://odd.regionallyfamous.com/catalog/v1/registry.json), installs as universal `.wp` bundles, and can be updated without shipping a new plugin zip.
+WordPress does not have to feel like a plain control panel. With ODD and WP Desktop Mode, your admin can become a little digital room: a place with wallpaper, personality, favorite tools, charming desk toys, and a shop full of strange little upgrades.
 
-ODD manages five content types:
+Open the ODD Shop, pick what feels right, and make the workspace yours.
 
-* **Canvas wallpapers** — living PixiJS scenes painted on top of desktop backdrops.
-* **Icon sets** — themed SVG costume packs for dock and desktop shortcuts.
-* **Cursor sets** — pointer themes for Desktop Mode and classic wp-admin.
-* **Desktop widgets** — draggable desk companions like Sticky Note, Magic 8-Ball, and Spotify Embed.
-* **Apps** — sandboxed HTML/CSS/JS tools that open in their own Desktop Mode windows.
+With ODD you can:
 
-Fresh installs get a starter pack so the desktop looks complete immediately. Everything else is one click away in the ODD Shop, with responsive light/dark chrome, global search, editorial shelves, reversible previews, compact preferences, and just enough Oddling weirdness to make the admin feel alive.
+* Add living wallpapers that make your desktop feel alive.
+* Dress up your desktop and dock icons with themed icon sets.
+* Swap in custom cursors that match the mood.
+* Drop tiny widgets onto the desktop, like notes, toys, embeds, and little desk companions.
+* Install small desktop apps that open in their own windows.
+* Start with a ready-made starter pack, then customize from there.
+
+ODD is for people who live in WordPress all day and want it to feel less like rented office furniture and more like their own place.
+
+Maybe your WordPress should be calm and cozy. Maybe it should be weird and neon. Maybe it should look like a tiny operating system from a dream. ODD gives you the pieces and lets you decorate.
+
+== Why You'll Like It ==
+
+= Your admin gets a personality =
+
+Change the look and feel of WordPress without changing your public site. ODD decorates your workspace, not your visitors' experience.
+
+= It is easy to try things =
+
+Browse the ODD Shop, install something, apply it, swap it, remove it, and keep playing until the desktop feels right.
+
+= It makes everyday WordPress more fun =
+
+Your tools are still there. Your admin still works. It just feels more alive while you work.
+
+= It works with WP Desktop Mode =
+
+ODD is made for WP Desktop Mode, the plugin that turns wp-admin into a desktop-style workspace.
 
 == Installation ==
 
-1. Install and activate [WP Desktop Mode](https://github.com/WordPress/desktop-mode) v0.8.0 or newer (WordPress.org distribution recommended).
-2. Upload and activate ODD from the Plugins screen, or install the release zip.
-3. Enable desktop mode for your user.
-4. Open the ODD Shop from its desktop icon, taskbar icon, or `/odd-panel` command.
+1. Install and activate [WP Desktop Mode](https://github.com/WordPress/desktop-mode) v0.8.0 or newer.
+2. Install and activate ODD.
+3. Enable Desktop Mode for your user.
+4. Open the ODD Shop from the desktop.
+5. Pick a wallpaper, icon set, cursor, widget, or app and make yourself at home.
+
+== Frequently Asked Questions ==
+
+= Does ODD change my public website? =
+
+No. ODD customizes your WordPress admin workspace. Visitors to your site will not see your desktop wallpaper, icons, widgets, or apps.
+
+= Do I need WP Desktop Mode? =
+
+Yes. ODD is made for WP Desktop Mode. Desktop Mode creates the desktop workspace, and ODD fills it with personality.
+
+= What can I customize? =
+
+You can customize wallpapers, desktop icons, dock icons, cursors, widgets, and small desktop apps.
+
+= Is this just for developers? =
+
+No. ODD is meant to be fun for regular WordPress users. If you can browse a shop and click install, you can use ODD.
+
+= Can I undo things? =
+
+Yes. Installed items can be changed or removed. You can keep experimenting until your workspace feels right.
+
+= Does ODD send analytics or tracking data? =
+
+No. ODD does not send telemetry, analytics, license checks, or error reports. It only fetches the public catalog and the items you choose to install.
+
+== Screenshots ==
+
+1. A decorated WordPress desktop with wallpaper, icons, widgets, and docked apps.
+2. The ODD Shop, where you can browse living wallpapers and desktop upgrades.
+3. Icon sets in the ODD Shop, ready to install and apply.
 
 == External services ==
 
-ODD connects to the public ODD catalog service at [odd.regionallyfamous.com/catalog/v1/](https://odd.regionallyfamous.com/catalog/v1/registry.json). The catalog is a static HTTPS endpoint hosted by Regionally Famous / Nick Hamze and is used to show Shop items, seed the starter pack, and download selected `.wp` bundles, previews, and icons.
+ODD connects to the public ODD catalog at https://odd.regionallyfamous.com/catalog/v1/. This catalog is used to show items in the ODD Shop and download the wallpapers, icon sets, cursors, widgets, and apps you choose to install.
 
-When an administrator opens or refreshes the ODD Shop, runs the starter pack, installs catalog content, or repairs an installed bundle from the catalog, the WordPress site sends HTTPS GET requests for static JSON and asset files. Those requests include normal web request metadata such as the site server's IP address, user agent, requested URL, and timestamp. ODD does not send site content, user account details, cookies, analytics events, license keys, or diagnostic reports to the catalog service.
+When an administrator opens or refreshes the ODD Shop, runs the starter pack, installs catalog content, or repairs an installed item, the site makes normal HTTPS requests for static catalog files and assets. Those requests may include normal web request information such as the server IP address, user agent, requested URL, and timestamp.
 
-Service terms: [https://odd.regionallyfamous.com/terms/](https://odd.regionallyfamous.com/terms/)
+ODD does not send site content, user account details, cookies, analytics events, license keys, or diagnostic reports to the catalog service.
 
-Privacy policy: [https://odd.regionallyfamous.com/privacy/](https://odd.regionallyfamous.com/privacy/)
+Service terms: https://odd.regionallyfamous.com/terms/
+
+Privacy policy: https://odd.regionallyfamous.com/privacy/
 
 == Source and build tools ==
 
-The human-readable source code for this plugin is maintained at [https://github.com/RegionallyFamous/odd](https://github.com/RegionallyFamous/odd). The repository includes the source files, build scripts, catalog sources, and package metadata used to create the distributed plugin zip.
+The human-readable source code for ODD is available at https://github.com/RegionallyFamous/odd. The repository includes the source files, build scripts, catalog sources, and package metadata used to create the plugin.
 
-The files in `apps/runtime/*.js` are generated JavaScript modules built from the public `react` and `react-dom` npm packages pinned in the repository. React and React DOM source code is maintained at [https://github.com/facebook/react](https://github.com/facebook/react), and the exact package versions are recorded in `package-lock.json`. The runtime files are rebuilt with `odd/bin/build-runtime`, which installs the pinned npm dependencies in a temporary directory and uses esbuild to create the small ESM runtime files used by sandboxed ODD apps.
+The generated JavaScript runtime files in `apps/runtime/*.js` are built from the public `react` and `react-dom` npm packages pinned in the repository. React source code is maintained at https://github.com/facebook/react, and the exact package versions are recorded in `package-lock.json`.
 
 Typical build commands:
 
@@ -56,39 +114,11 @@ Typical build commands:
 3. `python3 _tools/build-catalog.py`
 4. `odd/bin/build-zip`
 
-== Frequently Asked Questions ==
-
-= Does ODD work without WP Desktop Mode? =
-
-No. ODD is a decorator and app-store layer for WP Desktop Mode. If Desktop Mode is missing or out of date, ODD shows an admin notice and pauses desktop integrations.
-
-= Does ODD call home? =
-
-ODD fetches the public catalog and catalog assets described in the External services section. It does not send telemetry, analytics, license checks, or error reports. Copy Diagnostics is local-only and user initiated.
-
-= Can I install third-party content? =
-
-Yes. Apps, scenes, icon sets, cursor sets, and widgets can be packaged as `.wp` bundles. ODD validates archives before install, and app/widget JavaScript requires administrator capability.
-
-= Can the store update without a plugin release? =
-
-Yes. Catalog entries, card art, bundles, and starter content publish through the remote catalog. Plugin releases are reserved for runtime, security, and API changes.
-
-= How do I report bugs? =
-
-Open ODD Shop → About → Copy diagnostics, then paste the markdown into a GitHub issue. Nothing is sent anywhere unless you choose to share it.
-
-== Screenshots ==
-
-1. Desktop with themed wallpaper, icons, cursors, widgets, and docked ODD apps.
-2. Wallpaper department with preview/apply controls.
-3. Icon Sets department with catalog cards and install actions.
-
 == Changelog ==
 
 = 1.0.0 =
 
-The clean public baseline for ODD: a catalog-driven app store and decorator layer for WP Desktop Mode v0.8.0+, with unified store cards, hardened bundle installs, Playground app-loading fixes, custom cursor fixes, local-only diagnostics, starter content, and release-quality CI gates.
+Welcome to ODD. The first public release brings living wallpapers, icon sets, cursor themes, desktop widgets, tiny apps, starter content, and the ODD Shop to WP Desktop Mode.
 
 == Upgrade Notice ==
 
