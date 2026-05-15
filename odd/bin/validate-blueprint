@@ -10,26 +10,21 @@ pinned current Desktop Mode release from WordPress.org plus ODD **main** for
 throwaway trunk tests.
 Any step that depends on a
 browser-blocked URL, a wiggly `releases/latest/download` redirect, or
-an unpinned plugin install turns the first-run experience into a CORS
-failure — and that's typically the first thing a new user ever sees.
+an unexpected source install can turn the first-run experience into a
+CORS failure — and that's typically the first thing a new user ever sees.
 
 This script parses the blueprint and fails on known-fragile patterns so
 regressions are caught before they reach `main`.
 
-The public blueprints pin ODD with a semver `git:directory` peel **commit**
-(40-char SHA) or the release **tag** (`v` + `ODDOUT_VERSION`). Playground's
-isomorphic-git integration can fail fetching some tag packfiles
-(*Invalid PACK header*); pinning the peeled commit keeps the demo
-deterministic and reliable. When `refType` is `commit`, the validator
-asserts the SHA matches `git rev-parse v$ODDOUT_VERSION^{commit}` whenever
-a local `.git` checkout is available.
-WP Desktop Mode is pinned with `resource: "url"` to
-`https://downloads.wordpress.org/plugin/desktop-mode.{version}.zip` where `{version}`
-equals `ODDOUT_DESKTOP_MODE_PLAYGROUND_VERSION` when defined, otherwise
-`ODDOUT_DESKTOP_MODE_MIN_VERSION`. The minimum stays separate from the hosted demo
-pin so we can keep supporting older host builds while making Playground
-deterministic on the current tested release. (Playground's JSON schema rejects
-`pluginData.version` on `wordpress.org/plugins`, so directory installs cannot pin.)
+The public blueprints intentionally install both WP Desktop Mode and ODD from
+the WordPress.org Plugin Directory with `resource: "wordpress.org/plugins"`.
+That keeps the public Playground link on the latest approved dotorg release
+without republishing the blueprint every time either plugin ships.
+The dev blueprints stay deterministic: Desktop Mode is pinned with
+`resource: "url"` to
+`https://downloads.wordpress.org/plugin/desktop-mode.{version}.zip` where
+`{version}` equals `ODDOUT_DESKTOP_MODE_PLAYGROUND_VERSION` when defined,
+otherwise `ODDOUT_DESKTOP_MODE_MIN_VERSION`, while ODD comes from `main`.
 
 Release blueprint pins must agree with values in `odd/odd.php` (checklist #8).
 
@@ -58,13 +53,9 @@ Checks (all emit bullets; any failure → exit code 1):
      its source archives do not include the compiled desktop shell JS
      (`assets/js/desktop.min.js`). Install packaged zips (`downloads.
      wordpress.org` or HTTPS mirrors), never raw plugin source repos.
-  8. Exactly one step installs pinned Desktop Mode: `pluginData` is
-     `resource: "url"` with URL equal to downloads.wordpress.org
-     `/plugin/desktop-mode.{ODDOUT_DESKTOP_MODE_PLAYGROUND_VERSION}.zip` and
-     `options.targetFolderName` equals `desktop-mode`.
-     RegionallyFamous/odd installs use either `refType: commit`
-     (recommended) whose `ref` peels `v` + `ODDOUT_VERSION`, or legacy
-     `refType: tag` with `ref: v` + `ODDOUT_VERSION`.
+  8. Public blueprints install Desktop Mode and ODD from
+     `resource: "wordpress.org/plugins"` with slugs `desktop-mode` and
+     `odd-outlandish-desktop-decorator`, and deterministic folder names.
   9. Dev blueprints: Desktop Mode from the pinned release zip matching
      `ODDOUT_DESKTOP_MODE_PLAYGROUND_VERSION` (targetFolderName desktop-mode);
      ODD from `git:directory` **branch** `main` on
@@ -175,8 +166,8 @@ def validate_file(path: Path, odd_version: str, dm_min: str) -> tuple[list[str],
 
     allowed_ref_types = {"tag", "branch", "commit", "refname"}
     expected_odd_ref = "v" + odd_version
-    dm_zip_expected = desktop_mode_zip_url(dm_min)
-    pinned_desktop_mode_ok = False
+    desktop_mode_wporg_ok = False
+    odd_wporg_ok = False
 
     for idx, step in enumerate(steps or []):
         if not isinstance(step, dict):
@@ -203,34 +194,38 @@ def validate_file(path: Path, odd_version: str, dm_min: str) -> tuple[list[str],
                 problems.append(
                     f"step[{idx}] resource=url must be https, got {url!r}"
                 )
-            if url == dm_zip_expected:
-                if options.get("targetFolderName") != "desktop-mode":
-                    problems.append(
-                        f"step[{idx}] pinned Desktop Mode zip must use "
-                        "options.targetFolderName \"desktop-mode\""
-                    )
-                else:
-                    pinned_desktop_mode_ok = True
 
         elif resource == "wordpress.org/plugins":
             slug = plugin.get("slug")
-            if slug == "desktop-mode":
-                problems.append(
-                    f"step[{idx}] must not install Desktop Mode via "
-                    'wordpress.org/plugins (Playground schema has no semver pin '
-                    'there); use resource=url → '
-                    f"{desktop_mode_zip_url(dm_min)!r}"
-                )
             if not slug or not isinstance(slug, str):
                 problems.append(
                     f"step[{idx}] wordpress.org/plugins install is missing "
                     "`pluginData.slug`"
                 )
-            if not options.get("targetFolderName"):
+                continue
+
+            target = options.get("targetFolderName")
+            if not target:
                 problems.append(
                     f"step[{idx}] wordpress.org/plugins installPlugin should set "
                     "options.targetFolderName so plugin folder naming is deterministic"
                 )
+            if slug == "desktop-mode":
+                if target != "desktop-mode":
+                    problems.append(
+                        f"step[{idx}] Desktop Mode wordpress.org/plugins install "
+                        'must use options.targetFolderName "desktop-mode"'
+                    )
+                else:
+                    desktop_mode_wporg_ok = True
+            elif slug == "odd-outlandish-desktop-decorator":
+                if target != "odd-outlandish-desktop-decorator":
+                    problems.append(
+                        f"step[{idx}] ODD wordpress.org/plugins install must use "
+                        'options.targetFolderName "odd-outlandish-desktop-decorator"'
+                    )
+                else:
+                    odd_wporg_ok = True
 
         elif resource == "git:directory":
             url = str(plugin.get("url", ""))
@@ -261,6 +256,11 @@ def validate_file(path: Path, odd_version: str, dm_min: str) -> tuple[list[str],
                     "so the plugin folder matches what `Requires Plugins:` expects"
                 )
             if "RegionallyFamous/odd" in url:
+                problems.append(
+                    f"step[{idx}] public Playground should install ODD from "
+                    "wordpress.org/plugins so the live demo follows the latest "
+                    "approved WordPress.org release"
+                )
                 ref = str(plugin.get("ref", ""))
                 expected_tag_ref = expected_odd_ref
                 if ref_type == "tag":
@@ -289,10 +289,17 @@ def validate_file(path: Path, odd_version: str, dm_min: str) -> tuple[list[str],
                     )
 
     rel = path.relative_to(REPO_ROOT)
-    if not pinned_desktop_mode_ok:
+    if not desktop_mode_wporg_ok:
         problems.append(
-            f"{rel}: missing pinned Desktop Mode install at {dm_zip_expected!r} "
-            "(resource=url, targetFolderName=desktop-mode)"
+            f"{rel}: missing WordPress.org Desktop Mode install "
+            '(resource=wordpress.org/plugins, slug=desktop-mode, '
+            "targetFolderName=desktop-mode)"
+        )
+    if not odd_wporg_ok:
+        problems.append(
+            f"{rel}: missing WordPress.org ODD install "
+            '(resource=wordpress.org/plugins, slug=odd-outlandish-desktop-decorator, '
+            "targetFolderName=odd-outlandish-desktop-decorator)"
         )
 
     return problems, len(steps or [])
