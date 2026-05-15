@@ -1006,6 +1006,10 @@ add_action(
 						'required'          => false,
 						'enum'              => oddout_catalog_allowed_types(),
 						'sanitize_callback' => 'sanitize_text_field',
+						'validate_callback' => function ( $value ) {
+							$value = is_scalar( $value ) ? sanitize_text_field( (string) $value ) : '';
+							return '' === $value || in_array( $value, oddout_catalog_allowed_types(), true );
+						},
 					),
 				),
 				'permission_callback' => function () {
