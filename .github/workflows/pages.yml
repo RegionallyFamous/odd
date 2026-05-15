@@ -31,6 +31,9 @@ jobs:
         with:
           python-version: '3.x'
 
+      - name: Install Python catalog dependencies
+        run: python -m pip install --quiet Pillow
+
       # Rebuild the remote catalog on every deploy so /catalog/v1/
       # is always in sync with whatever landed on main. The builder
       # is deterministic; identical source trees produce identical

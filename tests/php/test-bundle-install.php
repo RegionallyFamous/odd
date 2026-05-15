@@ -258,7 +258,7 @@ class Test_Bundle_Install extends ODDOUT_REST_Test_Case {
 			'oversized-raster',
 			array(
 				'files' => array(
-					'icons/dashboard.png' => str_repeat( 'x', 768 * 1024 + 1 ),
+					'icons/dashboard.png' => random_bytes( 768 * 1024 + 1 ),
 				),
 			)
 		);

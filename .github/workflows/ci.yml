@@ -29,6 +29,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.x'
+      - name: Install Python catalog dependencies
+        run: python -m pip install --quiet Pillow
       - name: Build catalog from _tools/catalog-sources/
         run: python3 _tools/build-catalog.py
       - name: Validate catalog (determinism + schema + hashes)
