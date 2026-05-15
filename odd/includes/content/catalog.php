@@ -265,6 +265,57 @@ function oddout_catalog_entry_requires_sha( array $entry ) {
 	return (bool) apply_filters( 'oddout_bundle_catalog_requires_sha', true, $entry );
 }
 
+function oddout_catalog_icon_set_row_is_supported( array $entry ) {
+	if ( ! isset( $entry['type'] ) || 'icon-set' !== (string) $entry['type'] ) {
+		return true;
+	}
+
+	$icon_url = isset( $entry['icon_url'] ) ? (string) $entry['icon_url'] : '';
+	$path     = (string) wp_parse_url( $icon_url, PHP_URL_PATH );
+	$ext      = strtolower( pathinfo( $path, PATHINFO_EXTENSION ) );
+	return in_array( $ext, array( 'png', 'webp' ), true );
+}
+
+function oddout_catalog_drop_incompatible_rows( array $registry ) {
+	if ( empty( $registry['bundles'] ) || ! is_array( $registry['bundles'] ) ) {
+		return $registry;
+	}
+
+	$kept           = array();
+	$dropped        = array();
+	$icon_set_slugs = array();
+	foreach ( $registry['bundles'] as $entry ) {
+		if ( ! is_array( $entry ) ) {
+			continue;
+		}
+		if ( ! oddout_catalog_icon_set_row_is_supported( $entry ) ) {
+			if ( ! empty( $entry['slug'] ) ) {
+				$dropped[ sanitize_key( (string) $entry['slug'] ) ] = true;
+			}
+			continue;
+		}
+		if ( isset( $entry['type'], $entry['slug'] ) && 'icon-set' === (string) $entry['type'] ) {
+			$icon_set_slugs[ sanitize_key( (string) $entry['slug'] ) ] = true;
+		}
+		$kept[] = $entry;
+	}
+	$registry['bundles'] = $kept;
+
+	if ( isset( $registry['starter_pack']['iconSets'] ) && is_array( $registry['starter_pack']['iconSets'] ) ) {
+		$registry['starter_pack']['iconSets'] = array_values(
+			array_filter(
+				$registry['starter_pack']['iconSets'],
+				static function ( $slug ) use ( $dropped, $icon_set_slugs ) {
+					$slug = sanitize_key( (string) $slug );
+					return isset( $icon_set_slugs[ $slug ] ) && ! isset( $dropped[ $slug ] );
+				}
+			)
+		);
+	}
+
+	return $registry;
+}
+
 function oddout_catalog_is_transient_download_error( WP_Error $error ) {
 	$code   = $error->get_error_code();
 	$data   = $error->get_error_data();
@@ -443,7 +494,7 @@ function oddout_catalog_load( $force = false ) {
 	if ( ! $force ) {
 		$fresh = get_transient( ODDOUT_CATALOG_TRANSIENT );
 		if ( is_array( $fresh ) ) {
-			$runtime = $fresh;
+			$runtime = oddout_catalog_drop_incompatible_rows( $fresh );
 			oddout_catalog_record_source( 'transient', $runtime );
 			return $runtime;
 		}
@@ -497,7 +548,7 @@ function oddout_catalog_load( $force = false ) {
 	// still render what we knew last time.
 	$stale = get_option( ODDOUT_CATALOG_STALE_OPTION, array() );
 	if ( is_array( $stale ) && ! empty( $stale['bundles'] ) ) {
-		$runtime = $stale;
+		$runtime = oddout_catalog_drop_incompatible_rows( $stale );
 		oddout_catalog_record_source( 'stale_option', $runtime );
 		return $runtime;
 	}
@@ -510,7 +561,7 @@ function oddout_catalog_load( $force = false ) {
 	if ( function_exists( 'oddout_catalog_fallback_load' ) ) {
 		$fallback = oddout_catalog_fallback_load();
 		if ( ! empty( $fallback['bundles'] ) ) {
-			$runtime = $fallback;
+			$runtime = oddout_catalog_drop_incompatible_rows( $fallback );
 			oddout_catalog_record_source( 'fallback_file', $runtime );
 			return $runtime;
 		}
@@ -763,6 +814,10 @@ function oddout_catalog_normalise( $data ) {
 			// Drop rows with malformed hashes — we'd refuse to install them anyway.
 			continue;
 		}
+		if ( ! oddout_catalog_icon_set_row_is_supported( $entry ) ) {
+			// Legacy SVG icon-set bundles cannot install under the raster-only v1 contract.
+			continue;
+		}
 		$out['bundles'][] = array(
 			'type'         => $type,
 			'slug'         => sanitize_key( (string) $entry['slug'] ),
@@ -788,6 +843,8 @@ function oddout_catalog_normalise( $data ) {
 			'accent'       => isset( $entry['accent'] ) ? sanitize_hex_color_no_hash( ltrim( (string) $entry['accent'], '#' ) ) : '',
 		);
 	}
+
+	$out = oddout_catalog_drop_incompatible_rows( $out );
 
 	/**
 	 * Filter the full bundle catalog after remote load + normalisation.

@@ -249,6 +249,40 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		);
 	}
 
+	public function test_catalog_normalise_drops_legacy_svg_icon_sets() {
+		$registry = oddout_catalog_normalise(
+			array(
+				'version'      => 1,
+				'starter_pack' => array(
+					'iconSets' => array( 'legacy-icons', 'modern-icons' ),
+				),
+				'bundles'      => array(
+					$this->catalog_row(
+						'legacy-icons',
+						array(
+							'type'     => 'icon-set',
+							'icon_url' => 'https://odd.regionallyfamous.com/catalog/v1/icons/iconset-legacy-icons.svg',
+						)
+					),
+					$this->catalog_row(
+						'modern-icons',
+						array(
+							'type'     => 'icon-set',
+							'icon_url' => 'https://odd.regionallyfamous.com/catalog/v1/icons/iconset-modern-icons.webp',
+						)
+					),
+					$this->catalog_row( 'still-valid-widget' ),
+				),
+			)
+		);
+
+		$slugs = wp_list_pluck( $registry['bundles'], 'slug' );
+		$this->assertNotContains( 'legacy-icons', $slugs );
+		$this->assertContains( 'modern-icons', $slugs );
+		$this->assertContains( 'still-valid-widget', $slugs );
+		$this->assertSame( array( 'modern-icons' ), $registry['starter_pack']['iconSets'] );
+	}
+
 	public function test_catalog_rest_keeps_install_fields_for_admins() {
 		$raw = array(
 			'version' => 1,
