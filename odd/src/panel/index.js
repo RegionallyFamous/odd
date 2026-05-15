@@ -10,11 +10,9 @@
  * department rail (Wallpapers / Icon Sets / Apps / About), and
  * a right content pane that groups items into franchise
  * "shelves". All state still flows through the same REST
- * endpoint used by the legacy control panel — wallpaper via
- * WP Desktop Mode's per-user settings, icons via a soft reload
- * (the server-side dock filter is the canonical renderer). Only
- * the chrome + copy changed; the data model and live-swap hook
- * wiring are untouched.
+ * endpoint used by ODD's runtime — wallpaper via WP Desktop Mode's
+ * per-user settings, icons via a soft reload (the server-side dock
+ * filter is the canonical renderer).
  */
 ( function () {
 	'use strict';
@@ -107,6 +105,18 @@
 		};
 		var CATALOG_BASE_URL = 'https://odd.regionallyfamous.com/catalog/v1';
 		var cleanupFns = [];
+		var sectionCleanupFns = [];
+
+		function addSectionCleanup( clean ) {
+			if ( typeof clean === 'function' ) sectionCleanupFns.push( clean );
+		}
+
+		function cleanupSection() {
+			while ( sectionCleanupFns.length ) {
+				var clean = sectionCleanupFns.pop();
+				try { clean(); } catch ( e ) {}
+			}
+		}
 
 		function isAbsoluteUrl( url ) {
 			return /^(?:https?:)?\/\//i.test( String( url || '' ) ) || /^data:/i.test( String( url || '' ) );
@@ -849,6 +859,7 @@
 		return function teardown() {
 			clearPendingAdminReload();
 			body.classList.remove( 'odd-panel', 'odd-shop' );
+			cleanupSection();
 			while ( cleanupFns.length ) {
 				var clean = cleanupFns.pop();
 				try { clean(); } catch ( e ) {}
@@ -890,6 +901,7 @@
 			}
 
 			state.active = id;
+			cleanupSection();
 			for ( var k in buttons ) {
 				if ( Object.prototype.hasOwnProperty.call( buttons, k ) ) {
 					buttons[ k ].classList.toggle( 'is-active', k === id );
@@ -3334,6 +3346,7 @@
 			var live = el( 'div', { class: 'odd-shop__hero-live', 'aria-hidden': 'true' } );
 			bg.appendChild( live );
 			var handle = null;
+			var destroyed = false;
 			var pausedByVisibility = false;
 			var perfTimer = 0;
 			var mountPromise;
@@ -3353,6 +3366,10 @@
 			}
 			if ( ! mountPromise || typeof mountPromise.then !== 'function' ) return;
 			mountPromise.then( function ( mounted ) {
+				if ( destroyed ) {
+					if ( mounted && typeof mounted.destroy === 'function' ) mounted.destroy();
+					return;
+				}
 				handle = mounted;
 				if ( handle && handle.env && handle.env.perfTier === 'low' ) {
 					destroyHero();
@@ -3361,6 +3378,7 @@
 					if ( handle && handle.env && handle.env.perfTier === 'low' ) destroyHero();
 				}, 1000 );
 			} ).catch( function ( err ) {
+				if ( destroyed ) return;
 				reportError( 'panel.hero-scene', err );
 				if ( live.parentNode ) live.parentNode.removeChild( live );
 				if ( previewUrl ) bg.style.backgroundImage = 'url("' + previewUrl + '")';
@@ -3376,14 +3394,18 @@
 				setPaused( document.visibilityState === 'hidden' );
 			}
 			function destroyHero() {
+				destroyed = true;
+				if ( perfTimer ) {
+					window.clearInterval( perfTimer );
+					perfTimer = 0;
+				}
 				if ( handle && typeof handle.destroy === 'function' ) handle.destroy();
 				handle = null;
 				if ( live.parentNode ) live.parentNode.removeChild( live );
 			}
 			document.addEventListener( 'visibilitychange', onVisibility );
-			cleanupFns.push( function () {
+			addSectionCleanup( function () {
 				document.removeEventListener( 'visibilitychange', onVisibility );
-				if ( perfTimer ) window.clearInterval( perfTimer );
 				destroyHero();
 			} );
 		}

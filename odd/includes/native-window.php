@@ -83,8 +83,8 @@ add_filter(
 
 		$min_w        = 420;
 		$min_h        = 420;
-		$max_w        = 1080;
-		$max_h        = 720;
+		$default_w    = 1080;
+		$default_h    = 720;
 		$valid_states = array( 'normal', 'minimized', 'maximized', 'fullscreen' );
 
 		// Native-window registry → some shell builds use these to
@@ -123,8 +123,8 @@ add_filter(
 				continue;
 			}
 
-			$width  = isset( $window['width'] ) ? (int) $window['width'] : $max_w;
-			$height = isset( $window['height'] ) ? (int) $window['height'] : $max_h;
+			$width  = isset( $window['width'] ) ? (int) $window['width'] : $default_w;
+			$height = isset( $window['height'] ) ? (int) $window['height'] : $default_h;
 			$state  = isset( $window['state'] ) ? (string) $window['state'] : 'normal';
 
 			if ( ! in_array( $state, $valid_states, true ) ) {
@@ -132,8 +132,8 @@ add_filter(
 			}
 
 			$config['session']['windows'][ $i ]['state']      = $state;
-			$config['session']['windows'][ $i ]['width']      = max( $min_w, min( $max_w, $width ) );
-			$config['session']['windows'][ $i ]['height']     = max( $min_h, min( $max_h, $height ) );
+			$config['session']['windows'][ $i ]['width']      = max( $min_w, $width );
+			$config['session']['windows'][ $i ]['height']     = max( $min_h, $height );
 			$config['session']['windows'][ $i ]['min_width']  = $min_w;
 			$config['session']['windows'][ $i ]['min_height'] = $min_h;
 			$config['session']['windows'][ $i ]['minWidth']   = $min_w;

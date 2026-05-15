@@ -11,6 +11,8 @@ notes to GitHub Releases.
 <a id="unreleased"></a>
 ## [Unreleased]
 
+Nothing yet.
+
 <a id="v1.0.0"></a>
 ## [1.0.0] — 2026-05-15
 
@@ -43,15 +45,20 @@ notes to GitHub Releases.
 - **Desktop rails and Shop layout.** Left/right Desktop Mode rails no longer
   pan sideways, vertical icon access remains available, and the ODD Shop clamps
   horizontal overflow.
+- **Wallpaper lifecycle teardown.** Wallpaper swaps, Desktop Mode wallpaper
+  unmounts, page teardown, Shop hero previews, audio hooks, and Iris observers
+  now release Pixi apps, tickers, timers, canvases, and listeners cleanly.
 
 ### Changed
 - **Magic 8-Ball widget.** The live widget skin has a polished abstract oracle
   texture, bundled widget assets, and updated widget packaging.
 - **Stable Playground.** The public blueprint installs ODD **1.0.0** with WP
-  Desktop Mode pinned to the official **0.8.2** release zip.
+  Desktop Mode pinned to the official **0.8.5** release zip.
 - **Catalog baseline.** First-party store downloads are normalized to version
   **1.0.0** so WordPress.org, GitHub, and the in-app Shop share one clean public
   baseline.
+- **ODD Shop native window sizing.** The Shop preserves Desktop Mode's
+  remembered native-window size while still enforcing minimum dimensions.
 
 ### Security
 - **Hardened bundle installs.** Remote and uploaded `.wp` bundles are validated
@@ -63,6 +70,14 @@ notes to GitHub Releases.
 - **Local-only diagnostics.** Copy Diagnostics assembles support information
   locally and only copies it when the user asks. ODD does not send telemetry,
   analytics, or error reports.
+- **Remote catalog hardening.** Catalog fetches reject non-HTTPS registries,
+  oversized bodies, malformed rows, duplicate slugs, bad hashes, and
+  bundle/icon/card URLs outside the configured catalog base by default.
 
 ### Compatibility
 - Requires WordPress 6.0+, PHP 7.4+, and WP Desktop Mode 0.8.0+.
+- Playground blueprints, redirects, smoke workflows, and docs pin WP Desktop
+  Mode to the official 0.8.5 release zip.
+- Desktop Mode 0.8.5 diagnostics/cursor coverage includes host widgets,
+  desktop files, shared folders, presence, heartbeat, and arrange-menu
+  surfaces.

@@ -14,7 +14,7 @@
       "step": "installPlugin",
       "pluginData": {
         "resource": "url",
-        "url": "https://downloads.wordpress.org/plugin/desktop-mode.0.8.2.zip"
+        "url": "https://downloads.wordpress.org/plugin/desktop-mode.0.8.5.zip"
       },
       "options": { "activate": true, "targetFolderName": "desktop-mode" }
     },

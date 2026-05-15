@@ -274,7 +274,7 @@
 				<div class="article-meta">
 					<span>May 8, 2026</span>
 					<span>ODD 1.0.0</span>
-					<span>WP Desktop Mode 0.8.2</span>
+					<span>WP Desktop Mode 0.8.5</span>
 				</div>
 				<img class="hero-image" src="/blog/odd-1-0-0-workspaces/images/odd-workspace-hero.webp" alt="A personalized WordPress desktop workspace with app windows, dock icons, creative tools, and a bright live wallpaper.">
 			</header>
@@ -330,7 +330,9 @@
 					<p>That is not glamorous, but it is the difference between "it is blank" and "the app is missing from the installed index" or "the runtime URL escaped the Playground scope." Better diagnostics make the weird parts safer. They let ODD stay playful without becoming mysterious.</p>
 
 					<h2>What is in 1.0.0</h2>
-					<p>The public Playground installs ODD 1.0.0 and pins WP Desktop Mode to the official 0.8.2 release zip from WordPress.org. The dev Playground still tracks ODD <code>main</code>, but it also pins Desktop Mode 0.8.2 instead of relying on a moving latest zip. That means the normal demo is reproducible, and the trunk demo is honest about being trunk.</p>
+					<p>The public Playground installs ODD 1.0.0 and pins WP Desktop Mode to the official 0.8.5 release zip from WordPress.org. The dev Playground still tracks ODD <code>main</code>, but it also pins Desktop Mode 0.8.5 instead of relying on a moving latest zip. That means the normal demo is reproducible, and the trunk demo is honest about being trunk.</p>
+
+					<p>The Shop catalog is live content, not a reason to cut a plugin release every time a new wallpaper, widget, cursor set, icon pack, or tiny app is ready. ODD fetches the static catalog, validates the rows, keeps bundle and preview URLs under the configured first-party catalog base by default, and checks declared hashes before install.</p>
 
 					<p>The stable release is available as <a href="https://github.com/RegionallyFamous/odd/releases/tag/v1.0.0">ODD v1.0.0 on GitHub</a>. The quickest way to try it is still the <a href="/go/">live Playground</a>. It opens WordPress, activates Desktop Mode, installs ODD, and drops you into the desktop portal.</p>
 
@@ -353,7 +355,7 @@
 				<aside class="article-sidebar" aria-label="Release details">
 					<div class="sidebar-card">
 						<h2>Try it</h2>
-						<p><a href="/go/">Launch the stable Playground</a>. It is pinned to ODD 1.0.0 and Desktop Mode 0.8.2.</p>
+						<p><a href="/go/">Launch the stable Playground</a>. It is pinned to ODD 1.0.0 and Desktop Mode 0.8.5.</p>
 					</div>
 					<div class="sidebar-card">
 						<h2>Release notes</h2>
@@ -361,7 +363,8 @@
 							<li>Scoped app, runtime, and REST URLs in Playground.</li>
 							<li>Live iframe mounting from Desktop Mode window payloads.</li>
 							<li>Browser and server diagnostics for blank app windows.</li>
-							<li>Stable and dev blueprints pinned to Desktop Mode 0.8.2.</li>
+							<li>Stable and dev blueprints pinned to Desktop Mode 0.8.5.</li>
+							<li>Remote catalog validation for live store updates.</li>
 						</ul>
 					</div>
 					<div class="sidebar-card">

@@ -125,7 +125,7 @@ jobs:
       - name: Install WP Desktop Mode (host plugin)
         working-directory: /tmp/wp
         run: |
-          wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.0.8.2.zip --activate
+          wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.0.8.5.zip --activate
 
       - name: Install ODD
         working-directory: /tmp/wp
@@ -516,7 +516,7 @@ jobs:
         env:
           ODD_ZIP: ${{ github.workspace }}/${{ inputs.zip-path }}
         run: |
-          wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.0.8.2.zip --activate
+          wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.0.8.5.zip --activate
           wp plugin install "$ODD_ZIP" --activate
       - name: Assert the bundled fallback registry carried the Shop
         working-directory: /tmp/wp
@@ -616,7 +616,7 @@ jobs:
         env:
           ODD_ZIP: ${{ github.workspace }}/${{ inputs.zip-path }}
         run: |
-          wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.0.8.2.zip --activate
+          wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.0.8.5.zip --activate
           wp plugin install "$ODD_ZIP" --activate
       - name: Assert oddout_bundle_install rejects a corrupted .wp
         working-directory: /tmp/wp

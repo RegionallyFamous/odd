@@ -9,11 +9,11 @@ The universal `.wp` installer populates five per-type subtrees under
 
 | Subtree                          | Source              | Contents                       |
 |----------------------------------|---------------------|--------------------------------|
-| `wp-content/uploads/odd/apps/<slug>/`    | v0.16.0 (pre-`.wp`) | HTML/JS/CSS bundle + manifest  |
+| `wp-content/uploads/odd/apps/<slug>/`    | pre-public app loader | HTML/JS/CSS bundle + manifest |
 | `wp-content/uploads/odd/icon-sets/<slug>/` | 1.0 baseline      | SVG icons + `manifest.json`    |
 | `wp-content/uploads/odd/cursor-sets/<slug>/` | 1.0 baseline    | SVG cursors + `manifest.json`  |
 | `wp-content/uploads/odd/scenes/<slug>/`  | 1.0 baseline        | JS scene + preview + wallpaper |
-| `wp-content/uploads/odd/widgets/<slug>/` | v1.8.0              | JS/CSS widget + `manifest.json`|
+| `wp-content/uploads/odd/widgets/<slug>/` | 1.0 baseline        | JS/CSS widget + `manifest.json`|
 
 Under the 1.0 baseline every bundle that lands in these subtrees is either (a)
 uploaded by a logged-in admin through `POST /odd/v1/bundles/upload`

@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
 
 define( 'ODDOUT_VERSION', '1.0.0' );
 define( 'ODDOUT_DESKTOP_MODE_MIN_VERSION', '0.8.0' );
-define( 'ODDOUT_DESKTOP_MODE_PLAYGROUND_VERSION', '0.8.2' );
+define( 'ODDOUT_DESKTOP_MODE_PLAYGROUND_VERSION', '0.8.5' );
 define( 'ODDOUT_FILE', __FILE__ );
 define( 'ODDOUT_DIR', plugin_dir_path( __FILE__ ) );
 

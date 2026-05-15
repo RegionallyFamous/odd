@@ -36,10 +36,18 @@ capabilities, hashes, and manifest fields are never trusted from the browser.
 ## Store Contract
 
 - Catalog rows come from `/odd/v1/bundles/catalog`, cached server-side with a
-  stale fallback.
+  stale fallback. The remote registry must be HTTPS, fit inside the response
+  size cap, use unique slugs, provide valid sha256 hashes, and keep bundle,
+  icon, and card URLs under the configured catalog base unless a site owner
+  explicitly filters that policy for a private mirror.
 - Install/update/repair calls use `/odd/v1/bundles/install-from-catalog`.
 - Uploads use `/odd/v1/bundles/upload` and then enter the same installed-row
   model.
+- New first-party store items do not require a plugin release when older
+  clients already understand the row schema: edit `_tools/catalog-sources/`,
+  run `python3 _tools/build-catalog.py`, run
+  `ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog`, then push `main` so
+  GitHub Pages publishes `site/catalog/v1/`.
 - The old app-specific catalog/install REST routes are removed in the 1.0
   baseline. Apps still keep app-specific open/toggle/delete routes because
   those operate on installed app runtime state, not catalog install state.

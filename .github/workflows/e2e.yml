@@ -96,7 +96,7 @@ jobs:
         # Use the mirrored packaged zip (includes compiled assets/js/desktop.min.js
         # and assets/vendor/pixi.min.js) rather than a source archive, which
         # ships only the TypeScript sources and 404s desktop.min.js at runtime.
-        run: wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.0.8.2.zip --activate
+        run: wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.0.8.5.zip --activate
 
       - name: Link ODD into wp-content/plugins
         run: |

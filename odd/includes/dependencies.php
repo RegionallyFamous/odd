@@ -33,42 +33,61 @@ function oddout_desktop_mode_required_functions() {
  */
 function oddout_desktop_mode_capability_functions( $capability ) {
 	$map = array(
-		'core'          => oddout_desktop_mode_required_functions(),
-		'os_settings'   => array(
+		'core'           => oddout_desktop_mode_required_functions(),
+		'os_settings'    => array(
 			'desktop_mode_get_os_settings',
 			'desktop_mode_save_os_settings',
 			'desktop_mode_default_os_settings',
 		),
-		'registry'      => array(
+		'registry'       => array(
 			'desktop_mode_native_window_registry',
 		),
-		'wallpaper'     => array(
+		'wallpaper'      => array(
 			'desktop_mode_register_wallpaper',
 		),
-		'commands'      => array(
+		'commands'       => array(
 			'desktop_mode_register_command_script',
 		),
-		'settings'      => array(
+		'settings'       => array(
 			'desktop_mode_register_settings_tab_script',
 			'desktop_mode_register_settings_tab',
 		),
-		'titlebar'      => array(
+		'titlebar'       => array(
 			'desktop_mode_register_titlebar_button_script',
 		),
-		'dock_rail'     => array(
+		'dock_rail'      => array(
 			'desktop_mode_register_dock_rail_renderer_script',
 		),
-		'debug'         => array(
+		'host_widgets'   => array(
+			'desktop_mode_register_widget',
+		),
+		'desktop_files'  => array(
+			'desktop_mode_register_file_type',
+			'desktop_mode_register_file_opener',
+			'desktop_mode_resolve_file',
+		),
+		'shared_folders' => array(
+			'desktop_mode_files_sharing_enabled_for',
+			'desktop_mode_files_get_visible_folders',
+		),
+		'presence'       => array(
+			'desktop_mode_presence_status_for_user',
+			'desktop_mode_presence_snapshot',
+		),
+		'heartbeat'      => array(
+			'desktop_mode_register_heartbeat_widget',
+		),
+		'debug'          => array(
 			'desktop_mode_debug_publish',
 			'desktop_mode_debug_session_for_request',
 		),
-		'ai'            => array(
+		'ai'             => array(
 			'desktop_mode_register_ai_tool',
 		),
 		// Window-chrome framework — wordpress.org desktop-mode 0.8.0+
 		// (includes/window-chrome.php). Optional; extensions use
 		// oddout_desktop_mode_supports( 'window_chrome' ) before registering themes / controls / slots.
-		'window_chrome' => array(
+		'window_chrome'  => array(
 			'desktop_mode_register_window_theme_script',
 			'desktop_mode_register_window_theme',
 			'desktop_mode_register_window_control_script',
@@ -103,6 +122,11 @@ function oddout_desktop_mode_version() {
 function oddout_desktop_mode_version_available() {
 	$version = oddout_desktop_mode_version();
 	return '' !== $version && version_compare( $version, oddout_desktop_mode_min_version(), '>=' );
+}
+
+function oddout_desktop_mode_version_at_least( $version ) {
+	$detected = oddout_desktop_mode_version();
+	return '' !== $detected && version_compare( $detected, (string) $version, '>=' );
 }
 
 /**

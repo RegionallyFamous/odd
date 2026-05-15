@@ -39,6 +39,29 @@
 	var pointer = { x: null, y: null };
 	var trackingRaf = 0;
 	var scanTimer = 0;
+	var scanInterval = 0;
+	var observer = null;
+	var pointerHandler = null;
+	var domReadyHandler = null;
+	var timers = [];
+	var eventOffs = [];
+	var destroyed = false;
+
+	function clearTrackedTimer( id ) {
+		if ( ! id ) return;
+		clearTimeout( id );
+		timers = timers.filter( function ( item ) { return item !== id; } );
+	}
+
+	function later( fn, ms ) {
+		var id = setTimeout( function () {
+			timers = timers.filter( function ( item ) { return item !== id; } );
+			if ( destroyed ) return;
+			fn();
+		}, ms );
+		timers.push( id );
+		return id;
+	}
 
 	function reducedMotion() {
 		var s = window.__odd.store;
@@ -91,11 +114,12 @@
 	}
 
 	function show( hold ) {
+		if ( destroyed ) return;
 		ensure();
-		if ( hideTimer ) clearTimeout( hideTimer );
+		if ( hideTimer ) clearTrackedTimer( hideTimer );
 		root.style.opacity = '1';
 		root.setAttribute( 'data-odd-iris-state', state );
-		hideTimer = setTimeout( function () {
+		hideTimer = later( function () {
 			root.style.opacity = '0';
 			state = 'hidden';
 			root.setAttribute( 'data-odd-iris-state', state );
@@ -106,11 +130,12 @@
 		if ( ! lid ) return;
 		var i = 0;
 		function step() {
+			if ( destroyed ) return;
 			if ( i++ >= count ) return;
 			lid.style.opacity = '0.92';
-			setTimeout( function () {
+			later( function () {
 				lid.style.opacity = '0';
-				setTimeout( step, gap || 160 );
+				later( step, gap || 160 );
 			}, 90 );
 		}
 		step();
@@ -119,7 +144,7 @@
 	function glancePupil( dx, dy ) {
 		if ( ! pupil ) return;
 		pupil.setAttribute( 'transform', 'translate(' + dx + ',' + dy + ')' );
-		setTimeout( function () {
+		later( function () {
 			pupil.setAttribute( 'transform', 'translate(0,0)' );
 		}, 220 );
 	}
@@ -128,6 +153,7 @@
 		if ( ! root ) return;
 		var end = Date.now() + ms;
 		function step() {
+			if ( destroyed ) return;
 			if ( Date.now() > end ) {
 				root.style.transform = '';
 				return;
@@ -135,7 +161,7 @@
 			var j = ( Math.random() - 0.5 ) * 4;
 			var k = ( Math.random() - 0.5 ) * 4;
 			root.style.transform = 'translate(' + j.toFixed( 1 ) + 'px,' + k.toFixed( 1 ) + 'px)';
-			setTimeout( step, 40 );
+			later( step, 40 );
 		}
 		step();
 	}
@@ -197,6 +223,7 @@
 	}
 
 	function replaceOddEyeImages() {
+		if ( destroyed ) return;
 		var imgs = document.querySelectorAll( 'img[src*="/assets/odd-eye.svg"]' );
 		for ( var i = 0; i < imgs.length; i++ ) {
 			var img = imgs[ i ];
@@ -215,6 +242,7 @@
 
 	function updateTrackedEyes() {
 		trackingRaf = 0;
+		if ( destroyed ) return;
 		if ( pointer.x == null || pointer.y == null ) return;
 		trackedIcons = trackedIcons.filter( function ( item ) {
 			return item.svg && item.svg.isConnected && item.pupil;
@@ -234,44 +262,99 @@
 	}
 
 	function scheduleTrackedEyeUpdate() {
+		if ( destroyed ) return;
 		if ( trackingRaf ) return;
 		trackingRaf = window.requestAnimationFrame( updateTrackedEyes );
 	}
 
 	function initPointerTracking() {
+		if ( destroyed || pointerHandler ) return;
 		replaceOddEyeImages();
-		document.addEventListener( 'pointermove', function ( e ) {
+		pointerHandler = function ( e ) {
 			pointer.x = e.clientX;
 			pointer.y = e.clientY;
 			scheduleTrackedEyeUpdate();
-		}, { passive: true } );
+		};
+		document.addEventListener( 'pointermove', pointerHandler, { passive: true } );
 
 		if ( typeof MutationObserver === 'function' ) {
-			var mo = new MutationObserver( function () {
-				if ( scanTimer ) clearTimeout( scanTimer );
-				scanTimer = setTimeout( replaceOddEyeImages, 80 );
+			observer = new MutationObserver( function () {
+				if ( scanTimer ) clearTrackedTimer( scanTimer );
+				scanTimer = later( replaceOddEyeImages, 80 );
 			} );
-			mo.observe( document.documentElement, { childList: true, subtree: true } );
+			observer.observe( document.documentElement, { childList: true, subtree: true } );
 		} else {
-			setInterval( replaceOddEyeImages, 1200 );
+			scanInterval = setInterval( replaceOddEyeImages, 1200 );
 		}
+	}
+
+	function onEvent( name, cb ) {
+		var evt = window.__odd && window.__odd.events;
+		if ( ! evt || typeof evt.on !== 'function' ) return;
+		var off = evt.on( name, cb );
+		if ( typeof off === 'function' ) eventOffs.push( off );
+	}
+
+	function destroy() {
+		if ( destroyed ) return;
+		destroyed = true;
+		if ( hideTimer ) {
+			clearTrackedTimer( hideTimer );
+			hideTimer = 0;
+		}
+		if ( scanTimer ) {
+			clearTrackedTimer( scanTimer );
+			scanTimer = 0;
+		}
+		while ( timers.length ) {
+			clearTimeout( timers.pop() );
+		}
+		if ( trackingRaf ) {
+			window.cancelAnimationFrame( trackingRaf );
+			trackingRaf = 0;
+		}
+		if ( pointerHandler ) {
+			document.removeEventListener( 'pointermove', pointerHandler );
+			pointerHandler = null;
+		}
+		if ( domReadyHandler ) {
+			document.removeEventListener( 'DOMContentLoaded', domReadyHandler );
+			domReadyHandler = null;
+		}
+		if ( observer ) {
+			try { observer.disconnect(); } catch ( e ) {}
+			observer = null;
+		}
+		if ( scanInterval ) {
+			clearInterval( scanInterval );
+			scanInterval = 0;
+		}
+		while ( eventOffs.length ) {
+			try { eventOffs.pop()(); } catch ( e2 ) {}
+		}
+		trackedIcons = [];
+		if ( root && root.parentNode ) root.parentNode.removeChild( root );
+		root = null;
+		lid = null;
+		pupil = null;
+		state = 'hidden';
 	}
 
 	var evt = window.__odd.events;
 	if ( evt && typeof evt.on === 'function' ) {
-		evt.on( 'odd.motion.blink', function () {
+		onEvent( 'odd.motion.blink', function () {
 			state = 'blinking';
 			if ( reducedMotion() ) { show( 800 ); return; }
 			show();
 			pulseLid( 1 );
 		} );
-		evt.on( 'odd.motion.wink', function () {
+		onEvent( 'odd.motion.wink', function () {
 			state = 'winking';
 			if ( reducedMotion() ) { show( 800 ); return; }
 			show();
 			pulseLid( 1, 200 );
 		} );
-		evt.on( 'odd.motion.glance', function ( opts ) {
+		onEvent( 'odd.motion.glance', function ( opts ) {
 			state = 'glancing';
 			if ( reducedMotion() ) { show( 800 ); return; }
 			show();
@@ -280,12 +363,12 @@
 			var dy = opts && opts.y ? Math.max( -2, Math.min( 2, ( opts.y / window.innerHeight - 0.5 ) * 4 ) ) : 0;
 			glancePupil( dx, dy );
 		} );
-		evt.on( 'odd.motion.glitch', function ( opts ) {
+		onEvent( 'odd.motion.glitch', function ( opts ) {
 			state = 'glitching';
 			show();
 			if ( ! reducedMotion() ) jitterRoot( ( opts && opts.ms ) || 220 );
 		} );
-		evt.on( 'odd.ritual.festival', function () {
+		onEvent( 'odd.ritual.festival', function () {
 			state = 'festival';
 			show( 2800 );
 			if ( ! reducedMotion() ) {
@@ -293,18 +376,19 @@
 				jitterRoot( 900 );
 			}
 		} );
-		evt.on( 'odd.ritual.seven', function () {
+		onEvent( 'odd.ritual.seven', function () {
 			state = 'seven';
 			show( 2400 );
 			pulseLid( 7, 180 );
 		} );
-		evt.on( 'odd.ritual.dream', function ( opts ) {
+		onEvent( 'odd.ritual.dream', function ( opts ) {
 			if ( opts && opts.state === 'enter' ) {
 				state = 'dreaming';
 				show( 3200 );
 				pulseLid( 2, 600 );
 			}
 		} );
+		onEvent( 'odd.teardown', destroy );
 	}
 
 	// Lightweight test handle — matches the original Iris plan's
@@ -317,10 +401,12 @@
 		glance:  function ( x, y ) { state = 'glancing'; show(); glancePupil( x || 0, y || 0 ); },
 		glitch:  function ( ms ) { state = 'glitching'; show(); jitterRoot( ms || 220 ); },
 		rescanIcons: replaceOddEyeImages,
+		destroy: destroy,
 	};
 
 	if ( document.readyState === 'loading' ) {
-		document.addEventListener( 'DOMContentLoaded', initPointerTracking, { once: true } );
+		domReadyHandler = initPointerTracking;
+		document.addEventListener( 'DOMContentLoaded', domReadyHandler, { once: true } );
 	} else {
 		initPointerTracking();
 	}

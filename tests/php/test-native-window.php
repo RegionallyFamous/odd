@@ -177,7 +177,7 @@ class Test_Native_Window extends WP_UnitTestCase {
 		$this->assertSame( 'normal', $config['session']['windows'][0]['state'] );
 	}
 
-	public function test_oversized_saved_widths_are_clamped() {
+	public function test_oversized_saved_widths_are_preserved() {
 		$config = apply_filters(
 			'desktop_mode_shell_config',
 			array(
@@ -194,8 +194,8 @@ class Test_Native_Window extends WP_UnitTestCase {
 		);
 
 		$window = $config['session']['windows'][0];
-		$this->assertSame( 1080, $window['width'] );
-		$this->assertSame( 720, $window['height'] );
+		$this->assertSame( 2400, $window['width'] );
+		$this->assertSame( 1400, $window['height'] );
 	}
 
 	public function test_non_odd_session_windows_are_untouched() {

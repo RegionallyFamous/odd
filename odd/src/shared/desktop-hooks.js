@@ -331,7 +331,7 @@
 		}
 		if ( ! node || ! node.querySelectorAll ) return 0;
 		var count = 0;
-		var nodes = node.querySelectorAll( 'a[href], button, [role="button"], input, textarea, [contenteditable="true"], [contenteditable=""], select, [draggable="true"], [data-drag], [data-drag-handle], [disabled], [aria-disabled="true"], [aria-busy="true"]' );
+		var nodes = node.querySelectorAll( 'a[href], button, [role="button"], [role="menuitem"], [role="option"], input, textarea, [contenteditable="true"], [contenteditable=""], select, [draggable="true"], [data-drag], [data-drag-handle], [data-file-drag-handle], [disabled], [aria-disabled="true"], [aria-busy="true"], .desktop-mode-file, .desktop-mode-file-tile, .desktop-mode-file__tile, .desktop-mode-files__item, .desktop-mode-files__tile, .desktop-mode-folder, .desktop-mode-folder-tile, .desktop-mode-context-menu__item, wpd-context-menu-item, wpd-menu-item' );
 		for ( var i = 0; i < nodes.length; i++ ) {
 			var el = nodes[ i ];
 			if ( el.hasAttribute && el.hasAttribute( 'data-odd-cursor' ) ) continue;
@@ -996,15 +996,50 @@
 		addAction( 'desktop-mode.window.attention', function ( payload ) {
 			record( 'info', 'desktop-mode.window.attention', payload || {} );
 		} );
+		[
+			'desktop-mode.file.added',
+			'desktop-mode.file.updated',
+			'desktop-mode.file.removed',
+			'desktop-mode.file.opened',
+			'desktop-mode.file.context-menu',
+			'desktop-mode.folder.created',
+			'desktop-mode.folder.updated',
+			'desktop-mode.folder.deleted',
+			'desktop-mode.folder.shared',
+			'desktop-mode.shared-folder.changed',
+			'desktop-mode.presence.changed',
+			'desktop-mode.presence.snapshot-applied',
+			'desktop-mode.heartbeat.pulse',
+			'desktop-mode.heartbeat-widget.rendered',
+			'desktop-mode.arrange-menu.opened',
+		].forEach( function ( hookName ) {
+			addAction( hookName, function ( payload ) {
+				var el = payload && ( payload.element || payload.el || payload.node );
+				if ( el && el.nodeType === 1 ) {
+					markCursorRoot( el );
+					markCursorDescendants( el );
+				}
+				record( 'info', hookName, payload || {} );
+			} );
+		} );
 
 		ready( function () {
 			var d = desktop();
 			if ( ! d ) return;
+			var settings = d.getOsSettings && typeof d.getOsSettings === 'function' ? d.getOsSettings() : {};
 			record( 'info', 'wp.desktop.surface-summary', {
 				palettes:      d.listPalettes && typeof d.listPalettes === 'function' ? d.listPalettes().length : null,
 				settingsTabs:  d.listSettingsTabs && typeof d.listSettingsTabs === 'function' ? d.listSettingsTabs().length : null,
 				railRenderers: d.listDockRailRenderers && typeof d.listDockRailRenderers === 'function' ? d.listDockRailRenderers().length : null,
 				systemTiles:   d.listSystemTiles && typeof d.listSystemTiles === 'function' ? d.listSystemTiles().length : null,
+				hostWidgets:   typeof d.registerWidget === 'function' && !! d.widgetLayer,
+				fileTypes:     d.files && typeof d.files.getTypes === 'function' ? d.files.getTypes().length : null,
+				fileOpeners:   d.files && typeof d.files.getOpeners === 'function' ? d.files.getOpeners().length : null,
+				desktopFiles:  !! d.files,
+				sharedFolders: !! ( settings && settings.foldersSharingEnabled ),
+				presence:      !! d.presence,
+				heartbeat:     !! d.heartbeat,
+				arrangeMenu:   typeof d.getMenuItems === 'function',
 			} );
 		} );
 	}

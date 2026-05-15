@@ -249,6 +249,47 @@ describe( 'Desktop Mode hook bridge', () => {
 
 		expect( widget.getAttribute( 'data-odd-cursor-root' ) ).toBe( 'true' );
 		expect( widget.querySelector( '.odd-widget__move' ).getAttribute( 'data-odd-cursor' ) ).toBe( 'grab' );
+
+		const file = document.createElement( 'div' );
+		file.innerHTML = '<button class="desktop-mode-files__tile">Open</button><wpd-context-menu-item>Rename</wpd-context-menu-item>';
+		window.wp.hooks.doAction( 'desktop-mode.file.updated', {
+			id: 'file:notes',
+			element: file,
+		} );
+
+		expect( file.getAttribute( 'data-odd-cursor-root' ) ).toBe( 'true' );
+		expect( file.querySelector( '.desktop-mode-files__tile' ).getAttribute( 'data-odd-cursor' ) ).toBe( 'pointer' );
+		expect( file.querySelector( 'wpd-context-menu-item' ).getAttribute( 'data-odd-cursor' ) ).toBe( 'pointer' );
+	} );
+
+	it( 'records Desktop Mode 0.8.5 file, presence, heartbeat, and arrange surfaces', () => {
+		window.wp.desktop = {
+			ready:          ( cb ) => cb(),
+			registerWidget: () => {},
+			widgetLayer:    {},
+			files:          {
+				getTypes:   () => [ { type: 'shortcut' }, { type: 'folder' } ],
+				getOpeners: () => [ { type: 'shortcut' } ],
+			},
+			getOsSettings:  () => ( { foldersSharingEnabled: true } ),
+			getMenuItems:   () => [],
+			presence:       {},
+			heartbeat:      {},
+		};
+
+		loadDesktopHooks();
+		window.wp.hooks.doAction( 'desktop-mode.presence.changed', { userId: 1, status: 'online' } );
+		window.wp.hooks.doAction( 'desktop-mode.heartbeat.pulse', { tick: 1 } );
+
+		const log = window.__odd.diagnostics.recent().map( ( row ) => row.message ).join( '\n' );
+		expect( log ).toContain( 'wp.desktop.surface-summary' );
+		expect( log ).toContain( '"fileTypes":2' );
+		expect( log ).toContain( '"hostWidgets":true' );
+		expect( log ).toContain( '"desktopFiles":true' );
+		expect( log ).toContain( '"sharedFolders":true' );
+		expect( log ).toContain( 'desktop-mode.presence.changed' );
+		expect( log ).toContain( 'desktop-mode.heartbeat.pulse' );
+		expect( log ).toContain( '"arrangeMenu":true' );
 	} );
 
 	it( 'maps current WP Desktop Mode desktop area and icon surfaces', () => {

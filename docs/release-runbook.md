@@ -65,7 +65,7 @@ catalog-only changes.
 
 ## Playground Smoke
 
-1. Open `https://odd.regionallyfamous.com/playground/` (stable: ODD **1.0.0** + Desktop Mode **0.8.2**). For trunk, use [`/playground/dev/`](https://odd.regionallyfamous.com/playground/dev/) instead — **do not** use the stable URL to validate `main`.
+1. Open `https://odd.regionallyfamous.com/playground/` (stable: ODD **1.0.0** + Desktop Mode **0.8.5**). For trunk, use [`/playground/dev/`](https://odd.regionallyfamous.com/playground/dev/) instead — **do not** use the stable URL to validate `main`.
 2. Confirm WordPress Playground loads Desktop Mode v0.8.0+ and ODD.
 3. Confirm the ODD Shop opens.
 4. Confirm the starter wallpaper, icon set, and cursor set install or show a
@@ -80,6 +80,9 @@ catalog-only changes.
 - Bundle extraction blocks traversal, symlinks, unexpected file types, and slug
   or type mismatches.
 - Catalog downloads verify SHA256 before install.
+- Remote catalog fetches reject non-HTTPS registries, oversized bodies,
+  malformed rows, duplicate slugs, bad hashes, and bundle/icon/card URLs
+  outside the configured catalog base.
 - Catalog refresh, catalog install, bundle upload, and starter retry routes are
   rate-limited per user.
 - App iframe serving sends `nosniff`, `noindex`, `no-referrer`, `SAMEORIGIN`,

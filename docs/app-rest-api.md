@@ -43,6 +43,7 @@ Permission shorthand used below:
 | `GET`    | `/bundles/catalog`                           | login         | Browse the remote catalog (installer fields redacted for non-admins). |
 | `POST`   | `/bundles/install-from-catalog`              | admin         | Install a catalog bundle by slug, verified via SHA256. |
 | `POST`   | `/bundles/refresh`                           | admin         | Force-refresh the remote catalog transient. |
+| `GET`    | `/bundles/catalog-meta`                      | admin         | Read local catalog source, hash, and failure diagnostics. |
 | `GET`    | `/starter`                                   | login         | Read the starter-pack runner state.        |
 | `POST`   | `/starter/retry`                             | admin         | Force a synchronous starter-pack retry.    |
 
@@ -320,6 +321,30 @@ never honored, so there's no traversal surface.
 The 1.0 baseline removes the old app-specific catalog and install routes.
 Catalog browsing and installs for every content type use `/bundles/catalog`
 and `/bundles/install-from-catalog`.
+
+### `GET /bundles/catalog`
+
+Browse the remote catalog. Optional `type` filters to one of `scene`,
+`icon-set`, `cursor-set`, `widget`, or `app`. Non-admin users can browse
+catalog cards, but installer-only fields (`download_url`, `sha256`) are
+redacted.
+
+The server validates remote registries before caching them: registry URLs
+must be HTTPS, response bodies are capped, slugs must be unique, hashes must
+be valid sha256 values, and bundle/icon/card URLs must stay under the
+configured catalog base unless a private mirror filter explicitly allows
+otherwise.
+
+### `POST /bundles/install-from-catalog`
+
+Install or update a catalog row by `slug`. Pass `allow_update=true` when
+reinstalling a newer catalog version over an installed row.
+
+### `GET /bundles/catalog-meta`
+
+Admin-only diagnostics for the current catalog source, HTTP status, bundle
+count, registry body hash, body byte count, stale/fallback availability, and
+the last fetch failure.
 
 ---
 

@@ -62,6 +62,9 @@ if ( ! defined( 'ODDOUT_CATALOG_CACHE_TTL' ) ) {
 	// oddout_catalog_refresh().
 	define( 'ODDOUT_CATALOG_CACHE_TTL', 12 * HOUR_IN_SECONDS );
 }
+if ( ! defined( 'ODDOUT_CATALOG_MAX_RESPONSE_BYTES' ) ) {
+	define( 'ODDOUT_CATALOG_MAX_RESPONSE_BYTES', 2 * 1024 * 1024 );
+}
 
 /**
  * Resolve the catalog URL at runtime. Hosts can override via
@@ -69,6 +72,87 @@ if ( ! defined( 'ODDOUT_CATALOG_CACHE_TTL' ) ) {
  */
 function oddout_catalog_url() {
 	return (string) apply_filters( 'oddout_catalog_url', ODDOUT_CATALOG_URL );
+}
+
+function oddout_catalog_allowed_types() {
+	return array( 'scene', 'icon-set', 'cursor-set', 'widget', 'app' );
+}
+
+function oddout_catalog_max_response_bytes() {
+	$bytes = (int) apply_filters( 'oddout_catalog_max_response_bytes', ODDOUT_CATALOG_MAX_RESPONSE_BYTES );
+	return max( 1024, min( 10 * 1024 * 1024, $bytes ) );
+}
+
+function oddout_catalog_base_url( $catalog_url = '' ) {
+	$catalog_url = '' === $catalog_url ? oddout_catalog_url() : (string) $catalog_url;
+	$parts       = wp_parse_url( $catalog_url );
+	if ( ! is_array( $parts ) || empty( $parts['scheme'] ) || empty( $parts['host'] ) ) {
+		return '';
+	}
+
+	$path = isset( $parts['path'] ) ? (string) $parts['path'] : '/';
+	$dir  = dirname( $path );
+	if ( '.' === $dir || '\\' === $dir ) {
+		$dir = '/';
+	}
+
+	$host = strtolower( (string) $parts['host'] );
+	$port = isset( $parts['port'] ) ? ':' . (int) $parts['port'] : '';
+	return strtolower( (string) $parts['scheme'] ) . '://' . $host . $port . trailingslashit( $dir );
+}
+
+function oddout_catalog_url_is_under_base( $url, $catalog_url = '' ) {
+	$base = oddout_catalog_base_url( $catalog_url );
+	if ( '' === $base ) {
+		return false;
+	}
+
+	$parts      = wp_parse_url( (string) $url );
+	$base_parts = wp_parse_url( $base );
+	if ( ! is_array( $parts ) || ! is_array( $base_parts ) || empty( $parts['scheme'] ) || empty( $parts['host'] ) ) {
+		return false;
+	}
+
+	if ( 'https' !== strtolower( (string) $parts['scheme'] ) ) {
+		return false;
+	}
+
+	if ( strtolower( (string) $parts['host'] ) !== strtolower( (string) $base_parts['host'] ) ) {
+		return false;
+	}
+
+	$port      = isset( $parts['port'] ) ? (int) $parts['port'] : 443;
+	$base_port = isset( $base_parts['port'] ) ? (int) $base_parts['port'] : 443;
+	if ( $port !== $base_port ) {
+		return false;
+	}
+
+	$path      = isset( $parts['path'] ) ? (string) $parts['path'] : '/';
+	$base_path = isset( $base_parts['path'] ) ? (string) $base_parts['path'] : '/';
+	return 0 === strpos( $path, $base_path );
+}
+
+function oddout_catalog_entry_url_allowed( $url, $field, array $entry, $catalog_url = '' ) {
+	$url = (string) $url;
+	if ( '' === $url ) {
+		return false;
+	}
+
+	$allowed = oddout_catalog_url_is_under_base( $url, $catalog_url );
+
+	/**
+	 * By default, registry-owned bundle, icon, and card URLs must stay
+	 * under the configured catalog base. Private mirrors can allow an
+	 * external CDN here, but first-party ODD keeps everything scoped to
+	 * the registry origin for reviewability and supply-chain safety.
+	 *
+	 * @param bool   $allowed
+	 * @param string $url
+	 * @param string $field
+	 * @param array  $entry
+	 * @param string $catalog_url
+	 */
+	return (bool) apply_filters( 'oddout_catalog_entry_url_allowed', $allowed, $url, $field, $entry, $catalog_url );
 }
 
 function oddout_catalog_empty_registry() {
@@ -87,6 +171,9 @@ function oddout_catalog_default_meta() {
 		'http_status'        => 0,
 		'bundle_count'       => 0,
 		'generated_at'       => '',
+		'registry_sha256'    => '',
+		'registry_bytes'     => 0,
+		'catalog_base_url'   => '',
 		'last_success'       => 0,
 		'last_failure'       => 0,
 		'last_error_code'    => '',
@@ -125,6 +212,9 @@ function oddout_catalog_record_source( $source, $registry, array $extra = array(
 				'source'             => sanitize_key( (string) $source ),
 				'bundle_count'       => oddout_catalog_registry_bundle_count( $registry ),
 				'generated_at'       => isset( $registry['generated_at'] ) ? (string) $registry['generated_at'] : '',
+				'registry_sha256'    => isset( $registry['_oddout_registry_sha256'] ) ? (string) $registry['_oddout_registry_sha256'] : '',
+				'registry_bytes'     => isset( $registry['_oddout_registry_bytes'] ) ? (int) $registry['_oddout_registry_bytes'] : 0,
+				'catalog_base_url'   => oddout_catalog_base_url(),
 				'fallback_available' => function_exists( 'oddout_catalog_fallback_available' ) ? (bool) oddout_catalog_fallback_available() : false,
 				'stale_available'    => is_array( $stale ) && ! empty( $stale['bundles'] ),
 			),
@@ -253,6 +343,14 @@ function oddout_catalog_download_entry_file( array $entry, $context = 'install' 
 		);
 	}
 
+	if ( ! oddout_catalog_entry_url_allowed( (string) $download_url, 'download_url', $entry, oddout_catalog_url() ) ) {
+		return new WP_Error(
+			'unsafe_catalog_download_url',
+			__( 'Catalog download URL must stay under the configured catalog base.', 'odd-outlandish-desktop-decorator' ),
+			array( 'status' => 400 )
+		);
+	}
+
 	if ( ! function_exists( 'download_url' ) ) {
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 	}
@@ -364,6 +462,9 @@ function oddout_catalog_load( $force = false ) {
 					'http_status'        => isset( $registry['_oddout_http_status'] ) ? (int) $registry['_oddout_http_status'] : 0,
 					'bundle_count'       => 0,
 					'generated_at'       => isset( $normalised['generated_at'] ) ? (string) $normalised['generated_at'] : '',
+					'registry_sha256'    => isset( $registry['_oddout_registry_sha256'] ) ? (string) $registry['_oddout_registry_sha256'] : '',
+					'registry_bytes'     => isset( $registry['_oddout_registry_bytes'] ) ? (int) $registry['_oddout_registry_bytes'] : 0,
+					'catalog_base_url'   => oddout_catalog_base_url( $url ),
 					'last_failure'       => time(),
 					'last_error_code'    => 'empty_remote',
 					'last_error_message' => __( 'Remote catalog returned zero bundles; keeping the last known good catalog.', 'odd-outlandish-desktop-decorator' ),
@@ -427,21 +528,122 @@ function oddout_catalog_load( $force = false ) {
  * @param string $url
  * @return array|WP_Error
  */
+function oddout_catalog_validate_remote_registry( $data, $catalog_url ) {
+	if ( ! is_array( $data ) ) {
+		return new WP_Error( 'catalog_not_array', __( 'Catalog registry must be a JSON object.', 'odd-outlandish-desktop-decorator' ) );
+	}
+	if ( ! isset( $data['bundles'] ) || ! is_array( $data['bundles'] ) ) {
+		return new WP_Error( 'catalog_missing_bundles', __( 'Catalog registry is missing the bundles array.', 'odd-outlandish-desktop-decorator' ) );
+	}
+
+	$allowed_types = oddout_catalog_allowed_types();
+	$seen_slugs    = array();
+	foreach ( $data['bundles'] as $index => $entry ) {
+		if ( ! is_array( $entry ) ) {
+			return new WP_Error(
+				'catalog_malformed_row',
+				__( 'Catalog registry contains a malformed bundle row.', 'odd-outlandish-desktop-decorator' ),
+				array( 'row' => (int) $index )
+			);
+		}
+
+		$type = isset( $entry['type'] ) ? sanitize_text_field( (string) $entry['type'] ) : '';
+		if ( ! in_array( $type, $allowed_types, true ) ) {
+			return new WP_Error(
+				'catalog_unsupported_type',
+				__( 'Catalog registry contains an unsupported bundle type.', 'odd-outlandish-desktop-decorator' ),
+				array(
+					'row'  => (int) $index,
+					'type' => $type,
+				)
+			);
+		}
+
+		$raw_slug = isset( $entry['slug'] ) ? (string) $entry['slug'] : '';
+		$slug     = sanitize_key( $raw_slug );
+		if ( '' === $slug || $slug !== $raw_slug ) {
+			return new WP_Error(
+				'catalog_bad_slug',
+				__( 'Catalog registry contains a bundle with an invalid slug.', 'odd-outlandish-desktop-decorator' ),
+				array( 'row' => (int) $index )
+			);
+		}
+		if ( isset( $seen_slugs[ $slug ] ) ) {
+			return new WP_Error(
+				'catalog_duplicate_slug',
+				__( 'Catalog registry contains duplicate bundle slugs.', 'odd-outlandish-desktop-decorator' ),
+				array( 'slug' => $slug )
+			);
+		}
+		$seen_slugs[ $slug ] = true;
+
+		if ( empty( $entry['name'] ) ) {
+			return new WP_Error(
+				'catalog_missing_name',
+				__( 'Catalog registry contains a bundle without a name.', 'odd-outlandish-desktop-decorator' ),
+				array( 'slug' => $slug )
+			);
+		}
+
+		$sha = isset( $entry['sha256'] ) ? strtolower( (string) $entry['sha256'] ) : '';
+		if ( ! preg_match( '/^[0-9a-f]{64}$/', $sha ) ) {
+			return new WP_Error(
+				'catalog_bad_hash',
+				__( 'Catalog registry contains a bundle with an invalid sha256.', 'odd-outlandish-desktop-decorator' ),
+				array( 'slug' => $slug )
+			);
+		}
+
+		foreach ( array( 'download_url', 'icon_url', 'card_url' ) as $field ) {
+			$field_url = isset( $entry[ $field ] ) ? esc_url_raw( (string) $entry[ $field ] ) : '';
+			if ( '' === $field_url ) {
+				return new WP_Error(
+					'catalog_missing_' . $field,
+					__( 'Catalog registry contains a bundle with a missing URL field.', 'odd-outlandish-desktop-decorator' ),
+					array(
+						'slug'  => $slug,
+						'field' => $field,
+					)
+				);
+			}
+			if ( ! oddout_catalog_entry_url_allowed( $field_url, $field, $entry, $catalog_url ) ) {
+				return new WP_Error(
+					'catalog_unsafe_url',
+					__( 'Catalog registry contains a bundle URL outside the configured catalog base.', 'odd-outlandish-desktop-decorator' ),
+					array(
+						'slug'  => $slug,
+						'field' => $field,
+					)
+				);
+			}
+		}
+	}
+
+	return true;
+}
+
 function oddout_catalog_fetch_remote( $url ) {
 	if ( '' === $url ) {
 		return new WP_Error( 'no_url', __( 'No catalog URL configured.', 'odd-outlandish-desktop-decorator' ) );
+	}
+	$url    = esc_url_raw( (string) $url );
+	$scheme = strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) );
+	if ( 'https' !== $scheme ) {
+		return new WP_Error( 'insecure_catalog_url', __( 'Catalog registry URL must use HTTPS.', 'odd-outlandish-desktop-decorator' ) );
 	}
 	$attempts = (int) apply_filters( 'oddout_catalog_fetch_attempts', 2, $url );
 	$attempts = max( 1, min( 5, $attempts ) );
 	$timeout  = (int) apply_filters( 'oddout_catalog_fetch_timeout', 5, $url );
 	$timeout  = max( 2, min( 15, $timeout ) );
+	$max_body = oddout_catalog_max_response_bytes();
 	$response = null;
 	for ( $i = 1; $i <= $attempts; $i++ ) {
 		$response = wp_remote_get(
 			$url,
 			array(
-				'timeout' => $timeout,
-				'headers' => array( 'Accept' => 'application/json' ),
+				'timeout'             => $timeout,
+				'limit_response_size' => $max_body + 1,
+				'headers'             => array( 'Accept' => 'application/json' ),
 			)
 		);
 		if ( is_wp_error( $response ) ) {
@@ -473,11 +675,35 @@ function oddout_catalog_fetch_remote( $url ) {
 	if ( '' === $body ) {
 		return new WP_Error( 'empty_body', 'Catalog body was empty.' );
 	}
+	$body_bytes = strlen( $body );
+	if ( $body_bytes > $max_body ) {
+		return new WP_Error(
+			'catalog_body_too_large',
+			__( 'Catalog body exceeded the maximum allowed size.', 'odd-outlandish-desktop-decorator' ),
+			array(
+				'http_status' => $code,
+				'bytes'       => $body_bytes,
+				'max_bytes'   => $max_body,
+			)
+		);
+	}
 	$data = json_decode( $body, true );
 	if ( ! is_array( $data ) ) {
 		return new WP_Error( 'bad_json', 'Catalog body did not parse as JSON.', array( 'http_status' => $code ) );
 	}
-	$data['_oddout_http_status'] = $code;
+	$valid = oddout_catalog_validate_remote_registry( $data, $url );
+	if ( is_wp_error( $valid ) ) {
+		$valid->add_data(
+			array_merge(
+				is_array( $valid->get_error_data() ) ? $valid->get_error_data() : array(),
+				array( 'http_status' => $code )
+			)
+		);
+		return $valid;
+	}
+	$data['_oddout_http_status']     = $code;
+	$data['_oddout_registry_sha256'] = hash( 'sha256', $body );
+	$data['_oddout_registry_bytes']  = $body_bytes;
 	return $data;
 }
 
@@ -490,16 +716,18 @@ function oddout_catalog_fetch_remote( $url ) {
  */
 function oddout_catalog_normalise( $data ) {
 	$out = array(
-		'version'      => isset( $data['version'] ) ? (int) $data['version'] : 1,
-		'generated_at' => isset( $data['generated_at'] ) ? (string) $data['generated_at'] : '',
-		'starter_pack' => array(
+		'version'                 => isset( $data['version'] ) ? (int) $data['version'] : 1,
+		'generated_at'            => isset( $data['generated_at'] ) ? (string) $data['generated_at'] : '',
+		'_oddout_registry_sha256' => isset( $data['_oddout_registry_sha256'] ) ? (string) $data['_oddout_registry_sha256'] : '',
+		'_oddout_registry_bytes'  => isset( $data['_oddout_registry_bytes'] ) ? (int) $data['_oddout_registry_bytes'] : 0,
+		'starter_pack'            => array(
 			'scenes'     => array(),
 			'iconSets'   => array(),
 			'cursorSets' => array(),
 			'widgets'    => array(),
 			'apps'       => array(),
 		),
-		'bundles'      => array(),
+		'bundles'                 => array(),
 	);
 
 	if ( isset( $data['starter_pack'] ) && is_array( $data['starter_pack'] ) ) {
@@ -517,7 +745,7 @@ function oddout_catalog_normalise( $data ) {
 		}
 	}
 
-	$allowed_types = array( 'scene', 'icon-set', 'cursor-set', 'widget', 'app' );
+	$allowed_types = oddout_catalog_allowed_types();
 	$rows_in       = isset( $data['bundles'] ) && is_array( $data['bundles'] ) ? $data['bundles'] : array();
 	foreach ( $rows_in as $entry ) {
 		if ( ! is_array( $entry ) ) {
@@ -771,6 +999,15 @@ add_action(
 			array(
 				'methods'             => 'GET',
 				'callback'            => 'oddout_bundle_rest_catalog',
+				'args'                => array(
+					'type' => array(
+						'description'       => __( 'Optional catalog bundle type filter.', 'odd-outlandish-desktop-decorator' ),
+						'type'              => 'string',
+						'required'          => false,
+						'enum'              => oddout_catalog_allowed_types(),
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+				),
 				'permission_callback' => function () {
 					return current_user_can( 'read' );
 				},
@@ -782,6 +1019,25 @@ add_action(
 			array(
 				'methods'             => 'POST',
 				'callback'            => 'oddout_bundle_rest_install_from_catalog',
+				'args'                => array(
+					'slug'         => array(
+						'description'       => __( 'Catalog bundle slug to install.', 'odd-outlandish-desktop-decorator' ),
+						'type'              => 'string',
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_key',
+						'validate_callback' => function ( $value ) {
+							$value = is_scalar( $value ) ? sanitize_key( (string) $value ) : '';
+							return '' !== $value;
+						},
+					),
+					'allow_update' => array(
+						'description'       => __( 'Whether to reinstall when the catalog version is newer.', 'odd-outlandish-desktop-decorator' ),
+						'type'              => 'boolean',
+						'required'          => false,
+						'default'           => false,
+						'sanitize_callback' => 'rest_sanitize_boolean',
+					),
+				),
 				'permission_callback' => function () {
 					return current_user_can( 'manage_options' );
 				},
@@ -792,6 +1048,7 @@ add_action(
 			'/bundles/refresh',
 			array(
 				'methods'             => 'POST',
+				'args'                => array(),
 				'callback'            => function () {
 					$rl = oddout_bundle_rate_limit_check( 'bundle_catalog_refresh' );
 					if ( is_wp_error( $rl ) ) {
@@ -816,6 +1073,7 @@ add_action(
 			'/bundles/catalog-meta',
 			array(
 				'methods'             => 'GET',
+				'args'                => array(),
 				'callback'            => function () {
 					return rest_ensure_response( oddout_catalog_meta() );
 				},

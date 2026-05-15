@@ -39,6 +39,13 @@ Use a plugin release instead when the change requires plugin runtime
 code, panel layout/CSS/JS behavior, REST contract changes, a new catalog
 schema requirement, or a change older plugins cannot safely ignore.
 
+The catalog route is intentionally strict: remote registries must be HTTPS,
+small enough for the response cap, free of duplicate slugs, and complete
+with valid sha256 hashes plus bundle/icon/card URLs under the configured
+catalog base. Site owners can filter those URL rules for private mirrors,
+but first-party ODD catalog updates should ship through `site/catalog/v1/`
+and never require plugin releases by themselves.
+
 ## Catalog Trust Model
 
 ODD treats the configured catalog host as part of the trusted computing

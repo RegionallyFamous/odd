@@ -104,6 +104,16 @@ function installWidgetLayer() {
 	return calls;
 }
 
+function deferred() {
+	let resolvePromise;
+	let rejectPromise;
+	const promise = new Promise( ( resolve, reject ) => {
+		resolvePromise = resolve;
+		rejectPromise = reject;
+	} );
+	return { promise, resolve: resolvePromise, reject: rejectPromise };
+}
+
 function loadPanel() {
 	const src = readFileSync( PANEL_JS, 'utf8' );
 	const fn = new Function( `${ src }\n//# sourceURL=panel/index.js` );
@@ -160,6 +170,7 @@ describe( 'ODD Shop', () => {
 	} );
 
 	afterEach( () => {
+		vi.restoreAllMocks();
 		delete globalThis.fetch;
 		delete window.__odd;
 		delete window.WebGLRenderingContext;
@@ -313,6 +324,48 @@ describe( 'ODD Shop', () => {
 		} ) );
 
 		if ( typeof cleanup === 'function' ) cleanup();
+	} );
+
+	it( 'destroys late-resolving live wallpaper hero scenes after panel cleanup', async () => {
+		const pending = deferred();
+		const destroy = vi.fn();
+		window.WebGLRenderingContext = function WebGLRenderingContext() {};
+		window.__odd = {
+			events: { emit: vi.fn() },
+			mountSceneInto: vi.fn( () => pending.promise ),
+		};
+		const removeSpy = vi.spyOn( document, 'removeEventListener' );
+		delete window.desktopModeNativeWindows;
+		loadPanel();
+
+		const { cleanup } = mountPanel();
+		expect( window.__odd.mountSceneInto ).toHaveBeenCalled();
+
+		cleanup();
+		pending.resolve( { destroy, env: { perfTier: 'normal' } } );
+		await new Promise( ( resolveTick ) => setTimeout( resolveTick, 0 ) );
+
+		expect( destroy ).toHaveBeenCalledTimes( 1 );
+		expect( removeSpy ).toHaveBeenCalledWith( 'visibilitychange', expect.any( Function ) );
+	} );
+
+	it( 'clears live wallpaper hero perf timers on panel cleanup after mount', async () => {
+		const destroy = vi.fn();
+		const clearSpy = vi.spyOn( window, 'clearInterval' );
+		window.WebGLRenderingContext = function WebGLRenderingContext() {};
+		window.__odd = {
+			events: { emit: vi.fn() },
+			mountSceneInto: vi.fn( () => Promise.resolve( { destroy, env: { perfTier: 'normal' } } ) ),
+		};
+		delete window.desktopModeNativeWindows;
+		loadPanel();
+
+		const { cleanup } = mountPanel();
+		await new Promise( ( resolveTick ) => setTimeout( resolveTick, 0 ) );
+		cleanup();
+
+		expect( destroy ).toHaveBeenCalledTimes( 1 );
+		expect( clearSpy ).toHaveBeenCalled();
 	} );
 
 	it( 'clicking a scene card opens the preview bar and highlights the card', () => {

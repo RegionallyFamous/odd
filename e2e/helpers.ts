@@ -41,7 +41,7 @@ export async function goDesktopShell( page: Page ) {
 }
 
 /**
- * Desktop Mode 0.8.2+ renders a first-run welcome dialog in wp-admin.
+ * Desktop Mode 0.8.5+ renders a first-run welcome dialog in wp-admin.
  * E2E enables Desktop Mode directly through user meta, so this is unrelated
  * to the ODD interaction under test; dismiss it when present so it cannot
  * intercept shop clicks.

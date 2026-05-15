@@ -5,17 +5,13 @@
  * through `wp_localize_script('odd-api', 'odd', … )`; the engine
  * lazy-loads each scene's JS the first time it's picked.
  *
- * Lean runtime:
+ * v1 runtime:
  *   - Scene / audio / drifters modules live under `src/wallpaper/`,
  *     so the loaders prefix paths with `src/wallpaper/` (matching
  *     the on-disk + zip layout).
- *   - The legacy in-canvas picker gear, tooltip, and `?` shortcut
- *     are gone — the native ODD Shop window is the single
- *     picker surface.
- *   - The unused cut-out / atlas / chaos-drifter / easter-egg
- *     pipelines are removed; none of the three reboot scenes ship
- *     cutouts or onEgg handlers, and the shared drifter library
- *     is empty.
+ *   - The native ODD Shop window is the single picker surface.
+ *   - Teardown is explicit and idempotent so Desktop Mode swaps,
+ *     scene changes, and page shutdowns release the Pixi app.
  *
  * Scenes get a small, stable contract:
  *   env = { app, PIXI, ctx, helpers, dt, parallax, reducedMotion,
@@ -359,64 +355,80 @@
 				throw new Error( 'Scene missing setup: ' + slug );
 			}
 			var app = new PIXI.Application();
-			await app.init( {
-				resizeTo:        container,
-				backgroundAlpha: 0,
-				antialias:       ! opts.lowPower,
-				resolution:      opts.resolution || 1,
-				autoDensity:     true,
-			} );
-			if ( opts.maxFPS && app.ticker ) {
-				app.ticker.maxFPS = opts.maxFPS;
-			}
-			container.appendChild( app.canvas );
-			app.canvas.style.position = 'absolute';
-			app.canvas.style.inset = '0';
-			app.canvas.style.width = '100%';
-			app.canvas.style.height = '100%';
-
-			var initTod = computeTod();
-			var env = {
-				app: app, PIXI: PIXI, ctx: { scene: slug, heroMode: !! opts.heroMode, prefersReducedMotion: !! opts.reducedMotion },
-				helpers: window.__odd.helpers,
-				parallax: { x: 0, y: 0 },
-				reducedMotion: !! opts.reducedMotion,
-				tod:      initTod.tod,
-				todPhase: initTod.phase,
-				season:   computeSeason(),
-				audio:    { level: 0, bass: 0, mid: 0, high: 0, enabled: false },
-				desktop:  opts.desktopStub || desktopStateDefaults(),
-				perfTier: opts.lowPower ? 'normal' : 'high',
-				dt:       1,
-			};
+			var env = null;
 			var parallaxTarget = { x: 0, y: 0 };
+			var pointerWired = false;
+			var state = null;
+			var tick = null;
+			var destroyed = false;
 			function onPointerMove( ev ) {
 				var r = container.getBoundingClientRect();
 				if ( ! r.width || ! r.height ) return;
 				parallaxTarget.x = ( ( ev.clientX - r.left ) / r.width - 0.5 ) * 2;
 				parallaxTarget.y = ( ( ev.clientY - r.top ) / r.height - 0.5 ) * 2;
 			}
-			container.addEventListener( 'pointermove', onPointerMove, { passive: true } );
-
-			var state = await Promise.resolve( safeImpl( impl, 'setup', 'hero.setup:' + slug, [ env ] ) ) || {};
-			if ( impl.onResize ) safeImpl( impl, 'onResize', 'hero.resize:' + slug, [ state, env ] );
-			if ( env.reducedMotion && impl.stillFrame ) {
-				safeImpl( impl, 'stillFrame', 'hero.stillFrame:' + slug, [ state, env ] );
-			} else if ( impl.tick ) {
-				var tick = function ( ticker ) {
-					env.dt = Math.min( 2.5, ticker.deltaTime );
-					env.parallax.x += ( parallaxTarget.x - env.parallax.x ) * 0.12;
-					env.parallax.y += ( parallaxTarget.y - env.parallax.y ) * 0.12;
-					safeImpl( impl, 'tick', 'hero.tick:' + slug, [ state, env ] );
-				};
-				app.ticker.add( tick );
-			}
 			function destroy() {
+				if ( destroyed ) return;
+				destroyed = true;
 				container.removeEventListener( 'pointermove', onPointerMove );
-				if ( impl.cleanup ) safeImpl( impl, 'cleanup', 'hero.cleanup:' + slug, [ state, env ] );
+				if ( tick && app.ticker ) {
+					try { app.ticker.remove( tick ); } catch ( e ) {}
+				}
+				if ( state && env && impl.cleanup ) safeImpl( impl, 'cleanup', 'hero.cleanup:' + slug, [ state, env ] );
 				try { app.destroy( true, { children: true, texture: true } ); } catch ( e ) {}
 			}
-			return { app: app, env: env, state: state, destroy: destroy };
+			try {
+				await app.init( {
+					resizeTo:        container,
+					backgroundAlpha: 0,
+					antialias:       ! opts.lowPower,
+					resolution:      opts.resolution || 1,
+					autoDensity:     true,
+				} );
+				if ( opts.maxFPS && app.ticker ) {
+					app.ticker.maxFPS = opts.maxFPS;
+				}
+				container.appendChild( app.canvas );
+				app.canvas.style.position = 'absolute';
+				app.canvas.style.inset = '0';
+				app.canvas.style.width = '100%';
+				app.canvas.style.height = '100%';
+
+				var initTod = computeTod();
+				env = {
+					app: app, PIXI: PIXI, ctx: { scene: slug, heroMode: !! opts.heroMode, prefersReducedMotion: !! opts.reducedMotion },
+					helpers: window.__odd.helpers,
+					parallax: { x: 0, y: 0 },
+					reducedMotion: !! opts.reducedMotion,
+					tod:      initTod.tod,
+					todPhase: initTod.phase,
+					season:   computeSeason(),
+					audio:    { level: 0, bass: 0, mid: 0, high: 0, enabled: false },
+					desktop:  opts.desktopStub || desktopStateDefaults(),
+					perfTier: opts.lowPower ? 'normal' : 'high',
+					dt:       1,
+				};
+				container.addEventListener( 'pointermove', onPointerMove, { passive: true } );
+				pointerWired = true;
+
+				state = await Promise.resolve( safeImpl( impl, 'setup', 'hero.setup:' + slug, [ env ] ) ) || {};
+				if ( impl.onResize ) safeImpl( impl, 'onResize', 'hero.resize:' + slug, [ state, env ] );
+				if ( env.reducedMotion && impl.stillFrame ) {
+					safeImpl( impl, 'stillFrame', 'hero.stillFrame:' + slug, [ state, env ] );
+				} else if ( impl.tick ) {
+					tick = function ( ticker ) {
+						env.dt = Math.min( 2.5, ticker.deltaTime );
+						env.parallax.x += ( parallaxTarget.x - env.parallax.x ) * 0.12;
+						env.parallax.y += ( parallaxTarget.y - env.parallax.y ) * 0.12;
+						safeImpl( impl, 'tick', 'hero.tick:' + slug, [ state, env ] );
+					};
+					app.ticker.add( tick );
+				}
+				return { app: app, env: env, state: state, destroy: destroy };
+			} catch ( err ) {
+				if ( pointerWired || app ) destroy();
+				throw err;
+			}
 		} );
 	};
 
@@ -563,6 +575,8 @@
 	var wallpaperVisSink   = null;
 	var wallpaperVisQueue  = null;
 	var wallpaperVisBridged = false;
+	var wallpaperTeardownBridged = false;
+	var lifecycleTeardownBridged = false;
 
 	function exposeWallpaperVisSink( sink ) {
 		wallpaperVisSink = sink || null;
@@ -591,12 +605,90 @@
 		} catch ( _visBridge ) {}
 	}
 
+	function installWallpaperTeardownBridge() {
+		if ( wallpaperTeardownBridged ) return;
+		var hooks = window.wp && window.wp.hooks;
+		if ( ! hooks || typeof hooks.addAction !== 'function' ) return;
+		wallpaperTeardownBridged = true;
+		try {
+			hooks.addAction( 'desktop-mode.wallpaper.unmounting', 'odd.wallpaper-teardown-bridge', function ( payload ) {
+				if ( ! payload || payload.id !== 'odd' ) return;
+				var runtime = window.__odd && window.__odd.wallpaperRuntime;
+				if ( runtime && typeof runtime.teardownActive === 'function' ) {
+					runtime.teardownActive( 'desktop-mode.wallpaper.unmounting' );
+				}
+			} );
+		} catch ( _teardownBridge ) {}
+	}
+
+	function installLifecycleTeardownBridge() {
+		if ( lifecycleTeardownBridged ) return;
+		var evt = window.__odd && window.__odd.events;
+		if ( ! evt || typeof evt.once !== 'function' ) return;
+		lifecycleTeardownBridged = true;
+		evt.once( 'odd.teardown', function () {
+			var runtime = window.__odd && window.__odd.wallpaperRuntime;
+			if ( runtime && typeof runtime.teardownActive === 'function' ) {
+				runtime.teardownActive( 'odd.teardown' );
+			}
+			if ( window.__odd && window.__odd.audio && typeof window.__odd.audio.disable === 'function' ) {
+				try { window.__odd.audio.disable(); } catch ( e ) {}
+			}
+		} );
+	}
+
 	// ============================================================ //
 	// Mount — one Pixi app, swap scenes in place.
 	// ============================================================ //
 
 	function mountODD( container, ctx ) {
-		return (async function () {
+		var disposed = false;
+		var readyTeardown = null;
+		var earlyTeardown = function () {};
+		var bootApp = null;
+		var bootAppDestroyed = false;
+		var mountToken = {};
+
+		function destroyBootApp() {
+			if ( bootApp && ! bootAppDestroyed ) {
+				bootAppDestroyed = true;
+				try { bootApp.destroy( true, { children: true, texture: true } ); } catch ( e ) {}
+			}
+		}
+
+		function clearRuntimeHandle() {
+			var runtime = window.__odd && window.__odd.wallpaperRuntime;
+			if ( runtime && runtime.active && runtime.active.token === mountToken ) {
+				runtime.active = null;
+			}
+		}
+
+		function teardown( reason ) {
+			if ( disposed ) return;
+			disposed = true;
+			if ( readyTeardown ) {
+				try { readyTeardown( reason || 'teardown' ); } catch ( e ) {}
+			} else {
+				try { earlyTeardown( reason || 'teardown' ); } catch ( e2 ) {}
+			}
+			clearRuntimeHandle();
+		}
+
+		window.__odd = window.__odd || {};
+		window.__odd.wallpaperRuntime = window.__odd.wallpaperRuntime || {};
+		window.__odd.wallpaperRuntime.active = {
+			id:       'odd',
+			token:    mountToken,
+			teardown: teardown,
+		};
+		window.__odd.wallpaperRuntime.teardownActive = function ( reason ) {
+			var active = window.__odd && window.__odd.wallpaperRuntime && window.__odd.wallpaperRuntime.active;
+			if ( active && typeof active.teardown === 'function' ) {
+				active.teardown( reason || 'runtime' );
+			}
+		};
+
+		(async function () {
 			// Instant first-paint backdrop (plain <div>), so even
 			// before Pixi boots the user sees the painted wallpaper.
 			var firstPaint = document.createElement( 'div' );
@@ -606,6 +698,10 @@
 				'background-position:center;background-repeat:no-repeat;' +
 				'transition:opacity .4s ease;opacity:1;pointer-events:none;';
 			container.appendChild( firstPaint );
+			earlyTeardown = function () {
+				if ( firstPaint.parentNode ) firstPaint.parentNode.removeChild( firstPaint );
+				destroyBootApp();
+			};
 			function setFirstPaint( slug ) {
 				var s = mergeSceneDescriptor( slug ) || {};
 				if ( slug === PENDING_SLUG || ! s.wallpaperUrl ) {
@@ -620,11 +716,13 @@
 			}
 
 			if ( ! window.PIXI ) {
+				if ( firstPaint.parentNode ) firstPaint.parentNode.removeChild( firstPaint );
 				throw new Error( 'ODD: PIXI global missing — the WP Desktop Mode shell should have provided it.' );
 			}
 
 			var PIXI = window.PIXI;
 			var app  = new PIXI.Application();
+			bootApp = app;
 			await app.init( {
 				resizeTo:        container,
 				backgroundAlpha: 0,
@@ -632,6 +730,11 @@
 				resolution:      Math.min( 2, window.devicePixelRatio || 1 ),
 				autoDensity:     true,
 			} );
+			if ( disposed ) {
+				if ( firstPaint.parentNode ) firstPaint.parentNode.removeChild( firstPaint );
+				destroyBootApp();
+				return;
+			}
 			container.appendChild( app.canvas );
 			app.canvas.style.position = 'absolute';
 			app.canvas.style.inset = '0';
@@ -751,6 +854,12 @@
 				}
 			}
 			app.renderer.on( 'resize', onResize );
+			if ( disposed ) {
+				try { app.renderer.off( 'resize', onResize ); } catch ( e ) {}
+				if ( firstPaint.parentNode ) firstPaint.parentNode.removeChild( firstPaint );
+				try { app.destroy( true, { children: true, texture: true } ); } catch ( e2 ) {}
+				return;
+			}
 
 			// Color-aware OS accent — sample each backdrop once and
 			// push the dominant saturated hue into `--wp-admin-theme-color`
@@ -805,6 +914,7 @@
 			}
 			function applyAccent( slug ) {
 				sampleAccent( slug ).then( function ( css ) {
+					if ( disposed ) return;
 					if ( ! css ) return;
 					document.documentElement.style.setProperty( '--odd-accent', css );
 					document.documentElement.style.setProperty( '--wp-admin-theme-color', css );
@@ -836,7 +946,15 @@
 			function fadeAndRemove( node ) {
 				if ( ! node ) return;
 				window.requestAnimationFrame( function () {
+					if ( disposed ) {
+						if ( node.parentNode ) node.parentNode.removeChild( node );
+						return;
+					}
 					window.requestAnimationFrame( function () {
+						if ( disposed ) {
+							if ( node.parentNode ) node.parentNode.removeChild( node );
+							return;
+						}
 						node.style.opacity = '0';
 						setTimeout( function () {
 							if ( node.parentNode ) node.parentNode.removeChild( node );
@@ -874,6 +992,7 @@
 			}
 
 			async function swap( nextSlug ) {
+				if ( disposed ) return { ok: false, error: new Error( 'disposed' ) };
 				if ( swapping ) {
 					pendingSlug = nextSlug;
 					return { ok: false, error: new Error( 'queued' ) };
@@ -894,12 +1013,20 @@
 				var crossfadeNode = null;
 				try {
 					await loadScene( nextSlug );
+					if ( disposed ) {
+						swapping = false;
+						return { ok: false, error: new Error( 'disposed' ) };
+					}
 					var impl = window.__odd.scenes[ nextSlug ];
 					if ( ! impl || typeof impl.setup !== 'function' ) {
 						throw new Error( 'Scene impl missing: ' + nextSlug );
 					}
 
 					await runTransitionOut( prev );
+					if ( disposed ) {
+						swapping = false;
+						return { ok: false, error: new Error( 'disposed' ) };
+					}
 
 					if ( prev.impl ) crossfadeNode = snapshotOverlay();
 
@@ -911,6 +1038,10 @@
 						if ( prev.impl.cleanup ) {
 							safeImpl( prev.impl, 'cleanup', 'wallpaper.cleanup:' + prev.slug, [ prev.state, env ] );
 						}
+						currentImpl = null;
+						currentState = null;
+						currentTick = null;
+						currentSlug = null;
 					}
 					app.stage.removeChildren();
 					frameTimes = [];
@@ -932,6 +1063,17 @@
 							stack:    setupErr && setupErr.stack,
 						} );
 						throw setupErr;
+					}
+					if ( disposed ) {
+						if ( impl.cleanup ) {
+							safeImpl( impl, 'cleanup', 'wallpaper.cleanup:' + nextSlug, [ state, env ] );
+						}
+						try { app.stage.removeChildren(); } catch ( e ) {}
+						swapping = false;
+						if ( crossfadeNode && crossfadeNode.parentNode ) {
+							crossfadeNode.parentNode.removeChild( crossfadeNode );
+						}
+						return { ok: false, error: new Error( 'disposed' ) };
 					}
 					var tick  = stepFactory( impl, state );
 					currentImpl  = impl;
@@ -993,26 +1135,6 @@
 				}
 			}
 
-			// ---------- Legacy-node sweep ---------------------------- //
-			//
-			// Older ODD builds (≤ 0.13.3) injected a floating gear,
-			// tooltip, save-frame camera, flash overlay, and toast
-			// pill onto <body>. They're gone in 0.13.4 — the Control
-			// Panel is the single picker surface — but proactively
-			// strip any stale nodes left over from upgrades so a
-			// returning user never sees a frozen pill.
-			var legacyKill = [
-				'[data-odd-scene-gear]',
-				'[data-odd-tooltip]',
-				'[data-odd-cam]',
-				'[data-odd-flash]',
-				'[data-odd-toast]',
-			];
-			for ( var li = 0; li < legacyKill.length; li++ ) {
-				var prev = document.querySelector( legacyKill[ li ] );
-				if ( prev && prev.parentNode ) prev.parentNode.removeChild( prev );
-			}
-
 			// ---------- Shuffle scheduler ---------------------------- //
 
 			var shuffleTimer = null;
@@ -1032,6 +1154,7 @@
 				if ( ! sh.enabled || ctx.prefersReducedMotion ) return;
 				var ms = Math.max( 60000, sh.minutes * 60000 );
 				shuffleTimer = setInterval( function () {
+					if ( disposed ) return;
 					if ( document.hidden ) return;
 					var next = pickShuffleNext();
 					if ( ! next ) return;
@@ -1049,6 +1172,10 @@
 			function bootstrapAudio() {
 				if ( ! prefsState.audioReactive ) return;
 				loadAudio().then( function ( a ) {
+					if ( disposed ) {
+						if ( a && a.disable ) a.disable();
+						return;
+					}
 					if ( a && a.enable ) a.enable();
 				} ).catch( function () { /* non-fatal */ } );
 			}
@@ -1056,6 +1183,7 @@
 			// ---------- Visibility + wp.hooks bridge ---------------- //
 
 			function onVis( detail ) {
+				if ( disposed ) return;
 				if ( ! detail || detail.id !== ctx.id ) return;
 				if ( detail.state === 'hidden' ) app.ticker.stop();
 				else if ( ! ctx.prefersReducedMotion ) app.ticker.start();
@@ -1065,6 +1193,7 @@
 			// Wired through the bridge (installed from `boot`) so picks
 			// during Pixi bootstrap are not dropped.
 			exposeWallpaperPickSink( function ( slug ) {
+				if ( disposed ) return;
 				if ( ! slug || slug === currentSlug ) return;
 				swap( slug ).then( function ( res ) {
 					if ( res && res.ok ) recordRecent( slug );
@@ -1072,36 +1201,15 @@
 			} );
 
 			function onDocVis() {
+				if ( disposed ) return;
 				if ( document.hidden ) app.ticker.stop();
 				else if ( ! ctx.prefersReducedMotion ) app.ticker.start();
 			}
 			document.addEventListener( 'visibilitychange', onDocVis );
 
-			applyShuffle();
-			bootstrapAudio();
-
-			var initial = prefsState.scene || defaultScene();
-			setFirstPaint( initial );
-			var first = await swap( initial );
-			if ( ! first.ok && initial !== defaultScene() ) {
-				savePrefs( { wallpaper: '' } );
-				setFirstPaint( defaultScene() );
-				await swap( defaultScene() );
-			}
-
-			// Lifecycle: first scene painted. Advance to `mounted` so
-			// anything awaiting that phase (widgets, commands) can fire
-			// their own init. `ready` follows on the next frame so every
-			// enqueued subsystem has a chance to install before it's
-			// emitted.
-			if ( _lifecycle ) {
-				try { _lifecycle.advance( 'mounted' ); } catch ( e ) {}
-				window.requestAnimationFrame( function () {
-					try { _lifecycle.advance( 'ready' ); } catch ( e ) {}
-				} );
-			}
-
-			return function teardown() {
+			readyTeardown = function () {
+				bootApp = null;
+				bootAppDestroyed = true;
 				if ( shuffleTimer ) { clearInterval( shuffleTimer ); shuffleTimer = null; }
 				if ( window.__odd.audio && window.__odd.audio.disable ) {
 					try { window.__odd.audio.disable(); } catch ( e ) { /* ignore */ }
@@ -1118,20 +1226,70 @@
 					document.documentElement.style.removeProperty( '--wp-admin-theme-color' );
 				}
 				document.documentElement.style.removeProperty( '--odd-accent' );
-				app.renderer.off( 'resize', onResize );
+				try { app.renderer.off( 'resize', onResize ); } catch ( e2 ) {}
 				if ( currentTick ) app.ticker.remove( currentTick );
 				if ( currentImpl && currentImpl.cleanup ) {
 					safeImpl( currentImpl, 'cleanup', 'wallpaper.cleanup:' + currentSlug, [ currentState, env ] );
 				}
+				currentImpl = null;
+				currentState = null;
+				currentTick = null;
+				currentSlug = null;
 				if ( window.__odd && window.__odd.runtime ) {
 					window.__odd.runtime.activeScene = null;
 				}
-				app.destroy( true, { children: true, texture: true } );
+				try { app.stage.removeChildren(); } catch ( e3 ) {}
+				try { app.destroy( true, { children: true, texture: true } ); } catch ( e4 ) {}
 			};
+			if ( disposed ) {
+				readyTeardown( 'disposed-before-ready' );
+				clearRuntimeHandle();
+				return;
+			}
+
+			applyShuffle();
+			bootstrapAudio();
+
+			var initial = prefsState.scene || defaultScene();
+			setFirstPaint( initial );
+			var first = await swap( initial );
+			if ( disposed ) return;
+			if ( ! first.ok && initial !== defaultScene() ) {
+				savePrefs( { wallpaper: '' } );
+				setFirstPaint( defaultScene() );
+				await swap( defaultScene() );
+			}
+			if ( disposed ) return;
+
+			// Lifecycle: first scene painted. Advance to `mounted` so
+			// anything awaiting that phase (widgets, commands) can fire
+			// their own init. `ready` follows on the next frame so every
+			// enqueued subsystem has a chance to install before it's
+			// emitted.
+			if ( _lifecycle ) {
+				try { _lifecycle.advance( 'mounted' ); } catch ( e ) {}
+				window.requestAnimationFrame( function () {
+					if ( disposed ) return;
+					try { _lifecycle.advance( 'ready' ); } catch ( e ) {}
+				} );
+			}
+
+			if ( disposed ) {
+				readyTeardown( 'disposed-before-ready' );
+				clearRuntimeHandle();
+			}
 		})().catch( function ( err ) {
-			if ( window.console ) window.console.error( 'ODD: mount failed', err );
-			return function () {};
+			if ( ! disposed ) {
+				if ( window.console ) window.console.error( 'ODD: mount failed', err );
+				if ( readyTeardown ) {
+					try { readyTeardown( 'mount-failed' ); } catch ( e ) {}
+				} else {
+					try { earlyTeardown( 'mount-failed' ); } catch ( e2 ) {}
+				}
+			}
+			clearRuntimeHandle();
 		} );
+		return teardown;
 	}
 
 	// ============================================================ //
@@ -1168,6 +1326,8 @@
 		}
 		installWallpaperPickBridge();
 		installWallpaperVisibilityBridge();
+		installWallpaperTeardownBridge();
+		installLifecycleTeardownBridge();
 		if ( window.wp.desktop && typeof window.wp.desktop.ready === 'function' ) {
 			window.wp.desktop.ready( registerAll );
 		} else {

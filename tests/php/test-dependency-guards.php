@@ -32,17 +32,22 @@ class Test_Dependency_Guards extends WP_UnitTestCase {
 	}
 
 	public function test_capability_groups_are_defined() {
-		$core          = oddout_desktop_mode_capability_functions( 'core' );
-		$os_settings   = oddout_desktop_mode_capability_functions( 'os_settings' );
-		$registry      = oddout_desktop_mode_capability_functions( 'registry' );
-		$commands      = oddout_desktop_mode_capability_functions( 'commands' );
-		$settings      = oddout_desktop_mode_capability_functions( 'settings' );
-		$titlebar      = oddout_desktop_mode_capability_functions( 'titlebar' );
-		$dock_rail     = oddout_desktop_mode_capability_functions( 'dock_rail' );
-		$debug         = oddout_desktop_mode_capability_functions( 'debug' );
-		$ai            = oddout_desktop_mode_capability_functions( 'ai' );
-		$window_chrome = oddout_desktop_mode_capability_functions( 'window_chrome' );
-		$unknown       = oddout_desktop_mode_capability_functions( 'does-not-exist' );
+		$core           = oddout_desktop_mode_capability_functions( 'core' );
+		$os_settings    = oddout_desktop_mode_capability_functions( 'os_settings' );
+		$registry       = oddout_desktop_mode_capability_functions( 'registry' );
+		$commands       = oddout_desktop_mode_capability_functions( 'commands' );
+		$settings       = oddout_desktop_mode_capability_functions( 'settings' );
+		$titlebar       = oddout_desktop_mode_capability_functions( 'titlebar' );
+		$dock_rail      = oddout_desktop_mode_capability_functions( 'dock_rail' );
+		$host_widgets   = oddout_desktop_mode_capability_functions( 'host_widgets' );
+		$desktop_files  = oddout_desktop_mode_capability_functions( 'desktop_files' );
+		$shared_folders = oddout_desktop_mode_capability_functions( 'shared_folders' );
+		$presence       = oddout_desktop_mode_capability_functions( 'presence' );
+		$heartbeat      = oddout_desktop_mode_capability_functions( 'heartbeat' );
+		$debug          = oddout_desktop_mode_capability_functions( 'debug' );
+		$ai             = oddout_desktop_mode_capability_functions( 'ai' );
+		$window_chrome  = oddout_desktop_mode_capability_functions( 'window_chrome' );
+		$unknown        = oddout_desktop_mode_capability_functions( 'does-not-exist' );
 		$this->assertNotEmpty( $core );
 		$this->assertContains( 'desktop_mode_get_os_settings', $os_settings );
 		$this->assertContains( 'desktop_mode_save_os_settings', $os_settings );
@@ -53,6 +58,12 @@ class Test_Dependency_Guards extends WP_UnitTestCase {
 		$this->assertContains( 'desktop_mode_register_settings_tab', $settings );
 		$this->assertContains( 'desktop_mode_register_titlebar_button_script', $titlebar );
 		$this->assertContains( 'desktop_mode_register_dock_rail_renderer_script', $dock_rail );
+		$this->assertContains( 'desktop_mode_register_widget', $host_widgets );
+		$this->assertContains( 'desktop_mode_register_file_type', $desktop_files );
+		$this->assertContains( 'desktop_mode_register_file_opener', $desktop_files );
+		$this->assertContains( 'desktop_mode_files_sharing_enabled_for', $shared_folders );
+		$this->assertContains( 'desktop_mode_presence_snapshot', $presence );
+		$this->assertContains( 'desktop_mode_register_heartbeat_widget', $heartbeat );
 		$this->assertContains( 'desktop_mode_debug_publish', $debug );
 		$this->assertContains( 'desktop_mode_debug_session_for_request', $debug );
 		$this->assertContains( 'desktop_mode_register_ai_tool', $ai );

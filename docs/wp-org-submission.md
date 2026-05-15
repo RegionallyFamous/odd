@@ -16,25 +16,25 @@ This doc records the current WordPress.org status for ODD and the manual publish
 - [x] Submitted to the plugin directory for review (manual step, done via https://wordpress.org/plugins/developers/add/)
 - [x] Accepted on WordPress.org: https://wordpress.org/plugins/odd-outlandish-desktop-decorator/
 - [ ] SVN trunk seeded for the 1.0.0 public baseline (manual, see below)
-- [ ] Screenshots captured and uploaded to `assets/` in SVN (5 screenshots listed in readme.txt)
+- [ ] Screenshots captured and uploaded to `assets/` in SVN (4 screenshots listed in readme.txt)
+- [x] Banner and icon assets generated in [`wporg-assets/`](../wporg-assets/)
 
-## Screenshot checklist
+## Directory asset checklist
 
-Screenshots live in `/assets/` on the SVN side (sibling of `/trunk/`, `/tags/`, `/branches/`), not inside the plugin zip. Required sizes:
+Directory assets live in `/assets/` on the SVN side (sibling of `/trunk/`, `/tags/`, `/branches/`), not inside the plugin zip. WordPress.org uses exact filenames and implied dimensions; oversized, undersized, or renamed variants do not display. See the official [Plugin Assets handbook page](https://developer.wordpress.org/plugins/wordpress-org/plugin-assets/).
 
 | File                  | Size             | What it shows                                          |
 |-----------------------|------------------|--------------------------------------------------------|
-| `screenshot-1.png`    | 1280×720 (or 1544×500) | ODD Shop — Discover tile view                    |
-| `screenshot-2.png`    | 1280×720         | ODD Shop — Wallpaper department with detail sheet       |
-| `screenshot-3.png`    | 1280×720         | Aurora + Hologram icon combination on the live desktop  |
-| `screenshot-4.png`    | 1280×720         | Origami + Fold icon combination on the live desktop     |
-| `screenshot-5.png`    | 1280×720         | Rainfall scene avoiding desktop icons                   |
-| `banner-1544x500.png` | 1544×500         | Directory header banner                                 |
-| `banner-772x250.png`  | 772×250          | Low-DPI banner fallback                                 |
-| `icon-256x256.png`    | 256×256          | Directory icon                                          |
-| `icon-128x128.png`    | 128×128          | Directory icon (low-DPI)                                |
+| `banner-1544x500.png` | 1544x500         | High-DPI directory header banner                        |
+| `banner-772x250.png`  | 772x250          | Standard directory header banner                        |
+| `icon-256x256.gif`    | 256x256          | High-DPI animated directory icon                        |
+| `icon-128x128.gif`    | 128x128          | Standard animated directory icon                        |
+| `screenshot-1.png`    | 1280x720 target  | ODD Shop with unified catalog cards                     |
+| `screenshot-2.png`    | 1280x720 target  | Wallpaper department with preview/apply controls        |
+| `screenshot-3.png`    | 1280x720 target  | Apps department with install/open cards                 |
+| `screenshot-4.png`    | 1280x720 target  | Desktop with themed wallpaper, icons, cursors, widgets  |
 
-All screenshots are captured in the live demo (`https://playground.wordpress.net/?blueprint-url=` + URL-encoded `https://raw.githubusercontent.com/RegionallyFamous/odd/main/blueprint.json?oddbp=v2-1.0.0`) at 1× zoom, cropped to the desktop surface, saved as PNG through `cmd-shift-4` + OSX screenshot viewer "Export" (use PNG — the directory rejects JPEG).
+Generated banner and animated icon files are kept in [`wporg-assets/`](../wporg-assets/). WordPress.org documents GIF as a valid extension for `icon-128x128` and `icon-256x256`; do not upload `icon.svg` with the animated icon set because SVG can take precedence over raster icons in WordPress icon selection paths. Screenshots should be captured from the live demo (`https://playground.wordpress.net/?blueprint-url=` + URL-encoded `https://raw.githubusercontent.com/RegionallyFamous/odd/main/blueprint.json?oddbp=v3-1.0.0-dm-0.8.5`) at 1x zoom, cropped to the desktop surface, and saved as lowercase PNG files that match the `readme.txt` screenshot captions. WordPress.org permits PNG or JPG screenshots, but local PNG keeps the desktop UI crisp.
 
 ## SVN workflow
 

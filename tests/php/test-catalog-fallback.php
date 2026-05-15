@@ -10,6 +10,23 @@
 
 class Test_Catalog_Fallback extends WP_UnitTestCase {
 
+	private function catalog_row( $slug, $overrides = array() ) {
+		$base = 'https://odd.regionallyfamous.com/catalog/v1/';
+		return array_merge(
+			array(
+				'type'         => 'widget',
+				'slug'         => $slug,
+				'name'         => ucwords( str_replace( '-', ' ', $slug ) ),
+				'version'      => '1.0.0',
+				'download_url' => $base . 'bundles/widget-' . $slug . '.wp',
+				'sha256'       => str_repeat( 'a', 64 ),
+				'icon_url'     => $base . 'icons/widget-' . $slug . '.svg',
+				'card_url'     => $base . 'cards/widget-' . $slug . '.webp',
+			),
+			$overrides
+		);
+	}
+
 	public function tear_down() {
 		delete_transient( ODDOUT_CATALOG_TRANSIENT );
 		delete_option( ODDOUT_CATALOG_STALE_OPTION );
@@ -21,6 +38,9 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		// flipping the filter — simplest way without adding a
 		// "reset" helper to the production surface.
 		remove_all_filters( 'oddout_catalog_fallback_path' );
+		remove_all_filters( 'oddout_catalog_entry_url_allowed' );
+		remove_all_filters( 'oddout_catalog_max_response_bytes' );
+		remove_all_filters( 'oddout_catalog_url' );
 		remove_all_filters( 'pre_http_request' );
 		parent::tear_down();
 	}
@@ -129,14 +149,7 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		$raw = array(
 			'version' => 1,
 			'bundles' => array(
-				array(
-					'type'         => 'widget',
-					'slug'         => 'catalog-widget',
-					'name'         => 'Catalog Widget',
-					'download_url' => 'https://example.com/catalog-widget.wp',
-					'sha256'       => str_repeat( 'a', 64 ),
-					'icon_url'     => 'https://example.com/catalog-widget.svg',
-				),
+				$this->catalog_row( 'catalog-widget' ),
 			),
 		);
 		add_filter(
@@ -168,7 +181,7 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		$this->assertSame( 200, $response->get_status() );
 		$this->assertArrayNotHasKey( 'download_url', $data['bundles'][0] );
 		$this->assertArrayNotHasKey( 'sha256', $data['bundles'][0] );
-		$this->assertSame( 'https://example.com/catalog-widget.svg', $data['bundles'][0]['icon_url'] );
+		$this->assertSame( 'https://odd.regionallyfamous.com/catalog/v1/icons/widget-catalog-widget.svg', $data['bundles'][0]['icon_url'] );
 		$this->assertArrayNotHasKey( 'meta', $data );
 	}
 
@@ -183,6 +196,35 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		$response = $wp_rest_server->dispatch( $request );
 
 		$this->assertSame( 401, $response->get_status() );
+	}
+
+	public function test_catalog_rest_rejects_unknown_type_arg() {
+		$user = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $user );
+
+		global $wp_rest_server;
+		$wp_rest_server = new WP_REST_Server();
+		do_action( 'rest_api_init' );
+
+		$request = new WP_REST_Request( 'GET', '/odd/v1/bundles/catalog' );
+		$request->set_param( 'type', 'plugin' );
+		$response = $wp_rest_server->dispatch( $request );
+
+		$this->assertSame( 400, $response->get_status() );
+	}
+
+	public function test_catalog_install_rest_requires_slug_arg() {
+		$user = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user );
+
+		global $wp_rest_server;
+		$wp_rest_server = new WP_REST_Server();
+		do_action( 'rest_api_init' );
+
+		$request  = new WP_REST_Request( 'POST', '/odd/v1/bundles/install-from-catalog' );
+		$response = $wp_rest_server->dispatch( $request );
+
+		$this->assertSame( 400, $response->get_status() );
 	}
 
 	public function test_catalog_normalise_preserves_card_url_for_shop_art() {
@@ -211,12 +253,11 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		$raw = array(
 			'version' => 1,
 			'bundles' => array(
-				array(
-					'type'         => 'widget',
-					'slug'         => 'admin-catalog-widget',
-					'name'         => 'Admin Catalog Widget',
-					'download_url' => 'https://example.com/admin-catalog-widget.wp',
-					'sha256'       => str_repeat( 'b', 64 ),
+				$this->catalog_row(
+					'admin-catalog-widget',
+					array(
+						'sha256' => str_repeat( 'b', 64 ),
+					)
 				),
 			),
 		);
@@ -247,9 +288,123 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		$data     = $response->get_data();
 
 		$this->assertSame( 200, $response->get_status() );
-		$this->assertSame( 'https://example.com/admin-catalog-widget.wp', $data['bundles'][0]['download_url'] );
+		$this->assertSame( 'https://odd.regionallyfamous.com/catalog/v1/bundles/widget-admin-catalog-widget.wp', $data['bundles'][0]['download_url'] );
 		$this->assertSame( str_repeat( 'b', 64 ), $data['bundles'][0]['sha256'] );
 		$this->assertArrayHasKey( 'meta', $data );
+	}
+
+	public function test_remote_catalog_rejects_insecure_registry_url() {
+		$result = oddout_catalog_fetch_remote( 'http://example.com/catalog/v1/registry.json' );
+		$this->assertWPError( $result );
+		$this->assertSame( 'insecure_catalog_url', $result->get_error_code() );
+	}
+
+	public function test_remote_catalog_rejects_duplicate_slugs() {
+		$raw = array(
+			'version' => 1,
+			'bundles' => array(
+				$this->catalog_row( 'duplicate' ),
+				$this->catalog_row( 'duplicate', array( 'name' => 'Duplicate Two' ) ),
+			),
+		);
+		add_filter(
+			'pre_http_request',
+			static function () use ( $raw ) {
+				return array(
+					'headers'  => array(),
+					'body'     => wp_json_encode( $raw ),
+					'response' => array(
+						'code'    => 200,
+						'message' => 'OK',
+					),
+				);
+			}
+		);
+
+		$result = oddout_catalog_fetch_remote( ODDOUT_CATALOG_URL );
+		$this->assertWPError( $result );
+		$this->assertSame( 'catalog_duplicate_slug', $result->get_error_code() );
+	}
+
+	public function test_remote_catalog_rejects_bad_hash_and_external_urls() {
+		$bad_hash = oddout_catalog_validate_remote_registry(
+			array(
+				'version' => 1,
+				'bundles' => array(
+					$this->catalog_row( 'bad-hash', array( 'sha256' => 'nope' ) ),
+				),
+			),
+			ODDOUT_CATALOG_URL
+		);
+		$this->assertWPError( $bad_hash );
+		$this->assertSame( 'catalog_bad_hash', $bad_hash->get_error_code() );
+
+		$external = oddout_catalog_validate_remote_registry(
+			array(
+				'version' => 1,
+				'bundles' => array(
+					$this->catalog_row(
+						'external',
+						array( 'download_url' => 'https://cdn.example.com/widget-external.wp' )
+					),
+				),
+			),
+			ODDOUT_CATALOG_URL
+		);
+		$this->assertWPError( $external );
+		$this->assertSame( 'catalog_unsafe_url', $external->get_error_code() );
+	}
+
+	public function test_remote_catalog_caps_body_size_and_records_body_hash() {
+		add_filter(
+			'oddout_catalog_max_response_bytes',
+			static function () {
+				return 1024;
+			}
+		);
+		add_filter(
+			'pre_http_request',
+			static function () {
+				return array(
+					'headers'  => array(),
+					'body'     => str_repeat( 'x', 1200 ),
+					'response' => array(
+						'code'    => 200,
+						'message' => 'OK',
+					),
+				);
+			}
+		);
+		$too_large = oddout_catalog_fetch_remote( ODDOUT_CATALOG_URL );
+		$this->assertWPError( $too_large );
+		$this->assertSame( 'catalog_body_too_large', $too_large->get_error_code() );
+
+		remove_all_filters( 'oddout_catalog_max_response_bytes' );
+		remove_all_filters( 'pre_http_request' );
+
+		$raw  = array(
+			'version' => 1,
+			'bundles' => array( $this->catalog_row( 'hashable' ) ),
+		);
+		$body = wp_json_encode( $raw );
+		add_filter(
+			'pre_http_request',
+			static function () use ( $body ) {
+				return array(
+					'headers'  => array(),
+					'body'     => $body,
+					'response' => array(
+						'code'    => 200,
+						'message' => 'OK',
+					),
+				);
+			}
+		);
+
+		oddout_catalog_load( true );
+		$meta = oddout_catalog_meta();
+		$this->assertSame( hash( 'sha256', $body ), $meta['registry_sha256'] );
+		$this->assertSame( strlen( $body ), $meta['registry_bytes'] );
 	}
 
 	public function test_catalog_lock_suppresses_duplicate_operations_until_stale() {
