@@ -235,6 +235,42 @@ class Test_Bundle_Install extends ODDOUT_REST_Test_Case {
 		);
 	}
 
+	public function test_widget_default_css_is_discovered_for_thin_existing_installs() {
+		$zip = $this->make_widget_zip( 'thin-widget', array( 'css' => array() ) );
+		$res = oddout_bundle_install( $zip, 'thin-widget.wp' );
+		@unlink( $zip );
+
+		$this->assertIsArray( $res, is_wp_error( $res ) ? $res->get_error_message() : 'widget install returned non-array' );
+		$this->installed[] = array(
+			'slug' => 'thin-widget',
+			'type' => 'widget',
+		);
+		$this->assertSame( array( 'widget.css' ), $res['manifest']['css'] );
+
+		$index = oddout_widgets_index_load();
+		unset( $index['thin-widget']['css'] );
+		oddout_widgets_index_save( $index );
+
+		$manifest = $res['manifest'];
+		unset( $manifest['css'] );
+		oddout_write_file( oddout_widgets_dir_for( 'thin-widget' ) . 'manifest.json', wp_json_encode( $manifest ) );
+
+		$row_without_css = $index['thin-widget'];
+		$this->assertSame(
+			array( 'widget.css' ),
+			oddout_widget_stylesheet_paths_for( 'thin-widget', $row_without_css ),
+			'Existing installed widgets with only widget.css on disk must still load their companion stylesheet.'
+		);
+
+		$urls = oddout_widget_stylesheet_urls_for( 'thin-widget', $row_without_css );
+		$this->assertCount( 1, $urls );
+		$this->assertMatchesRegularExpression( '#/widgets/thin-widget/widget\.css\?ver=\d+$#', $urls[0] );
+
+		$loader = oddout_widget_stylesheet_loader_script( 'thin-widget', $row_without_css );
+		$this->assertStringContainsString( 'data-odd-widget-style-url', $loader );
+		$this->assertStringContainsString( 'data-odd-widget-style-slug', $loader );
+	}
+
 	public function test_widget_zero_max_dimensions_remain_unbounded() {
 		$zip = $this->make_widget_zip(
 			'unbounded-widget',

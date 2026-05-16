@@ -7,7 +7,7 @@
  *
  *   manifest.json          slug / name / version / type / entry
  *   widget.js              exposes window.desktopModeWidgets[ id ]
- *   widget.css             (optional) companion stylesheet; enqueue list in manifest `"css"`
+ *   widget.css             (default companion stylesheet; optional `"css"` override)
  *   assets/*               (optional) static files referenced by widget.css / widget.js
  *   preview.webp           (optional) 640×360, shown on Shop cards
  *
@@ -16,8 +16,9 @@
  * `desktop_mode_register_widget()`. Desktop Mode loads that handle,
  * reads `window.desktopModeWidgets[ id ]`, and owns widget registry,
  * persistence, dragging, resizing, max/min dimensions, and mount
- * lifecycle hooks. Declared `"css"` files are linked on the shell page
- * and returned to the Shop upload response for hot-loaded installs.
+ * lifecycle hooks. Declared `"css"` files, or the default `widget.css`
+ * file when present, are linked on the shell page and returned to the
+ * Shop upload response for hot-loaded installs.
  *
  * Security posture mirrors scenes: widget JS runs in the admin frame
  * with full privileges, so installation requires `manage_options`
@@ -94,7 +95,7 @@ function oddout_widget_bundle_validate( $tmp_path, $filename, ZipArchive $zip, a
 		$preview = $preview_rel;
 	}
 
-	// Optional companion stylesheets (Magic 8-Ball, Sticky Note, …).
+	// Optional companion stylesheets (Magic 8-Ball, Sticky Note, ...).
 	$css_decl = isset( $manifest['css'] ) ? $manifest['css'] : array();
 	if ( is_string( $css_decl ) ) {
 		$css_decl = array( $css_decl );
@@ -124,6 +125,9 @@ function oddout_widget_bundle_validate( $tmp_path, $filename, ZipArchive $zip, a
 			);
 		}
 		$css_paths[] = $css_rel;
+	}
+	if ( empty( $css_paths ) && false !== $zip->getFromName( 'widget.css' ) ) {
+		$css_paths[] = 'widget.css';
 	}
 
 	$min_width      = isset( $manifest['minWidth'] ) ? max( 120, min( 720, (int) $manifest['minWidth'] ) ) : 180;
@@ -248,9 +252,10 @@ function oddout_widget_bundle_uninstall( $slug ) {
 }
 
 /**
- * Declared widget.css paths for an installed slug. Bundles must declare
- * CSS in the manifest so Desktop Mode's lazy script path can receive a
- * matching stylesheet URL.
+ * Stylesheet paths for an installed slug. Bundles may declare CSS in the
+ * manifest; otherwise ODD treats a top-level `widget.css` as the default
+ * companion stylesheet so Desktop Mode's script-only widget contract still
+ * receives a matching stylesheet URL.
  *
  * @param string $slug Sanitized slug.
  * @param array  $row  Index row.
@@ -266,8 +271,12 @@ function oddout_widget_stylesheet_paths_for( $slug, array $row ) {
 	if ( empty( $paths ) ) {
 		$paths = oddout_widget_stylesheet_paths_from_manifest( $slug );
 	}
+	if ( empty( $paths ) ) {
+		$paths = oddout_widget_default_stylesheet_paths_from_disk( $slug );
+	}
 	$dir   = oddout_widgets_dir_for( $slug );
 	$out   = array();
+	$seen  = array();
 	$paths = is_array( $paths ) ? $paths : array();
 	foreach ( $paths as $rel ) {
 		$rel = oddout_content_sanitize_relative_path( (string) $rel );
@@ -275,12 +284,23 @@ function oddout_widget_stylesheet_paths_for( $slug, array $row ) {
 			continue;
 		}
 		$full = $dir . $rel;
-		if ( $dir && is_readable( $full ) ) {
-			$out[] = $rel;
+		if ( $dir && is_readable( $full ) && empty( $seen[ $rel ] ) ) {
+			$out[]        = $rel;
+			$seen[ $rel ] = true;
 		}
 	}
 
 	return $out;
+}
+
+function oddout_widget_default_stylesheet_paths_from_disk( $slug ) {
+	$slug = sanitize_key( (string) $slug );
+	if ( '' === $slug ) {
+		return array();
+	}
+	$rel  = 'widget.css';
+	$full = oddout_widgets_dir_for( $slug ) . $rel;
+	return is_readable( $full ) ? array( $rel ) : array();
 }
 
 function oddout_widget_stylesheet_paths_from_manifest( $slug ) {
@@ -322,12 +342,28 @@ function oddout_widget_url_for_relative( $slug, $rel ) {
 		: $base . rawurlencode( (string) $rel );
 }
 
+function oddout_widget_asset_version_for( $slug, $rel, $fallback = '' ) {
+	$slug = sanitize_key( (string) $slug );
+	$rel  = oddout_content_sanitize_relative_path( (string) $rel );
+	if ( '' === $slug || '' === $rel ) {
+		return (string) $fallback;
+	}
+	$full = oddout_widgets_dir_for( $slug ) . $rel;
+	if ( ! is_readable( $full ) ) {
+		return (string) $fallback;
+	}
+	$modified = filemtime( $full );
+	return false === $modified ? (string) $fallback : (string) $modified;
+}
+
 function oddout_widget_stylesheet_urls_for( $slug, array $row ) {
 	$out = array();
+	$ver = isset( $row['version'] ) ? (string) $row['version'] : ODDOUT_VERSION;
 	foreach ( oddout_widget_stylesheet_paths_for( $slug, $row ) as $rel ) {
 		$url = oddout_widget_url_for_relative( $slug, $rel );
 		if ( '' !== $url ) {
-			$out[] = $url;
+			$asset_ver = oddout_widget_asset_version_for( $slug, $rel, $ver );
+			$out[]     = '' !== $asset_ver ? add_query_arg( 'ver', $asset_ver, $url ) : $url;
 		}
 	}
 	return $out;
@@ -342,7 +378,11 @@ function oddout_widget_stylesheet_loader_script( $slug, array $row ) {
 	if ( ! is_string( $json ) || '' === $json ) {
 		return '';
 	}
-	return '(function(){var urls=' . $json . ';var attr="data-odd-widget-style-url";function has(href){var links=document.querySelectorAll("link[rel~=\\"stylesheet\\"]");for(var i=0;i<links.length;i++){if(links[i].getAttribute(attr)===href||links[i].href===href)return true;}return false;}for(var j=0;j<urls.length;j++){var href=urls[j];if(typeof href!=="string"||!href||has(href))continue;var link=document.createElement("link");link.rel="stylesheet";link.href=href;link.setAttribute(attr,href);document.head.appendChild(link);}})();';
+	$slug_json = wp_json_encode( sanitize_key( (string) $slug ) );
+	if ( ! is_string( $slug_json ) || '' === $slug_json ) {
+		$slug_json = '""';
+	}
+	return '(function(){var slug=' . $slug_json . ';var urls=' . $json . ';var attr="data-odd-widget-style-url";function has(href){var links=document.querySelectorAll("link[rel~=\\"stylesheet\\"]");for(var i=0;i<links.length;i++){if(links[i].getAttribute(attr)===href||links[i].href===href)return true;}return false;}for(var j=0;j<urls.length;j++){var href=urls[j];if(typeof href!=="string"||!href||has(href))continue;var link=document.createElement("link");link.rel="stylesheet";link.href=href;link.setAttribute(attr,href);link.setAttribute("data-odd-widget-style-slug",slug);document.head.appendChild(link);}})();';
 }
 
 function oddout_widget_row_int( array $row, $key, $fallback, $min, $max ) {
@@ -362,7 +402,11 @@ function oddout_widget_register_script_handle( $slug, array $row ) {
 		$entry = 'widget.js';
 	}
 	$handle = oddout_widget_script_handle( $slug );
-	$ver    = isset( $row['version'] ) ? (string) $row['version'] : ODDOUT_VERSION;
+	$ver    = oddout_widget_asset_version_for(
+		$slug,
+		$entry,
+		isset( $row['version'] ) ? (string) $row['version'] : ODDOUT_VERSION
+	);
 	wp_register_script(
 		$handle,
 		oddout_widget_url_for_relative( $slug, $entry ),
@@ -452,11 +496,12 @@ add_action(
 			foreach ( oddout_widget_stylesheet_paths_for( $slug, $row ) as $idx => $css_rel ) {
 				$css_handle = 'odd-widget-' . $slug . '-style-' . (int) $idx;
 				$css_url    = oddout_widget_url_for_relative( $slug, $css_rel );
+				$css_ver    = oddout_widget_asset_version_for( $slug, $css_rel, $ver );
 				wp_enqueue_style(
 					$css_handle,
 					$css_url,
 					array(),
-					$ver,
+					$css_ver,
 					'all'
 				);
 			}
