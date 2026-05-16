@@ -6,6 +6,12 @@
   "label": "Lemonade Stand",
   "category": "Summer",
   "accent": "#ffd64b",
+  "funLayer": {
+    "recipe": "citrus-pop",
+    "accent": "#ffd64b",
+    "secondary": "#b6ff66",
+    "spark": "#ff8b4c"
+  },
   "preview": "dashboard.webp",
   "description": "Sunny yellow raster glyphs with crayon-bright accents and big readable forms.",
   "version": "1.2.0",

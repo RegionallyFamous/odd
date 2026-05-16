@@ -543,6 +543,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 					slug: 'odd-default-icons',
 					label: 'ODD Default',
 					card_url: 'https://example.test/catalog-card.webp',
+					funLayer: { recipe: 'chroma-halo', accent: '#38e8ff', secondary: '#ff44b5', spark: '#9556ff' },
 					icons: {
 						dashboard: 'https://example.test/dashboard.webp',
 						posts:     'https://example.test/posts.webp',
@@ -558,6 +559,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 						slug: 'odd-default-icons',
 						label: 'ODD Default',
 						card_url: 'https://example.test/catalog-card.webp',
+						funLayer: { recipe: 'chroma-halo', accent: '#38e8ff', secondary: '#ff44b5', spark: '#9556ff' },
 						installed: true,
 					},
 				],
@@ -573,6 +575,9 @@ describe( 'ODD Shop · unified card state machine', () => {
 		const card = host.querySelector( '[data-odd-shop-card][data-set-slug="odd-default-icons"]' );
 		expect( card, 'icon-set tile must render' ).toBeTruthy();
 		const art = card.querySelector( '.odd-shop__card-art--icon-set' );
+		expect( art.getAttribute( 'data-odd-fun-layer' ) ).toBe( 'chroma-halo' );
+		expect( art.querySelector( '.odd-shop__icon-fun-layer' ) ).toBeTruthy();
+		expect( art.getAttribute( 'style' ) ).toContain( '--odd-icon-card-accent: #38e8ff' );
 		expect( art.classList.contains( 'odd-shop__card-art--quartet' ) ).toBe( true );
 		const quartetIcons = Array.from( card.querySelectorAll( '.odd-shop__card-quartet img' ) );
 		expect( quartetIcons ).toHaveLength( 4 );
@@ -591,6 +596,10 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card--app \.odd-shop__card-art > img\.odd-shop__card-art-fill\{[^}]*padding:0[^}]*object-fit:cover/ );
 		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__card\.odd-card\.odd-shop__tile \.odd-shop__card-art\{[^}]*border-radius:22\.5%/ );
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card--icon-set \.odd-shop__card-art > img\.odd-shop__card-art-fill\{[^}]*padding:12%[^}]*object-fit:contain/ );
+		expect( css ).toContain( '.odd-panel .odd-shop__card-art[data-odd-fun-layer]' );
+		expect( css ).toContain( '.odd-panel .odd-shop__icon-fun-layer' );
+		expect( css ).toContain( '[data-odd-fun-layer="blueprint-grid"]' );
+		expect( css ).toContain( '[data-odd-fun-layer="stitch-cross"]' );
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-art--quartet\{[^}]*padding:clamp\(18px,13%,28px\)[^}]*overflow:visible/ );
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-art--quartet \.odd-shop__card-quartet\{[^}]*width:100%[^}]*gap:clamp\(12px,12%,20px\)/ );
 		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__shelf\{[^}]*content-visibility:auto/ );

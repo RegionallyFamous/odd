@@ -106,6 +106,24 @@ describe( 'v1 source guardrails', () => {
 		expect( release ).toContain( 'ODD_CATALOG_REQUIRE_SIGNATURE' );
 		expect( release ).toContain( 'ODD_VALIDATE_REQUIRE_CATALOG_SIGNATURE' );
 	} );
+
+	it( 'keeps every first-party icon set on a unique Shop fun layer', () => {
+		const dir = resolve( ROOT, '_tools/catalog-sources/icon-sets' );
+		const rows = readdirSync( dir, { withFileTypes: true } )
+			.filter( ( entry ) => entry.isDirectory() )
+			.map( ( entry ) => {
+				const manifest = JSON.parse( readFileSync( join( dir, entry.name, 'manifest.json' ), 'utf8' ) );
+				return {
+					slug: entry.name,
+					recipe: manifest.funLayer && manifest.funLayer.recipe,
+				};
+			} );
+		const missing = rows.filter( ( row ) => ! row.recipe ).map( ( row ) => row.slug );
+		const recipes = rows.map( ( row ) => row.recipe );
+
+		expect( missing ).toEqual( [] );
+		expect( new Set( recipes ).size ).toBe( rows.length );
+	} );
 } );
 
 describe( 'Desktop Mode integration source contracts', () => {
@@ -114,9 +132,9 @@ describe( 'Desktop Mode integration source contracts', () => {
 
 		expect( src ).toContain( 'registerDockRailRenderer' );
 		expect( src ).toContain( 'listSystemTiles' );
+		expect( src ).toContain( 'skinHostSystemTiles' );
+		expect( src ).toContain( 'data-odd-skinned-system-icon' );
 		expect( src ).not.toMatch( /\breplaceChild\b/ );
-		expect( src ).not.toMatch( /querySelectorAll\s*\(\s*['"`][^'"`]*(desktop-mode|wp-desktop)-dock__item--system/ );
-		expect( src ).not.toContain( 'data-odd-skinned-system-icon' );
 		expect( src ).not.toMatch( /setTimeout\s*\(\s*skin|scheduleSystemRailSkin/ );
 	} );
 

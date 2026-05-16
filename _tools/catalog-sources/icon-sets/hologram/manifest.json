@@ -6,6 +6,12 @@
   "label": "Hologram",
   "category": "Synthetic",
   "accent": "#9fd0ff",
+  "funLayer": {
+    "recipe": "hologram-scan",
+    "accent": "#9fd0ff",
+    "secondary": "#8efff1",
+    "spark": "#f0a7ff"
+  },
   "preview": "dashboard.webp",
   "description": "Pastel hologram raster glyphs with a light offset shimmer and clean alpha.",
   "version": "1.2.0",

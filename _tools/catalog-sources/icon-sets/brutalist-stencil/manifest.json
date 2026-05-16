@@ -6,6 +6,12 @@
   "label": "Brutalist Stencil",
   "category": "Concrete Arcade",
   "accent": "#ff5f4f",
+  "funLayer": {
+    "recipe": "stencil-spray",
+    "accent": "#ff5f4f",
+    "secondary": "#f0e4d2",
+    "spark": "#24212a"
+  },
   "preview": "dashboard.webp",
   "description": "Chunky concrete-and-hazard raster glyphs with strong silhouettes for small docks.",
   "version": "1.2.0",

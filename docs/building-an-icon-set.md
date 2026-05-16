@@ -68,6 +68,12 @@ benefits from better compression.
     "version":     "1.0.0",
     "category":   "My Icons",
     "accent":      "#ff7a3c",
+    "funLayer": {
+        "recipe": "paper-fold",
+        "accent": "#ff7a3c",
+        "secondary": "#ffd9a8",
+        "spark": "#38e8ff"
+    },
     "description": "Warm hand-drawn icons with a coffee-stained palette.",
     "preview":     "preview.webp",
     "icons": {
@@ -101,6 +107,7 @@ benefits from better compression.
 | `version`     | yes      | Semver-ish string.                                                         |
 | `category`   | no       | Optional grouping label for Shop shelves and catalog tooling. |
 | `accent`      | yes      | `#hex` used for Shop accents and catalog previews.|
+| `funLayer`    | no       | Shop-card personality layer: `recipe`, `accent`, `secondary`, and `spark`. First-party sets must each use a distinct recipe. |
 | `description` | no       | Longer copy shown on the detail sheet.                                     |
 | `preview`     | no       | Relative path to a PNG/WebP hero (falls back to the `dashboard` icon).|
 | `icons`       | yes      | Map of all 17 required semantic keys to relative PNG/WebP paths. |
@@ -166,6 +173,23 @@ rewrite, or ODD-owned renderer in between.
 First-party catalog sets start from Image Gen contact sheets and are sliced
 into transparent raster exports. Third-party sets do not have to copy that
 treatment, but all files in the manifest `icons` map must be PNG or WebP.
+
+## Shop card layer
+
+The icon files stay unboxed and untouched at runtime, but the Shop card can
+carry more personality around them. First-party icon sets declare a `funLayer`
+so the card renderer and catalog card generator can add a unique surface
+effect without changing the actual glyph masks.
+
+- Keep `recipe` unique across first-party sets so the shelf does not become a
+  row of palette swaps.
+- Use `accent`, `secondary`, and `spark` to echo the set's material, not to
+  repaint the icons.
+- Regenerate first-party source cards with:
+
+    ```bash
+    python3 _tools/gen-shop-card-art.py icon-sets
+    ```
 
 ## preview.webp (optional)
 

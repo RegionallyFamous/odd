@@ -6,6 +6,12 @@
   "label": "Monoline",
   "category": "Pop UI",
   "accent": "#00c2ff",
+  "funLayer": {
+    "recipe": "line-loop",
+    "accent": "#00c2ff",
+    "secondary": "#dff8ff",
+    "spark": "#a66bff"
+  },
   "preview": "dashboard.webp",
   "description": "Pop-cyan raster glyphs with thick monoline clarity and transparent canvases.",
   "version": "1.2.0",

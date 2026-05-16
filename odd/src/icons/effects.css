@@ -35,6 +35,27 @@ body.desktop-mode-active .wp-desktop-icon img[src*="/uploads/odd/icon-sets/"],
 	transition: filter 150ms ease, transform 150ms ease, opacity 150ms ease;
 }
 
+body.desktop-mode-active .desktop-mode-dock__item-primary.odd-system-icon-skinned,
+body.desktop-mode-active .wp-desktop-dock__item-primary.odd-system-icon-skinned {
+	display: grid;
+	place-items: center;
+	box-sizing: border-box;
+	padding: 0;
+}
+
+body.desktop-mode-active .desktop-mode-dock__item img.desktop-mode-dock__item-img[data-odd-skinned-system-icon],
+body.desktop-mode-active .wp-desktop-dock__item img.wp-desktop-dock__item-img[data-odd-skinned-system-icon] {
+	inline-size: calc(100% - 8px);
+	block-size: calc(100% - 8px);
+	max-inline-size: 100%;
+	max-block-size: 100%;
+	object-fit: contain;
+	filter:
+		drop-shadow(-0.7px 0 0 rgba(58, 238, 255, 0.44))
+		drop-shadow(0.7px 0 0 rgba(255, 68, 181, 0.38))
+		drop-shadow(0 0 7px rgba(149, 86, 255, 0.18));
+}
+
 body.desktop-mode-active .desktop-mode-dock__item:hover img.desktop-mode-dock__item-img[src*="/assets/icons/"],
 body.desktop-mode-active .desktop-mode-dock__item:focus-within img.desktop-mode-dock__item-img[src*="/assets/icons/"],
 body.desktop-mode-active .desktop-mode-dock__item:hover img.desktop-mode-dock__item-img[src*="/odd/icon-sets/"],

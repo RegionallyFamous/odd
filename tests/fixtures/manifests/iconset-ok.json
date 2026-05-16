@@ -6,6 +6,12 @@
 	"label": "Example",
 	"version": "1.0.0",
 	"accent": "#6a5cff",
+	"funLayer": {
+		"recipe": "line-loop",
+		"accent": "#6a5cff",
+		"secondary": "#38e8ff",
+		"spark": "#ff44b5"
+	},
 	"icons": {
 		"dashboard":  "dashboard.webp",
 		"posts":      "posts.webp",

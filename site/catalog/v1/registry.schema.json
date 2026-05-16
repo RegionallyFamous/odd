@@ -125,6 +125,28 @@
           "accent": {
             "type": "string"
           },
+          "funLayer": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "recipe": {
+                "type": "string",
+                "pattern": "^[a-z0-9-]+$"
+              },
+              "accent": {
+                "type": "string",
+                "pattern": "^#[0-9A-Fa-f]{3,8}$"
+              },
+              "secondary": {
+                "type": "string",
+                "pattern": "^#[0-9A-Fa-f]{3,8}$"
+              },
+              "spark": {
+                "type": "string",
+                "pattern": "^#[0-9A-Fa-f]{3,8}$"
+              }
+            }
+          },
           "requires": {
             "type": "object",
             "additionalProperties": false,

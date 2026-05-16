@@ -6,6 +6,12 @@
   "label": "Eyeball Avenue",
   "category": "ODD Original",
   "accent": "#b35cff",
+  "funLayer": {
+    "recipe": "blink-ring",
+    "accent": "#b35cff",
+    "secondary": "#f36bff",
+    "spark": "#7df7ff"
+  },
   "preview": "dashboard.webp",
   "description": "Surreal purple raster glyphs with bright odd accents and no facial clutter.",
   "version": "1.2.0",

@@ -6,6 +6,12 @@
   "label": "Cross-Stitch",
   "category": "Craft",
   "accent": "#e87ca7",
+  "funLayer": {
+    "recipe": "stitch-cross",
+    "accent": "#e87ca7",
+    "secondary": "#ffe1ef",
+    "spark": "#8ee7ff"
+  },
   "preview": "dashboard.webp",
   "description": "Rose-and-linen raster glyphs with a chunky stitch texture that stays legible.",
   "version": "1.2.0",

@@ -43,6 +43,7 @@ import base64
 import hashlib
 import io
 import json
+import math
 import os
 import re
 import shutil
@@ -73,6 +74,8 @@ FIRST_PARTY_ICON_KEYS = {
     "os-settings", "import", "classic-admin",
 }
 REQUIRES_KEYS = {"odd", "desktopMode", "api"}
+ICONSET_FUN_LAYER_KEYS = {"recipe", "accent", "secondary", "spark"}
+HEX_RE = re.compile(r"^#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?(?:[0-9a-fA-F]{2})?$")
 SEMVER_RE = re.compile(
     r"^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$"
 )
@@ -107,6 +110,26 @@ def with_requires(row: dict, meta: dict) -> dict:
     if requires:
         row["requires"] = requires
     return row
+
+
+def clean_iconset_fun_layer(slug: str, meta: dict) -> dict:
+    raw = meta.get("funLayer") or {}
+    if not isinstance(raw, dict):
+        raise SystemExit(f"icon-set {slug}: funLayer must be an object when provided")
+    out: dict[str, str] = {}
+    for key, value in raw.items():
+        if key not in ICONSET_FUN_LAYER_KEYS:
+            raise SystemExit(f"icon-set {slug}: unsupported funLayer token {key!r}")
+        if not isinstance(value, str) or not value.strip():
+            raise SystemExit(f"icon-set {slug}: funLayer.{key} must be a non-empty string")
+        value = value.strip()
+        if key == "recipe":
+            if not re.fullmatch(r"[a-z0-9-]+", value):
+                raise SystemExit(f"icon-set {slug}: funLayer.recipe must be kebab-case")
+        elif not HEX_RE.fullmatch(value):
+            raise SystemExit(f"icon-set {slug}: funLayer.{key} must be a hex color")
+        out[key] = value
+    return out
 
 
 def catalog_signing_key():
@@ -527,7 +550,14 @@ def widget_tile(slug: str, label: str) -> str:
     )
 
 
-def iconset_tile(slug: str, label: str, accent: str, src_dir: Path, icons: dict[str, str]) -> bytes:
+def iconset_tile(
+    slug: str,
+    label: str,
+    accent: str,
+    src_dir: Path,
+    icons: dict[str, str],
+    fun_layer: dict | None = None,
+) -> bytes:
     """Compose a WebP catalog preview from raster icon-set artwork."""
     def safe_hex(value: str) -> str:
         value = (value or "#888888").strip()
@@ -547,7 +577,117 @@ def iconset_tile(slug: str, label: str, accent: str, src_dir: Path, icons: dict[
             out.append(round(av * (1 - amt) + bv * amt))
         return tuple(out)
 
+    def layer_hex(name: str, fallback: str) -> str:
+        return safe_hex((fun_layer or {}).get(name) or fallback)
+
+    def draw_fun_layer(base: Image.Image, recipe: str, a: str, b: str, spark: str) -> None:
+        overlay = Image.new("RGBA", (1024, 1024), (0, 0, 0, 0))
+        d = ImageDraw.Draw(overlay)
+        ar = tuple(int(safe_hex(a).lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))
+        br = tuple(int(safe_hex(b).lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))
+        sr = tuple(int(safe_hex(spark).lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))
+
+        if recipe == "blueprint-grid":
+            for pos in range(36, 1024, 72):
+                d.line((pos, 0, pos, 1024), fill=(*ar, 58), width=3)
+                d.line((0, pos, 1024, pos), fill=(*br, 42), width=2)
+            for pos in range(-1024, 1024, 164):
+                d.line((pos, 1024, pos + 1024, 0), fill=(*sr, 32), width=3)
+        elif recipe == "stitch-cross":
+            for x in range(58, 1024, 108):
+                for y in range(58, 1024, 108):
+                    d.line((x - 18, y - 18, x + 18, y + 18), fill=(*ar, 58), width=7)
+                    d.line((x + 18, y - 18, x - 18, y + 18), fill=(*br, 48), width=7)
+        elif recipe == "circuit-trace":
+            for y in range(96, 1024, 148):
+                d.line((52, y, 364, y, 364, y + 64, 760, y + 64, 760, y + 22, 972, y + 22), fill=(*ar, 54), width=8)
+                for x in (364, 760, 972):
+                    d.ellipse((x - 15, y + 49, x + 15, y + 79), fill=(*sr, 94))
+        elif recipe == "coin-spark":
+            for r in range(150, 590, 86):
+                d.ellipse((512 - r, 512 - r, 512 + r, 512 + r), outline=(*ar, 42), width=8)
+            for i in range(30):
+                ang = math.tau * i / 30
+                x = 512 + math.cos(ang) * 430
+                y = 512 + math.sin(ang) * 430
+                d.polygon([(x, y - 18), (x + 12, y), (x, y + 18), (x - 12, y)], fill=(*sr, 96))
+        elif recipe == "frost-rim":
+            for i in range(0, 1024, 82):
+                d.line((i, 0, i - 240, 1024), fill=(*br, 44), width=5)
+                d.line((1024 - i, 0, 1264 - i, 1024), fill=(*ar, 36), width=4)
+            d.rounded_rectangle((56, 56, 968, 968), radius=118, outline=(*sr, 70), width=14)
+        elif recipe == "leaf-vein":
+            for x in range(90, 1024, 150):
+                d.arc((x - 72, 100, x + 176, 896), 112, 244, fill=(*ar, 54), width=8)
+                d.line((x + 36, 184, x + 116, 412), fill=(*br, 38), width=5)
+        elif recipe == "stencil-spray":
+            for i in range(260):
+                x = (i * 97) % 1024
+                y = (i * 211) % 1024
+                r = 2 + (i % 5)
+                d.ellipse((x - r, y - r, x + r, y + r), fill=(*(ar if i % 2 else br), 46))
+            d.rectangle((80, 122, 944, 900), outline=(*sr, 44), width=12)
+        elif recipe == "clay-smudge":
+            for box, color, alpha in (((-120, 80, 520, 640), ar, 42), ((450, 260, 1170, 940), br, 46), ((210, -170, 880, 290), sr, 30)):
+                d.ellipse(box, fill=(*color, alpha))
+            overlay = overlay.filter(ImageFilter.GaussianBlur(28))
+        elif recipe == "blink-ring":
+            for box, color in (((94, 260, 930, 764), ar), ((244, 142, 780, 882), br), ((360, 360, 664, 664), sr)):
+                d.ellipse(box, outline=(*color, 62), width=16)
+        elif recipe == "filament-wire":
+            points = []
+            for x in range(-20, 1060, 24):
+                y = 512 + math.sin(x / 58) * 146
+                points.append((x, y))
+            d.line(points, fill=(*ar, 72), width=10, joint="curve")
+            for x, y in points[::7]:
+                d.ellipse((x - 13, y - 13, x + 13, y + 13), fill=(*sr, 90))
+        elif recipe == "paper-fold":
+            d.polygon([(0, 1024), (448, 0), (650, 0), (196, 1024)], fill=(*ar, 34))
+            d.polygon([(554, 0), (1024, 0), (1024, 650)], fill=(*br, 44))
+            d.line((448, 0, 196, 1024), fill=(*sr, 66), width=8)
+        elif recipe == "hologram-scan":
+            for y in range(34, 1024, 42):
+                d.line((0, y, 1024, y), fill=(*ar, 52), width=4)
+            for x in range(-1024, 1024, 172):
+                d.line((x, 1024, x + 1024, 0), fill=(*br, 34), width=5)
+        elif recipe == "citrus-pop":
+            for i in range(18):
+                ang = math.tau * i / 18
+                p1 = (512 + math.cos(ang - .05) * 90, 512 + math.sin(ang - .05) * 90)
+                p2 = (512 + math.cos(ang) * 560, 512 + math.sin(ang) * 560)
+                p3 = (512 + math.cos(ang + .05) * 90, 512 + math.sin(ang + .05) * 90)
+                d.polygon([p1, p2, p3], fill=(*(ar if i % 2 else br), 36))
+        elif recipe == "line-loop":
+            for r in range(120, 670, 92):
+                d.ellipse((512 - r, 512 - r, 512 + r, 512 + r), outline=(*(ar if r % 184 else br), 50), width=9)
+        elif recipe == "misprint-dot":
+            for x in range(34, 1024, 82):
+                for y in range(34, 1024, 82):
+                    d.ellipse((x - 9, y - 9, x + 9, y + 9), fill=(*ar, 45))
+                    d.ellipse((x + 7, y - 2, x + 19, y + 10), fill=(*br, 35))
+        elif recipe == "pennant-stripe":
+            for x in range(-1024, 1024, 108):
+                d.polygon([(x, 1024), (x + 56, 1024), (x + 1080, 0), (x + 1024, 0)], fill=(*ar, 46))
+            d.polygon([(160, 140), (810, 248), (160, 356)], fill=(*sr, 56))
+        elif recipe == "carved-spark":
+            for i in range(13):
+                x = 90 + i * 76
+                d.polygon([(x, 156), (x + 32, 238), (x - 44, 238)], fill=(*ar, 46))
+                d.polygon([(1024 - x, 868), (990 - x, 786), (1068 - x, 786)], fill=(*br, 42))
+            d.rounded_rectangle((70, 70, 954, 954), radius=92, outline=(*sr, 48), width=12)
+        else:
+            d.ellipse((-160, 236, 452, 852), fill=(*ar, 38))
+            d.ellipse((570, 40, 1170, 620), fill=(*br, 36))
+            d.line((150, 860, 884, 160), fill=(*sr, 36), width=12)
+
+        base.alpha_composite(overlay)
+
     accent = safe_hex(accent)
+    fun_layer = fun_layer or {}
+    recipe = str(fun_layer.get("recipe") or "chroma-halo")
+    secondary = layer_hex("secondary", "#38e8ff")
+    spark = layer_hex("spark", "#ff5aa8")
     accent_rgb = tuple(int(accent.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4))
     glow_rgb = mix(accent, "#ffffff", 0.28)
 
@@ -558,12 +698,13 @@ def iconset_tile(slug: str, label: str, accent: str, src_dir: Path, icons: dict[
     draw.ellipse((300, 300, 1220, 1180), fill=(*accent_rgb, 32))
     glow = glow.filter(ImageFilter.GaussianBlur(70))
     img.alpha_composite(glow)
+    draw_fun_layer(img, recipe, accent, secondary, spark)
 
     placements = [
-        ("dashboard", 62, 62, 388, -4),
-        ("posts", 574, 62, 388, 4),
-        ("pages", 62, 574, 388, 4),
-        ("media", 574, 574, 388, -4),
+        ("dashboard", 98, 98, 348, -3),
+        ("posts", 578, 98, 348, 3),
+        ("pages", 98, 578, 348, 3),
+        ("media", 578, 578, 348, -3),
     ]
     for key, x, y, size, rot in placements:
         rel = icons.get(key) or icons.get("dashboard") or next(iter(icons.values()))
@@ -666,6 +807,7 @@ def build_iconset(slug: str, src_dir: Path) -> dict:
     missing = sorted(FIRST_PARTY_ICON_KEYS - set(meta.get("icons", {}).keys()))
     if missing:
         raise SystemExit(f"icon-set {slug}: missing first-party icons {missing}")
+    fun_layer = clean_iconset_fun_layer(slug, meta)
 
     files: dict[str, bytes] = {}
     manifest = {
@@ -682,6 +824,8 @@ def build_iconset(slug: str, src_dir: Path) -> dict:
         "preview": meta.get("preview", "dashboard.webp"),
         "icons": meta["icons"],
     }
+    if fun_layer:
+        manifest["funLayer"] = fun_layer
     files["manifest.json"] = json.dumps(manifest, indent=2).encode() + b"\n"
     asset_rels = set(meta["icons"].values())
     if manifest["preview"]:
@@ -702,10 +846,10 @@ def build_iconset(slug: str, src_dir: Path) -> dict:
 
     icon_name = f"iconset-{slug}.webp"
     (OUT_ICONS / icon_name).write_bytes(
-        iconset_tile(slug, meta["label"], meta.get("accent", "#888"), src_dir, meta["icons"])
+        iconset_tile(slug, meta["label"], meta.get("accent", "#888"), src_dir, meta["icons"], fun_layer)
     )
 
-    return with_requires({
+    row = {
         "type": "icon-set",
         "slug": slug,
         "name": meta["label"],
@@ -719,7 +863,10 @@ def build_iconset(slug: str, src_dir: Path) -> dict:
         "download_url": f"{CATALOG_BASE}/bundles/{bundle.name}",
         "sha256": sha256_file(bundle),
         "size": bundle.stat().st_size,
-    }, meta)
+    }
+    if fun_layer:
+        row["funLayer"] = fun_layer
+    return with_requires(row, meta)
 
 
 CURSOR_SIZE_BUDGET = 8192
@@ -996,6 +1143,16 @@ SCHEMA = {
                     },
                     "size": {"type": "integer", "minimum": 1},
                     "accent": {"type": "string"},
+                    "funLayer": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "properties": {
+                            "recipe": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+                            "accent": {"type": "string", "pattern": "^#[0-9A-Fa-f]{3,8}$"},
+                            "secondary": {"type": "string", "pattern": "^#[0-9A-Fa-f]{3,8}$"},
+                            "spark": {"type": "string", "pattern": "^#[0-9A-Fa-f]{3,8}$"},
+                        },
+                    },
                     "requires": {
                         "type": "object",
                         "additionalProperties": False,

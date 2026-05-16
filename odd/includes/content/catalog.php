@@ -648,6 +648,34 @@ function oddout_catalog_normalise_requires( $requires ) {
 	return $out;
 }
 
+function oddout_catalog_normalise_fun_layer( $fun_layer ) {
+	if ( ! is_array( $fun_layer ) ) {
+		return array();
+	}
+	$out     = array();
+	$allowed = array( 'recipe', 'accent', 'secondary', 'spark' );
+	foreach ( $allowed as $key ) {
+		if ( ! isset( $fun_layer[ $key ] ) || ! is_scalar( $fun_layer[ $key ] ) ) {
+			continue;
+		}
+		$value = trim( (string) $fun_layer[ $key ] );
+		if ( '' === $value ) {
+			continue;
+		}
+		if ( 'recipe' === $key ) {
+			$recipe = sanitize_key( $value );
+			if ( '' !== $recipe ) {
+				$out['recipe'] = $recipe;
+			}
+			continue;
+		}
+		if ( preg_match( '/^#[0-9A-Fa-f]{3,8}$/', $value ) ) {
+			$out[ $key ] = $value;
+		}
+	}
+	return $out;
+}
+
 function oddout_catalog_requirement_label( $key ) {
 	switch ( (string) $key ) {
 		case 'odd':
@@ -1483,7 +1511,7 @@ function oddout_catalog_normalise( $data ) {
 			// SVG icon-set rows cannot install under the raster-only v1 contract.
 			continue;
 		}
-		$row = array(
+		$row       = array(
 			'type'         => $type,
 			'slug'         => sanitize_key( (string) $entry['slug'] ),
 			'name'         => sanitize_text_field( (string) $entry['name'] ),
@@ -1507,6 +1535,10 @@ function oddout_catalog_normalise( $data ) {
 				: array(),
 			'accent'       => isset( $entry['accent'] ) ? sanitize_hex_color_no_hash( ltrim( (string) $entry['accent'], '#' ) ) : '',
 		);
+		$fun_layer = isset( $entry['funLayer'] ) ? oddout_catalog_normalise_fun_layer( $entry['funLayer'] ) : array();
+		if ( ! empty( $fun_layer ) ) {
+			$row['funLayer'] = $fun_layer;
+		}
 		if ( isset( $entry['requires'] ) ) {
 			$requires = oddout_catalog_normalise_requires( $entry['requires'] );
 			if ( ! empty( $requires ) ) {

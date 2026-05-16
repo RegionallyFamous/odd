@@ -254,6 +254,7 @@ function oddout_bundle_panel_row_for( array $manifest ) {
 				'label'       => isset( $manifest['label'] ) ? (string) $manifest['label'] : $slug,
 				'category'    => isset( $manifest['category'] ) ? (string) $manifest['category'] : 'Community',
 				'accent'      => isset( $manifest['accent'] ) ? (string) $manifest['accent'] : '',
+				'funLayer'    => isset( $manifest['funLayer'] ) && is_array( $manifest['funLayer'] ) ? $manifest['funLayer'] : array(),
 				'description' => isset( $manifest['description'] ) ? (string) $manifest['description'] : '',
 				'preview'     => ( '' === $preview || '' === $base ) ? '' : oddout_content_url_for_relative( $base, $preview ),
 				'icons'       => $icons_map,

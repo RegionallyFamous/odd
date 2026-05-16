@@ -230,6 +230,163 @@
 		} );
 	}
 
+	var systemTileObserver = null;
+	var SYSTEM_TILE_SELECTOR = [
+		'.desktop-mode-dock__item--system',
+		'.wp-desktop-dock__item--system',
+		'[data-system-id]',
+		'[data-desktop-mode-system-id]',
+		'[data-wp-desktop-system-id]',
+	].join( ',' );
+
+	function systemTileIdForElement( tile ) {
+		if ( ! tile || ! tile.getAttribute ) {
+			return '';
+		}
+		return tile.getAttribute( 'data-system-id' ) ||
+			tile.getAttribute( 'data-desktop-mode-system-id' ) ||
+			tile.getAttribute( 'data-wp-desktop-system-id' ) ||
+			tile.id ||
+			'';
+	}
+
+	function primaryButtonForTile( tile ) {
+		if ( ! tile || ! tile.querySelector ) {
+			return null;
+		}
+		if (
+			tile.matches &&
+			(
+				tile.matches( '.desktop-mode-dock__item-primary' ) ||
+				tile.matches( '.wp-desktop-dock__item-primary' )
+			)
+		) {
+			return tile;
+		}
+		return tile.querySelector( '.desktop-mode-dock__item-primary, .wp-desktop-dock__item-primary, button, [role="button"]' );
+	}
+
+	function dashiconClassForTile( button ) {
+		var span = button && button.querySelector ? button.querySelector( '.dashicons' ) : null;
+		if ( ! span || ! span.classList ) {
+			return '';
+		}
+		for ( var i = 0; i < span.classList.length; i++ ) {
+			if ( span.classList[ i ] && span.classList[ i ].indexOf( 'dashicons-' ) === 0 ) {
+				return span.classList[ i ];
+			}
+		}
+		return '';
+	}
+
+	function systemItemForTile( id ) {
+		var d = window.wp && window.wp.desktop;
+		if ( ! d || ! id || typeof d.getSystemTile !== 'function' ) {
+			return null;
+		}
+		try {
+			return d.getSystemTile( id );
+		} catch ( _ ) {}
+		return null;
+	}
+
+	function skinHostSystemTile( tile ) {
+		if ( ! tile || ! tile.matches || ! tile.matches( SYSTEM_TILE_SELECTOR ) ) {
+			return false;
+		}
+
+		var button = primaryButtonForTile( tile );
+		if ( ! button ) {
+			return false;
+		}
+
+		var id = systemTileIdForElement( tile );
+		var item = systemItemForTile( id ) || {};
+		var label = button.getAttribute( 'aria-label' ) ||
+			tile.getAttribute( 'aria-label' ) ||
+			button.getAttribute( 'title' ) ||
+			tile.getAttribute( 'title' ) ||
+			item.title ||
+			item.label ||
+			'';
+		var icon = dashiconClassForTile( button ) || ( typeof item.icon === 'string' ? item.icon : '' );
+		var match = firstIconMatchForKeys( iconKeysForItem( icon, {
+			id:    id || item.id || '',
+			title: label,
+			label: label,
+		} ) );
+
+		if ( ! match ) {
+			return false;
+		}
+
+		if ( button.classList ) {
+			button.classList.add( 'odd-system-icon-skinned' );
+		}
+
+		var existingImg = button.querySelector( 'img[data-odd-skinned-system-icon], img.desktop-mode-dock__item-img, img.wp-desktop-dock__item-img' );
+		var imgClass = button.classList && button.classList.contains( 'wp-desktop-dock__item-primary' )
+			? 'wp-desktop-dock__item-img'
+			: 'desktop-mode-dock__item-img';
+		var img = existingImg || imageMarkup( match.url, imgClass );
+		img.className = imgClass;
+		img.src = match.url;
+		img.alt = '';
+		img.loading = 'lazy';
+		img.decoding = 'async';
+		img.setAttribute( 'data-odd-skinned-system-icon', match.key );
+		img.setAttribute( 'data-odd-icon-set', currentIconSetSlug() );
+
+		if ( ! existingImg ) {
+			var target = button.querySelector( '.dashicons' );
+			if ( target && typeof target.replaceWith === 'function' ) {
+				target.replaceWith( img );
+			} else if ( target && target.parentNode ) {
+				target.parentNode.insertBefore( img, target );
+				target.parentNode.removeChild( target );
+			} else {
+				button.insertBefore( img, button.firstChild );
+			}
+		}
+
+		return true;
+	}
+
+	function skinHostSystemTiles( root ) {
+		var scope = root && ( root.nodeType === 1 || root.nodeType === 9 || root.nodeType === 11 ) ? root : document;
+		var tiles = [];
+		if ( scope.matches && scope.matches( SYSTEM_TILE_SELECTOR ) ) {
+			tiles.push( scope );
+		}
+		if ( scope.querySelectorAll ) {
+			tiles = tiles.concat( Array.prototype.slice.call( scope.querySelectorAll( SYSTEM_TILE_SELECTOR ) ) );
+		}
+		tiles.forEach( skinHostSystemTile );
+	}
+
+	function syncAndSkinSystemTiles() {
+		syncSystemTileRegistry();
+		skinHostSystemTiles( document );
+	}
+
+	function observeSystemTiles() {
+		if ( systemTileObserver || typeof MutationObserver === 'undefined' ) {
+			return;
+		}
+		var root = document.body || document.documentElement;
+		if ( ! root ) {
+			return;
+		}
+		systemTileObserver = new MutationObserver( function ( mutations ) {
+			mutations.forEach( function ( mutation ) {
+				Array.prototype.forEach.call( mutation.addedNodes || [], function ( node ) {
+					skinHostSystemTiles( node );
+				} );
+			} );
+		} );
+		systemTileObserver.observe( root, { childList: true, subtree: true } );
+	}
+
 	var systemTileHooksBound = false;
 	function bindSystemTileHooks() {
 		if ( systemTileHooksBound ) {
@@ -251,7 +408,7 @@
 				return;
 			}
 			try {
-				hooks.addAction( name, OWNER + '/sync-system-icons', syncSystemTileRegistry );
+				hooks.addAction( name, OWNER + '/sync-system-icons', syncAndSkinSystemTiles );
 			} catch ( _ ) {}
 		} );
 	}
@@ -429,7 +586,8 @@
 	function boot() {
 		registerRenderer();
 		bindSystemTileHooks();
-		syncSystemTileRegistry();
+		syncAndSkinSystemTiles();
+		observeSystemTiles();
 	}
 
 	if ( window.wp && window.wp.desktop && typeof window.wp.desktop.ready === 'function' ) {

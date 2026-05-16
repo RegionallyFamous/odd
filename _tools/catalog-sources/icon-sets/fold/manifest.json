@@ -6,6 +6,12 @@
   "label": "Fold",
   "category": "Paper Arcade",
   "accent": "#7c5cff",
+  "funLayer": {
+    "recipe": "paper-fold",
+    "accent": "#7c5cff",
+    "secondary": "#c7b8ff",
+    "spark": "#fff0a8"
+  },
   "preview": "dashboard.webp",
   "description": "Origami-tinted raster glyphs with violet facets and simple paper-light contrast.",
   "version": "1.2.0",

@@ -98,6 +98,26 @@
 			'widget':   'widgets',
 		};
 		var CATALOG_BASE_URL = 'https://odd.regionallyfamous.com/catalog/v1';
+		var ICON_SET_FUN_LAYERS = {
+			'arcade-tokens':     { recipe: 'coin-spark',     accent: '#f4c45f', secondary: '#8a4a1b', spark: '#fff36a' },
+			'arctic':            { recipe: 'frost-rim',      accent: '#9eeaff', secondary: '#d7f7ff', spark: '#6aaefc' },
+			'blueprint':         { recipe: 'blueprint-grid', accent: '#4da3ff', secondary: '#cfe6ff', spark: '#7df7ff' },
+			'botanical-plate':   { recipe: 'leaf-vein',      accent: '#88b957', secondary: '#d5ef8c', spark: '#fff0a6' },
+			'brutalist-stencil': { recipe: 'stencil-spray',  accent: '#ff5f4f', secondary: '#f0e4d2', spark: '#24212a' },
+			'circuit-bend':      { recipe: 'circuit-trace',  accent: '#2fb37a', secondary: '#8dffcf', spark: '#ffe66b' },
+			'claymation':        { recipe: 'clay-smudge',    accent: '#ffb84d', secondary: '#ff7c6d', spark: '#ffe9a6' },
+			'cross-stitch':      { recipe: 'stitch-cross',   accent: '#e87ca7', secondary: '#ffe1ef', spark: '#8ee7ff' },
+			'eyeball-avenue':    { recipe: 'blink-ring',     accent: '#b35cff', secondary: '#f36bff', spark: '#7df7ff' },
+			'filament':          { recipe: 'filament-wire',  accent: '#ffb000', secondary: '#ff6bd6', spark: '#50f2ff' },
+			'fold':              { recipe: 'paper-fold',     accent: '#7c5cff', secondary: '#c7b8ff', spark: '#fff0a8' },
+			'hologram':          { recipe: 'hologram-scan',  accent: '#9fd0ff', secondary: '#8efff1', spark: '#f0a7ff' },
+			'lemonade-stand':    { recipe: 'citrus-pop',     accent: '#ffd64b', secondary: '#b6ff66', spark: '#ff8b4c' },
+			'monoline':          { recipe: 'line-loop',      accent: '#00c2ff', secondary: '#dff8ff', spark: '#a66bff' },
+			'odd-default-icons': { recipe: 'chroma-halo',    accent: '#38e8ff', secondary: '#ff44b5', spark: '#9556ff' },
+			'risograph':         { recipe: 'misprint-dot',   accent: '#ff4fa8', secondary: '#2ed3ff', spark: '#ffdf57' },
+			'stadium':           { recipe: 'pennant-stripe', accent: '#d73a3a', secondary: '#2e7eea', spark: '#fff06a' },
+			'tiki':              { recipe: 'carved-spark',   accent: '#c47a3c', secondary: '#ffcf70', spark: '#49e2a4' },
+		};
 		var cleanupFns = [];
 		var sectionCleanupFns = [];
 		var flowToastTimer = 0;
@@ -6475,6 +6495,7 @@
 				raw.icons && typeof raw.icons === 'object' ? JSON.stringify( raw.icons ) : '',
 				raw.cursors && typeof raw.cursors === 'object' ? JSON.stringify( raw.cursors ) : '',
 				raw.effects && typeof raw.effects === 'object' ? JSON.stringify( raw.effects ) : '',
+				raw.funLayer && typeof raw.funLayer === 'object' ? JSON.stringify( raw.funLayer ) : '',
 			].join( '|' );
 			if ( shopRowCache[ cacheKey ] ) {
 				diagCount( 'panel.normalise.cacheHit' );
@@ -6514,6 +6535,7 @@
 				icons:         raw.icons && typeof raw.icons === 'object' ? raw.icons : null,
 				cursors:       raw.cursors && typeof raw.cursors === 'object' ? raw.cursors : null,
 				effects:       raw.effects && typeof raw.effects === 'object' ? raw.effects : null,
+				funLayer:      raw.funLayer && typeof raw.funLayer === 'object' ? raw.funLayer : null,
 				preview:       raw.preview || '',
 				accent:        raw.accent || '',
 				fallbackColor: raw.fallbackColor || '',
@@ -6616,6 +6638,9 @@
 			}
 			if ( cat.effects && typeof cat.effects === 'object' && ! isEmptyIcons( cat.effects ) && isEmptyIcons( ins.effects ) ) {
 				ins.effects = cat.effects;
+			}
+			if ( cat.funLayer && typeof cat.funLayer === 'object' && ! isEmptyIcons( cat.funLayer ) && isEmptyIcons( ins.funLayer ) ) {
+				ins.funLayer = cat.funLayer;
 			}
 			if ( cat.description && ! ins.description ) ins.description = cat.description;
 
@@ -7145,6 +7170,38 @@
 		//  - cursor-set → full-bleed preview tile, falling back to a glyph plate
 		//  - widget   → gradient plate with the widget's glyph
 		//  - app      → generated square card art, falling back to its app icon
+		function cleanFunLayerRecipe( value ) {
+			value = String( value || '' ).toLowerCase().replace( /[^a-z0-9-]/g, '' );
+			return value || 'chroma-halo';
+		}
+
+		function cleanFunLayerColor( value, fallback ) {
+			value = String( value || '' ).trim();
+			return /^#[0-9A-Fa-f]{3,8}$/.test( value ) ? value : fallback;
+		}
+
+		function iconSetFunLayer( row ) {
+			var layer = row && row.funLayer && typeof row.funLayer === 'object' ? row.funLayer : null;
+			var fallback = row && ICON_SET_FUN_LAYERS[ row.slug ] ? ICON_SET_FUN_LAYERS[ row.slug ] : ICON_SET_FUN_LAYERS[ 'odd-default-icons' ];
+			layer = layer || fallback || {};
+			return {
+				recipe:    cleanFunLayerRecipe( layer.recipe || ( fallback && fallback.recipe ) ),
+				accent:    cleanFunLayerColor( layer.accent || row.accent || ( fallback && fallback.accent ), '#38e8ff' ),
+				secondary: cleanFunLayerColor( layer.secondary || ( fallback && fallback.secondary ), '#ff44b5' ),
+				spark:     cleanFunLayerColor( layer.spark || ( fallback && fallback.spark ), '#9556ff' ),
+			};
+		}
+
+		function applyIconSetFunLayer( art, row ) {
+			var layer = iconSetFunLayer( row );
+			art.setAttribute( 'data-odd-fun-layer', layer.recipe );
+			art.setAttribute( 'data-odd-icon-set', row.slug );
+			art.style.setProperty( '--odd-icon-card-accent', layer.accent );
+			art.style.setProperty( '--odd-icon-card-secondary', layer.secondary );
+			art.style.setProperty( '--odd-icon-card-spark', layer.spark );
+			art.appendChild( el( 'span', { class: 'odd-shop__icon-fun-layer', 'aria-hidden': 'true' } ) );
+		}
+
 		function renderShopCardArt( row ) {
 			var art = el( 'div', { class: 'odd-shop__card-art odd-shop__card-art--' + row.type, 'aria-hidden': 'true' } );
 			function artImg( src, className ) {
@@ -7178,6 +7235,7 @@
 			}
 
 			if ( row.type === 'icon-set' ) {
+				applyIconSetFunLayer( art, row );
 				if ( row.icons ) {
 					var quartet = el( 'div', { class: 'odd-shop__card-quartet' } );
 					var keys = [ 'dashboard', 'posts', 'pages', 'media' ].filter( function ( k ) { return row.icons[ k ]; } );

@@ -6,6 +6,12 @@
   "label": "Filament",
   "category": "Lightbox",
   "accent": "#ffb000",
+  "funLayer": {
+    "recipe": "filament-wire",
+    "accent": "#ffb000",
+    "secondary": "#ff6bd6",
+    "spark": "#50f2ff"
+  },
   "preview": "dashboard.webp",
   "description": "Neon filament raster glyphs over transparent canvas, simplified for rail size.",
   "version": "1.2.0",

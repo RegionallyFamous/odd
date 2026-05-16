@@ -24,6 +24,11 @@ describe( 'ODD icon effects', () => {
 
 		expect( css ).toContain( 'img.desktop-mode-dock__item-img[src*="/assets/icons/"]' );
 		expect( css ).toContain( 'img.desktop-mode-dock__item-img[data-odd-skinned-system-icon]' );
+		expect( css ).toContain( '.desktop-mode-dock__item-primary.odd-system-icon-skinned' );
+		expect( css ).toContain( 'padding: 0;' );
+		expect( css ).toContain( 'inline-size: calc(100% - 8px);' );
+		expect( css ).toContain( 'block-size: calc(100% - 8px);' );
+		expect( css ).toContain( 'drop-shadow(-0.7px 0 0 rgba(58, 238, 255, 0.44))' );
 		expect( css ).toContain( '.odd-dock-rail-mount__tile:hover img[src*="/assets/icons/"]' );
 		expect( css ).toContain( '.odd-panel .odd-shop__card:hover .odd-shop__card-quartet > img' );
 		expect( css ).toContain( '.odd-panel .odd-shop__card--icon-set .odd-shop__card-art::after' );

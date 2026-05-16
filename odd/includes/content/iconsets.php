@@ -94,6 +94,43 @@ function oddout_iconset_preview_validate( $bytes, $rel ) {
 	return oddout_iconset_raster_validate( $bytes, $rel, false );
 }
 
+function oddout_iconset_clean_fun_layer( $fun_layer, $accent = '' ) {
+	if ( ! is_array( $fun_layer ) || empty( $fun_layer ) ) {
+		return array();
+	}
+	$out     = array();
+	$allowed = array(
+		'recipe'    => true,
+		'accent'    => true,
+		'secondary' => true,
+		'spark'     => true,
+	);
+	foreach ( $fun_layer as $key => $value ) {
+		$key = (string) $key;
+		if ( empty( $allowed[ $key ] ) || ! is_string( $value ) ) {
+			continue;
+		}
+		$value = trim( $value );
+		if ( '' === $value ) {
+			continue;
+		}
+		if ( 'recipe' === $key ) {
+			$recipe = sanitize_key( $value );
+			if ( '' !== $recipe ) {
+				$out['recipe'] = $recipe;
+			}
+			continue;
+		}
+		if ( preg_match( '/^#[0-9A-Fa-f]{3,8}$/', $value ) ) {
+			$out[ $key ] = $value;
+		}
+	}
+	if ( ! empty( $out ) && empty( $out['accent'] ) && is_string( $accent ) && preg_match( '/^#[0-9A-Fa-f]{3,8}$/', $accent ) ) {
+		$out['accent'] = $accent;
+	}
+	return $out;
+}
+
 function oddout_iconset_raster_validate( $bytes, $rel, $must_be_square ) {
 	$rel = (string) $rel;
 	$ext = strtolower( pathinfo( $rel, PATHINFO_EXTENSION ) );
@@ -216,8 +253,9 @@ function oddout_iconset_bundle_validate( $tmp_path, $filename, ZipArchive $zip, 
 	if ( '' !== $accent && ! preg_match( '/^#[0-9A-Fa-f]{3,8}$/', $accent ) ) {
 		return new WP_Error( 'invalid_accent', __( 'Icon set accent must be a hex colour like #ffb000.', 'odd-outlandish-desktop-decorator' ) );
 	}
+	$fun_layer = oddout_iconset_clean_fun_layer( isset( $manifest['funLayer'] ) ? $manifest['funLayer'] : array(), $accent ? $accent : '#3858e9' );
 
-	return array(
+	$out = array(
 		'slug'        => $header['slug'],
 		'name'        => $header['name'],
 		'label'       => isset( $manifest['label'] ) ? sanitize_text_field( (string) $manifest['label'] ) : $header['name'],
@@ -230,6 +268,10 @@ function oddout_iconset_bundle_validate( $tmp_path, $filename, ZipArchive $zip, 
 		'preview'     => $preview,
 		'icons'       => $icons,
 	);
+	if ( ! empty( $fun_layer ) ) {
+		$out['funLayer'] = $fun_layer;
+	}
+	return $out;
 }
 
 /**

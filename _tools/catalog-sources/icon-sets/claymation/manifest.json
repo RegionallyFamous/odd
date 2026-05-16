@@ -6,6 +6,12 @@
   "label": "Claymation",
   "category": "Handmade",
   "accent": "#ffb84d",
+  "funLayer": {
+    "recipe": "clay-smudge",
+    "accent": "#ffb84d",
+    "secondary": "#ff7c6d",
+    "spark": "#ffe9a6"
+  },
   "preview": "dashboard.webp",
   "description": "Warm handmade raster glyphs with soft clay color and readable rounded mass.",
   "version": "1.2.0",

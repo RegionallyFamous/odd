@@ -6,6 +6,12 @@
   "label": "Blueprint",
   "category": "Drafting",
   "accent": "#4da3ff",
+  "funLayer": {
+    "recipe": "blueprint-grid",
+    "accent": "#4da3ff",
+    "secondary": "#cfe6ff",
+    "spark": "#7df7ff"
+  },
   "preview": "dashboard.webp",
   "description": "Cobalt-and-cyan raster drafting glyphs with simple construction-line energy.",
   "version": "1.2.0",

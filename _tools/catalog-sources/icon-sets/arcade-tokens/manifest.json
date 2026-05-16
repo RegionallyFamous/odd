@@ -6,6 +6,12 @@
   "label": "Arcade Tokens",
   "category": "Retro",
   "accent": "#b07a2a",
+  "funLayer": {
+    "recipe": "coin-spark",
+    "accent": "#f4c45f",
+    "secondary": "#8a4a1b",
+    "spark": "#fff36a"
+  },
   "preview": "dashboard.webp",
   "description": "Bronze-and-gold raster token glyphs with bold arcade contrast and no boxed tile.",
   "version": "1.2.0",

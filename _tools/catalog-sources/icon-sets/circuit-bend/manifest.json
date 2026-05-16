@@ -6,6 +6,12 @@
   "label": "Circuit Bend",
   "category": "Technical",
   "accent": "#2fb37a",
+  "funLayer": {
+    "recipe": "circuit-trace",
+    "accent": "#2fb37a",
+    "secondary": "#8dffcf",
+    "spark": "#ffe66b"
+  },
   "preview": "dashboard.webp",
   "description": "PCB-green raster glyphs with solder-bright accents and transparent edges.",
   "version": "1.2.0",

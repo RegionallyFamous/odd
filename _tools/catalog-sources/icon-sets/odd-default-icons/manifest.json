@@ -6,6 +6,12 @@
   "label": "ODD Default",
   "category": "ODD Defaults",
   "accent": "#38e8ff",
+  "funLayer": {
+    "recipe": "chroma-halo",
+    "accent": "#38e8ff",
+    "secondary": "#ff44b5",
+    "spark": "#9556ff"
+  },
   "preview": "dashboard.webp",
   "description": "The default ODD raster icon set: exact Desktop Mode / WordPress Dashicon silhouettes rendered as transparent raster icons, with the glyph body left intact and the oddness coming from outside-only chromatic aura and card lighting.",
   "version": "1.0.0",

@@ -6,6 +6,12 @@
   "label": "Botanical Plate",
   "category": "Illustrated",
   "accent": "#6a8f3b",
+  "funLayer": {
+    "recipe": "leaf-vein",
+    "accent": "#88b957",
+    "secondary": "#d5ef8c",
+    "spark": "#fff0a6"
+  },
   "preview": "dashboard.webp",
   "description": "Field-guide green raster glyphs with warm paper fills and botanical accent marks.",
   "version": "1.2.0",

@@ -6,6 +6,12 @@
   "label": "Stadium",
   "category": "Sport",
   "accent": "#d73a3a",
+  "funLayer": {
+    "recipe": "pennant-stripe",
+    "accent": "#d73a3a",
+    "secondary": "#2e7eea",
+    "spark": "#fff06a"
+  },
   "preview": "dashboard.webp",
   "description": "Varsity raster glyphs with crimson contrast, cream fills, and strong icon mass.",
   "version": "1.2.0",

@@ -347,6 +347,7 @@ add_action(
 				'label'       => $set['label'],
 				'category'    => $set['category'],
 				'accent'      => $set['accent'],
+				'funLayer'    => isset( $set['funLayer'] ) && is_array( $set['funLayer'] ) ? $set['funLayer'] : array(),
 				'description' => $set['description'],
 				'preview'     => $set['preview'],
 				'icons'       => $set['icons'],

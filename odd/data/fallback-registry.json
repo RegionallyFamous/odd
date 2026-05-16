@@ -470,8 +470,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-arcade-tokens.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-arcade-tokens.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-arcade-tokens.wp",
-      "sha256": "3075d15e9c6d470f63c6885b073a62b6295bc850001e61dece7e1ad83fda3f0c",
-      "size": 414821
+      "sha256": "f483cf9825fb04d4d334292b61af529fa93fef2be2aa9c19b65d49432c6edf27",
+      "size": 414883,
+      "funLayer": {
+        "recipe": "coin-spark",
+        "accent": "#f4c45f",
+        "secondary": "#8a4a1b",
+        "spark": "#fff36a"
+      }
     },
     {
       "type": "icon-set",
@@ -485,8 +491,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-arctic.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-arctic.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-arctic.wp",
-      "sha256": "5f5c6acab9db6b0f6d286555e9becd30c4483bfd994a1e603a9b257e6db2fc99",
-      "size": 810922
+      "sha256": "c92504645df92281332188652410e00f6125497619c3c0630c614a2c7f1ed9f6",
+      "size": 810977,
+      "funLayer": {
+        "recipe": "frost-rim",
+        "accent": "#9eeaff",
+        "secondary": "#d7f7ff",
+        "spark": "#6aaefc"
+      }
     },
     {
       "type": "icon-set",
@@ -500,8 +512,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-blueprint.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-blueprint.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-blueprint.wp",
-      "sha256": "d4daced42263530ecf3017d3369001207d9c6b31ae7f015da405520beae4178e",
-      "size": 498810
+      "sha256": "2f9e91b336833012d18e056cbee85c5cb346d4f48415cf29098a98241957150a",
+      "size": 498862,
+      "funLayer": {
+        "recipe": "blueprint-grid",
+        "accent": "#4da3ff",
+        "secondary": "#cfe6ff",
+        "spark": "#7df7ff"
+      }
     },
     {
       "type": "icon-set",
@@ -515,8 +533,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-botanical-plate.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-botanical-plate.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-botanical-plate.wp",
-      "sha256": "67d42e344128239b6a7ddfbce943574baa0e85b1d9ac724fe3bc09bfab619254",
-      "size": 857415
+      "sha256": "53185e99e89b608379ff242376fec9719f3aa0b60d9525f224e6eef4b171b675",
+      "size": 857474,
+      "funLayer": {
+        "recipe": "leaf-vein",
+        "accent": "#88b957",
+        "secondary": "#d5ef8c",
+        "spark": "#fff0a6"
+      }
     },
     {
       "type": "icon-set",
@@ -530,8 +554,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-brutalist-stencil.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-brutalist-stencil.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-brutalist-stencil.wp",
-      "sha256": "7ec95daa7ba5f388fcd2fa2b2597b5a1b95239966d4ab230b2de06ef095c7d18",
-      "size": 1048503
+      "sha256": "6360ab15c97f6ce2d2d09392112f49ea23d593b065a5ac062b7faf8be6e75ea6",
+      "size": 1048559,
+      "funLayer": {
+        "recipe": "stencil-spray",
+        "accent": "#ff5f4f",
+        "secondary": "#f0e4d2",
+        "spark": "#24212a"
+      }
     },
     {
       "type": "icon-set",
@@ -545,8 +575,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-circuit-bend.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-circuit-bend.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-circuit-bend.wp",
-      "sha256": "ae89ffed396b1d94dc5be88e721b18a20a90b8aa1fa5df8410d55c6634d9194c",
-      "size": 514851
+      "sha256": "5bf6337ba74ff01d2504a5e155f7315812956d2af54f007838807383a36beb35",
+      "size": 514907,
+      "funLayer": {
+        "recipe": "circuit-trace",
+        "accent": "#2fb37a",
+        "secondary": "#8dffcf",
+        "spark": "#ffe66b"
+      }
     },
     {
       "type": "icon-set",
@@ -560,8 +596,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-claymation.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-claymation.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-claymation.wp",
-      "sha256": "69d269af2094d05d1a5105b57c2f1d8235d8a0533ce5823fbfe069e8c27698a9",
-      "size": 356608
+      "sha256": "e10cfd19e3cb2d419ccc91e1f4aae8576d5064291bf8c344c1e21eaffb5e1554",
+      "size": 356663,
+      "funLayer": {
+        "recipe": "clay-smudge",
+        "accent": "#ffb84d",
+        "secondary": "#ff7c6d",
+        "spark": "#ffe9a6"
+      }
     },
     {
       "type": "icon-set",
@@ -575,8 +617,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-cross-stitch.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-cross-stitch.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-cross-stitch.wp",
-      "sha256": "c3d3217c29fb4d98e40e055093d4d3a8c5596b12e832ddcede2c09c05a1b65d9",
-      "size": 807366
+      "sha256": "28472dfd032f92d223b6197369aa424ac27fbe11eaa3d36d7dca8d7a7c3d0144",
+      "size": 807420,
+      "funLayer": {
+        "recipe": "stitch-cross",
+        "accent": "#e87ca7",
+        "secondary": "#ffe1ef",
+        "spark": "#8ee7ff"
+      }
     },
     {
       "type": "icon-set",
@@ -590,8 +638,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-eyeball-avenue.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-eyeball-avenue.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-eyeball-avenue.wp",
-      "sha256": "194687d7cad67606d2bd5e5b94972860fc2852660b190b896734643df9846bb5",
-      "size": 518802
+      "sha256": "e2e56931bf8d9af603adffd07d2c381a2464c461ef55356d49354c72794c2de9",
+      "size": 518857,
+      "funLayer": {
+        "recipe": "blink-ring",
+        "accent": "#b35cff",
+        "secondary": "#f36bff",
+        "spark": "#7df7ff"
+      }
     },
     {
       "type": "icon-set",
@@ -605,8 +659,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-filament.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-filament.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-filament.wp",
-      "sha256": "3143dec2e7fc2b317fe8943061c88b32f09755a248c684d8b1e56976451db7a6",
-      "size": 573381
+      "sha256": "07398a57c1314827e561dbfc59d88135c669b056e3cd622325822d4e7d7f360e",
+      "size": 573435,
+      "funLayer": {
+        "recipe": "filament-wire",
+        "accent": "#ffb000",
+        "secondary": "#ff6bd6",
+        "spark": "#50f2ff"
+      }
     },
     {
       "type": "icon-set",
@@ -620,8 +680,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-fold.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-fold.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-fold.wp",
-      "sha256": "8878b4b9643f09f4bb2da6708d12fab79c39c9bc31b09e9f9927f0854cd72127",
-      "size": 398655
+      "sha256": "0373cac2364e08d786cbea108be27e40d539b8e6e1e44799a2f1055cfec76c99",
+      "size": 398703,
+      "funLayer": {
+        "recipe": "paper-fold",
+        "accent": "#7c5cff",
+        "secondary": "#c7b8ff",
+        "spark": "#fff0a8"
+      }
     },
     {
       "type": "icon-set",
@@ -635,8 +701,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-hologram.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-hologram.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-hologram.wp",
-      "sha256": "d4ac156631f2283b390ffa20712b366f97fb58537b02bc75244bcd93e25c64f4",
-      "size": 441900
+      "sha256": "886c103ca4c83a1cdc7fabbed6a0f9708c48c6193750010cc6fb856c7a4a2e33",
+      "size": 441957,
+      "funLayer": {
+        "recipe": "hologram-scan",
+        "accent": "#9fd0ff",
+        "secondary": "#8efff1",
+        "spark": "#f0a7ff"
+      }
     },
     {
       "type": "icon-set",
@@ -650,8 +722,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-lemonade-stand.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-lemonade-stand.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-lemonade-stand.wp",
-      "sha256": "5a86e49da3e30260874c4b1f1c38094e788fafe70a436c7701652e85ee23b21a",
-      "size": 857814
+      "sha256": "c5804e4a621618614d16238aad1ad0f3a17269d64d6fbaab51a54ac464a6d299",
+      "size": 857865,
+      "funLayer": {
+        "recipe": "citrus-pop",
+        "accent": "#ffd64b",
+        "secondary": "#b6ff66",
+        "spark": "#ff8b4c"
+      }
     },
     {
       "type": "icon-set",
@@ -665,8 +743,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-monoline.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-monoline.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-monoline.wp",
-      "sha256": "ee122d74e24c0db475ea0eb5d80fb3a3bd113973a256f0b23d2486679f68b298",
-      "size": 384820
+      "sha256": "b84cdc464a78b92f5b377915e84cfb51f348e1c18b36ba45a3ad0093e9083a26",
+      "size": 384874,
+      "funLayer": {
+        "recipe": "line-loop",
+        "accent": "#00c2ff",
+        "secondary": "#dff8ff",
+        "spark": "#a66bff"
+      }
     },
     {
       "type": "icon-set",
@@ -680,8 +764,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-odd-default-icons.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-odd-default-icons.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-odd-default-icons.wp",
-      "sha256": "d3eccc002e82fa9620837f9194cf4368646a8a1b302868d12a34a50fbf79ba2c",
-      "size": 605407
+      "sha256": "f3f8bd2ba6e49f2e81c512073c245d5cda41c3b8ef0c0281c38eb2a021392e8b",
+      "size": 605464,
+      "funLayer": {
+        "recipe": "chroma-halo",
+        "accent": "#38e8ff",
+        "secondary": "#ff44b5",
+        "spark": "#9556ff"
+      }
     },
     {
       "type": "icon-set",
@@ -695,8 +785,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-risograph.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-risograph.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-risograph.wp",
-      "sha256": "979299c0423e9b114a15b89152ec55831b7a037612185f6da387bfcc45cb3870",
-      "size": 849618
+      "sha256": "4f673e8e699271fca8dd2bd988cde3049e46fa6c96fe80f7edf6383193ab4626",
+      "size": 849671,
+      "funLayer": {
+        "recipe": "misprint-dot",
+        "accent": "#ff4fa8",
+        "secondary": "#2ed3ff",
+        "spark": "#ffdf57"
+      }
     },
     {
       "type": "icon-set",
@@ -710,8 +806,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-stadium.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-stadium.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-stadium.wp",
-      "sha256": "4aafd0e15413a7c69dbff0d7edc9b6dbdaf632ef27f7752557c08d3a04838ea0",
-      "size": 1033855
+      "sha256": "ef1b8c7bc6161ade074501762ce6823ad4fcc0034ee4ea9dcd9bfc7d0b25c99b",
+      "size": 1033911,
+      "funLayer": {
+        "recipe": "pennant-stripe",
+        "accent": "#d73a3a",
+        "secondary": "#2e7eea",
+        "spark": "#fff06a"
+      }
     },
     {
       "type": "icon-set",
@@ -725,8 +827,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-tiki.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-tiki.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-tiki.wp",
-      "sha256": "3d636213929d76ac83d95e380e7543c074182ae287fa42c8fb11f9dc20abab77",
-      "size": 962266
+      "sha256": "f60f08974e84f78923a235054301841d093ed7bb71f7ff3c42381e46aee93090",
+      "size": 962317,
+      "funLayer": {
+        "recipe": "carved-spark",
+        "accent": "#c47a3c",
+        "secondary": "#ffcf70",
+        "spark": "#49e2a4"
+      }
     },
     {
       "type": "cursor-set",

@@ -105,6 +105,17 @@
 			"pattern": "^#[0-9A-Fa-f]{3,8}$",
 			"description": "Icon-set accent colour surfaced in the Shop tile."
 		},
+		"funLayer": {
+			"type": "object",
+			"description": "Icon-set manifests only. Shop-card personality layer applied around the unchanged raster glyphs.",
+			"properties": {
+				"recipe": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+				"accent": { "type": "string", "pattern": "^#[0-9A-Fa-f]{3,8}$" },
+				"secondary": { "type": "string", "pattern": "^#[0-9A-Fa-f]{3,8}$" },
+				"spark": { "type": "string", "pattern": "^#[0-9A-Fa-f]{3,8}$" }
+			},
+			"additionalProperties": false
+		},
 		"css": {
 			"type": "array",
 			"description": "Widget manifests only. Relative paths to CSS files enqueued alongside the widget entry script.",

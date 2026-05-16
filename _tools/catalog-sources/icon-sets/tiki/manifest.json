@@ -6,6 +6,12 @@
   "label": "Tiki",
   "category": "Lounge",
   "accent": "#c47a3c",
+  "funLayer": {
+    "recipe": "carved-spark",
+    "accent": "#c47a3c",
+    "secondary": "#ffcf70",
+    "spark": "#49e2a4"
+  },
   "preview": "dashboard.webp",
   "description": "Warm lounge raster glyphs with cocoa rims, carved color, and clear small-size shapes.",
   "version": "1.2.0",

@@ -44,7 +44,7 @@ describe( 'ODD dock rail system icon skinning', () => {
 		seedOdd();
 	} );
 
-	it( 'themes Desktop Mode system tile data without rewriting host dock DOM', () => {
+	it( 'themes Desktop Mode system tile data and skins host dock DOM', () => {
 		const tiles = [
 			{ id: 'desktop-mode-os-settings', title: 'OS Settings', icon: 'dashicons-desktop' },
 			{ id: 'desktop-mode-pwa-install', title: 'Install My WordPress Website as an app', icon: 'dashicons-download' },
@@ -76,8 +76,22 @@ describe( 'ODD dock rail system icon skinning', () => {
 			'https://example.test/icons/classic-admin.webp',
 		] );
 
-		expect( Array.from( document.querySelectorAll( '.desktop-mode-dock__item--system img' ) ) ).toHaveLength( 0 );
-		expect( document.querySelectorAll( '.desktop-mode-dock__item--system .dashicons' ) ).toHaveLength( 4 );
+		const skinned = Array.from( document.querySelectorAll( '.desktop-mode-dock__item--system img.desktop-mode-dock__item-img' ) );
+		expect( skinned ).toHaveLength( 4 );
+		expect( skinned.map( ( img ) => img.getAttribute( 'src' ) ) ).toEqual( [
+			'https://example.test/icons/os-settings.webp',
+			'https://example.test/icons/import.webp',
+			'https://example.test/icons/plugins.webp',
+			'https://example.test/icons/classic-admin.webp',
+		] );
+		expect( skinned.map( ( img ) => img.getAttribute( 'data-odd-skinned-system-icon' ) ) ).toEqual( [
+			'os-settings',
+			'import',
+			'plugins',
+			'classic-admin',
+		] );
+		expect( Array.from( document.querySelectorAll( '.desktop-mode-dock__item-primary.odd-system-icon-skinned' ) ) ).toHaveLength( 4 );
+		expect( document.querySelectorAll( '.desktop-mode-dock__item--system .dashicons' ) ).toHaveLength( 0 );
 
 		tiles[ 0 ].icon = 'dashicons-desktop';
 		window.wp.hooks.doAction( 'wp-desktop.dock.item-appended', {
@@ -85,6 +99,7 @@ describe( 'ODD dock rail system icon skinning', () => {
 			placement: 'dock',
 		} );
 		expect( tiles[ 0 ].icon ).toBe( 'https://example.test/icons/os-settings.webp' );
+		expect( document.querySelector( '[data-system-id="desktop-mode-os-settings"] img' ).getAttribute( 'src' ) ).toBe( 'https://example.test/icons/os-settings.webp' );
 	} );
 
 	it( 'uses the bug glyph for bug-report tiles in the custom ODD compact rail', () => {

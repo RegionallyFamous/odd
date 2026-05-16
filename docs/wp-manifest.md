@@ -132,8 +132,9 @@ Covered in full by [Building an Icon Set](building-an-icon-set.md).
 |-------------|----------|--------------------------------------------------------------------------|
 | `category` | no       | Optional grouping label for Shop shelves and catalog tooling. |
 | `accent`    | yes      | `#hex`. Paints the Shop tile, quilt gradient, and catalog metadata.      |
+| `funLayer`  | no       | Icon-set card layer tokens: `recipe`, `accent`, `secondary`, and `spark`. |
 | `preview`   | no       | Relative path to a hero PNG/WebP. Falls back to `icons.dashboard`.       |
-| `icons`     | yes      | Map of all 14 semantic icon keys to relative PNG/WebP paths. |
+| `icons`     | yes      | Map of all 17 semantic icon keys to relative PNG/WebP paths. |
 
 Icon sets are native Desktop Mode raster image URL feeds. ODD validates
 each declared icon as a PNG or WebP image, stores the set under

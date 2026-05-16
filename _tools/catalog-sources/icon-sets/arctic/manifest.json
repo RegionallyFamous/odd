@@ -6,6 +6,12 @@
   "label": "Arctic",
   "category": "Crystal OS",
   "accent": "#7ddcff",
+  "funLayer": {
+    "recipe": "frost-rim",
+    "accent": "#9eeaff",
+    "secondary": "#d7f7ff",
+    "spark": "#6aaefc"
+  },
   "preview": "dashboard.webp",
   "description": "Frosted blue-white raster glyphs with icy accents and transparent full-canvas scale.",
   "version": "1.2.0",
