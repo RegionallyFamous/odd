@@ -2,8 +2,6 @@
 dist/
 node_modules/
 vendor/
-!site/vendor/
-!site/vendor/desktop-mode-v0.6.0.zip
 __pycache__/
 *.pyc
 
@@ -18,6 +16,11 @@ __pycache__/
 # Playwright output (never commit ephemeral reports)
 /playwright-report/
 /test-results/
+
+# Hosted Playground zips should come from WordPress.org or release artifacts,
+# not checked-in snapshots.
+site/downloads/*.zip
+site/vendor/*.zip
 
 # ODD ships empty — bundle content lives in the remote catalog at
 # _tools/catalog-sources/. These legacy plugin asset folders must not
