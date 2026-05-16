@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Generate the first-party ODD raster icon set.
+"""Generate the first-party ODD default raster icon set.
 
-The Oddlings set is intentionally built as simple raster glyphs instead of
+The default set is intentionally built as simple raster glyphs instead of
 mini illustrations. Every icon needs to survive the wp-admin rail, dock, and
 desktop shortcut sizes, so the generator favors big silhouettes, thick cuts,
 one accent mark, and transparent full-canvas scale.
@@ -17,7 +17,7 @@ from PIL import Image, ImageDraw, ImageFilter
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE_DIR = ROOT / "_tools" / "catalog-sources" / "icon-sets" / "oddlings"
+SOURCE_DIR = ROOT / "_tools" / "catalog-sources" / "icon-sets" / "odd-default-icons"
 MIRROR_DIRS = [
     ROOT / "packages" / "create-odd-bundle" / "templates" / "icon-set",
     ROOT / "examples" / "example-iconset",
@@ -478,14 +478,24 @@ def save_card(icons: dict[str, Image.Image]) -> None:
     glow((-180, -140, 920, 840), rgba("#48f0ff", 56), 70)
     glow((500, 260, 1800, 1160), rgba("#7d58ff", 58), 78)
     glow((820, -180, 1700, 580), rgba("#ff3f9f", 34), 82)
-    ImageDraw.Draw(card).ellipse((110, 650, 1490, 920), fill=rgba("#f2edf8", 18))
+
+    grid = Image.new("RGBA", card.size, (0, 0, 0, 0))
+    grid_draw = ImageDraw.Draw(grid)
+    for x in range(130, 1600, 155):
+        grid_draw.line((x, 80, x, 920), fill=rgba("#f2edf8", 12), width=1)
+    for y in range(110, 1000, 150):
+        grid_draw.line((90, y, 1510, y), fill=rgba("#f2edf8", 10), width=1)
+    card.alpha_composite(grid)
 
     placements = [
-        ("dashboard", 178, 218, 300, -5),
-        ("posts", 464, 142, 330, 6),
-        ("pages", 764, 224, 300, -3),
-        ("media", 1044, 148, 330, 5),
-        ("plugins", 640, 500, 336, 0),
+        ("dashboard", 238, 174, 230, -3),
+        ("posts", 530, 154, 250, 2),
+        ("pages", 836, 178, 238, -2),
+        ("media", 1130, 154, 250, 3),
+        ("os-settings", 238, 548, 232, 2),
+        ("import", 538, 552, 226, -2),
+        ("plugins", 836, 538, 242, 0),
+        ("classic-admin", 1132, 552, 226, -1),
     ]
     for key, x, y, size, rotation in placements:
         icon = icons[key].resize((size, size), Image.Resampling.LANCZOS)

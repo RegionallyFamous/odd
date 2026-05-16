@@ -7,7 +7,7 @@
       "oddling-desktop"
     ],
     "iconSets": [
-      "oddlings"
+      "odd-default-icons"
     ],
     "cursorSets": [
       "odd-default-cursors"
@@ -460,18 +460,18 @@
     },
     {
       "type": "icon-set",
-      "slug": "oddlings",
-      "name": "Oddlings",
-      "version": "1.0.1",
+      "slug": "odd-default-icons",
+      "name": "ODD Default",
+      "version": "1.0.0",
       "author": "Regionally Famous",
-      "description": "Transparent chunky raster glyphs with native admin clarity, full-canvas scale, dark rims, and single odd accent marks.",
+      "description": "The default ODD raster icon set: transparent, high-contrast glyphs with native admin clarity, dark rims, and small off-kilter accent marks.",
       "franchise": "ODD Defaults",
       "accent": "#38e8ff",
-      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-oddlings.webp",
-      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-oddlings.webp",
-      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-oddlings.wp",
-      "sha256": "23938026aae6430774076883c425ff9f7bc35cd1b3e336e698f04e28d2119e80",
-      "size": 447542
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-odd-default-icons.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-odd-default-icons.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-odd-default-icons.wp",
+      "sha256": "39effa3c921b90e008b8030210693d5df0e9158578c280ca97d9cbe0ec2a076a",
+      "size": 447553
     },
     {
       "type": "cursor-set",

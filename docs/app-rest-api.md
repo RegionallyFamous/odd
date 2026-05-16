@@ -389,7 +389,7 @@ Shop to show "installing starter pack…" / "retry after backoff" states.
     "attempts":        1,
     "last_attempt":    1766428800,
     "last_error":      "",
-    "installed":       [ "oddling-desktop", "oddlings" ],
+    "installed":       [ "oddling-desktop", "odd-default-icons" ],
     "prefs_set":       true
 }
 ```

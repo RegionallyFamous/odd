@@ -456,6 +456,47 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( btn.textContent.trim() ).toBe( 'Apply' );
 	} );
 
+	it( 'installed icon set card prefers live quartet art over catalog splash art', () => {
+		seed( {
+			iconSet:   '',
+			iconSets:  [
+				{
+					slug: 'odd-default-icons',
+					label: 'ODD Default',
+					card_url: 'https://example.test/catalog-card.webp',
+					icons: {
+						dashboard: 'https://example.test/dashboard.webp',
+						posts:     'https://example.test/posts.webp',
+						pages:     'https://example.test/pages.webp',
+						media:     'https://example.test/media.webp',
+					},
+				},
+			],
+			bundleCatalog: {
+				scene: [],
+				iconSet: [
+					{
+						slug: 'odd-default-icons',
+						label: 'ODD Default',
+						card_url: 'https://example.test/catalog-card.webp',
+						installed: true,
+					},
+				],
+				cursorSet: [],
+				widget: [],
+				app: [],
+			},
+		} );
+		loadPanel();
+		const { host } = mount();
+		goToDepartment( host, 'Icon Sets' );
+
+		const card = host.querySelector( '[data-odd-shop-card][data-set-slug="odd-default-icons"]' );
+		expect( card, 'icon-set tile must render' ).toBeTruthy();
+		expect( card.querySelectorAll( '.odd-shop__card-quartet img' ) ).toHaveLength( 4 );
+		expect( card.querySelector( 'img[src="https://example.test/catalog-card.webp"]' ) ).toBeNull();
+	} );
+
 	it( 'catalog-only icon set appears as the canonical Install card', () => {
 		seed( {
 			bundleCatalog: {

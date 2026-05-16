@@ -6211,11 +6211,13 @@
 				raw.updateAvailable || raw.update_available ? 'u' : '',
 				raw.requiresReload ? 'r' : '',
 				raw.card_url || raw.cardUrl || '',
-				raw.icon_url || raw.icon || '',
+				raw.icon_url || raw.iconUrl || raw.icon || '',
 				raw.previewUrl || raw.preview_url || raw.preview || '',
 				raw.download_url || raw.downloadUrl || '',
 				raw.sha256 || '',
 				raw.size || '',
+				raw.icons && typeof raw.icons === 'object' ? JSON.stringify( raw.icons ) : '',
+				raw.cursors && typeof raw.cursors === 'object' ? JSON.stringify( raw.cursors ) : '',
 			].join( '|' );
 			if ( shopRowCache[ cacheKey ] ) {
 				diagCount( 'panel.normalise.cacheHit' );
@@ -6752,11 +6754,6 @@
 				return art;
 			}
 
-			if ( row.cardUrl ) {
-				art.appendChild( artImg( row.cardUrl, 'odd-shop__card-art-fill' ) );
-				return art;
-			}
-
 			if ( row.type === 'icon-set' ) {
 				if ( row.icons ) {
 					var quartet = el( 'div', { class: 'odd-shop__card-quartet' } );
@@ -6771,9 +6768,10 @@
 					}
 				}
 				// `preview` is the legacy combined preview image; the
-				// remote catalog uses `icon_url` instead, so prefer
-				// that. Either renders as a single full-bleed image.
-				var iconSetUrl = row.preview || row.iconUrl;
+				// remote catalog usually uses `icon_url`/`card_url`.
+				// Prefer live quartet art when installed; catalog-only
+				// rows can fall back to the generated card.
+				var iconSetUrl = row.preview || row.iconUrl || row.cardUrl;
 				if ( iconSetUrl ) {
 					art.appendChild( artImg( iconSetUrl, 'odd-shop__card-art-fill' ) );
 					return art;
@@ -6781,6 +6779,11 @@
 				var fallback = el( 'div', { class: 'odd-shop__card-mono' } );
 				fallback.textContent = ( row.name || row.slug ).slice( 0, 2 ).toUpperCase();
 				art.appendChild( fallback );
+				return art;
+			}
+
+			if ( row.cardUrl ) {
+				art.appendChild( artImg( row.cardUrl, 'odd-shop__card-art-fill' ) );
 				return art;
 			}
 

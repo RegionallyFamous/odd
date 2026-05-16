@@ -219,7 +219,7 @@ Icon-set authoring now treats each set as a finished catalog bundle:
 Edit `_tools/catalog-sources/starter-pack.json`:
 
 ```json
-{ "scenes": ["oddling-desktop"], "iconSets": ["oddlings"], "widgets": [], "apps": [] }
+{ "scenes": ["oddling-desktop"], "iconSets": ["odd-default-icons"], "widgets": [], "apps": [] }
 ```
 
 Slugs here must resolve to a catalog entry — the validator refuses to ship a starter pack that references missing bundles.

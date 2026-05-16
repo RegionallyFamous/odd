@@ -14,10 +14,10 @@ function execRail() {
 
 function seedOdd() {
 	window.oddout = window.odd = {
-		iconSet:  'oddlings',
+		iconSet:  'odd-default-icons',
 		iconSets: [
 			{
-				slug:  'oddlings',
+				slug:  'odd-default-icons',
 				icons: {
 					'os-settings':   'https://example.test/icons/os-settings.webp',
 					import:          'https://example.test/icons/import.webp',
