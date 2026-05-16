@@ -5,7 +5,8 @@
  * sandboxed iframe. Supports two render paths, belt-and-suspenders:
  *
  *   1. Client-side hydration (PREFERRED) — for every installed app
- *      we register `window.desktopModeNativeWindows[ 'odd-app-{slug}' ]`
+ *      we register both native-window callback globals
+ *      (`wpDesktopNativeWindows` and older `desktopModeNativeWindows`)
  *      at boot. When WPDM opens the window, it invokes our callback
  *      directly on the body element; we build the mount div and
  *      iframe with no dependency on any server-rendered <template>.
@@ -586,7 +587,7 @@
 	/**
 	 * Build a `.odd-app-host` mount div inside an arbitrary body
 	 * element and install the iframe. Used by the JS hydration
-	 * path (desktopModeNativeWindows callback) so app windows render
+	 * path (native-window callback) so app windows render
 	 * correctly even when the server-side `<template>` was never
 	 * emitted or was dropped before reaching the DOM.
 	 */
@@ -786,9 +787,9 @@
 	}
 
 	/**
-	 * Client-side hydration — register a `desktopModeNativeWindows`
-	 * render callback for every installed app. WPDM's window
-	 * manager prefers these callbacks over the server `<template>`
+	 * Client-side hydration — register a native-window render callback
+	 * for every installed app. WPDM's window manager prefers these
+	 * callbacks over the server `<template>`
 	 * clone path, so even if the template emission failed for any
 	 * reason (closure serialization, admin_footer skipped, mid-
 	 * session install without a page reload), the window body is
@@ -802,13 +803,21 @@
 	 *     fires `load` (so the user always sees SOMETHING).
 	 */
 	function registerWpdmCallbacks() {
-		var reg = window.desktopModeNativeWindows = window.desktopModeNativeWindows || {};
+		var classicReg = window.desktopModeNativeWindows = window.desktopModeNativeWindows || {};
+		var currentReg = window.wpDesktopNativeWindows = window.wpDesktopNativeWindows || classicReg;
 		var slugs = installedSlugs();
 		for ( var i = 0; i < slugs.length; i++ ) {
 			( function ( slug ) {
 				var id = APP_ID_PREFIX + slug;
-				if ( typeof reg[ id ] === 'function' ) return; // Respect any override.
-				reg[ id ] = function ( body, ctx ) {
+				var existing = typeof currentReg[ id ] === 'function'
+					? currentReg[ id ]
+					: ( typeof classicReg[ id ] === 'function' ? classicReg[ id ] : null );
+				if ( existing ) {
+					classicReg[ id ] = existing;
+					currentReg[ id ] = existing;
+					return;
+				}
+				var render = function ( body, ctx ) {
 					var appCtx = ctx && typeof ctx === 'object' ? ctx : {};
 					if ( ! appCtx.id ) appCtx.id = id;
 					if ( ! appCtx.windowId ) appCtx.windowId = id;
@@ -817,6 +826,8 @@
 						events.emit( events.NAMES.APP_OPENED, { slug: slug, windowId: id } );
 					}
 				};
+				classicReg[ id ] = render;
+				currentReg[ id ] = render;
 			} )( slugs[ i ] );
 		}
 	}

@@ -21,7 +21,7 @@
  *   api.cursorSets()      — live cursor-set list
  *   api.currentCursorSet() — active cursor slug or '' for default
  *   api.savePrefs(p, cb)  — POST /odd/v1/prefs, merges response
-	 *   api.setScene(slug)    — save + broadcast scene hooks + toast
+ *   api.setScene(slug)    — save + broadcast scene hooks + toast
  *   api.setIconSet(slug)  — save + soft reload so dock rebuilds
  *   api.setCursorSet(slug) — save + live cursor refresh
  *   api.setShuffle(prefs) — save shuffle prefs
@@ -37,7 +37,7 @@
  *   api.diagnosticsSnapshot(id?) — host window debug/config snapshot
  *   api.onSceneChange(cb) — subscribe to scene swaps (returns unsub fn)
  *   api.onIconSetChange(cb)
- *   api.openPanel()       — wp.desktop.openWindow('odd')
+ *   api.openPanel()       — open the ODD Shop native window
  *   api.isTouchOnly()     — phone-class pointer + viewport detection
  *   api.requestMaximize() — ask Desktop Mode to fullscreen the Shop
  */
@@ -48,10 +48,16 @@
 	window.__odd = window.__odd || {};
 	if ( window.__odd.api ) return;
 
-		// Command hooks use the same dotted naming convention as Desktop Mode.
+	// Command hooks use the same dotted naming convention as Desktop Mode.
 	var HOOK_SCENE    = 'odd.pickScene';
 	var HOOK_ICONSET  = 'odd.pickIconSet';
 	var TOAST_TONE    = 'odd-muse';
+	var SHOP_WINDOW_X = 96;
+	var SHOP_WINDOW_Y = 16;
+	var SHOP_WINDOW_W = 1040;
+	var SHOP_WINDOW_H = 640;
+	var SHOP_MIN_W    = 420;
+	var SHOP_MIN_H    = 420;
 
 	var store      = window.__odd.store      || null;
 	var events     = window.__odd.events     || null;
@@ -134,6 +140,70 @@
 			if ( list[ i ] && list[ i ].slug === slug ) return list[ i ];
 		}
 		return null;
+	}
+
+	function norm( value ) {
+		return String( value || '' )
+			.toLowerCase()
+			.replace( /[^a-z0-9_-]+/g, '-' )
+			.replace( /^-+|-+$/g, '' )
+			.slice( 0, 96 );
+	}
+
+	function nativeRegistryEntry( id ) {
+		var d = window.wp && window.wp.desktop;
+		var list = d && d.config && d.config.nativeWindows;
+		if ( ! Array.isArray( list ) ) return null;
+		for ( var i = 0; i < list.length; i++ ) {
+			if ( list[ i ] && list[ i ].id === id ) return list[ i ];
+		}
+		return null;
+	}
+
+	function numberOr( value, fallback ) {
+		return typeof value === 'number' && isFinite( value ) ? value : fallback;
+	}
+
+	function nativeRenderCallback( id ) {
+		var current = window.wpDesktopNativeWindows || {};
+		var classic = window.desktopModeNativeWindows || {};
+		if ( typeof current[ id ] === 'function' ) return current[ id ];
+		if ( typeof classic[ id ] === 'function' ) return classic[ id ];
+		return null;
+	}
+
+	function openNativeWindow( id, fallback ) {
+		var d = window.wp && window.wp.desktop;
+		if ( ! d || ! id ) return false;
+		fallback = fallback || {};
+		return !! safeCall( function () {
+			var entry = nativeRegistryEntry( id ) || {};
+			var render = nativeRenderCallback( id );
+			var entryMinWidth = typeof entry.minWidth === 'number' ? entry.minWidth : entry.min_width;
+			var entryMinHeight = typeof entry.minHeight === 'number' ? entry.minHeight : entry.min_height;
+			var fallbackAutofocus = typeof fallback.autofocus !== 'undefined' ? fallback.autofocus : false;
+			if ( typeof d.registerWindow === 'function' && render ) {
+				d.registerWindow( {
+					id: id,
+					title: entry.title || fallback.title || id,
+					icon: entry.icon || fallback.icon || 'dashicons-admin-generic',
+					width: numberOr( entry.width, numberOr( fallback.width, 860 ) ),
+					height: numberOr( entry.height, numberOr( fallback.height, 600 ) ),
+					minWidth: numberOr( entryMinWidth, numberOr( fallback.minWidth, 420 ) ),
+					minHeight: numberOr( entryMinHeight, numberOr( fallback.minHeight, 320 ) ),
+					x: numberOr( entry.x, numberOr( fallback.x, undefined ) ),
+					y: numberOr( entry.y, numberOr( fallback.y, undefined ) ),
+					autofocus: typeof entry.autofocus !== 'undefined' ? entry.autofocus : fallbackAutofocus,
+					render: render,
+				} );
+				return true;
+			}
+			if ( typeof d.openWindow === 'function' ) {
+				d.openWindow( id );
+				return true;
+			}
+			return false;
+		}, 'api.openNativeWindow' );
 	}
 
 	function doAction( hook, payload ) {
@@ -462,14 +532,17 @@
 	}
 
 	function openApp( slug ) {
-		var d = window.wp && window.wp.desktop;
-		if ( ! d || typeof d.openWindow !== 'function' ) return false;
 		var clean = norm( slug );
 		if ( ! clean || ! appBySlug( clean ) ) return false;
-		return !! safeCall( function () {
-			d.openWindow( 'odd-app-' + clean );
-			return true;
-		}, 'api.openApp' );
+		var app = appBySlug( clean ) || {};
+		return openNativeWindow( 'odd-app-' + clean, {
+			title: app.name || app.label || clean,
+			icon: app.icon || 'dashicons-screenoptions',
+			width: 860,
+			height: 600,
+			minWidth: 420,
+			minHeight: 320,
+		} );
 	}
 
 	function resetDecorations() {
@@ -545,8 +618,17 @@
 		// registry so Desktop Mode hydrates the template and script.
 		var maximize = isTouchOnly();
 		return !! safeCall( function () {
-			if ( typeof d.openWindow !== 'function' ) return false;
-			d.openWindow( 'odd' );
+			var opened = openNativeWindow( 'odd', {
+				title: 'ODD Shop',
+				icon: cfg().pluginUrl ? cfg().pluginUrl.replace( /\/$/, '' ) + '/assets/odd-eye.svg' : 'dashicons-cart',
+				width: SHOP_WINDOW_W,
+				height: SHOP_WINDOW_H,
+				minWidth: SHOP_MIN_W,
+				minHeight: SHOP_MIN_H,
+				x: SHOP_WINDOW_X,
+				y: SHOP_WINDOW_Y,
+			} );
+			if ( ! opened ) return false;
 			if ( maximize ) requestMaximize( d );
 			return true;
 		}, 'api.openPanel' );

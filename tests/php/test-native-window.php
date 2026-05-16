@@ -1,8 +1,8 @@
 <?php
 /**
  * Tests for odd/includes/native-window.php — specifically the
- * desktop_mode_shell_config filter that governs how the ODD Shop
- * window participates in WP Desktop Mode's shell boot config.
+ * desktop_mode_shell_config / wp_desktop_shell_config filters that govern
+ * how the ODD Shop window participates in WP Desktop Mode's shell boot config.
  *
  * These exercise classes of behavior:
  *
@@ -84,7 +84,7 @@ class Test_Native_Window extends WP_UnitTestCase {
 
 	public function test_native_window_entry_gets_camelcase_and_snakecase_mins() {
 		$config = apply_filters(
-			'desktop_mode_shell_config',
+			'wp_desktop_shell_config',
 			array(
 				'nativeWindows' => array(
 					array(
@@ -107,14 +107,37 @@ class Test_Native_Window extends WP_UnitTestCase {
 		$this->assertSame( 420, $odd['min_height'] );
 		$this->assertSame( 420, $odd['minWidth'] );
 		$this->assertSame( 420, $odd['minHeight'] );
+		$this->assertSame( 1040, $odd['width'] );
+		$this->assertSame( 640, $odd['height'] );
 		$this->assertSame( 96, $odd['x'] );
-		$this->assertSame( 32, $odd['y'] );
+		$this->assertSame( 16, $odd['y'] );
 		$this->assertArrayNotHasKey( 'min_width', $config['nativeWindows'][1], 'Other windows must not be touched.' );
+	}
+
+	public function test_native_window_entry_still_supports_classic_shell_config_filter() {
+		$config = apply_filters(
+			'desktop_mode_shell_config',
+			array(
+				'nativeWindows' => array(
+					array(
+						'id'    => 'odd',
+						'title' => 'ODD Shop',
+					),
+				),
+			)
+		);
+
+		$odd = $config['nativeWindows'][0];
+
+		$this->assertSame( 1040, $odd['width'] );
+		$this->assertSame( 640, $odd['height'] );
+		$this->assertSame( 96, $odd['x'] );
+		$this->assertSame( 16, $odd['y'] );
 	}
 
 	public function test_session_window_for_odd_preserves_user_size_within_bounds() {
 		$config = apply_filters(
-			'desktop_mode_shell_config',
+			'wp_desktop_shell_config',
 			array(
 				'session' => array(
 					'windows' => array(
@@ -132,7 +155,7 @@ class Test_Native_Window extends WP_UnitTestCase {
 		$this->assertSame( 500, $window['width'], 'Intentional user resize preserved.' );
 		$this->assertSame( 500, $window['height'], 'Intentional user resize preserved.' );
 		$this->assertSame( 96, $window['x'], 'Missing saved x uses the ODD Shop default.' );
-		$this->assertSame( 32, $window['y'], 'Missing saved y uses the ODD Shop default.' );
+		$this->assertSame( 16, $window['y'], 'Missing saved y uses the ODD Shop default.' );
 		$this->assertSame( 'normal', $window['state'] );
 		$this->assertSame( 420, $window['min_width'] );
 		$this->assertSame( 420, $window['minWidth'] );
@@ -143,7 +166,7 @@ class Test_Native_Window extends WP_UnitTestCase {
 	 */
 	public function test_session_window_for_odd_preserves_valid_host_state( $state ) {
 		$config = apply_filters(
-			'desktop_mode_shell_config',
+			'wp_desktop_shell_config',
 			array(
 				'session' => array(
 					'windows' => array(
@@ -175,7 +198,7 @@ class Test_Native_Window extends WP_UnitTestCase {
 
 	public function test_session_window_for_odd_normalizes_invalid_state() {
 		$config = apply_filters(
-			'desktop_mode_shell_config',
+			'wp_desktop_shell_config',
 			array(
 				'session' => array(
 					'windows' => array(
@@ -195,7 +218,7 @@ class Test_Native_Window extends WP_UnitTestCase {
 
 	public function test_oversized_saved_widths_are_preserved() {
 		$config = apply_filters(
-			'desktop_mode_shell_config',
+			'wp_desktop_shell_config',
 			array(
 				'session' => array(
 					'windows' => array(
@@ -216,7 +239,7 @@ class Test_Native_Window extends WP_UnitTestCase {
 
 	public function test_session_window_for_odd_clamps_low_start_position_upward() {
 		$config = apply_filters(
-			'desktop_mode_shell_config',
+			'wp_desktop_shell_config',
 			array(
 				'session' => array(
 					'windows' => array(
@@ -234,14 +257,14 @@ class Test_Native_Window extends WP_UnitTestCase {
 
 		$window = $config['session']['windows'][0];
 		$this->assertSame( 140, $window['x'], 'Horizontal user placement remains native and user-owned.' );
-		$this->assertSame( 48, $window['y'], 'Stale low vertical placement is capped near the top.' );
+		$this->assertSame( 24, $window['y'], 'Stale low vertical placement is capped near the top.' );
 		$this->assertSame( 900, $window['width'] );
 		$this->assertSame( 640, $window['height'] );
 	}
 
 	public function test_session_window_for_odd_keeps_existing_top_position() {
 		$config = apply_filters(
-			'desktop_mode_shell_config',
+			'wp_desktop_shell_config',
 			array(
 				'session' => array(
 					'windows' => array(

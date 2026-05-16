@@ -11,7 +11,8 @@
  *
  * Double-clicking the desktop icon registered below is the canonical
  * entry point. Slash commands (`/odd-panel`) and widgets (Now Playing
- * "Open ODD" button, Postcard click) also call
+ * "Open ODD" button, Postcard click) also call the shared ODD
+ * client API when available, falling back to:
  *   wp.desktop.openWindow( 'odd' )
  * so every surface lands on the same single-instance window.
  */
@@ -27,9 +28,13 @@ defined( 'ABSPATH' ) || exit;
  */
 function oddout_shop_window_geometry() {
 	return array(
-		'x'     => 96,
-		'y'     => 32,
-		'max_y' => 48,
+		'x'          => 96,
+		'y'          => 16,
+		'max_y'      => 24,
+		'width'      => 1040,
+		'height'     => 640,
+		'min_width'  => 420,
+		'min_height' => 420,
 	);
 }
 
@@ -55,6 +60,8 @@ add_action(
 			);
 		}
 
+		$geometry = oddout_shop_window_geometry();
+
 		desktop_mode_register_window(
 			'odd',
 			array(
@@ -62,10 +69,12 @@ add_action(
 				'icon'       => $icon_url,
 				'script'     => 'odd-panel',
 				'template'   => 'oddout_render_panel_template',
-				'width'      => 1080,
-				'height'     => 720,
-				'min_width'  => 420,
-				'min_height' => 420,
+				'x'          => (int) $geometry['x'],
+				'y'          => (int) $geometry['y'],
+				'width'      => (int) $geometry['width'],
+				'height'     => (int) $geometry['height'],
+				'min_width'  => (int) $geometry['min_width'],
+				'min_height' => (int) $geometry['min_height'],
 				'placement'  => oddout_shop_taskbar_enabled( $uid ) ? 'dock' : 'none',
 			)
 		);
@@ -89,85 +98,86 @@ add_action(
  * (the registered-window array the shell boots with) and
  * `session.windows[]` (persisted per-user resize state).
  */
-add_filter(
-	'desktop_mode_shell_config',
-	function ( $config ) {
-		if ( ! is_array( $config ) ) {
-			return $config;
-		}
-
-		$min_w        = 420;
-		$min_h        = 420;
-		$default_w    = 1080;
-		$default_h    = 720;
-		$geometry     = oddout_shop_window_geometry();
-		$default_x    = (int) $geometry['x'];
-		$default_y    = (int) $geometry['y'];
-		$max_y        = (int) $geometry['max_y'];
-		$valid_states = array( 'normal', 'minimized', 'maximized', 'fullscreen' );
-
-		// Native-window registry → some shell builds use these to
-		// derive resize-handle limits, so reassert on every boot and
-		// carry the values in both snake_case and camelCase.
-		if ( ! empty( $config['nativeWindows'] ) && is_array( $config['nativeWindows'] ) ) {
-			foreach ( $config['nativeWindows'] as $i => $entry ) {
-				if ( ! is_array( $entry ) ) {
-					continue;
-				}
-				$id      = isset( $entry['id'] ) ? (string) $entry['id'] : '';
-				$base_id = isset( $entry['baseId'] ) ? (string) $entry['baseId'] : '';
-				if ( 'odd' !== $id && 'odd' !== $base_id ) {
-					continue;
-				}
-				$config['nativeWindows'][ $i ]['min_width']  = $min_w;
-				$config['nativeWindows'][ $i ]['min_height'] = $min_h;
-				$config['nativeWindows'][ $i ]['minWidth']   = $min_w;
-				$config['nativeWindows'][ $i ]['minHeight']  = $min_h;
-				$config['nativeWindows'][ $i ]['x']          = isset( $entry['x'] ) ? max( 0, (int) $entry['x'] ) : $default_x;
-				$config['nativeWindows'][ $i ]['y']          = isset( $entry['y'] ) ? min( $max_y, max( 0, (int) $entry['y'] ) ) : $default_y;
-			}
-		}
-
-		if ( empty( $config['session']['windows'] ) || ! is_array( $config['session']['windows'] ) ) {
-			return $config;
-		}
-
-		foreach ( $config['session']['windows'] as $i => $window ) {
-			if ( ! is_array( $window ) ) {
-				continue;
-			}
-			$id      = isset( $window['id'] ) ? (string) $window['id'] : '';
-			$base_id = isset( $window['baseId'] ) ? (string) $window['baseId'] : '';
-			$url     = isset( $window['url'] ) ? (string) $window['url'] : '';
-
-			if ( 'odd' !== $id && 'odd' !== $base_id && '#odd' !== $url ) {
-				continue;
-			}
-
-			$width  = isset( $window['width'] ) ? (int) $window['width'] : $default_w;
-			$height = isset( $window['height'] ) ? (int) $window['height'] : $default_h;
-			$state  = isset( $window['state'] ) ? (string) $window['state'] : 'normal';
-			$x      = isset( $window['x'] ) ? max( 0, (int) $window['x'] ) : $default_x;
-			$y      = isset( $window['y'] ) ? min( $max_y, max( 0, (int) $window['y'] ) ) : $default_y;
-
-			if ( ! in_array( $state, $valid_states, true ) ) {
-				$state = 'normal';
-			}
-
-			$config['session']['windows'][ $i ]['state']      = $state;
-			$config['session']['windows'][ $i ]['x']          = $x;
-			$config['session']['windows'][ $i ]['y']          = $y;
-			$config['session']['windows'][ $i ]['width']      = max( $min_w, $width );
-			$config['session']['windows'][ $i ]['height']     = max( $min_h, $height );
-			$config['session']['windows'][ $i ]['min_width']  = $min_w;
-			$config['session']['windows'][ $i ]['min_height'] = $min_h;
-			$config['session']['windows'][ $i ]['minWidth']   = $min_w;
-			$config['session']['windows'][ $i ]['minHeight']  = $min_h;
-		}
-
+function oddout_shop_normalize_window_config( $config ) {
+	if ( ! is_array( $config ) ) {
 		return $config;
 	}
-);
+
+	$geometry     = oddout_shop_window_geometry();
+	$min_w        = (int) $geometry['min_width'];
+	$min_h        = (int) $geometry['min_height'];
+	$default_w    = (int) $geometry['width'];
+	$default_h    = (int) $geometry['height'];
+	$default_x    = (int) $geometry['x'];
+	$default_y    = (int) $geometry['y'];
+	$max_y        = (int) $geometry['max_y'];
+	$valid_states = array( 'normal', 'minimized', 'maximized', 'fullscreen' );
+
+	// Native-window registry -> some shell builds use these to derive
+	// resize-handle limits, so reassert on every boot and carry the
+	// values in both snake_case and camelCase.
+	if ( ! empty( $config['nativeWindows'] ) && is_array( $config['nativeWindows'] ) ) {
+		foreach ( $config['nativeWindows'] as $i => $entry ) {
+			if ( ! is_array( $entry ) ) {
+				continue;
+			}
+			$id      = isset( $entry['id'] ) ? (string) $entry['id'] : '';
+			$base_id = isset( $entry['baseId'] ) ? (string) $entry['baseId'] : '';
+			if ( 'odd' !== $id && 'odd' !== $base_id ) {
+				continue;
+			}
+			$config['nativeWindows'][ $i ]['min_width']  = $min_w;
+			$config['nativeWindows'][ $i ]['min_height'] = $min_h;
+			$config['nativeWindows'][ $i ]['minWidth']   = $min_w;
+			$config['nativeWindows'][ $i ]['minHeight']  = $min_h;
+			$config['nativeWindows'][ $i ]['width']      = $default_w;
+			$config['nativeWindows'][ $i ]['height']     = $default_h;
+			$config['nativeWindows'][ $i ]['x']          = isset( $entry['x'] ) ? max( 0, (int) $entry['x'] ) : $default_x;
+			$config['nativeWindows'][ $i ]['y']          = isset( $entry['y'] ) ? min( $max_y, max( 0, (int) $entry['y'] ) ) : $default_y;
+		}
+	}
+
+	if ( empty( $config['session']['windows'] ) || ! is_array( $config['session']['windows'] ) ) {
+		return $config;
+	}
+
+	foreach ( $config['session']['windows'] as $i => $window ) {
+		if ( ! is_array( $window ) ) {
+			continue;
+		}
+		$id      = isset( $window['id'] ) ? (string) $window['id'] : '';
+		$base_id = isset( $window['baseId'] ) ? (string) $window['baseId'] : '';
+		$url     = isset( $window['url'] ) ? (string) $window['url'] : '';
+
+		if ( 'odd' !== $id && 'odd' !== $base_id && '#odd' !== $url ) {
+			continue;
+		}
+
+		$width  = isset( $window['width'] ) ? (int) $window['width'] : $default_w;
+		$height = isset( $window['height'] ) ? (int) $window['height'] : $default_h;
+		$state  = isset( $window['state'] ) ? (string) $window['state'] : 'normal';
+		$x      = isset( $window['x'] ) ? max( 0, (int) $window['x'] ) : $default_x;
+		$y      = isset( $window['y'] ) ? min( $max_y, max( 0, (int) $window['y'] ) ) : $default_y;
+
+		if ( ! in_array( $state, $valid_states, true ) ) {
+			$state = 'normal';
+		}
+
+		$config['session']['windows'][ $i ]['state']      = $state;
+		$config['session']['windows'][ $i ]['x']          = $x;
+		$config['session']['windows'][ $i ]['y']          = $y;
+		$config['session']['windows'][ $i ]['width']      = max( $min_w, $width );
+		$config['session']['windows'][ $i ]['height']     = max( $min_h, $height );
+		$config['session']['windows'][ $i ]['min_width']  = $min_w;
+		$config['session']['windows'][ $i ]['min_height'] = $min_h;
+		$config['session']['windows'][ $i ]['minWidth']   = $min_w;
+		$config['session']['windows'][ $i ]['minHeight']  = $min_h;
+	}
+
+	return $config;
+}
+add_filter( 'desktop_mode_shell_config', 'oddout_shop_normalize_window_config', 20 );
+add_filter( 'wp_desktop_shell_config', 'oddout_shop_normalize_window_config', 20 );
 
 add_filter(
 	'desktop_mode_arrange_menu_items',

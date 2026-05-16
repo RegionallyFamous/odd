@@ -2,8 +2,8 @@
  * panel.test.js — smoke-test the ODD Shop render pipeline.
  *
  * Loads odd/src/panel/index.js, which registers a render callback on
- * `window.desktopModeNativeWindows.odd`. We invoke the callback against
- * a detached host element with a stubbed `window.odd` config and
+ * the current and older native-window globals. We invoke the older
+ * callback against a detached host element with a stubbed `window.odd` config and
  * stubbed global.fetch, then exercise the critical paths:
  *
  *   - Rail lists the expected departments (Wallpapers, Icon Sets,
@@ -170,6 +170,7 @@ describe( 'ODD Shop', () => {
 		if ( existing ) existing.remove();
 		delete window.__odd;
 		delete window.desktopModeNativeWindows;
+		delete window.wpDesktopNativeWindows;
 		delete window.WebGLRenderingContext;
 		if ( window.wp && window.wp.desktop ) delete window.wp.desktop.widgetLayer;
 		try { window.localStorage.removeItem( 'desktop-mode.widgets' ); } catch ( e ) {}
@@ -194,8 +195,9 @@ describe( 'ODD Shop', () => {
 		document.body.classList.remove( 'desktop-mode-has-fullscreen-window' );
 	} );
 
-	it( 'registers a render callback under window.desktopModeNativeWindows.odd', () => {
+	it( 'registers a render callback under older and current native-window globals', () => {
 		expect( typeof window.desktopModeNativeWindows.odd ).toBe( 'function' );
+		expect( window.wpDesktopNativeWindows.odd ).toBe( window.desktopModeNativeWindows.odd );
 	} );
 
 	it( 'renders the department rail + shelf-grouped scene grid', () => {
@@ -366,6 +368,7 @@ describe( 'ODD Shop', () => {
 			} ),
 		};
 		delete window.desktopModeNativeWindows;
+		delete window.wpDesktopNativeWindows;
 		loadPanel();
 
 		const { host, cleanup } = mountPanel();
@@ -390,6 +393,7 @@ describe( 'ODD Shop', () => {
 		};
 		const removeSpy = vi.spyOn( document, 'removeEventListener' );
 		delete window.desktopModeNativeWindows;
+		delete window.wpDesktopNativeWindows;
 		loadPanel();
 
 		const { cleanup } = mountPanel();
@@ -412,6 +416,7 @@ describe( 'ODD Shop', () => {
 			mountSceneInto: vi.fn( () => Promise.resolve( { destroy, env: { perfTier: 'normal' } } ) ),
 		};
 		delete window.desktopModeNativeWindows;
+		delete window.wpDesktopNativeWindows;
 		loadPanel();
 
 		const { cleanup } = mountPanel();

@@ -116,4 +116,82 @@ describe( 'window.__odd.api surface', () => {
 		expect( sdk.teardown() ).toBe( true );
 		expect( onTearDown ).toHaveBeenCalled();
 	} );
+
+	it( 'opens the Shop through registerWindow with top-friendly geometry when available', () => {
+		loadFoundation( {
+			config: {
+				pluginUrl: 'https://example.invalid/wp-content/plugins/odd',
+			},
+		} );
+		const render = vi.fn();
+		const registerWindow = vi.fn();
+		window.desktopModeNativeWindows = { odd: render };
+		window.wpDesktopNativeWindows = { odd: render };
+		window.wp.desktop = {
+			registerWindow,
+			config: {
+				nativeWindows: [
+					{
+						id:        'odd',
+						title:     'ODD Shop',
+						icon:      'https://example.invalid/odd-eye.svg',
+						width:     1040,
+						height:    640,
+						minWidth:  420,
+						minHeight: 420,
+					},
+				],
+			},
+		};
+		execShared( 'api.js' );
+
+		expect( window.__odd.api.openPanel() ).toBe( true );
+		expect( registerWindow ).toHaveBeenCalledWith( expect.objectContaining( {
+			id:        'odd',
+			x:         96,
+			y:         16,
+			width:     1040,
+			height:    640,
+			minWidth:  420,
+			minHeight: 420,
+			render,
+		} ) );
+	} );
+
+	it( 'opens installed apps through registerWindow without requiring openWindow', () => {
+		loadFoundation( {
+			config: {
+				apps: [ { slug: 'timer', name: 'Timer' } ],
+			},
+		} );
+		const render = vi.fn();
+		const registerWindow = vi.fn();
+		window.wpDesktopNativeWindows = { 'odd-app-timer': render };
+		window.wp.desktop = {
+			registerWindow,
+			config: {
+				nativeWindows: [
+					{
+						id:        'odd-app-timer',
+						title:     'Timer',
+						icon:      'dashicons-clock',
+						width:     860,
+						height:    600,
+						minWidth:  420,
+						minHeight: 320,
+					},
+				],
+			},
+		};
+		execShared( 'api.js' );
+
+		expect( window.__odd.api.openApp( 'timer' ) ).toBe( true );
+		expect( registerWindow ).toHaveBeenCalledWith( expect.objectContaining( {
+			id:     'odd-app-timer',
+			title:  'Timer',
+			render,
+			width:  860,
+			height: 600,
+		} ) );
+	} );
 } );

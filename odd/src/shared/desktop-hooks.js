@@ -161,8 +161,8 @@
 	var windowStateById = {};
 	var activityTimers = {};
 	var warnedShopFullscreen = false;
-	var SHOP_TOP_Y = 32;
-	var SHOP_TOP_MAX_Y = 48;
+	var SHOP_TOP_Y = 16;
+	var SHOP_TOP_MAX_Y = 24;
 	window.__odd.desktopState = desktopState;
 
 	function stateNow() {
@@ -965,7 +965,7 @@
 				open:        function () { if ( api && typeof api.openPanel === 'function' ) api.openPanel(); },
 			} );
 			var apps = cfg().apps;
-			if ( Array.isArray( apps ) && window.wp && window.wp.desktop && typeof window.wp.desktop.openWindow === 'function' ) {
+			if ( Array.isArray( apps ) ) {
 				apps.forEach( function ( app ) {
 					if ( ! app || ! app.slug ) return;
 					items.push( {
@@ -973,7 +973,16 @@
 						label:       app.name || app.label || app.slug,
 						description: 'Open ODD app.',
 						icon:        app.icon || 'dashicons-screenoptions',
-						open:        function () { window.wp.desktop.openWindow( 'odd-app-' + app.slug ); },
+						open:        function () {
+							var currentApi = window.__odd && window.__odd.api;
+							if ( currentApi && typeof currentApi.openApp === 'function' ) {
+								currentApi.openApp( app.slug );
+								return;
+							}
+							if ( window.wp && window.wp.desktop && typeof window.wp.desktop.openWindow === 'function' ) {
+								window.wp.desktop.openWindow( 'odd-app-' + app.slug );
+							}
+						},
 					} );
 				} );
 			}
@@ -995,8 +1004,8 @@
 			emit( 'odd.host-registry-changed', detail );
 			// Host shell/live activation syncs `nativeWindows` without always
 			// reloading the page. Re-run app window registration when an ODD app
-			// id appears so `desktopModeNativeWindows['odd-app-*']` exists before
-			// `openWindow`.
+			// id appears so both current and older native callback globals are
+			// ready before `openWindow`.
 			if ( ! detail || detail.registry !== 'native-windows' || ! Array.isArray( detail.added ) ) return;
 			var needsOdd = false;
 			for ( var i = 0; i < detail.added.length; i++ ) {

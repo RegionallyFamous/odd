@@ -31,8 +31,9 @@
  *   - `odd`           wallpaper engine boot (Pixi + scene registrar).
  *                     Registers the `odd` wallpaper with WP Desktop Mode.
  *   - `odd-shop-flow` Pure card-state/trust helpers used by the Shop.
- *   - `odd-panel`     ODD Shop native-window render callback,
- *                     declared on `window.desktopModeNativeWindows.odd`.
+	 *   - `odd-panel`     ODD Shop native-window render callback,
+	 *                     declared on `window.wpDesktopNativeWindows.odd`
+	 *                     and older `window.desktopModeNativeWindows.odd`.
  *                     (1.0+: the stock Sticky Note + Magic 8-Ball
  *                     widgets ship as remote catalog bundles and
  *                     self-enqueue from uploads/odd/widgets/ when
@@ -381,8 +382,8 @@ add_action(
 		// itself doesn't require the nonce; it's there purely as a
 		// convenience for the app's own fetches.
 		//
-		// Emitted under `appServeUrls` so window-host.js can register
-		// a `desktopModeNativeWindows[id]` render callback that builds
+			// Emitted under `appServeUrls` so window-host.js can register
+			// a native-window render callback that builds
 		// the iframe directly in JS — independent of any server-
 		// rendered <template> being present in the DOM.
 		$app_serve_urls = array();

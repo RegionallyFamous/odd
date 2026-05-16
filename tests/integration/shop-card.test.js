@@ -110,6 +110,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 		const existing = document.getElementById( 'odd-panel-styles' );
 		if ( existing ) existing.remove();
 		delete window.desktopModeNativeWindows;
+		delete window.wpDesktopNativeWindows;
 		try { window.sessionStorage.removeItem( 'odd.justInstalled' ); } catch ( e ) {}
 		installHooks();
 

@@ -1,10 +1,11 @@
 /**
  * ODD Shop — native-window render callback.
  * ---------------------------------------------------------------
- * Registered on `window.desktopModeNativeWindows.odd`; the shell
- * invokes this when the window opens and re-invokes it every
- * time the user re-opens a previously-closed instance. The
- * returned function is the teardown, called on close.
+ * Registered on the current `window.wpDesktopNativeWindows.odd`
+ * callback registry and the older `window.desktopModeNativeWindows.odd`
+ * registry. The shell invokes this when the window opens and
+ * re-invokes it every time the user re-opens a previously-closed
+ * instance. The returned function is the teardown, called on close.
  *
  * Layout: Mac App Store–style shop with a top bar, a left
  * department rail (Wallpapers / Icon Sets / Apps / About), and
@@ -23,6 +24,7 @@
 	}
 
 	window.desktopModeNativeWindows = window.desktopModeNativeWindows || {};
+	window.wpDesktopNativeWindows = window.wpDesktopNativeWindows || window.desktopModeNativeWindows;
 
 	var _safeCall = ( window.__odd && window.__odd.safeCall ) || function ( fn ) { try { return fn(); } catch ( e ) {} };
 	var _events   = window.__odd && window.__odd.events;
@@ -3621,6 +3623,12 @@
 			// Single-window contract: open through the host's window
 			// registry so re-clicks raise the existing window instead
 			// of spawning duplicates.
+			var api = window.__odd && window.__odd.api;
+			if ( api && typeof api.openApp === 'function' ) {
+				try {
+					if ( api.openApp( slug ) ) return;
+				} catch ( e ) {}
+			}
 			var wpd = window.wp && window.wp.desktop;
 			if ( wpd && typeof wpd.openWindow === 'function' ) {
 				try { wpd.openWindow( 'odd-app-' + slug ); return; } catch ( e ) {}
@@ -7537,7 +7545,7 @@
 		}
 	};
 
-	window.desktopModeNativeWindows.odd = function ( body ) {
+	function renderOddNativeWindow( body ) {
 		var win = hostOddWindow();
 		try {
 			markShopLoading( win );
@@ -7555,7 +7563,9 @@
 			} catch ( e ) {}
 			return function () {};
 		}
-	};
+	}
+	window.desktopModeNativeWindows.odd = renderOddNativeWindow;
+	window.wpDesktopNativeWindows.odd = renderOddNativeWindow;
 
 	/* --- dom helpers (unscoped) --- */
 
