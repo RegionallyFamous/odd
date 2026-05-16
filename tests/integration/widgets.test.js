@@ -27,11 +27,14 @@ const __dirname = dirname( fileURLToPath( import.meta.url ) );
 const WIDGETS_ROOT = resolve( __dirname, '../../_tools/catalog-sources/widgets' );
 const STICKY_JS    = resolve( WIDGETS_ROOT, 'sticky/widget.js' );
 const STICKY_CSS   = resolve( WIDGETS_ROOT, 'sticky/widget.css' );
+const STICKY_BUNDLE = resolve( __dirname, '../../site/catalog/v1/bundles/widget-sticky.wp' );
 const EIGHTBALL_JS  = resolve( WIDGETS_ROOT, 'eight-ball/widget.js' );
 const EIGHTBALL_CSS = resolve( WIDGETS_ROOT, 'eight-ball/widget.css' );
 const EIGHTBALL_ASSET = resolve( WIDGETS_ROOT, 'eight-ball/assets/oracle-texture.webp' );
 const EIGHTBALL_BUNDLE = resolve( __dirname, '../../site/catalog/v1/bundles/widget-eight-ball.wp' );
 const SPOTIFY_JS    = resolve( WIDGETS_ROOT, 'spotify/widget.js' );
+const SPOTIFY_CSS   = resolve( WIDGETS_ROOT, 'spotify/widget.css' );
+const SPOTIFY_BUNDLE = resolve( __dirname, '../../site/catalog/v1/bundles/widget-spotify.wp' );
 const WIDGET_MANIFESTS = [
 	resolve( WIDGETS_ROOT, 'sticky/manifest.json' ),
 	resolve( WIDGETS_ROOT, 'eight-ball/manifest.json' ),
@@ -90,7 +93,9 @@ function widgetMount( id ) {
 }
 
 function injectWidgetStyles() {
-	const css = readFileSync( STICKY_CSS, 'utf8' ) + '\n' + readFileSync( EIGHTBALL_CSS, 'utf8' );
+	const css = [ STICKY_CSS, EIGHTBALL_CSS, SPOTIFY_CSS ]
+		.map( ( file ) => readFileSync( file, 'utf8' ) )
+		.join( '\n' );
 	const style = document.createElement( 'style' );
 	style.id = 'odd-widgets-style';
 	style.textContent = css;
@@ -140,6 +145,7 @@ describe( 'widgets registration', () => {
 			expect( manifest.entry ).toBe( 'widget.js' );
 			expect( typeof manifest.label ).toBe( 'string' );
 			expect( typeof manifest.icon ).toBe( 'string' );
+			expect( manifest.css ).toEqual( [ 'widget.css' ] );
 			expect( manifest.minWidth ).toBeGreaterThan( 0 );
 			expect( manifest.minHeight ).toBeGreaterThan( 0 );
 			expect( manifest.defaultWidth ).toBeGreaterThanOrEqual( manifest.minWidth );
@@ -279,9 +285,33 @@ describe( 'eight-ball widget', () => {
 } );
 
 describe( 'widget stylesheet scoping', () => {
+	it( 'ships a source and bundled stylesheet for every first-party widget', () => {
+		for ( const [ manifestFile, cssFile, bundleFile ] of [
+			[ WIDGET_MANIFESTS[ 0 ], STICKY_CSS, STICKY_BUNDLE ],
+			[ WIDGET_MANIFESTS[ 1 ], EIGHTBALL_CSS, EIGHTBALL_BUNDLE ],
+			[ WIDGET_MANIFESTS[ 2 ], SPOTIFY_CSS, SPOTIFY_BUNDLE ],
+		] ) {
+			const manifest = JSON.parse( readFileSync( manifestFile, 'utf8' ) );
+			expect( manifest.css ).toEqual( [ 'widget.css' ] );
+			expect( existsSync( cssFile ) ).toBe( true );
+
+			const listing = execFileSync(
+				'python3',
+				[
+					'-c',
+					'import sys, zipfile; print("\\n".join(zipfile.ZipFile(sys.argv[1]).namelist()))',
+					bundleFile,
+				],
+				{ encoding: 'utf8' }
+			);
+			expect( listing ).toContain( 'widget.css' );
+		}
+	} );
+
 	it( 'keeps first-party widget CSS from styling sibling widgets', () => {
 		const stickyCss = readFileSync( STICKY_CSS, 'utf8' );
 		const eightCss = readFileSync( EIGHTBALL_CSS, 'utf8' );
+		const spotifyCss = readFileSync( SPOTIFY_CSS, 'utf8' );
 
 		expect( stickyCss ).toContain( '.odd-widget--sticky' );
 		expect( stickyCss ).not.toMatch( /(^|\n)\.odd-widget\s*\{/ );
@@ -290,6 +320,9 @@ describe( 'widget stylesheet scoping', () => {
 		expect( eightCss ).toContain( '.odd-widget--eight' );
 		expect( eightCss ).not.toContain( 'odd-widget--sticky' );
 		expect( eightCss ).not.toContain( 'odd-sticky__' );
+		expect( spotifyCss ).toContain( '.odd-widget--spotify' );
+		expect( spotifyCss ).not.toContain( 'odd-sticky__' );
+		expect( spotifyCss ).not.toContain( 'odd-eight__' );
 	} );
 } );
 
@@ -298,6 +331,7 @@ describe( 'spotify widget', () => {
 		document.body.innerHTML = '';
 		clearStorage();
 		installWpDesktop();
+		injectWidgetStyles();
 		loadWidgets();
 	} );
 
@@ -393,6 +427,7 @@ describe( 'spotify widget', () => {
 		const submit = form.querySelector( '.odd-spotify__btn--primary' );
 		expect( submit.textContent ).toBe( 'Embed' );
 		expect( window.getComputedStyle( submit ).minWidth ).toBe( '72px' );
+		expect( container.querySelector( '.odd-spotify__styles' ) ).toBeNull();
 
 		input.value = 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M';
 		form.dispatchEvent( new Event( 'submit', { bubbles: true, cancelable: true } ) );

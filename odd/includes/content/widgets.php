@@ -263,12 +263,15 @@ function oddout_widget_stylesheet_paths_for( $slug, array $row ) {
 	}
 
 	$paths = isset( $row['css'] ) && is_array( $row['css'] ) ? $row['css'] : array();
+	if ( empty( $paths ) ) {
+		$paths = oddout_widget_stylesheet_paths_from_manifest( $slug );
+	}
 	$dir   = oddout_widgets_dir_for( $slug );
 	$out   = array();
 	$paths = is_array( $paths ) ? $paths : array();
 	foreach ( $paths as $rel ) {
 		$rel = oddout_content_sanitize_relative_path( (string) $rel );
-		if ( '' === $rel ) {
+		if ( '' === $rel || '.css' !== strtolower( substr( $rel, -4 ) ) ) {
 			continue;
 		}
 		$full = $dir . $rel;
@@ -278,6 +281,30 @@ function oddout_widget_stylesheet_paths_for( $slug, array $row ) {
 	}
 
 	return $out;
+}
+
+function oddout_widget_stylesheet_paths_from_manifest( $slug ) {
+	$slug = sanitize_key( (string) $slug );
+	if ( '' === $slug ) {
+		return array();
+	}
+	$manifest_path = oddout_widgets_dir_for( $slug ) . 'manifest.json';
+	if ( ! is_readable( $manifest_path ) ) {
+		return array();
+	}
+	$raw = file_get_contents( $manifest_path );
+	if ( ! is_string( $raw ) || '' === $raw ) {
+		return array();
+	}
+	$manifest = json_decode( $raw, true );
+	if ( ! is_array( $manifest ) ) {
+		return array();
+	}
+	$css = isset( $manifest['css'] ) ? $manifest['css'] : array();
+	if ( is_string( $css ) ) {
+		$css = array( $css );
+	}
+	return is_array( $css ) ? $css : array();
 }
 
 function oddout_widget_script_handle( $slug ) {

@@ -7,6 +7,9 @@
   "version": "1.0.0",
   "author": "Regionally Famous",
   "entry": "widget.js",
+  "css": [
+    "widget.css"
+  ],
   "icon": "dashicons-format-audio",
   "movable": true,
   "resizable": true,

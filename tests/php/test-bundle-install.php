@@ -225,6 +225,14 @@ class Test_Bundle_Install extends ODDOUT_REST_Test_Case {
 		$this->assertArrayHasKey( 'test-widget', $index );
 		$this->assertSame( 520, $index['test-widget']['maxWidth'] );
 		$this->assertSame( 'dashicons-clock', $index['test-widget']['icon'] );
+
+		$row_without_css = $index['test-widget'];
+		unset( $row_without_css['css'] );
+		$this->assertSame(
+			array( 'widget.css' ),
+			oddout_widget_stylesheet_paths_for( 'test-widget', $row_without_css ),
+			'Installed widget styles must be recoverable from the canonical manifest when the index row is thin.'
+		);
 	}
 
 	public function test_widget_zero_max_dimensions_remain_unbounded() {

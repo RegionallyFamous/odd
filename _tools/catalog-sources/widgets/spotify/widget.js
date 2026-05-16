@@ -169,65 +169,11 @@
 	}
 
 	// ---------------------------------------------------------------
-	// Scoped styles. Injected into the widget container so two copies
-	// of the widget never interfere with each other.
-	// ---------------------------------------------------------------
-
-	var STYLE_RULES =
-		'.odd-widget--spotify{display:flex;box-sizing:border-box;padding:12px;' +
-			'background:linear-gradient(160deg,rgba(18,18,18,.98) 0%,rgba(30,31,38,.96) 52%,rgba(22,26,23,.98) 100%);' +
-			'color:#f5f5f7;overflow:hidden;}' +
-		'.odd-spotify{display:flex;flex-direction:column;height:100%;max-height:100%;width:100%;box-sizing:border-box;' +
-			'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#f5f5f7;overflow:hidden;}' +
-		'.odd-spotify__head{display:flex;align-items:center;justify-content:space-between;gap:8px;' +
-			'padding:2px 4px 10px;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:rgba(245,245,247,.72);}' +
-		'.odd-spotify__head strong{color:#1ed760;font-weight:900;letter-spacing:.11em;}' +
-		'.odd-spotify__kind{font-weight:700;color:rgba(245,245,247,.86);text-transform:none;letter-spacing:0;font-size:12px;' +
-			'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}' +
-		'.odd-spotify__body{flex:0 0 auto;display:flex;height:152px;min-height:152px;}' +
-		'.odd-spotify__iframe{flex:1;width:100%;height:152px;border:0;border-radius:18px;' +
-			'background:#121212;box-shadow:0 18px 30px -18px rgba(0,0,0,.78),0 0 0 1px rgba(255,255,255,.08);}' +
-		'.odd-spotify__setup{flex:1;display:flex;flex-direction:column;gap:8px;justify-content:center;padding:14px;' +
-			'background:radial-gradient(circle at 12% 10%,rgba(30,215,96,.18),transparent 34%),linear-gradient(145deg,#101010 0%,#1d1e23 100%);' +
-			'color:#f5f5f7;border:1px solid rgba(255,255,255,.08);border-radius:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.08);}' +
-		'.odd-spotify__setup h4{margin:0;font-size:14px;font-weight:800;letter-spacing:0;}' +
-		'.odd-spotify__setup p{margin:0;font-size:11px;line-height:1.35;color:rgba(245,245,247,.72);}' +
-		'.odd-spotify__input{flex:1;font:inherit;font-size:12px;height:36px;padding:0 11px;border-radius:10px;' +
-			'border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#f5f5f7;min-width:0;box-sizing:border-box;}' +
-		'.odd-spotify__input:focus{outline:none;border-color:#1ed760;box-shadow:0 0 0 2px rgba(30,215,96,.32);}' +
-		'.odd-spotify__row{display:flex;gap:8px;align-items:center;}' +
-		'.odd-spotify__actions{display:flex;gap:10px;padding:11px 2px 0;justify-content:center;align-items:center;}' +
-		'.odd-spotify__btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;' +
-			'font:700 16px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;border-radius:999px;cursor:pointer;text-decoration:none;' +
-			'border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.09);color:#f5f5f7;' +
-			'box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 8px 18px -12px rgba(0,0,0,.7);transition:background .15s,transform .15s,border-color .15s,color .15s;}' +
-		'.odd-spotify__btn:hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.28);transform:translateY(-1px);}' +
-		'.odd-spotify__btn:focus-visible{outline:none;box-shadow:0 0 0 2px rgba(30,215,96,.45);}' +
-		'.odd-spotify__btn--primary{width:auto;min-width:72px;height:36px;padding:0 14px;border-radius:10px;' +
-			'background:#1ed760;color:#07140b;border-color:transparent;font-size:12px;letter-spacing:.01em;}' +
-		'.odd-spotify__btn--primary:hover{background:#22ea6d;}' +
-		'.odd-spotify__btn--open{background:#1ed760;border-color:transparent;color:#07140b;}' +
-		'.odd-spotify__btn--open:hover{background:#22ea6d;border-color:transparent;}' +
-		'.odd-spotify__btn--ghost{background:rgba(255,255,255,.04);color:rgba(245,245,247,.72);}' +
-		'.odd-spotify__btn--ghost:hover{background:rgba(255,255,255,.11);color:#fff;}' +
-		'.odd-spotify__error{margin:0;font-size:11px;color:#ff7b7b;min-height:1em;}' +
-		'.odd-spotify__hint{margin:0;font-size:10px;color:rgba(245,245,247,.58);line-height:1.35;}';
-
-	function injectStyles( container ) {
-		if ( container.querySelector( '.odd-spotify__styles' ) ) return;
-		var style = document.createElement( 'style' );
-		style.className = 'odd-spotify__styles';
-		style.textContent = STYLE_RULES;
-		container.appendChild( style );
-	}
-
-	// ---------------------------------------------------------------
 	// Render states.
 	// ---------------------------------------------------------------
 
 	function mountSpotify( container, ctx ) {
 		container.classList.add( 'odd-widget', 'odd-widget--spotify' );
-		injectStyles( container );
 
 		var root = el( 'div', { class: 'odd-spotify' } );
 		container.appendChild( root );
