@@ -1,7 +1,7 @@
 /**
  * End-to-end: one browser session — login → desktop shell → wallpaper
  * scenes + canvas pixel check → optional scene hook → ODD Shop + axe +
- * shop rail / search / direct wallpaper apply.
+ * shop rail / search / wallpaper preview-cancel.
  *
  * Kept in a *single* test so CI does not pay login/shell/PIXI waits twice
  * (that was the main driver of 15m+ job times).
@@ -22,7 +22,7 @@ import {
 installOddFailureDiagnostics();
 
 test.describe( 'ODD admin smoke', () => {
-	test( 'wallpaper + scene hook, shop axe, then rail + direct apply', async ( { page } ) => {
+	test( 'wallpaper + scene hook, shop axe, then rail + preview', async ( { page } ) => {
 		// ~3–8m cold CI; one combined flow + pre-provisioned app iframe check.
 		test.setTimeout( 300_000 );
 
