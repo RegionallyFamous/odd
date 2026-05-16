@@ -464,14 +464,14 @@
       "name": "Oddlings",
       "version": "1.0.0",
       "author": "Regionally Famous",
-      "description": "Dark plum raster tiles with clean default-style glyphs and just enough ODD shimmer to feel alive.",
+      "description": "Transparent flat raster glyphs with native admin clarity, full-canvas scale, and tiny ODD creature details.",
       "franchise": "ODD Defaults",
       "accent": "#38e8ff",
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-oddlings.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-oddlings.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-oddlings.wp",
-      "sha256": "70919bf55704925b26f40ef55359dfb1ec5df6b0aa147c609381467b602ae786",
-      "size": 741517
+      "sha256": "18aa66753b27ab6e09abc280fdaf3bc9eaba34b85b455044a00c35569c173a39",
+      "size": 679575
     },
     {
       "type": "cursor-set",

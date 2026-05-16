@@ -138,42 +138,135 @@ def shadowed_shape(
 
 
 def icon_base() -> Image.Image:
-    img = Image.new("RGBA", (HI, HI), (0, 0, 0, 0))
-    glow_ellipse(img, (24, 16, 488, 498), rgba("#64f4ff", 36), 28)
-    glow_ellipse(img, (64, 112, 502, 522), rgba("#7a4cff", 42), 34)
+    return Image.new("RGBA", (HI, HI), (0, 0, 0, 0))
 
-    shadow = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    ImageDraw.Draw(shadow).rounded_rectangle(
-        box((34, 42, 478, 478)),
-        radius=n(112),
-        fill=rgba("#000000", 118),
+
+def alpha_bbox(img: Image.Image, threshold: int = 18):
+    alpha = img.getchannel("A").point(lambda px: 255 if px > threshold else 0)
+    return alpha.getbbox()
+
+
+def normalize_icon(img: Image.Image, margin: float = 12) -> Image.Image:
+    bbox = alpha_bbox(img)
+    if bbox is None:
+        return img
+
+    crop = img.crop(bbox)
+    width, height = crop.size
+    target = HI - (n(margin) * 2)
+    scale = min(target / width, target / height)
+    resized = crop.resize(
+        (max(1, round(width * scale)), max(1, round(height * scale))),
+        Image.Resampling.LANCZOS,
     )
-    img.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(n(18))))
 
-    rounded_gradient(img, (28, 28, 484, 472), 112, PLUM_2, INK)
+    out = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    out.alpha_composite(
+        resized,
+        ((HI - resized.width) // 2, (HI - resized.height) // 2),
+    )
+    return out
+
+
+def add_depth(img: Image.Image) -> Image.Image:
+    alpha = img.getchannel("A")
+    out = Image.new("RGBA", img.size, (0, 0, 0, 0))
+
+    glow = Image.new("RGBA", img.size, rgba("#64f4ff", 44))
+    glow.putalpha(alpha.filter(ImageFilter.GaussianBlur(n(5))))
+    out.alpha_composite(glow)
+
+    odd_glow = Image.new("RGBA", img.size, rgba("#ff3d9a", 18))
+    odd_glow.putalpha(alpha.filter(ImageFilter.GaussianBlur(n(9))))
+    out.alpha_composite(odd_glow)
+
+    shadow = Image.new("RGBA", img.size, rgba("#000000", 96))
+    shadow.putalpha(alpha.filter(ImageFilter.GaussianBlur(n(5))))
+    out.alpha_composite(shadow, (0, n(6)))
+
+    out.alpha_composite(img)
+    return out
+
+
+def oddify(img: Image.Image, key: str) -> None:
+    bbox = alpha_bbox(img, 32)
+    if bbox is None:
+        return
+
+    x0, y0, x1, y1 = bbox
+    width = x1 - x0
+    height = y1 - y0
+    unit = max(n(7), min(width, height) // 14)
     d = ImageDraw.Draw(img)
-    d.rounded_rectangle(
-        box((28, 28, 484, 472)),
-        radius=n(112),
-        outline=rgba("#64f4ff", 124),
-        width=n(5),
+
+    # Tiny eyes and feelers keep the silhouette native-ish while making it ODD.
+    eye_y = y0 + round(height * 0.28)
+    eye_1 = x0 + round(width * 0.58)
+    eye_2 = eye_1 + round(unit * 1.75)
+    for cx in (eye_1, eye_2):
+        d.ellipse(
+            (cx - unit, eye_y - unit, cx + unit, eye_y + unit),
+            fill=rgba("#fff4dc", 245),
+        )
+        d.ellipse(
+            (cx - unit // 3, eye_y - unit // 3, cx + unit // 3, eye_y + unit // 3),
+            fill=INK,
+        )
+
+    feeler_x = x0 + round(width * 0.72)
+    feeler_y = y0 + round(height * 0.12)
+    d.line(
+        (
+            feeler_x,
+            feeler_y + unit,
+            feeler_x + round(unit * 1.2),
+            feeler_y - round(unit * 1.8),
+            feeler_x + round(unit * 2.5),
+            feeler_y - round(unit * 0.8),
+        ),
+        fill=CYAN,
+        width=max(2, round(unit * 0.42)),
+        joint="curve",
     )
-    d.arc(box((62, 58, 450, 444)), 200, 336, fill=rgba("#fff4dc", 34), width=n(10))
-    d.arc(box((72, 66, 440, 432)), 23, 106, fill=rgba("#ff3d9a", 52), width=n(9))
-    d.rounded_rectangle(
-        box((174, 430, 338, 452)),
-        radius=n(9),
-        fill=rgba("#64f4ff", 172),
+    d.ellipse(
+        (
+            feeler_x + round(unit * 1.9),
+            feeler_y - round(unit * 1.35),
+            feeler_x + round(unit * 3.0),
+            feeler_y - round(unit * 0.25),
+        ),
+        fill=MAGENTA,
     )
-    d.rounded_rectangle(
-        box((218, 430, 338, 452)),
-        radius=n(9),
-        fill=rgba("#7a4cff", 150),
+
+    tail = [
+        (
+            x0 + round(width * 0.24),
+            y1 - round(height * 0.16),
+        ),
+        (
+            x0 + round(width * 0.12),
+            y1 - round(height * 0.04),
+        ),
+        (
+            x0 + round(width * 0.19),
+            y1 + round(height * 0.08),
+        ),
+    ]
+    d.line(tail, fill=CYAN, width=max(2, round(unit * 0.48)), joint="curve")
+    d.ellipse(
+        (
+            tail[-1][0] - round(unit * 0.62),
+            tail[-1][1] - round(unit * 0.62),
+            tail[-1][0] + round(unit * 0.62),
+            tail[-1][1] + round(unit * 0.62),
+        ),
+        fill=rgba("#fff4dc", 232),
     )
-    return img
 
 
 def finish(img: Image.Image) -> Image.Image:
+    img = normalize_icon(img)
+    img = add_depth(img)
     return img.resize((SIZE, SIZE), Image.Resampling.LANCZOS)
 
 
@@ -267,13 +360,20 @@ def draw_appearance(img: Image.Image) -> None:
 
 def draw_plugins(img: Image.Image) -> None:
     d = ImageDraw.Draw(img)
-    d.rounded_rectangle(box((202, 188, 318, 322)), radius=n(44), fill=SILVER)
-    d.line(points([(224, 168), (224, 118)]), fill=SILVER, width=n(20))
-    d.line(points([(296, 168), (296, 118)]), fill=SILVER, width=n(20))
-    d.rounded_rectangle(box((184, 168, 336, 204)), radius=n(17), fill=SILVER)
-    d.rounded_rectangle(box((202, 188, 318, 322)), radius=n(44), outline=rgba("#12051f", 78), width=n(5))
-    d.rounded_rectangle(box((236, 318, 284, 376)), radius=n(18), fill=CYAN)
-    d.rounded_rectangle(box((236, 318, 284, 376)), radius=n(18), outline=rgba("#12051f", 72), width=n(4))
+    d.ellipse(box((150, 206, 238, 314)), fill=rgba("#d8dbe7", 235))
+    d.ellipse(box((282, 206, 370, 314)), fill=rgba("#d8dbe7", 235))
+    d.ellipse(box((188, 154, 332, 344)), fill=SILVER)
+    d.rounded_rectangle(box((210, 186, 310, 356)), radius=n(48), fill=SILVER)
+    for y, color in ((220, CYAN), (258, VIOLET), (296, CYAN)):
+        d.rounded_rectangle(box((214, y - 8, 306, y + 8)), radius=n(8), fill=color)
+    d.line(points([(224, 160), (200, 112)]), fill=SILVER, width=n(14))
+    d.line(points([(296, 160), (320, 112)]), fill=SILVER, width=n(14))
+    d.ellipse(box((194, 100, 216, 122)), fill=CYAN)
+    d.ellipse(box((314, 100, 336, 122)), fill=CYAN)
+    d.rounded_rectangle(box((238, 346, 282, 404)), radius=n(17), fill=CYAN)
+    d.rounded_rectangle(box((238, 346, 282, 404)), radius=n(17), outline=rgba("#12051f", 72), width=n(4))
+    d.ellipse(box((224, 170, 248, 194)), fill=INK)
+    d.ellipse(box((272, 170, 296, 194)), fill=INK)
 
 
 def draw_users(img: Image.Image) -> None:
@@ -409,6 +509,7 @@ def generate_icons() -> dict[str, Image.Image]:
     for key in ICON_KEYS:
         img = icon_base()
         DRAWERS[key](img)
+        oddify(img, key)
         icons[key] = finish(img)
     return icons
 
