@@ -160,6 +160,35 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( thumb.getAttribute( 'width' ) ).toBe( '512' );
 	} );
 
+	it( 'shows the widget catalog grid directly without a featured strip', () => {
+		seed( {
+			bundleCatalog: {
+				scene: [],
+				iconSet: [],
+				cursorSet: [],
+				widget: [
+					{ slug: 'eight-ball', label: 'Magic 8-Ball', category: 'ODD Originals', featured: true, installed: false },
+					{ slug: 'spotify-embed', label: 'Spotify Embed', category: 'ODD Originals', installed: false },
+					{ slug: 'sticky-note', label: 'Sticky Note', category: 'ODD Originals', installed: false },
+				],
+				app: [],
+			},
+		} );
+		loadPanel();
+		const { host } = mount();
+		goToDepartment( host, 'Widgets' );
+
+		expect( host.querySelector( '.odd-shop__editorial' ) ).toBeNull();
+		expect( host.textContent ).not.toContain( 'Today at ODD' );
+		expect( host.textContent ).not.toContain( 'Fresh from the weird shelf' );
+		expect( Array.from( host.querySelectorAll( '[data-odd-shop-card][data-odd-card-type="widget"]' ) )
+			.map( ( card ) => card.getAttribute( 'data-catalog-slug' ) ) ).toEqual( [
+			'eight-ball',
+			'spotify-embed',
+			'sticky-note',
+		] );
+	} );
+
 	it( 'not-installed scene renders an Install button', () => {
 		seed( {
 			bundleCatalog: {

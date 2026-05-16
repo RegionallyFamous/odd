@@ -120,6 +120,25 @@
 	
 			var lastIdx = -1;
 			var shaking = false;
+
+			function displayAnswerText( text ) {
+				text = text || '';
+				var quoted = text.match( /^(.*)\s+`([^`]+)`$/ );
+				if ( quoted ) {
+					return quoted[ 1 ] + '\n' + quoted[ 2 ];
+				}
+				if ( /[_()]/.test( text ) ) {
+					return text.replace( /\s+(\S*[_()]\S*)$/, '\n$1' );
+				}
+				return text;
+			}
+
+			function setAnswerText( text ) {
+				text = text || '';
+				answer.classList.toggle( 'is-long', text.length > 20 );
+				answer.classList.toggle( 'is-code', /[`_()]/.test( text ) );
+				answer.textContent = displayAnswerText( text );
+			}
 	
 			function pickAnswer() {
 				if ( EIGHT_ANSWERS.length < 2 ) return EIGHT_ANSWERS[ 0 ] || '';
@@ -144,7 +163,7 @@
 				if ( reduced ) {
 					answer.classList.add( 'is-fading' );
 					fadeTimer = window.setTimeout( function () {
-						answer.textContent = next;
+						setAnswerText( next );
 						answer.classList.remove( 'is-fading' );
 						shaking = false;
 						hint.textContent = __( 'Click to consult' );
@@ -156,7 +175,7 @@
 				answer.classList.add( 'is-fading' );
 				shakeTimer = window.setTimeout( function () {
 					ball.classList.remove( 'is-shaking' );
-					answer.textContent = next;
+					setAnswerText( next );
 					// Let the fade out finish, then fade in.
 					window.requestAnimationFrame( function () {
 						answer.classList.remove( 'is-fading' );

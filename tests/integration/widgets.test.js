@@ -127,6 +127,7 @@ describe( 'widgets registration', () => {
 	afterEach( () => {
 		const s = document.getElementById( 'odd-widgets-style' );
 		if ( s ) s.remove();
+		vi.restoreAllMocks();
 		vi.useRealTimers();
 	} );
 
@@ -236,6 +237,32 @@ describe( 'eight-ball widget', () => {
 
 		expect( ball.classList.contains( 'is-shaking' ) ).toBe( false );
 		expect( answer.textContent ).not.toBe( 'Ask a question' );
+
+		cleanup();
+	} );
+
+	it( 'fits long code-like answers without clipping against the triangle', () => {
+		vi.useFakeTimers();
+		vi.spyOn( Math, 'random' ).mockReturnValue( 0.37 );
+
+		const mount = widgetMount( 'odd/eight-ball' );
+		const container = document.createElement( 'div' );
+		document.body.appendChild( container );
+
+		const cleanup = mount( container, {} );
+		const stage  = container.querySelector( '.odd-eight__stage' );
+		const answer = container.querySelector( '.odd-eight__answer' );
+
+		stage.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+		vi.advanceTimersByTime( 600 );
+
+		expect( answer.textContent ).toBe( 'Ask again after\nwp_cache_flush()' );
+		expect( answer.classList.contains( 'is-long' ) ).toBe( true );
+		expect( answer.classList.contains( 'is-code' ) ).toBe( true );
+
+		const css = readFileSync( EIGHTBALL_CSS, 'utf8' );
+		expect( css ).toContain( '.odd-eight__triangle::before' );
+		expect( css ).toContain( 'overflow-wrap: anywhere' );
 
 		cleanup();
 	} );

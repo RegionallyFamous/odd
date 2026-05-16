@@ -13,9 +13,8 @@
  *   2. A toggle POSTs `/odd/v1/apps/{slug}/toggle` with
  *      `{ surfaces: { <field>: bool } }` — partial payloads only,
  *      so the two checkboxes stay independent.
- *   3. After a successful POST the panel schedules the shared
- *      `scheduleAdminReload()` (surfaces delay) so Desktop Mode
- *      re-reads native registration on the next load.
+ *   3. After a successful POST the panel asks Desktop Mode to live
+ *      refresh its native registries via `wp.desktop.refreshMenu()`.
  *   4. Toggles are disabled when app.enabled === false.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -99,6 +98,7 @@ async function gotoAppsDepartment( host ) {
 describe( 'ODD Shop · App surfaces', () => {
 	let fetchMock;
 	let reloadSpy;
+	let refreshMenuSpy;
 
 	beforeEach( () => {
 		document.body.innerHTML = '';
@@ -128,6 +128,8 @@ describe( 'ODD Shop · App surfaces', () => {
 		];
 		seedConfig( apps );
 		installHooks();
+		refreshMenuSpy = vi.fn( () => Promise.resolve() );
+		window.wp.desktop = { refreshMenu: refreshMenuSpy };
 
 		// fetchApps() hits GET /odd/v1/apps; toggle POST hits
 		// /odd/v1/apps/{slug}/toggle. Both paths share the same
@@ -190,7 +192,7 @@ describe( 'ODD Shop · App surfaces', () => {
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );
 
-	it( 'toggling taskbar posts a partial { surfaces: { taskbar } } payload and schedules admin reload', async () => {
+	it( 'toggling taskbar posts a partial { surfaces: { taskbar } } payload and refreshes Desktop Mode live', async () => {
 		const { host, cleanup } = mountPanel();
 		await gotoAppsDepartment( host );
 
@@ -211,8 +213,9 @@ describe( 'ODD Shop · App surfaces', () => {
 		expect( body ).toEqual( { surfaces: { taskbar: true } } );
 		expect( Object.keys( body.surfaces ) ).toEqual( [ 'taskbar' ] );
 
-		await tick( 400 );
-		expect( reloadSpy ).toHaveBeenCalled();
+		await tick( 0 );
+		expect( refreshMenuSpy ).toHaveBeenCalledTimes( 1 );
+		expect( reloadSpy ).not.toHaveBeenCalled();
 
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );
@@ -257,7 +260,7 @@ describe( 'ODD Shop · App surfaces', () => {
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );
 
-	it( 'catalog app install shows Applying… and schedules admin reload', async () => {
+	it( 'catalog app install opens immediately and refreshes Desktop Mode live', async () => {
 		seedConfig( [] );
 		fetchMock = vi.fn( ( url, opts ) => {
 			if ( opts && opts.method === 'POST' && /\/bundles\/install-from-catalog$/.test( url ) ) {
@@ -266,8 +269,6 @@ describe( 'ODD Shop · App surfaces', () => {
 					json: () => Promise.resolve( {
 						installed: true,
 						manifest:  { slug: 'board', name: 'Board', version: '1.2.0' },
-						// Even with a hot serve URL, the Shop still schedules a full
-						// admin reload so Desktop Mode picks up the new app surfaces.
 						serve_url: 'http://localhost/odd-app/board/?_wpnonce=fake',
 					} ),
 				} );
@@ -301,10 +302,12 @@ describe( 'ODD Shop · App surfaces', () => {
 
 		const labelsMid = Array.from( host.querySelectorAll( '.odd-shop__card-btn' ) )
 			.map( ( btn ) => btn.textContent.trim() );
-		expect( labelsMid ).toContain( 'Applying…' );
+		expect( labelsMid ).toContain( 'Open' );
+		expect( labelsMid ).not.toContain( 'Applying…' );
 
-		await tick( 450 );
-		expect( reloadSpy ).toHaveBeenCalled();
+		await tick( 0 );
+		expect( refreshMenuSpy ).toHaveBeenCalledTimes( 1 );
+		expect( reloadSpy ).not.toHaveBeenCalled();
 
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );

@@ -385,7 +385,7 @@
 			// Preview state: when non-null, the user has clicked a
 			// scene, icon-set, or cursor-set card. Scenes/cursors can
 			// preview live; icon sets are applied through Desktop Mode's
-			// native server-side icon data and need a reload to render.
+			// native server-side icon data and live menu refresh.
 			//
 			//   { kind: 'wallpaper' | 'iconSet' | 'cursorSet',
 			//     slug:         'aurora',
@@ -402,8 +402,8 @@
 			sortMode:      'featured',
 			shopSounds:    loadShopSoundsSetting(),
 			widgetHookNames: null,
-			// When set, the Shop scheduled a full admin reload (desktop / taskbar /
-			// script-fallback). Catalog tiles show "Applying…" for the matching slug.
+			// When set, the Shop scheduled a full admin reload fallback.
+			// Catalog tiles show "Applying..." for the matching slug.
 			pendingAdminReload: null,
 			installing: Object.create( null ),
 		};
@@ -434,10 +434,6 @@
 		var shopSfx = { ctx: null, last: {} };
 		var pendingAdminReloadTimer = null;
 
-		var ODD_RELOAD_DELAY_MS_ICON    = 180;
-		var ODD_RELOAD_DELAY_MS_TASKBAR       = 250;
-		var ODD_RELOAD_DELAY_MS_DESKTOP_PIN = 260;
-		var ODD_RELOAD_DELAY_MS_SURFACE = 300;
 		var ODD_RELOAD_DELAY_MS_DEFAULT = 400;
 
 		function clearPendingAdminReload() {
@@ -476,6 +472,40 @@
 					window.location.reload();
 				} catch ( eDoReload ) {}
 			}, delayMs );
+		}
+
+		function refreshDesktopModeMenu( source ) {
+			var desktop = window.wp && window.wp.desktop;
+			if ( ! desktop || typeof desktop.refreshMenu !== 'function' ) {
+				diagCount( 'desktop.refreshMenu.missing' );
+				return Promise.resolve( false );
+			}
+			try {
+				return Promise.resolve( desktop.refreshMenu() ).then(
+					function () {
+						diagCount( 'desktop.refreshMenu.ok' );
+						return true;
+					},
+					function ( err ) {
+						reportError( source || 'desktop.refreshMenu', err );
+						return false;
+					}
+				);
+			} catch ( errRefresh ) {
+				reportError( source || 'desktop.refreshMenu', errRefresh );
+				return Promise.resolve( false );
+			}
+		}
+
+		function refreshAppsNativeSurfaces( wrap, source, okMessage ) {
+			setAppsStatus( wrap, __( 'Updating Desktop Mode…' ), '' );
+			refreshDesktopModeMenu( source ).then( function ( refreshed ) {
+				setAppsStatus(
+					wrap,
+					refreshed ? okMessage : __( 'Saved. Desktop Mode will update on its next refresh.' ),
+					refreshed ? 'ok' : ''
+				);
+			} );
 		}
 
 		function captureShopScrollTops() {
@@ -1046,8 +1076,6 @@
 			wrap.appendChild( renderAppsHero() );
 			var appRows = shopRowsFor( 'app' );
 			wrap.appendChild( renderStoreControls( 'app', appRows, applyStoreControls( appRows, 'app' ) ) );
-			var appsEditorial = renderEditorialStrip( appRows, 'apps' );
-			if ( appsEditorial ) wrap.appendChild( appsEditorial );
 
 			// Status rail. Populated by installBundle() / deletions.
 			var status = el( 'div', { class: 'odd-apps-status', 'data-odd-apps-status': '1' } );
@@ -1202,14 +1230,11 @@
 						box.disabled = false;
 						if ( res && res.surfaces ) {
 							mirrorAppSurfacesInCfg( app.slug, res.surfaces );
-							scheduleAdminReload( {
-								delayMs:      ODD_RELOAD_DELAY_MS_SURFACE,
-								slug:         app.slug,
-								type:         'app',
-								name:         app.name || app.slug,
-								toastMessage: __( 'Applying changes…' ),
-							} );
-							setAppsStatus( wrap, __( 'Applying changes…' ), '' );
+							refreshAppsNativeSurfaces(
+								wrap,
+								'app.surfaces',
+								__( 'App surfaces updated.' )
+							);
 							return;
 						}
 						box.checked  = ! box.checked;
@@ -1227,8 +1252,17 @@
 			var toggle = el( 'button', { type: 'button', class: 'odd-apps-btn' } );
 			toggle.textContent = app.enabled ? 'Disable' : 'Enable';
 			toggle.addEventListener( 'click', function () {
+				toggle.disabled = true;
 				toggleApp( app.slug, ! app.enabled ).then( function ( ok ) {
-					if ( ok ) refreshAppsGallery( wrap );
+					toggle.disabled = false;
+					if ( ok ) {
+						refreshAppsGallery( wrap );
+						refreshAppsNativeSurfaces(
+							wrap,
+							'app.toggle',
+							__( 'App surfaces updated.' )
+						);
+					}
 				} );
 			} );
 			var del = el( 'button', { type: 'button', class: 'odd-apps-btn odd-apps-btn--danger' } );
@@ -1240,6 +1274,11 @@
 						var ev = window.__odd && window.__odd.events;
 						if ( ev ) ev.emit( 'odd.app-uninstalled', { slug: app.slug } );
 						refreshAppsGallery( wrap );
+						refreshAppsNativeSurfaces(
+							wrap,
+							'app.delete',
+							__( 'App removed from Desktop Mode.' )
+						);
 					}
 				} );
 			} );
@@ -1511,11 +1550,9 @@
 			meta.appendChild( sub );
 			card.appendChild( meta );
 
-			// Surface toggles — Desktop icon + Taskbar icon.
-			//
-			// Desktop Mode registers native windows on `init`, so a
-			// saved checkbox change schedules the shared deferred
-			// admin reload (deduped) once the REST toggle succeeds.
+			// Surface toggles: Desktop icon + Taskbar icon. Desktop
+			// Mode refreshes its server-owned registries live through
+			// `wp.desktop.refreshMenu()` after the REST toggle succeeds.
 			var rowSurfaces = ( app.surfaces && typeof app.surfaces === 'object' )
 				? app.surfaces
 				: { desktop: true, taskbar: false };
@@ -1553,17 +1590,10 @@
 						box.disabled = false;
 						if ( res && res.surfaces ) {
 							mirrorAppSurfacesInCfg( app.slug, res.surfaces );
-							scheduleAdminReload( {
-								delayMs:      ODD_RELOAD_DELAY_MS_SURFACE,
-								slug:         app.slug,
-								type:         'app',
-								name:         app.name || app.slug,
-								toastMessage: __( 'Applying changes…' ),
-							} );
-							setAppsStatus(
+							refreshAppsNativeSurfaces(
 								wrap,
-								__( 'Applying changes…' ),
-								''
+								'app.surfaces',
+								__( 'App surfaces updated.' )
 							);
 							return;
 						}
@@ -1605,8 +1635,17 @@
 			var toggle = el( 'button', { type: 'button', class: 'odd-apps-btn' } );
 			toggle.textContent = app.enabled ? 'Disable' : 'Enable';
 			toggle.addEventListener( 'click', function () {
+				toggle.disabled = true;
 				toggleApp( app.slug, ! app.enabled ).then( function ( ok ) {
-					if ( ok ) refreshAppsGallery( wrap );
+					toggle.disabled = false;
+					if ( ok ) {
+						refreshAppsGallery( wrap );
+						refreshAppsNativeSurfaces(
+							wrap,
+							'app.toggle',
+							__( 'App surfaces updated.' )
+						);
+					}
 				} );
 			} );
 
@@ -1619,6 +1658,11 @@
 						var ev = window.__odd && window.__odd.events;
 						if ( ev ) ev.emit( 'odd.app-uninstalled', { slug: app.slug } );
 						refreshAppsGallery( wrap );
+						refreshAppsNativeSurfaces(
+							wrap,
+							'app.delete',
+							__( 'App removed from Desktop Mode.' )
+						);
 					}
 				} );
 			} );
@@ -1949,7 +1993,7 @@
 			}
 		}
 
-		// Deferred full reload after install / surface-save success.
+		// Manual fallback for rows that explicitly ask for a full reload.
 		function onEscapeHatchReload( row ) {
 			if ( ! row || ! row.slug ) return;
 			scheduleAdminReload( {
@@ -2009,15 +2053,9 @@
 						name: ( row && row.name ) || name || slug,
 						installed: true,
 						requiresReload: false,
-					}
-				);
-				// REST may return serve_url so we can hydrate `window.odd` +
-				// iframe hosts before reload, but Desktop Mode still registers
-				// per-app surfaces and native-window metadata during admin boot —
-				// a deferred full reload stays the reliable completion path.
-				scheduleReload = true;
-				reloadDelayMs = ODD_RELOAD_DELAY_MS_DEFAULT;
-				message = message || installSuccessMessage( 'app', name, true );
+						}
+					);
+				message = message || installSuccessMessage( 'app', name, false );
 			}
 			spliceInstalledRow( type, slug, row, data && data.manifest );
 			if ( 'app' === type && data && data.serve_url ) {
@@ -2039,6 +2077,9 @@
 					message || installSuccessMessage( type, name, false ),
 					{ duration: 4200 }
 				);
+				if ( 'app' === type ) {
+					refreshDesktopModeMenu( 'app.install' );
+				}
 			}
 			renderSection( DEPT_FOR_TYPE[ type ] || state.active, { keepQuery: true } );
 		}
@@ -2048,8 +2089,7 @@
 		// exposed on `window.desktopModeWidgets[id]`, splice a panel-shaped row
 		// into `state.cfg.installedWidgets`, re-render the Widgets
 		// department, and flash the new tile. If the script fails to
-		// load, we schedule the same deferred admin reload as other
-		// registration-bound installs.
+		// load, we keep a deferred admin reload as an explicit fallback.
 		function onInstallSuccessWidget( data, slug, name ) {
 			var entryUrl = data && data.entry_url;
 			var row      = data && data.row;
@@ -2589,13 +2629,7 @@
 				} catch ( e2 ) {}
 			}
 			if ( state.cfg.iconSet !== prevIconSet ) {
-				scheduleAdminReload( {
-					delayMs: ODD_RELOAD_DELAY_MS_ICON,
-					slug: state.cfg.iconSet || 'default',
-					type: 'icon-set',
-					name: state.cfg.iconSet || 'Default icons',
-					toastMessage: 'Applying workspace icons...',
-				} );
+				refreshDesktopModeMenu( 'workspace.iconSet' );
 			}
 		}
 
@@ -3363,9 +3397,8 @@
 				} );
 			} );
 
-			// ODD Shop taskbar launcher — Desktop Mode reads native
-			// window placement during boot, so changes need a soft
-			// reload before the taskbar item appears/disappears.
+			// ODD Shop taskbar launcher. Desktop Mode now refreshes
+			// its server-owned window and icon registries live.
 			var dockRow = el( 'label', { class: 'odd-setting-card odd-setting-card--shop-taskbar odd-switch-row' } );
 			var dockBox = el( 'input', { type: 'checkbox' } );
 			dockBox.checked = !! state.cfg.shopTaskbar;
@@ -3386,12 +3419,8 @@
 					if ( data && Object.prototype.hasOwnProperty.call( data, 'shopTaskbar' ) ) {
 						state.cfg.shopTaskbar = !! data.shopTaskbar;
 					}
-					scheduleAdminReload( {
-						delayMs:      ODD_RELOAD_DELAY_MS_TASKBAR,
-						slug:         '',
-						type:         'settings',
-						name:         __( 'Shop taskbar' ),
-						toastMessage: __( 'Updated ODD taskbar setting. Reloading…' ),
+					refreshDesktopModeMenu( 'settings.shopTaskbar' ).then( function () {
+						toast( __( 'Updated ODD taskbar setting.' ) );
 					} );
 				} );
 			} );
@@ -3416,12 +3445,8 @@
 					if ( data && Object.prototype.hasOwnProperty.call( data, 'shopDesktopPinned' ) ) {
 						state.cfg.shopDesktopPinned = !! data.shopDesktopPinned;
 					}
-					scheduleAdminReload( {
-						delayMs:      ODD_RELOAD_DELAY_MS_DESKTOP_PIN,
-						slug:         '',
-						type:         'settings',
-						name:         __( 'Desktop shortcut' ),
-						toastMessage: __( 'Updated ODD wallpaper shortcut. Reloading…' ),
+					refreshDesktopModeMenu( 'settings.shopDesktopPinned' ).then( function () {
+						toast( __( 'Updated ODD wallpaper shortcut.' ) );
 					} );
 				} );
 			} );
@@ -3678,8 +3703,8 @@
 		 * { desktop, taskbar }) to the same /toggle route and
 		 * return the new, server-normalized shape.
 		 *
-		 * Native-window registration is request-lifetime; after
-		 * success the checkbox handlers call scheduleAdminReload().
+		 * Desktop Mode's live menu refresh re-reads the native-window
+		 * and desktop-icon payload after a successful save.
 		 */
 		function setAppSurfaces( slug, surfaces ) {
 			return fetch( appsBaseUrl() + '/' + encodeURIComponent( slug ) + '/toggle', {
@@ -3696,7 +3721,7 @@
 		}
 		/**
 		 * Mirror server-normalised `surfaces` onto the cfg.apps row
-		 * without forcing a reload pill — callers schedule reload.
+		 * before callers refresh Desktop Mode's live registries.
 		 */
 		function mirrorAppSurfacesInCfg( slug, surfaces ) {
 			if ( ! slug || ! surfaces || typeof surfaces !== 'object' ) return;
@@ -3779,8 +3804,6 @@
 				var featured = pickFeaturedScene( heroScenes );
 				if ( featured ) wrap.appendChild( renderWallpaperHero( featured ) );
 			}
-			var wallpaperEditorial = renderEditorialStrip( rows, 'wallpaper' );
-			if ( wallpaperEditorial ) wrap.appendChild( wallpaperEditorial );
 
 			// Category quilt — gradient category tiles that jump
 			// to their shelf when clicked. Hidden while searching so
@@ -3983,49 +4006,6 @@
 				case 'ODD Originals': return 'House specials from the ODD studio, gently misbehaving.';
 				default:              return 'A generative scene that lives, loops, and loiters on your desktop.';
 			}
-		}
-
-		function renderEditorialStrip( rows, scope ) {
-			if ( state.query || ! Array.isArray( rows ) ) return null;
-			var picks = rows.filter( function ( row ) { return row && ( row.featured || row.is_new || row.raw && ( row.raw.featured || row.raw.is_new ) ); } );
-			if ( ! picks.length ) picks = rows.slice( 0, 3 );
-			picks = picks.slice( 0, 3 );
-			if ( ! picks.length ) return null;
-			var strip = el( 'section', { class: 'odd-shop__editorial odd-shop__editorial--' + ( scope || 'shop' ) } );
-			var head = el( 'div', { class: 'odd-shop__editorial-head' } );
-			var eyebrow = el( 'div', { class: 'odd-shop__editorial-eyebrow' } );
-			eyebrow.textContent = __( 'Today at ODD' );
-			var title = el( 'h3', { class: 'odd-shop__editorial-title' } );
-			title.textContent = __( 'Fresh from the weird shelf' );
-			head.appendChild( eyebrow );
-			head.appendChild( title );
-			strip.appendChild( head );
-			var grid = el( 'div', { class: 'odd-shop__editorial-grid' } );
-			picks.forEach( function ( row, i ) {
-				var card = el( 'button', {
-					type: 'button',
-					class: 'odd-shop__editorial-card' + ( i === 0 ? ' is-primary' : '' ),
-				} );
-				var art = el( 'span', { class: 'odd-shop__editorial-art', 'aria-hidden': 'true' } );
-				var img = row.cardUrl || row.previewUrl || row.iconUrl || ( row.raw && ( row.raw.card_url || row.raw.previewUrl || row.raw.icon_url ) ) || '';
-				if ( img ) art.style.backgroundImage = 'url("' + img + '")';
-				var copy = el( 'span', { class: 'odd-shop__editorial-copy' } );
-				var name = el( 'strong' );
-				name.textContent = row.name || row.label || row.slug;
-				var sub = el( 'span' );
-				sub.textContent = row.subtitle || row.description || __( 'Featured in the catalog' );
-				copy.appendChild( name );
-				copy.appendChild( sub );
-				card.appendChild( art );
-				card.appendChild( copy );
-				card.addEventListener( 'click', function () {
-					var inner = content.querySelector( '[data-odd-shop-card][data-slug="' + cssEscape( row.slug ) + '"], [data-odd-shop-card][data-set-slug="' + cssEscape( row.slug ) + '"], [data-odd-shop-card][data-cursor-set-slug="' + cssEscape( row.slug ) + '"], [data-odd-shop-card][data-app-slug="' + cssEscape( row.slug ) + '"]' );
-					if ( inner && typeof inner.scrollIntoView === 'function' ) inner.scrollIntoView( { block: 'center', behavior: 'smooth' } );
-				} );
-				grid.appendChild( card );
-			} );
-			strip.appendChild( grid );
-			return strip;
 		}
 
 		function renderEmptyResults( message ) {
@@ -5305,10 +5285,11 @@
 			var label = labelForInstalledRow( type, slug );
 			var canUndo = originalSlug !== undefined && originalSlug !== null && originalSlug !== slug;
 			var opts = { duration: canUndo ? 7600 : 4200 };
-			if ( canUndo && ( type === 'scene' || type === 'cursor-set' ) ) {
+			if ( canUndo && ( type === 'scene' || type === 'cursor-set' || type === 'icon-set' ) ) {
 				opts.actionLabel = 'Undo';
 				opts.onAction = function () {
 					if ( type === 'scene' ) applyScene( originalSlug || '' );
+					else if ( type === 'icon-set' ) applyIconSet( originalSlug || '' );
 					else if ( type === 'cursor-set' ) applyCursorSet( originalSlug || 'none' );
 				};
 			}
@@ -5360,7 +5341,7 @@
 				pickSceneLive( state.preview.originalSlug );
 			} else if ( state.preview.kind === 'iconSet' ) {
 				// Icon sets do not patch the live DOM. They feed
-				// Desktop Mode's native icon data on the next render.
+				// Desktop Mode's native icon data through live refresh.
 			} else if ( state.preview.kind === 'cursorSet' ) {
 				setActiveCursorLink( state.preview.originalSlug );
 			}
@@ -5377,7 +5358,7 @@
 			var wrap = el( 'div', { class: 'odd-shop__dept odd-shop__dept--icons' } );
 			wrap.appendChild( sectionHeader(
 				'Icon Sets',
-				'Dress Desktop Mode icon surfaces in a new costume. Apply reloads once so the native dock, taskbar, and shortcuts update together.',
+				'Dress Desktop Mode icon surfaces in a new costume. Apply once and the native dock, taskbar, and shortcuts update together.',
 				{ eyebrow: 'ODD · Icon Couture' }
 			) );
 			appendCatalogNotice( wrap, 'icon-set' );
@@ -5415,8 +5396,6 @@
 				var featuredSet = pickFeaturedSet( heroPool );
 				if ( featuredSet ) wrap.appendChild( renderIconHero( featuredSet ) );
 			}
-			var iconEditorial = renderEditorialStrip( rows, 'icons' );
-			if ( iconEditorial ) wrap.appendChild( iconEditorial );
 
 			// "Reset to default" pill — only shown when a custom set is
 			// committed. Gives users an obvious way back without
@@ -5651,8 +5630,6 @@
 				var featured = pickFeaturedCursorSet( heroPool );
 				if ( featured ) wrap.appendChild( renderCursorHero( featured ) );
 			}
-			var cursorEditorial = renderEditorialStrip( rows, 'cursors' );
-			if ( cursorEditorial ) wrap.appendChild( cursorEditorial );
 
 			if ( state.cfg.cursorSet && state.cfg.cursorSet !== 'none' && ! state.query ) {
 				var resetRow = el( 'div', { class: 'odd-shop__reset-row' } );
@@ -5980,6 +5957,7 @@
 			if ( ! state.preview || state.preview.kind !== 'iconSet' || state.posting ) return;
 			state.posting = true;
 			var slug   = state.preview.slug;
+			var originalSlug = state.preview.originalSlug;
 
 			savePrefs( { iconSet: slug }, function ( data ) {
 				state.posting = false;
@@ -5988,20 +5966,10 @@
 				}
 				state.preview = null;
 				playShopSound( 'success' );
-				var iconLabel = slug;
-				var sets = Array.isArray( state.cfg.iconSets ) ? state.cfg.iconSets : [];
-				for ( var ii = 0; ii < sets.length; ii++ ) {
-					if ( sets[ ii ] && sets[ ii ].slug === slug ) {
-						iconLabel = sets[ ii ].label || sets[ ii ].name || slug;
-						break;
-					}
-				}
-				scheduleAdminReload( {
-					delayMs: ODD_RELOAD_DELAY_MS_ICON,
-					slug:    slug,
-					type:    'icon-set',
-					name:    iconLabel,
-				} );
+				redecorateIconGrid();
+				renderPreviewBar();
+				showAppliedUndoToast( 'icon-set', slug, originalSlug );
+				refreshDesktopModeMenu( 'icon-set.apply' );
 			} );
 		}
 
@@ -6041,7 +6009,7 @@
 			// Fallback — read the same localStorage key the desktop
 			// layer writes to. Keeps the Shop functional even if the
 			// desktop layer object is temporarily unavailable (e.g.
-			// during boot races after a hard reload).
+				// during boot races).
 			try {
 				var raw = window.localStorage.getItem( 'desktop-mode-widgets' );
 				if ( ! raw ) return [];
@@ -6158,8 +6126,6 @@
 					shopCardIsActive( hero )
 				) );
 			}
-			var widgetEditorial = renderEditorialStrip( rows, 'widgets' );
-			if ( widgetEditorial ) wrap.appendChild( widgetEditorial );
 
 			if ( ! rows.length ) {
 				wrap.appendChild( renderEmptyDept(
@@ -6310,7 +6276,7 @@
 				// Random scene swap — chaos commit, no preview bar.
 				// Fires through the same live-swap + REST path the
 				// wallpaper grid uses when the user confirms, so the
-				// active card elsewhere stays in sync on reload.
+					// active card elsewhere stays in sync.
 				if ( state.posting ) return;
 				var scenes = Array.isArray( cfg.scenes ) ? cfg.scenes : [];
 				var current = cfg.wallpaper || cfg.scene;
@@ -6474,7 +6440,7 @@
 
 			var kind     = state.preview.kind;
 			var slug     = state.preview.slug;
-			var reload   = state.preview.kind === 'iconSet';
+			var liveRefresh = state.preview.kind === 'iconSet';
 			var itemName = '';
 			if ( kind === 'wallpaper' ) {
 				var scenes = Array.isArray( state.cfg.scenes ) ? state.cfg.scenes : [];
@@ -6512,8 +6478,8 @@
 				text.innerHTML = 'Previewing <em></em>. Keep to save, Cancel to revert.';
 			} else if ( kind === 'cursorSet' ) {
 				text.innerHTML = 'Previewing <em></em> cursors. Apply to save, Cancel to revert.';
-			} else if ( reload ) {
-				text.innerHTML = 'Applying <em></em> reloads Desktop Mode so the native icon surfaces update together.';
+			} else if ( liveRefresh ) {
+				text.innerHTML = 'Applying <em></em> refreshes Desktop Mode so the native icon surfaces update together.';
 			} else {
 				text.innerHTML = 'Previewing <em></em> icons. Apply to save, Cancel to revert.';
 			}
@@ -6534,7 +6500,7 @@
 				commit.textContent = 'Apply';
 				commit.addEventListener( 'click', function () { confirmCursorPreview(); } );
 			} else {
-				commit.textContent = reload ? 'Apply & reload' : 'Apply';
+				commit.textContent = 'Apply';
 				commit.addEventListener( 'click', function () { confirmIconPreview(); } );
 			}
 			actions.appendChild( commit );
@@ -6571,16 +6537,18 @@
 			if ( ! raw ) return null;
 			var slug = raw.slug || ( raw.id ? String( raw.id ).replace( /^odd\//, '' ) : '' );
 			if ( ! slug ) return null;
-			var cacheKey = [
-				type,
-				slug,
-				raw.version || '',
-				raw.installed === undefined ? 'u' : ( raw.installed ? '1' : '0' ),
-				raw.state || '',
-				raw.status || '',
-				raw.updateAvailable || raw.update_available ? 'u' : '',
-				raw.requiresReload ? 'r' : '',
-				raw.card_url || raw.cardUrl || '',
+				var cacheKey = [
+					type,
+					slug,
+					raw.version || '',
+					raw.installed === undefined ? 'u' : ( raw.installed ? '1' : '0' ),
+					raw.enabled === false ? '0' : '1',
+					raw.state || '',
+					raw.status || '',
+					raw.updateAvailable || raw.update_available ? 'u' : '',
+					raw.requiresReload ? 'r' : '',
+					raw.surfaces && typeof raw.surfaces === 'object' ? JSON.stringify( raw.surfaces ) : '',
+					raw.card_url || raw.cardUrl || '',
 				raw.icon_url || raw.iconUrl || raw.icon || '',
 				raw.previewUrl || raw.preview_url || raw.preview || '',
 				raw.download_url || raw.downloadUrl || '',
@@ -6638,12 +6606,13 @@
 				broken:        !! raw.broken || raw.state === 'broken' || raw.status === 'broken',
 				incompatible:  !! raw.incompatible || raw.state === 'incompatible' || raw.status === 'incompatible',
 				incompatibilityReason: raw.incompatibility_reason || raw.incompatibilityReason || '',
-				updateAvailable: !! raw.updateAvailable || !! raw.update_available || raw.state === 'updateAvailable',
-				requiresReload: !! raw.requiresReload,
-				installed:     raw.installed === undefined ? true : !! raw.installed,
-				enabled:       raw.enabled !== false,
-				raw:           raw,
-			};
+					updateAvailable: !! raw.updateAvailable || !! raw.update_available || raw.state === 'updateAvailable',
+					requiresReload: !! raw.requiresReload,
+					installed:     raw.installed === undefined ? true : !! raw.installed,
+					enabled:       raw.enabled !== false,
+					surfaces:      raw.surfaces && typeof raw.surfaces === 'object' ? Object.assign( {}, raw.surfaces ) : null,
+					raw:           raw,
+				};
 			shopRowCache[ cacheKey ] = Object.assign( {}, row, { raw: null } );
 			return row;
 		}
@@ -7563,7 +7532,7 @@
 
 			if ( row.installed && ! isActive && ( row.type === 'scene' || row.type === 'icon-set' || row.type === 'cursor-set' ) ) {
 				var hint = el( 'div', { class: 'odd-shop__card-hint' } );
-				hint.textContent = row.type === 'icon-set' ? 'Apply reloads icons together' : 'Click card to preview';
+				hint.textContent = row.type === 'icon-set' ? 'Apply refreshes icons together' : 'Click card to preview';
 				wrap.appendChild( hint );
 			}
 
@@ -7615,13 +7584,10 @@
 
 		/* --- Install breadcrumb + widget hot-register ------------ */
 
-		// Cross-reload breadcrumb. Scene / icon-set / app installs
-		// trigger a full page reload so their registration (scene.js
-		// enqueue, server-canonical shortcut filter, app native-window +
-		// surfaces) actually takes effect. The breadcrumb survives
-		// the reload in sessionStorage so the post-reload panel
-		// navigates the user to the right department and flashes
-		// the new tile.
+		// Cross-reload breadcrumb for fallback paths. The normal install
+		// flow refreshes Desktop Mode live; script-load failures can
+		// still request a full reload, and this marker lets the panel
+		// navigate to the right department and flash the new tile after.
 		//
 		// The key is inlined at every call site (rather than hoisted
 		// to a `var`) because `var`-declared constants only get

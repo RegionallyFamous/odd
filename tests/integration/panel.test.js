@@ -2,8 +2,8 @@
  * panel.test.js — smoke-test the ODD Shop render pipeline.
  *
  * Loads odd/src/panel/index.js, which registers a render callback on
- * the current and older native-window globals. We invoke the older
- * callback against a detached host element with a stubbed `window.odd` config and
+ * Desktop Mode's native-window global. We invoke that callback against
+ * a detached host element with a stubbed `window.odd` config and
  * stubbed global.fetch, then exercise the critical paths:
  *
  *   - Rail lists the expected departments (Wallpapers, Icon Sets,
@@ -340,7 +340,7 @@ describe( 'ODD Shop', () => {
 		expect( document.querySelector( '.desktop-mode-dock__item-img' ).getAttribute( 'src' ) ).toBe( 'dock-native.png' );
 		expect( document.querySelector( '.desktop-mode-icon[data-icon-id="posts"] img' ).getAttribute( 'src' ) ).toBe( 'posts-native.png' );
 		expect( document.querySelector( '.desktop-mode-icon[data-icon-id="odd"] img' ).getAttribute( 'src' ) ).toBe( 'odd-native.png' );
-		expect( host.querySelector( '[data-testid="odd-preview-commit"]' ).textContent ).toBe( 'Apply & reload' );
+		expect( host.querySelector( '[data-testid="odd-preview-commit"]' ).textContent ).toBe( 'Apply' );
 
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );

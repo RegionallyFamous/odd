@@ -151,30 +151,55 @@
 	position: relative;
 	width: 88%;
 	aspect-ratio: 1 / 0.92;
-	background:
-		linear-gradient( 180deg, rgba( 174, 243, 255, 0.96 ) 0%, #4068f4 42%, #5b21b6 100% );
-	clip-path: polygon( 0 0, 100% 0, 50% 100% );
 	display: flex;
 	align-items: flex-start;
 	justify-content: center;
-	padding: 12% 10% 0;
+	padding: 11% 7% 0;
 	box-sizing: border-box;
 	pointer-events: none;
+}
+.odd-eight__triangle::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	background:
+		linear-gradient( 180deg, rgba( 174, 243, 255, 0.96 ) 0%, #4068f4 42%, #5b21b6 100% );
+	clip-path: polygon( 0 0, 100% 0, 50% 100% );
 	filter: drop-shadow( 0 0 10px rgba( 34, 211, 238, 0.42 ) );
 }
 .odd-eight__answer {
+	position: relative;
+	z-index: 1;
+	display: block;
 	color: #f8fbff;
 	text-align: center;
-	font: 800 9.2px/1.12 "Helvetica Neue", Arial, sans-serif;
+	font: 800 8.8px/1.08 "Helvetica Neue", Arial, sans-serif;
 	letter-spacing: 0.04em;
 	text-transform: uppercase;
+	text-wrap: balance;
 	text-shadow:
 		0 1px 0 rgba( 0, 0, 0, 0.58 ),
 		0 0 8px rgba( 255, 255, 255, 0.28 );
 	opacity: 1;
 	transition: opacity 0.22s ease, transform 0.22s ease;
-	word-break: break-word;
+	overflow-wrap: anywhere;
+	word-break: normal;
+	max-width: 76%;
+}
+.odd-eight__answer.is-long {
+	max-width: 82%;
+	font-size: 7.4px;
+	line-height: 1.04;
+	letter-spacing: 0.025em;
+}
+.odd-eight__answer.is-code {
 	max-width: 100%;
+	font-size: 7px;
+	line-height: 1.05;
+	letter-spacing: 0.01em;
+	text-transform: none;
+	white-space: pre-line;
 }
 .odd-eight__answer.is-fading {
 	opacity: 0;

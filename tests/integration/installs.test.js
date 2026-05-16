@@ -6,12 +6,10 @@
  * returned panel row into state. Reload is now an explicit fallback,
  * not the success path.
  *
- * Uses real timers + explicit micro-pause helpers — the install
+ * Uses real timers + explicit micro-pause helpers because the install
  * chain is deeply nested promises (`fetch().then(r => r.json().then(...))`
- * → `handleInstallSuccess` → `setTimeout(reload, 500)`), and fake
- * timers need manual drains between every `.then` hop. The handful
- * of real-time sleeps here are smaller than the production reload
- * delay so tests still finish in well under a second.
+ * through `handleInstallSuccess`), and fake timers need manual drains
+ * between every `.then` hop.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -392,7 +390,7 @@ describe( 'ODD Shop · install flows', () => {
 		expect( window.sessionStorage.getItem( 'odd.justInstalled' ) ).toBeNull();
 	} );
 
-	it( 'widget hot-register failure schedules admin reload after success path', async () => {
+	it( 'widget hot-register failure uses the explicit reload fallback', async () => {
 		seed( {
 			bundleCatalog: {
 				scene: [],
