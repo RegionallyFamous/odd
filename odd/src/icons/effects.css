@@ -63,30 +63,485 @@
 	}
 }
 
+@keyframes odd-icon-coin-roll {
+	0% { filter: drop-shadow(0 0 0 rgba(255, 243, 106, 0)) drop-shadow(0 0 8px rgba(244, 196, 95, 0.2)); transform: rotate(-1deg) scale(1); }
+	50% { filter: drop-shadow(1px 0 0 rgba(255, 243, 106, 0.7)) drop-shadow(0 0 13px rgba(244, 196, 95, 0.38)); transform: rotate(1.8deg) scale(1.025); }
+	100% { filter: drop-shadow(-1px 0 0 rgba(138, 74, 27, 0.55)) drop-shadow(0 0 8px rgba(244, 196, 95, 0.22)); transform: rotate(-1deg) scale(1); }
+}
+
+@keyframes odd-icon-frost-shiver {
+	0%, 100% { filter: drop-shadow(-0.8px 0 0 rgba(158, 234, 255, 0.62)) drop-shadow(0 0 9px rgba(106, 174, 252, 0.18)); transform: translate3d(0, 0, 0); }
+	35% { filter: drop-shadow(0.8px -0.4px 0 rgba(215, 247, 255, 0.72)) drop-shadow(0 0 12px rgba(158, 234, 255, 0.25)); transform: translate3d(0.5px, -0.5px, 0); }
+	70% { filter: drop-shadow(-0.4px 0.8px 0 rgba(106, 174, 252, 0.58)) drop-shadow(0 0 10px rgba(215, 247, 255, 0.18)); transform: translate3d(-0.5px, 0.25px, 0); }
+}
+
+@keyframes odd-icon-blueprint-scan {
+	0% { filter: drop-shadow(-1px 0 0 rgba(125, 247, 255, 0.45)) drop-shadow(0 0 7px rgba(77, 163, 255, 0.22)); transform: translate3d(-0.4px, 0, 0); }
+	49% { transform: translate3d(0.4px, 0, 0); }
+	50% { filter: drop-shadow(1px 0 0 rgba(207, 230, 255, 0.75)) drop-shadow(0 0 13px rgba(125, 247, 255, 0.34)); transform: translate3d(0.4px, -0.6px, 0); }
+	100% { filter: drop-shadow(-1px 0 0 rgba(77, 163, 255, 0.48)) drop-shadow(0 0 7px rgba(125, 247, 255, 0.2)); transform: translate3d(-0.4px, 0, 0); }
+}
+
+@keyframes odd-icon-organic-sway {
+	0%, 100% { filter: drop-shadow(0 0 8px rgba(136, 185, 87, 0.22)); transform: rotate(-1.2deg) translate3d(0, 0, 0); }
+	50% { filter: drop-shadow(0.8px -0.4px 0 rgba(213, 239, 140, 0.42)) drop-shadow(0 0 12px rgba(136, 185, 87, 0.32)); transform: rotate(1.2deg) translate3d(0, -0.8px, 0); }
+}
+
+@keyframes odd-icon-stencil-spatter {
+	0%, 100% { filter: drop-shadow(-1px 0 0 rgba(255, 95, 79, 0.55)) contrast(1.02); transform: translate3d(0, 0, 0); }
+	24% { transform: translate3d(-0.8px, 0.4px, 0); }
+	26% { filter: drop-shadow(1.2px -0.4px 0 rgba(36, 33, 42, 0.7)) drop-shadow(0 0 8px rgba(255, 95, 79, 0.2)) contrast(1.12); transform: translate3d(0.9px, -0.3px, 0); }
+	54% { transform: translate3d(0.2px, 0.8px, 0); }
+}
+
+@keyframes odd-icon-circuit-blip {
+	0%, 100% { filter: drop-shadow(0 0 7px rgba(47, 179, 122, 0.2)); transform: translate3d(0, 0, 0); }
+	42% { filter: drop-shadow(-1px 0 0 rgba(141, 255, 207, 0.72)) drop-shadow(0 0 15px rgba(255, 230, 107, 0.28)); transform: translate3d(0, -0.7px, 0) scale(1.015); }
+	44% { filter: drop-shadow(1px 0 0 rgba(47, 179, 122, 0.72)) drop-shadow(0 0 10px rgba(141, 255, 207, 0.24)); transform: translate3d(0.8px, -0.2px, 0) scale(1.01); }
+}
+
+@keyframes odd-icon-clay-wobble {
+	0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 184, 77, 0.18)); transform: scale(1, 1) rotate(-0.6deg); }
+	50% { filter: drop-shadow(0 1px 0 rgba(255, 124, 109, 0.44)) drop-shadow(0 0 12px rgba(255, 233, 166, 0.2)); transform: scale(1.035, 0.975) rotate(0.8deg); }
+}
+
+@keyframes odd-icon-stitch-tug {
+	0%, 100% { filter: drop-shadow(-0.8px -0.8px 0 rgba(232, 124, 167, 0.48)); transform: translate3d(0, 0, 0); }
+	50% { filter: drop-shadow(0.8px 0.8px 0 rgba(142, 231, 255, 0.46)) drop-shadow(0 0 8px rgba(255, 225, 239, 0.18)); transform: translate3d(0, -0.8px, 0) rotate(0.8deg); }
+}
+
+@keyframes odd-icon-blink {
+	0%, 42%, 100% { filter: drop-shadow(0 0 9px rgba(179, 92, 255, 0.22)); transform: scaleY(1); }
+	48% { filter: drop-shadow(0 0 17px rgba(125, 247, 255, 0.34)); transform: scaleY(0.86) scaleX(1.04); }
+	56% { transform: scaleY(1.03) scaleX(0.99); }
+}
+
+@keyframes odd-icon-filament-arc {
+	0%, 100% { filter: drop-shadow(-1px 0 0 rgba(80, 242, 255, 0.45)) drop-shadow(0 0 8px rgba(255, 176, 0, 0.2)); transform: translate3d(0, 0, 0); }
+	50% { filter: drop-shadow(1px -0.8px 0 rgba(255, 107, 214, 0.55)) drop-shadow(0 0 17px rgba(80, 242, 255, 0.38)); transform: translate3d(0, -1px, 0) rotate(0.7deg); }
+}
+
+@keyframes odd-icon-fold-flip {
+	0%, 100% { filter: drop-shadow(0 0 8px rgba(124, 92, 255, 0.22)); transform: perspective(80px) rotateY(-3deg); }
+	50% { filter: drop-shadow(1px 0 0 rgba(255, 240, 168, 0.45)) drop-shadow(0 0 12px rgba(199, 184, 255, 0.24)); transform: perspective(80px) rotateY(4deg) translate3d(0, -0.6px, 0); }
+}
+
+@keyframes odd-icon-holo-scan {
+	0% { filter: drop-shadow(-1.2px 0 0 rgba(142, 255, 241, 0.42)) drop-shadow(0 0 9px rgba(159, 208, 255, 0.2)); opacity: 0.96; transform: translate3d(0, 0, 0); }
+	50% { filter: drop-shadow(1.2px 0 0 rgba(240, 167, 255, 0.52)) drop-shadow(0 0 16px rgba(142, 255, 241, 0.32)); opacity: 1; transform: translate3d(0, -0.8px, 0); }
+	100% { filter: drop-shadow(-1.2px 0 0 rgba(159, 208, 255, 0.42)) drop-shadow(0 0 9px rgba(240, 167, 255, 0.18)); opacity: 0.96; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes odd-icon-citrus-pop {
+	0%, 100% { filter: drop-shadow(0 0 8px rgba(255, 214, 75, 0.2)); transform: scale(1) rotate(-1deg); }
+	46% { filter: drop-shadow(0 0 14px rgba(182, 255, 102, 0.32)) saturate(1.08); transform: scale(1.055) rotate(1deg); }
+	54% { transform: scale(0.985) rotate(0); }
+}
+
+@keyframes odd-icon-loop-breathe {
+	0%, 100% { filter: drop-shadow(0 0 8px rgba(0, 194, 255, 0.2)); transform: scale(0.995); }
+	50% { filter: drop-shadow(0 0 14px rgba(166, 107, 255, 0.28)); transform: scale(1.035); }
+}
+
+@keyframes odd-icon-misprint-jitter {
+	0%, 100% { filter: drop-shadow(-1px 0 0 rgba(255, 79, 168, 0.58)) drop-shadow(1px 0 0 rgba(46, 211, 255, 0.48)); transform: translate3d(0, 0, 0); }
+	22% { transform: translate3d(-0.8px, 0.5px, 0); }
+	24% { filter: drop-shadow(1.5px -0.4px 0 rgba(255, 79, 168, 0.62)) drop-shadow(-1px 0.4px 0 rgba(46, 211, 255, 0.54)); transform: translate3d(0.8px, -0.4px, 0); }
+	65% { transform: translate3d(0.4px, 0.8px, 0); }
+}
+
+@keyframes odd-icon-pennant-wave {
+	0%, 100% { filter: drop-shadow(-0.8px 0 0 rgba(215, 58, 58, 0.48)); transform: skewX(-2deg) rotate(-0.6deg); }
+	50% { filter: drop-shadow(0.8px 0 0 rgba(46, 126, 234, 0.45)) drop-shadow(0 0 10px rgba(255, 240, 106, 0.22)); transform: skewX(2deg) rotate(0.7deg) translate3d(0, -0.6px, 0); }
+}
+
+@keyframes odd-icon-carved-glint {
+	0%, 100% { filter: drop-shadow(0 0 8px rgba(196, 122, 60, 0.22)); transform: rotate(-0.8deg); }
+	50% { filter: drop-shadow(1px -0.6px 0 rgba(73, 226, 164, 0.42)) drop-shadow(0 0 13px rgba(255, 207, 112, 0.28)); transform: rotate(0.9deg) translate3d(0, -0.7px, 0); }
+}
+
 body.desktop-mode-active .desktop-mode-dock__item img.desktop-mode-dock__item-img[src*="/assets/icons/"],
 body.desktop-mode-active .desktop-mode-dock__item img.desktop-mode-dock__item-img[src*="/odd/icon-sets/"],
 body.desktop-mode-active .desktop-mode-dock__item img.desktop-mode-dock__item-img[src*="/uploads/odd/icon-sets/"],
+body.desktop-mode-active .desktop-mode-dock__item img.desktop-mode-dock__item-img[data-odd-icon-set],
+body.desktop-mode-active .desktop-mode-dock__item img.desktop-mode-dock__item-img[data-odd-fun-layer],
 body.desktop-mode-active .desktop-mode-dock__item img.desktop-mode-dock__item-img[data-odd-skinned-system-icon],
 body.desktop-mode-active .wp-desktop-dock__item img.wp-desktop-dock__item-img[src*="/assets/icons/"],
 body.desktop-mode-active .wp-desktop-dock__item img.wp-desktop-dock__item-img[src*="/odd/icon-sets/"],
 body.desktop-mode-active .wp-desktop-dock__item img.wp-desktop-dock__item-img[src*="/uploads/odd/icon-sets/"],
+body.desktop-mode-active .wp-desktop-dock__item img.wp-desktop-dock__item-img[data-odd-icon-set],
+body.desktop-mode-active .wp-desktop-dock__item img.wp-desktop-dock__item-img[data-odd-fun-layer],
 body.desktop-mode-active .wp-desktop-dock__item img.wp-desktop-dock__item-img[data-odd-skinned-system-icon],
 body.desktop-mode-active .desktop-mode-icon__image img[src*="/assets/icons/"],
 body.desktop-mode-active .desktop-mode-icon__image img[src*="/odd/icon-sets/"],
 body.desktop-mode-active .desktop-mode-icon__image img[src*="/uploads/odd/icon-sets/"],
+body.desktop-mode-active .desktop-mode-icon__image img[data-odd-icon-set],
+body.desktop-mode-active .desktop-mode-icon__image img[data-odd-fun-layer],
 body.desktop-mode-active .wp-desktop-icon img[src*="/assets/icons/"],
 body.desktop-mode-active .wp-desktop-icon img[src*="/odd/icon-sets/"],
 body.desktop-mode-active .wp-desktop-icon img[src*="/uploads/odd/icon-sets/"],
+body.desktop-mode-active .wp-desktop-icon img[data-odd-icon-set],
+body.desktop-mode-active .wp-desktop-icon img[data-odd-fun-layer],
 .odd-dock-rail-mount__tile img[src*="/assets/icons/"],
 .odd-dock-rail-mount__tile img[src*="/odd/icon-sets/"],
 .odd-dock-rail-mount__tile img[src*="/uploads/odd/icon-sets/"],
+.odd-dock-rail-mount__tile img[data-odd-icon-set],
+.odd-dock-rail-mount__tile img[data-odd-fun-layer],
 .odd-panel .odd-shop__card-quartet > img,
 .odd-panel .odd-iconset-mini img {
-	animation: odd-icon-outline-drift 5.8s ease-in-out infinite alternate;
+	--odd-icon-pack-motion: odd-icon-outline-drift;
+	--odd-icon-pack-hover-motion: odd-icon-outline-spark;
+	--odd-icon-pack-duration: 5.8s;
+	--odd-icon-pack-hover-transform: translate3d(0, -1px, 0) scale(1.045);
+	animation-name: var(--odd-icon-pack-motion);
+	animation-duration: var(--odd-icon-pack-duration);
+	animation-timing-function: ease-in-out;
+	animation-iteration-count: infinite;
+	animation-direction: alternate;
 	transform-origin: center;
 	backface-visibility: hidden;
 	transition: filter 150ms ease, transform 150ms ease, opacity 150ms ease;
 	will-change: filter;
+}
+
+body.desktop-mode-active .desktop-mode-dock__item img[src*="/arcade-tokens/"],
+body.desktop-mode-active .wp-desktop-dock__item img[src*="/arcade-tokens/"],
+body.desktop-mode-active .desktop-mode-icon__image img[src*="/arcade-tokens/"],
+body.desktop-mode-active .wp-desktop-icon img[src*="/arcade-tokens/"],
+.odd-dock-rail-mount__tile img[src*="/arcade-tokens/"],
+.odd-panel .odd-shop__card-art[data-odd-fun-layer="coin-spark"] .odd-shop__card-quartet > img {
+	--odd-icon-pack-motion: odd-icon-coin-roll;
+	--odd-icon-pack-duration: 3.4s;
+	--odd-icon-pack-hover-transform: rotate(3deg) scale(1.08);
+}
+
+body.desktop-mode-active .desktop-mode-dock__item img[src*="/arctic/"],
+body.desktop-mode-active .wp-desktop-dock__item img[src*="/arctic/"],
+body.desktop-mode-active .desktop-mode-icon__image img[src*="/arctic/"],
+body.desktop-mode-active .wp-desktop-icon img[src*="/arctic/"],
+.odd-dock-rail-mount__tile img[src*="/arctic/"],
+.odd-panel .odd-shop__card-art[data-odd-fun-layer="frost-rim"] .odd-shop__card-quartet > img {
+	--odd-icon-pack-motion: odd-icon-frost-shiver;
+	--odd-icon-pack-duration: 2.8s;
+	--odd-icon-pack-hover-transform: translate3d(0, -1px, 0) scale(1.04);
+}
+
+body.desktop-mode-active .desktop-mode-dock__item img[src*="/blueprint/"],
+body.desktop-mode-active .wp-desktop-dock__item img[src*="/blueprint/"],
+body.desktop-mode-active .desktop-mode-icon__image img[src*="/blueprint/"],
+body.desktop-mode-active .wp-desktop-icon img[src*="/blueprint/"],
+.odd-dock-rail-mount__tile img[src*="/blueprint/"],
+.odd-panel .odd-shop__card-art[data-odd-fun-layer="blueprint-grid"] .odd-shop__card-quartet > img {
+	--odd-icon-pack-motion: odd-icon-blueprint-scan;
+	--odd-icon-pack-duration: 4.2s;
+	--odd-icon-pack-hover-transform: translate3d(1px, -1px, 0) scale(1.035);
+}
+
+body.desktop-mode-active .desktop-mode-dock__item img[src*="/botanical-plate/"],
+body.desktop-mode-active .wp-desktop-dock__item img[src*="/botanical-plate/"],
+body.desktop-mode-active .desktop-mode-icon__image img[src*="/botanical-plate/"],
+body.desktop-mode-active .wp-desktop-icon img[src*="/botanical-plate/"],
+.odd-dock-rail-mount__tile img[src*="/botanical-plate/"],
+.odd-panel .odd-shop__card-art[data-odd-fun-layer="leaf-vein"] .odd-shop__card-quartet > img {
+	--odd-icon-pack-motion: odd-icon-organic-sway;
+	--odd-icon-pack-duration: 5.2s;
+	--odd-icon-pack-hover-transform: rotate(2deg) translate3d(0, -1px, 0) scale(1.04);
+}
+
+body.desktop-mode-active .desktop-mode-dock__item img[src*="/brutalist-stencil/"],
+body.desktop-mode-active .wp-desktop-dock__item img[src*="/brutalist-stencil/"],
+body.desktop-mode-active .desktop-mode-icon__image img[src*="/brutalist-stencil/"],
+body.desktop-mode-active .wp-desktop-icon img[src*="/brutalist-stencil/"],
+.odd-dock-rail-mount__tile img[src*="/brutalist-stencil/"],
+.odd-panel .odd-shop__card-art[data-odd-fun-layer="stencil-spray"] .odd-shop__card-quartet > img {
+	--odd-icon-pack-motion: odd-icon-stencil-spatter;
+	--odd-icon-pack-duration: 3.1s;
+	--odd-icon-pack-hover-transform: translate3d(-1px, -1px, 0) scale(1.045);
+}
+
+body.desktop-mode-active .desktop-mode-dock__item img[src*="/circuit-bend/"],
+body.desktop-mode-active .wp-desktop-dock__item img[src*="/circuit-bend/"],
+body.desktop-mode-active .desktop-mode-icon__image img[src*="/circuit-bend/"],
+body.desktop-mode-active .wp-desktop-icon img[src*="/circuit-bend/"],
+.odd-dock-rail-mount__tile img[src*="/circuit-bend/"],
+.odd-panel .odd-shop__card-art[data-odd-fun-layer="circuit-trace"] .odd-shop__card-quartet > img {
+	--odd-icon-pack-motion: odd-icon-circuit-blip;
+	--odd-icon-pack-duration: 2.9s;
+	--odd-icon-pack-hover-transform: translate3d(0, -1px, 0) scale(1.06);
+}
+
+body.desktop-mode-active .desktop-mode-dock__item img[src*="/claymation/"],
+body.desktop-mode-active .wp-desktop-dock__item img[src*="/claymation/"],
+body.desktop-mode-active .desktop-mode-icon__image img[src*="/claymation/"],
+body.desktop-mode-active .wp-desktop-icon img[src*="/claymation/"],
+.odd-dock-rail-mount__tile img[src*="/claymation/"],
+.odd-panel .odd-shop__card-art[data-odd-fun-layer="clay-smudge"] .odd-shop__card-quartet > img {
+	--odd-icon-pack-motion: odd-icon-clay-wobble;
+	--odd-icon-pack-duration: 4.6s;
+	--odd-icon-pack-hover-transform: scale(1.08, 0.97) translate3d(0, -1px, 0);
+}
+
+body.desktop-mode-active .desktop-mode-dock__item img[src*="/cross-stitch/"],
+body.desktop-mode-active .wp-desktop-dock__item img[src*="/cross-stitch/"],
+body.desktop-mode-active .desktop-mode-icon__image img[src*="/cross-stitch/"],
+body.desktop-mode-active .wp-desktop-icon img[src*="/cross-stitch/"],
+.odd-dock-rail-mount__tile img[src*="/cross-stitch/"],
+.odd-panel .odd-shop__card-art[data-odd-fun-layer="stitch-cross"] .odd-shop__card-quartet > img {
+	--odd-icon-pack-motion: odd-icon-stitch-tug;
+	--odd-icon-pack-duration: 3.8s;
+	--odd-icon-pack-hover-transform: translate3d(0, -2px, 0) rotate(1deg) scale(1.04);
+}
+
+body.desktop-mode-active .desktop-mode-dock__item img[src*="/eyeball-avenue/"],
+body.desktop-mode-active .wp-desktop-dock__item img[src*="/eyeball-avenue/"],
+body.desktop-mode-active .desktop-mode-icon__image img[src*="/eyeball-avenue/"],
+body.desktop-mode-active .wp-desktop-icon img[src*="/eyeball-avenue/"],
+.odd-dock-rail-mount__tile img[src*="/eyeball-avenue/"],
+.odd-panel .odd-shop__card-art[data-odd-fun-layer="blink-ring"] .odd-shop__card-quartet > img {
+	--odd-icon-pack-motion: odd-icon-blink;
+	--odd-icon-pack-duration: 4.8s;
+	--odd-icon-pack-hover-transform: scaleY(0.92) scaleX(1.05) translate3d(0, -1px, 0);
+}
+
+body.desktop-mode-active .desktop-mode-dock__item img[src*="/filament/"],
+body.desktop-mode-active .wp-desktop-dock__item img[src*="/filament/"],
+body.desktop-mode-active .desktop-mode-icon__image img[src*="/filament/"],
+body.desktop-mode-active .wp-desktop-icon img[src*="/filament/"],
+.odd-dock-rail-mount__tile img[src*="/filament/"],
+.odd-panel .odd-shop__card-art[data-odd-fun-layer="filament-wire"] .odd-shop__card-quartet > img {
+	--odd-icon-pack-motion: odd-icon-filament-arc;
+	--odd-icon-pack-duration: 3.6s;
+	--odd-icon-pack-hover-transform: translate3d(0, -1.5px, 0) rotate(1.4deg) scale(1.055);
+}
+
+body.desktop-mode-active .desktop-mode-dock__item img[src*="/fold/"],
+body.desktop-mode-active .wp-desktop-dock__item img[src*="/fold/"],
+body.desktop-mode-active .desktop-mode-icon__image img[src*="/fold/"],
+body.desktop-mode-active .wp-desktop-icon img[src*="/fold/"],
+.odd-dock-rail-mount__tile img[src*="/fold/"],
+.odd-panel .odd-shop__card-art[data-odd-fun-layer="paper-fold"] .odd-shop__card-quartet > img {
+	--odd-icon-pack-motion: odd-icon-fold-flip;
+	--odd-icon-pack-duration: 4.4s;
+	--odd-icon-pack-hover-transform: perspective(80px) rotateY(8deg) translate3d(0, -1px, 0) scale(1.04);
+}
+
+body.desktop-mode-active .desktop-mode-dock__item img[src*="/hologram/"],
+body.desktop-mode-active .wp-desktop-dock__item img[src*="/hologram/"],
+body.desktop-mode-active .desktop-mode-icon__image img[src*="/hologram/"],
+body.desktop-mode-active .wp-desktop-icon img[src*="/hologram/"],
+.odd-dock-rail-mount__tile img[src*="/hologram/"],
+.odd-panel .odd-shop__card-art[data-odd-fun-layer="hologram-scan"] .odd-shop__card-quartet > img {
+	--odd-icon-pack-motion: odd-icon-holo-scan;
+	--odd-icon-pack-duration: 2.6s;
+	--odd-icon-pack-hover-transform: translate3d(0, -1px, 0) scale(1.045);
+}
+
+body.desktop-mode-active .desktop-mode-dock__item img[src*="/lemonade-stand/"],
+body.desktop-mode-active .wp-desktop-dock__item img[src*="/lemonade-stand/"],
+body.desktop-mode-active .desktop-mode-icon__image img[src*="/lemonade-stand/"],
+body.desktop-mode-active .wp-desktop-icon img[src*="/lemonade-stand/"],
+.odd-dock-rail-mount__tile img[src*="/lemonade-stand/"],
+.odd-panel .odd-shop__card-art[data-odd-fun-layer="citrus-pop"] .odd-shop__card-quartet > img {
+	--odd-icon-pack-motion: odd-icon-citrus-pop;
+	--odd-icon-pack-duration: 3.3s;
+	--odd-icon-pack-hover-transform: scale(1.1) rotate(2deg);
+}
+
+body.desktop-mode-active .desktop-mode-dock__item img[src*="/monoline/"],
+body.desktop-mode-active .wp-desktop-dock__item img[src*="/monoline/"],
+body.desktop-mode-active .desktop-mode-icon__image img[src*="/monoline/"],
+body.desktop-mode-active .wp-desktop-icon img[src*="/monoline/"],
+.odd-dock-rail-mount__tile img[src*="/monoline/"],
+.odd-panel .odd-shop__card-art[data-odd-fun-layer="line-loop"] .odd-shop__card-quartet > img {
+	--odd-icon-pack-motion: odd-icon-loop-breathe;
+	--odd-icon-pack-duration: 4.8s;
+	--odd-icon-pack-hover-transform: scale(1.065);
+}
+
+body.desktop-mode-active .desktop-mode-dock__item img[src*="/risograph/"],
+body.desktop-mode-active .wp-desktop-dock__item img[src*="/risograph/"],
+body.desktop-mode-active .desktop-mode-icon__image img[src*="/risograph/"],
+body.desktop-mode-active .wp-desktop-icon img[src*="/risograph/"],
+.odd-dock-rail-mount__tile img[src*="/risograph/"],
+.odd-panel .odd-shop__card-art[data-odd-fun-layer="misprint-dot"] .odd-shop__card-quartet > img {
+	--odd-icon-pack-motion: odd-icon-misprint-jitter;
+	--odd-icon-pack-duration: 2.4s;
+	--odd-icon-pack-hover-transform: translate3d(1px, -1px, 0) scale(1.045);
+}
+
+body.desktop-mode-active .desktop-mode-dock__item img[src*="/stadium/"],
+body.desktop-mode-active .wp-desktop-dock__item img[src*="/stadium/"],
+body.desktop-mode-active .desktop-mode-icon__image img[src*="/stadium/"],
+body.desktop-mode-active .wp-desktop-icon img[src*="/stadium/"],
+.odd-dock-rail-mount__tile img[src*="/stadium/"],
+.odd-panel .odd-shop__card-art[data-odd-fun-layer="pennant-stripe"] .odd-shop__card-quartet > img {
+	--odd-icon-pack-motion: odd-icon-pennant-wave;
+	--odd-icon-pack-duration: 4s;
+	--odd-icon-pack-hover-transform: skewX(4deg) translate3d(0, -1px, 0) scale(1.04);
+}
+
+body.desktop-mode-active .desktop-mode-dock__item img[src*="/tiki/"],
+body.desktop-mode-active .wp-desktop-dock__item img[src*="/tiki/"],
+body.desktop-mode-active .desktop-mode-icon__image img[src*="/tiki/"],
+body.desktop-mode-active .wp-desktop-icon img[src*="/tiki/"],
+.odd-dock-rail-mount__tile img[src*="/tiki/"],
+.odd-panel .odd-shop__card-art[data-odd-fun-layer="carved-spark"] .odd-shop__card-quartet > img {
+	--odd-icon-pack-motion: odd-icon-carved-glint;
+	--odd-icon-pack-duration: 4.1s;
+	--odd-icon-pack-hover-transform: rotate(2deg) translate3d(0, -1px, 0) scale(1.045);
+}
+
+body.desktop-mode-active img[data-odd-icon-set="arcade-tokens"],
+body.desktop-mode-active img[data-odd-fun-layer="coin-spark"],
+.odd-dock-rail-mount__tile img[data-odd-icon-set="arcade-tokens"],
+.odd-dock-rail-mount__tile img[data-odd-fun-layer="coin-spark"] {
+	--odd-icon-pack-motion: odd-icon-coin-roll;
+	--odd-icon-pack-duration: 3.4s;
+	--odd-icon-pack-hover-transform: rotate(3deg) scale(1.08);
+}
+
+body.desktop-mode-active img[data-odd-icon-set="arctic"],
+body.desktop-mode-active img[data-odd-fun-layer="frost-rim"],
+.odd-dock-rail-mount__tile img[data-odd-icon-set="arctic"],
+.odd-dock-rail-mount__tile img[data-odd-fun-layer="frost-rim"] {
+	--odd-icon-pack-motion: odd-icon-frost-shiver;
+	--odd-icon-pack-duration: 2.8s;
+	--odd-icon-pack-hover-transform: translate3d(0, -1px, 0) scale(1.04);
+}
+
+body.desktop-mode-active img[data-odd-icon-set="blueprint"],
+body.desktop-mode-active img[data-odd-fun-layer="blueprint-grid"],
+.odd-dock-rail-mount__tile img[data-odd-icon-set="blueprint"],
+.odd-dock-rail-mount__tile img[data-odd-fun-layer="blueprint-grid"] {
+	--odd-icon-pack-motion: odd-icon-blueprint-scan;
+	--odd-icon-pack-duration: 4.2s;
+	--odd-icon-pack-hover-transform: translate3d(1px, -1px, 0) scale(1.035);
+}
+
+body.desktop-mode-active img[data-odd-icon-set="botanical-plate"],
+body.desktop-mode-active img[data-odd-fun-layer="leaf-vein"],
+.odd-dock-rail-mount__tile img[data-odd-icon-set="botanical-plate"],
+.odd-dock-rail-mount__tile img[data-odd-fun-layer="leaf-vein"] {
+	--odd-icon-pack-motion: odd-icon-organic-sway;
+	--odd-icon-pack-duration: 5.2s;
+	--odd-icon-pack-hover-transform: rotate(2deg) translate3d(0, -1px, 0) scale(1.04);
+}
+
+body.desktop-mode-active img[data-odd-icon-set="brutalist-stencil"],
+body.desktop-mode-active img[data-odd-fun-layer="stencil-spray"],
+.odd-dock-rail-mount__tile img[data-odd-icon-set="brutalist-stencil"],
+.odd-dock-rail-mount__tile img[data-odd-fun-layer="stencil-spray"] {
+	--odd-icon-pack-motion: odd-icon-stencil-spatter;
+	--odd-icon-pack-duration: 3.1s;
+	--odd-icon-pack-hover-transform: translate3d(-1px, -1px, 0) scale(1.045);
+}
+
+body.desktop-mode-active img[data-odd-icon-set="circuit-bend"],
+body.desktop-mode-active img[data-odd-fun-layer="circuit-trace"],
+.odd-dock-rail-mount__tile img[data-odd-icon-set="circuit-bend"],
+.odd-dock-rail-mount__tile img[data-odd-fun-layer="circuit-trace"] {
+	--odd-icon-pack-motion: odd-icon-circuit-blip;
+	--odd-icon-pack-duration: 2.9s;
+	--odd-icon-pack-hover-transform: translate3d(0, -1px, 0) scale(1.06);
+}
+
+body.desktop-mode-active img[data-odd-icon-set="claymation"],
+body.desktop-mode-active img[data-odd-fun-layer="clay-smudge"],
+.odd-dock-rail-mount__tile img[data-odd-icon-set="claymation"],
+.odd-dock-rail-mount__tile img[data-odd-fun-layer="clay-smudge"] {
+	--odd-icon-pack-motion: odd-icon-clay-wobble;
+	--odd-icon-pack-duration: 4.6s;
+	--odd-icon-pack-hover-transform: scale(1.08, 0.97) translate3d(0, -1px, 0);
+}
+
+body.desktop-mode-active img[data-odd-icon-set="cross-stitch"],
+body.desktop-mode-active img[data-odd-fun-layer="stitch-cross"],
+.odd-dock-rail-mount__tile img[data-odd-icon-set="cross-stitch"],
+.odd-dock-rail-mount__tile img[data-odd-fun-layer="stitch-cross"] {
+	--odd-icon-pack-motion: odd-icon-stitch-tug;
+	--odd-icon-pack-duration: 3.8s;
+	--odd-icon-pack-hover-transform: translate3d(0, -2px, 0) rotate(1deg) scale(1.04);
+}
+
+body.desktop-mode-active img[data-odd-icon-set="eyeball-avenue"],
+body.desktop-mode-active img[data-odd-fun-layer="blink-ring"],
+.odd-dock-rail-mount__tile img[data-odd-icon-set="eyeball-avenue"],
+.odd-dock-rail-mount__tile img[data-odd-fun-layer="blink-ring"] {
+	--odd-icon-pack-motion: odd-icon-blink;
+	--odd-icon-pack-duration: 4.8s;
+	--odd-icon-pack-hover-transform: scaleY(0.92) scaleX(1.05) translate3d(0, -1px, 0);
+}
+
+body.desktop-mode-active img[data-odd-icon-set="filament"],
+body.desktop-mode-active img[data-odd-fun-layer="filament-wire"],
+.odd-dock-rail-mount__tile img[data-odd-icon-set="filament"],
+.odd-dock-rail-mount__tile img[data-odd-fun-layer="filament-wire"] {
+	--odd-icon-pack-motion: odd-icon-filament-arc;
+	--odd-icon-pack-duration: 3.6s;
+	--odd-icon-pack-hover-transform: translate3d(0, -1.5px, 0) rotate(1.4deg) scale(1.055);
+}
+
+body.desktop-mode-active img[data-odd-icon-set="fold"],
+body.desktop-mode-active img[data-odd-fun-layer="paper-fold"],
+.odd-dock-rail-mount__tile img[data-odd-icon-set="fold"],
+.odd-dock-rail-mount__tile img[data-odd-fun-layer="paper-fold"] {
+	--odd-icon-pack-motion: odd-icon-fold-flip;
+	--odd-icon-pack-duration: 4.4s;
+	--odd-icon-pack-hover-transform: perspective(80px) rotateY(8deg) translate3d(0, -1px, 0) scale(1.04);
+}
+
+body.desktop-mode-active img[data-odd-icon-set="hologram"],
+body.desktop-mode-active img[data-odd-fun-layer="hologram-scan"],
+.odd-dock-rail-mount__tile img[data-odd-icon-set="hologram"],
+.odd-dock-rail-mount__tile img[data-odd-fun-layer="hologram-scan"] {
+	--odd-icon-pack-motion: odd-icon-holo-scan;
+	--odd-icon-pack-duration: 2.6s;
+	--odd-icon-pack-hover-transform: translate3d(0, -1px, 0) scale(1.045);
+}
+
+body.desktop-mode-active img[data-odd-icon-set="lemonade-stand"],
+body.desktop-mode-active img[data-odd-fun-layer="citrus-pop"],
+.odd-dock-rail-mount__tile img[data-odd-icon-set="lemonade-stand"],
+.odd-dock-rail-mount__tile img[data-odd-fun-layer="citrus-pop"] {
+	--odd-icon-pack-motion: odd-icon-citrus-pop;
+	--odd-icon-pack-duration: 3.3s;
+	--odd-icon-pack-hover-transform: scale(1.1) rotate(2deg);
+}
+
+body.desktop-mode-active img[data-odd-icon-set="monoline"],
+body.desktop-mode-active img[data-odd-fun-layer="line-loop"],
+.odd-dock-rail-mount__tile img[data-odd-icon-set="monoline"],
+.odd-dock-rail-mount__tile img[data-odd-fun-layer="line-loop"] {
+	--odd-icon-pack-motion: odd-icon-loop-breathe;
+	--odd-icon-pack-duration: 4.8s;
+	--odd-icon-pack-hover-transform: scale(1.065);
+}
+
+body.desktop-mode-active img[data-odd-icon-set="risograph"],
+body.desktop-mode-active img[data-odd-fun-layer="misprint-dot"],
+.odd-dock-rail-mount__tile img[data-odd-icon-set="risograph"],
+.odd-dock-rail-mount__tile img[data-odd-fun-layer="misprint-dot"] {
+	--odd-icon-pack-motion: odd-icon-misprint-jitter;
+	--odd-icon-pack-duration: 2.4s;
+	--odd-icon-pack-hover-transform: translate3d(1px, -1px, 0) scale(1.045);
+}
+
+body.desktop-mode-active img[data-odd-icon-set="stadium"],
+body.desktop-mode-active img[data-odd-fun-layer="pennant-stripe"],
+.odd-dock-rail-mount__tile img[data-odd-icon-set="stadium"],
+.odd-dock-rail-mount__tile img[data-odd-fun-layer="pennant-stripe"] {
+	--odd-icon-pack-motion: odd-icon-pennant-wave;
+	--odd-icon-pack-duration: 4s;
+	--odd-icon-pack-hover-transform: skewX(4deg) translate3d(0, -1px, 0) scale(1.04);
+}
+
+body.desktop-mode-active img[data-odd-icon-set="tiki"],
+body.desktop-mode-active img[data-odd-fun-layer="carved-spark"],
+.odd-dock-rail-mount__tile img[data-odd-icon-set="tiki"],
+.odd-dock-rail-mount__tile img[data-odd-fun-layer="carved-spark"] {
+	--odd-icon-pack-motion: odd-icon-carved-glint;
+	--odd-icon-pack-duration: 4.1s;
+	--odd-icon-pack-hover-transform: rotate(2deg) translate3d(0, -1px, 0) scale(1.045);
 }
 
 body.desktop-mode-active .desktop-mode-dock__item-primary.odd-system-icon-skinned,
@@ -112,6 +567,10 @@ body.desktop-mode-active .desktop-mode-dock__item:hover img.desktop-mode-dock__i
 body.desktop-mode-active .desktop-mode-dock__item:focus-within img.desktop-mode-dock__item-img[src*="/odd/icon-sets/"],
 body.desktop-mode-active .desktop-mode-dock__item:hover img.desktop-mode-dock__item-img[src*="/uploads/odd/icon-sets/"],
 body.desktop-mode-active .desktop-mode-dock__item:focus-within img.desktop-mode-dock__item-img[src*="/uploads/odd/icon-sets/"],
+body.desktop-mode-active .desktop-mode-dock__item:hover img.desktop-mode-dock__item-img[data-odd-icon-set],
+body.desktop-mode-active .desktop-mode-dock__item:focus-within img.desktop-mode-dock__item-img[data-odd-icon-set],
+body.desktop-mode-active .desktop-mode-dock__item:hover img.desktop-mode-dock__item-img[data-odd-fun-layer],
+body.desktop-mode-active .desktop-mode-dock__item:focus-within img.desktop-mode-dock__item-img[data-odd-fun-layer],
 body.desktop-mode-active .desktop-mode-dock__item:hover img.desktop-mode-dock__item-img[data-odd-skinned-system-icon],
 body.desktop-mode-active .desktop-mode-dock__item:focus-within img.desktop-mode-dock__item-img[data-odd-skinned-system-icon],
 body.desktop-mode-active .wp-desktop-dock__item:hover img.wp-desktop-dock__item-img[src*="/assets/icons/"],
@@ -120,6 +579,10 @@ body.desktop-mode-active .wp-desktop-dock__item:hover img.wp-desktop-dock__item-
 body.desktop-mode-active .wp-desktop-dock__item:focus-within img.wp-desktop-dock__item-img[src*="/odd/icon-sets/"],
 body.desktop-mode-active .wp-desktop-dock__item:hover img.wp-desktop-dock__item-img[src*="/uploads/odd/icon-sets/"],
 body.desktop-mode-active .wp-desktop-dock__item:focus-within img.wp-desktop-dock__item-img[src*="/uploads/odd/icon-sets/"],
+body.desktop-mode-active .wp-desktop-dock__item:hover img.wp-desktop-dock__item-img[data-odd-icon-set],
+body.desktop-mode-active .wp-desktop-dock__item:focus-within img.wp-desktop-dock__item-img[data-odd-icon-set],
+body.desktop-mode-active .wp-desktop-dock__item:hover img.wp-desktop-dock__item-img[data-odd-fun-layer],
+body.desktop-mode-active .wp-desktop-dock__item:focus-within img.wp-desktop-dock__item-img[data-odd-fun-layer],
 body.desktop-mode-active .wp-desktop-dock__item:hover img.wp-desktop-dock__item-img[data-odd-skinned-system-icon],
 body.desktop-mode-active .wp-desktop-dock__item:focus-within img.wp-desktop-dock__item-img[data-odd-skinned-system-icon],
 body.desktop-mode-active .desktop-mode-icon:hover .desktop-mode-icon__image img[src*="/assets/icons/"],
@@ -128,25 +591,37 @@ body.desktop-mode-active .desktop-mode-icon:hover .desktop-mode-icon__image img[
 body.desktop-mode-active .desktop-mode-icon:focus-within .desktop-mode-icon__image img[src*="/odd/icon-sets/"],
 body.desktop-mode-active .desktop-mode-icon:hover .desktop-mode-icon__image img[src*="/uploads/odd/icon-sets/"],
 body.desktop-mode-active .desktop-mode-icon:focus-within .desktop-mode-icon__image img[src*="/uploads/odd/icon-sets/"],
+body.desktop-mode-active .desktop-mode-icon:hover .desktop-mode-icon__image img[data-odd-icon-set],
+body.desktop-mode-active .desktop-mode-icon:focus-within .desktop-mode-icon__image img[data-odd-icon-set],
+body.desktop-mode-active .desktop-mode-icon:hover .desktop-mode-icon__image img[data-odd-fun-layer],
+body.desktop-mode-active .desktop-mode-icon:focus-within .desktop-mode-icon__image img[data-odd-fun-layer],
 body.desktop-mode-active .wp-desktop-icon:hover img[src*="/assets/icons/"],
 body.desktop-mode-active .wp-desktop-icon:focus-within img[src*="/assets/icons/"],
 body.desktop-mode-active .wp-desktop-icon:hover img[src*="/odd/icon-sets/"],
 body.desktop-mode-active .wp-desktop-icon:focus-within img[src*="/odd/icon-sets/"],
 body.desktop-mode-active .wp-desktop-icon:hover img[src*="/uploads/odd/icon-sets/"],
 body.desktop-mode-active .wp-desktop-icon:focus-within img[src*="/uploads/odd/icon-sets/"],
+body.desktop-mode-active .wp-desktop-icon:hover img[data-odd-icon-set],
+body.desktop-mode-active .wp-desktop-icon:focus-within img[data-odd-icon-set],
+body.desktop-mode-active .wp-desktop-icon:hover img[data-odd-fun-layer],
+body.desktop-mode-active .wp-desktop-icon:focus-within img[data-odd-fun-layer],
 .odd-dock-rail-mount__tile:hover img[src*="/assets/icons/"],
 .odd-dock-rail-mount__tile:focus-visible img[src*="/assets/icons/"],
 .odd-dock-rail-mount__tile:hover img[src*="/odd/icon-sets/"],
 .odd-dock-rail-mount__tile:focus-visible img[src*="/odd/icon-sets/"],
 .odd-dock-rail-mount__tile:hover img[src*="/uploads/odd/icon-sets/"],
 .odd-dock-rail-mount__tile:focus-visible img[src*="/uploads/odd/icon-sets/"],
+.odd-dock-rail-mount__tile:hover img[data-odd-icon-set],
+.odd-dock-rail-mount__tile:focus-visible img[data-odd-icon-set],
+.odd-dock-rail-mount__tile:hover img[data-odd-fun-layer],
+.odd-dock-rail-mount__tile:focus-visible img[data-odd-fun-layer],
 .odd-panel .odd-shop__card:hover .odd-shop__card-quartet > img,
 .odd-panel .odd-shop__card:focus-within .odd-shop__card-quartet > img,
 .odd-panel .odd-catalog-row:hover .odd-iconset-mini img,
 .odd-panel .odd-catalog-row:focus-within .odd-iconset-mini img {
 	animation-duration: 900ms;
-	animation-name: odd-icon-outline-spark;
-	transform: translate3d(0, -1px, 0) scale(1.045);
+	animation-name: var(--odd-icon-pack-hover-motion);
+	transform: var(--odd-icon-pack-hover-transform);
 }
 
 .odd-panel .odd-shop__card--icon-set .odd-shop__card-art::after {

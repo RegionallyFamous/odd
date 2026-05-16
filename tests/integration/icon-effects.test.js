@@ -29,20 +29,41 @@ describe( 'ODD icon effects', () => {
 		expect( css ).toContain( 'inline-size: calc(100% - 8px);' );
 		expect( css ).toContain( 'block-size: calc(100% - 8px);' );
 		expect( css ).toContain( '@keyframes odd-icon-outline-drift' );
-		expect( css ).toContain( 'animation: odd-icon-outline-drift 5.8s ease-in-out infinite alternate;' );
+		expect( css ).toContain( '--odd-icon-pack-motion: odd-icon-outline-drift;' );
+		expect( css ).toContain( 'animation-name: var(--odd-icon-pack-motion);' );
+		expect( css ).toContain( 'animation-duration: var(--odd-icon-pack-duration);' );
 		expect( css ).toContain( '.odd-dock-rail-mount__tile:hover img[src*="/assets/icons/"]' );
 		expect( css ).toContain( '.odd-panel .odd-shop__card:hover .odd-shop__card-quartet > img' );
 		expect( css ).toContain( '.odd-panel .odd-shop__card--icon-set .odd-shop__card-art::after' );
+	} );
+
+	it( 'gives non-default packs distinct motion recipes beyond color swaps', () => {
+		const css = readFileSync( EFFECTS_CSS, 'utf8' );
+
+		expect( css ).toContain( '@keyframes odd-icon-coin-roll' );
+		expect( css ).toContain( '@keyframes odd-icon-frost-shiver' );
+		expect( css ).toContain( '@keyframes odd-icon-blueprint-scan' );
+		expect( css ).toContain( '@keyframes odd-icon-circuit-blip' );
+		expect( css ).toContain( '@keyframes odd-icon-clay-wobble' );
+		expect( css ).toContain( '@keyframes odd-icon-blink' );
+		expect( css ).toContain( '@keyframes odd-icon-misprint-jitter' );
+		expect( css ).toContain( 'img[data-odd-icon-set="arcade-tokens"]' );
+		expect( css ).toContain( 'img[data-odd-fun-layer="coin-spark"]' );
+		expect( css ).toContain( '--odd-icon-pack-motion: odd-icon-coin-roll;' );
+		expect( css ).toContain( '--odd-icon-pack-motion: odd-icon-stitch-tug;' );
+		expect( css ).toContain( '--odd-icon-pack-motion: odd-icon-carved-glint;' );
+		expect( css ).toContain( '.odd-panel .odd-shop__card-art[data-odd-fun-layer="hologram-scan"] .odd-shop__card-quartet > img' );
 	} );
 
 	it( 'keeps the hover treatment motion-safe and image-readable', () => {
 		const css = readFileSync( EFFECTS_CSS, 'utf8' );
 
 		expect( css ).toContain( '@keyframes odd-icon-outline-spark' );
-		expect( css ).toContain( 'animation-name: odd-icon-outline-spark;' );
+		expect( css ).toContain( '--odd-icon-pack-hover-motion: odd-icon-outline-spark;' );
+		expect( css ).toContain( 'animation-name: var(--odd-icon-pack-hover-motion);' );
 		expect( css ).toContain( 'drop-shadow(-1.2px 0 0 var(--odd-icon-fx-cyan))' );
 		expect( css ).toContain( 'drop-shadow(1.2px 0.2px 0 var(--odd-icon-fx-pink))' );
-		expect( css ).toContain( 'transform: translate3d(0, -1px, 0) scale(1.045);' );
+		expect( css ).toContain( 'transform: var(--odd-icon-pack-hover-transform);' );
 		expect( css ).toContain( '@media (prefers-reduced-motion: reduce)' );
 		expect( css ).toContain( 'animation: none !important;' );
 		expect( css ).toContain( 'transform: none !important;' );

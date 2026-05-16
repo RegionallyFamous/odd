@@ -15,10 +15,11 @@ function execRail() {
 
 function seedOdd() {
 	window.oddout = window.odd = {
-		iconSet:  'odd-default-icons',
+		iconSet:  'filament',
 		iconSets: [
 			{
-				slug:  'odd-default-icons',
+				slug:  'filament',
+				funLayer: { recipe: 'filament-wire', accent: '#50f2ff', secondary: '#ff6bd6', spark: '#ffb000' },
 				icons: {
 					'os-settings':   'https://example.test/icons/os-settings.webp',
 					import:          'https://example.test/icons/import.webp',
@@ -90,6 +91,18 @@ describe( 'ODD dock rail system icon skinning', () => {
 			'plugins',
 			'classic-admin',
 		] );
+		expect( skinned.map( ( img ) => img.getAttribute( 'data-odd-icon-set' ) ) ).toEqual( [
+			'filament',
+			'filament',
+			'filament',
+			'filament',
+		] );
+		expect( skinned.map( ( img ) => img.getAttribute( 'data-odd-fun-layer' ) ) ).toEqual( [
+			'filament-wire',
+			'filament-wire',
+			'filament-wire',
+			'filament-wire',
+		] );
 		expect( Array.from( document.querySelectorAll( '.desktop-mode-dock__item-primary.odd-system-icon-skinned' ) ) ).toHaveLength( 4 );
 		expect( document.querySelectorAll( '.desktop-mode-dock__item--system .dashicons' ) ).toHaveLength( 0 );
 
@@ -130,5 +143,7 @@ describe( 'ODD dock rail system icon skinning', () => {
 		const img = container.querySelector( '.odd-dock-rail-mount__tile--system img' );
 		expect( img ).toBeTruthy();
 		expect( img.src ).toBe( 'https://example.test/icons/plugins.webp' );
+		expect( img.getAttribute( 'data-odd-icon-set' ) ).toBe( 'filament' );
+		expect( img.getAttribute( 'data-odd-fun-layer' ) ).toBe( 'filament-wire' );
 	} );
 } );

@@ -30,24 +30,51 @@
 		return sp;
 	}
 
-	function activeIconSetIcons() {
+	function activeIconSet() {
 		var cfg = window.oddout || {};
 		var slug = typeof cfg.iconSet === 'string' ? cfg.iconSet : '';
 		var sets = Array.isArray( cfg.iconSets ) ? cfg.iconSets : [];
 		if ( ! slug || ! sets.length ) {
-			return {};
+			return null;
 		}
 		for ( var i = 0; i < sets.length; i++ ) {
-			if ( sets[ i ] && sets[ i ].slug === slug && sets[ i ].icons ) {
-				return sets[ i ].icons;
+			if ( sets[ i ] && sets[ i ].slug === slug ) {
+				return sets[ i ];
 			}
 		}
-		return {};
+		return null;
+	}
+
+	function activeIconSetIcons() {
+		var set = activeIconSet();
+		return set && set.icons ? set.icons : {};
 	}
 
 	function currentIconSetSlug() {
 		var cfg = window.oddout || {};
 		return typeof cfg.iconSet === 'string' ? cfg.iconSet : '';
+	}
+
+	function currentIconSetRecipe() {
+		var set = activeIconSet();
+		var layer = set && set.funLayer && typeof set.funLayer === 'object' ? set.funLayer : null;
+		var recipe = layer && typeof layer.recipe === 'string' ? layer.recipe : '';
+		return recipe.toLowerCase().replace( /[^a-z0-9-]/g, '' );
+	}
+
+	function decorateIconSetImage( img ) {
+		var slug = currentIconSetSlug();
+		var recipe = currentIconSetRecipe();
+		if ( slug ) {
+			img.setAttribute( 'data-odd-icon-set', slug );
+		} else {
+			img.removeAttribute( 'data-odd-icon-set' );
+		}
+		if ( recipe ) {
+			img.setAttribute( 'data-odd-fun-layer', recipe );
+		} else {
+			img.removeAttribute( 'data-odd-fun-layer' );
+		}
 	}
 
 	function firstIconMatchForKeys( keys ) {
@@ -156,7 +183,7 @@
 		return false;
 	}
 
-	function imageMarkup( src, klass ) {
+	function imageMarkup( src, klass, decorate ) {
 		var img = document.createElement( 'img' );
 		if ( klass ) {
 			img.className = klass;
@@ -165,6 +192,9 @@
 		img.decoding = 'async';
 		img.src = src;
 		img.alt = '';
+		if ( decorate ) {
+			decorateIconSetImage( img );
+		}
 		return img;
 	}
 
@@ -172,7 +202,7 @@
 		icon = typeof icon === 'string' ? icon : '';
 		var themed = firstIconUrlForKeys( iconKeysForItem( icon, item ) );
 		if ( themed ) {
-			return imageMarkup( themed );
+			return imageMarkup( themed, '', true );
 		}
 		if ( icon.slice( 0, 12 ) === 'dashicons-' ) {
 			return dashIconMarkup( icon );
@@ -328,14 +358,14 @@
 		var imgClass = button.classList && button.classList.contains( 'wp-desktop-dock__item-primary' )
 			? 'wp-desktop-dock__item-img'
 			: 'desktop-mode-dock__item-img';
-		var img = existingImg || imageMarkup( match.url, imgClass );
+		var img = existingImg || imageMarkup( match.url, imgClass, true );
 		img.className = imgClass;
 		img.src = match.url;
 		img.alt = '';
 		img.loading = 'lazy';
 		img.decoding = 'async';
 		img.setAttribute( 'data-odd-skinned-system-icon', match.key );
-		img.setAttribute( 'data-odd-icon-set', currentIconSetSlug() );
+		decorateIconSetImage( img );
 
 		if ( ! existingImg ) {
 			var target = button.querySelector( '.dashicons' );
