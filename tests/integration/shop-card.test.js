@@ -30,11 +30,15 @@ const __dirname = dirname( fileURLToPath( import.meta.url ) );
 const PANEL_JS = resolve( __dirname, '../../odd/src/panel/index.js' );
 const PANEL_CSS = resolve( __dirname, '../../odd/src/panel/styles.css' );
 const SHOP_FLOW_JS = resolve( __dirname, '../../odd/src/panel/shop-flow.js' );
+const PANEL_CARD_ART_JS = resolve( __dirname, '../../odd/src/panel/card-art.js' );
 
 function loadPanel() {
 	const flowSrc = readFileSync( SHOP_FLOW_JS, 'utf8' );
 	const flowFn = new Function( `${ flowSrc }\n//# sourceURL=panel/shop-flow.js` );
 	flowFn.call( globalThis );
+	const cardArtSrc = readFileSync( PANEL_CARD_ART_JS, 'utf8' );
+	const cardArtFn = new Function( `${ cardArtSrc }\n//# sourceURL=panel/card-art.js` );
+	cardArtFn.call( globalThis );
 	const src = readFileSync( PANEL_JS, 'utf8' );
 	const fn = new Function( `${ src }\n//# sourceURL=panel/index.js` );
 	fn.call( globalThis );
@@ -633,12 +637,24 @@ describe( 'ODD Shop · unified card state machine', () => {
 	} );
 
 	it( 'installed inactive icon set renders an Apply button', () => {
-		seed( {
-			iconSet:   '',
-			iconSets:  [
-				{ slug: 'filament', label: 'Filament', category: 'Filament', accent: '#ff7a3c', icons: { odd: '', 'my-wordpress': '', fallback: '' } },
-			],
-		} );
+			seed( {
+				iconSet:   '',
+				iconSets:  [
+					{
+						slug: 'filament',
+						label: 'Filament',
+						category: 'Filament',
+						accent: '#ff7a3c',
+						icons: {
+							odd: '/icons/odd.png',
+							'my-wordpress': '/icons/my-wordpress.png',
+							'content-graph': '/icons/content-graph.png',
+							'recycle-bin': '/icons/recycle-bin.png',
+							fallback: '/icons/fallback.png',
+						},
+					},
+				],
+			} );
 		loadPanel();
 		const { host } = mount();
 		goToDepartment( host, 'Icon Sets' );
@@ -655,12 +671,24 @@ describe( 'ODD Shop · unified card state machine', () => {
 	} );
 
 	it( 'icon department renders catalog cards without the costume hero or stock reset strip', () => {
-		seed( {
-			iconSet:  'filament',
-			iconSets: [
-				{ slug: 'filament', label: 'Filament', category: 'Filament', accent: '#ff7a3c', icons: { odd: '', 'my-wordpress': '', fallback: '' } },
-			],
-		} );
+			seed( {
+				iconSet:  'filament',
+				iconSets: [
+					{
+						slug: 'filament',
+						label: 'Filament',
+						category: 'Filament',
+						accent: '#ff7a3c',
+						icons: {
+							odd: '/icons/odd.png',
+							'my-wordpress': '/icons/my-wordpress.png',
+							'content-graph': '/icons/content-graph.png',
+							'recycle-bin': '/icons/recycle-bin.png',
+							fallback: '/icons/fallback.png',
+						},
+					},
+				],
+			} );
 		loadPanel();
 		const { host } = mount();
 		goToDepartment( host, 'Icon Sets' );

@@ -19,11 +19,15 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname( fileURLToPath( import.meta.url ) );
 const PANEL_JS = resolve( __dirname, '../../odd/src/panel/index.js' );
 const SHOP_FLOW_JS = resolve( __dirname, '../../odd/src/panel/shop-flow.js' );
+const PANEL_CARD_ART_JS = resolve( __dirname, '../../odd/src/panel/card-art.js' );
 
 function loadPanel() {
 	const flowSrc = readFileSync( SHOP_FLOW_JS, 'utf8' );
 	const flowFn = new Function( `${ flowSrc }\n//# sourceURL=panel/shop-flow.js` );
 	flowFn.call( globalThis );
+	const cardArtSrc = readFileSync( PANEL_CARD_ART_JS, 'utf8' );
+	const cardArtFn = new Function( `${ cardArtSrc }\n//# sourceURL=panel/card-art.js` );
+	cardArtFn.call( globalThis );
 	const src = readFileSync( PANEL_JS, 'utf8' );
 	const fn = new Function( `${ src }\n//# sourceURL=panel/index.js` );
 	fn.call( globalThis );

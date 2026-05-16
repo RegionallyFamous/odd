@@ -25,7 +25,7 @@ describe( 'Desktop Mode hook bridge', () => {
 				version: 'test',
 				scene: 'oddling-desktop',
 				iconSet: 'odd-default-icons',
-				cursorSet: 'oddlings',
+				cursorSet: 'odd-default-cursors',
 				systemHealth: { catalog: { source: 'transient' }, content: { scenes: 1 } },
 			},
 		} );

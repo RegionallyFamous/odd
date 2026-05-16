@@ -33,6 +33,7 @@
  *   - `odd`           wallpaper engine boot (Pixi + scene registrar).
  *                     Registers the `odd` wallpaper with WP Desktop Mode.
  *   - `odd-shop-flow` Pure card-state/trust helpers used by the Shop.
+ *   - `odd-panel-card-art` Pure card art renderer used by the Shop.
  *   - `odd-panel`     ODD Shop native-window render callback,
  *                     declared on `window.desktopModeNativeWindows.odd`.
  *                     (1.0+: the stock Sticky Note + Magic 8-Ball
@@ -168,6 +169,13 @@ add_action(
 			true
 		);
 		wp_enqueue_script(
+			'odd-panel-card-art',
+			ODDOUT_URL . '/src/panel/card-art.js',
+			array_merge( $foundation_deps, array( 'odd-api' ) ),
+			$asset_version( 'src/panel/card-art.js' ),
+			true
+		);
+		wp_enqueue_script(
 			'odd-cursors',
 			ODDOUT_URL . '/src/cursors/index.js',
 			$foundation_deps,
@@ -184,7 +192,10 @@ add_action(
 		wp_enqueue_script(
 			'odd-panel',
 			ODDOUT_URL . '/src/panel/index.js',
-			array_merge( $foundation_deps, array( 'odd-api', 'odd-workspace', 'odd-shop-flow', 'odd-cursors', 'wp-i18n' ) ),
+			array_merge(
+				$foundation_deps,
+				array( 'odd-api', 'odd-workspace', 'odd-shop-flow', 'odd-panel-card-art', 'odd-cursors', 'wp-i18n' )
+			),
 			$asset_version( 'src/panel/index.js' ),
 			true
 		);
@@ -406,6 +417,9 @@ add_action(
 			'schemaVersion'     => defined( 'ODDOUT_SCHEMA_VERSION' ) ? ODDOUT_SCHEMA_VERSION : 0,
 			'restUrl'           => esc_url_raw( oddout_https_rest_url( 'odd/v1/prefs' ) ),
 			'restNonce'         => wp_create_nonce( 'wp_rest' ),
+			'catalogBaseUrl'    => function_exists( 'oddout_catalog_base_url' )
+				? esc_url_raw( oddout_catalog_base_url() )
+				: '',
 
 			// Wallpaper. `scenes` is the array shape the panel needs;
 			// `sceneMap` is a slug→descriptor dict installed scene.js

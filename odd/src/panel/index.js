@@ -100,7 +100,6 @@
 			'scene':    'wallpaper',
 			'widget':   'widgets',
 		};
-		var CATALOG_BASE_URL = 'https://odd.regionallyfamous.com/catalog/v1';
 		var cleanupFns = [];
 		var sectionCleanupFns = [];
 		var flowToastTimer = 0;
@@ -126,10 +125,13 @@
 			if ( ! url ) return '';
 			if ( isAbsoluteUrl( url ) || url.charAt( 0 ) === '/' ) return url;
 			// Scene rows may carry a bare preview filename. The runtime zip does
-			// not ship catalog art, but the remote catalog publishes the matching
-			// scene thumbnail.
+			// not ship catalog art, but the configured catalog publishes the
+			// matching scene thumbnail.
 			if ( rowType === 'scene' && slug && /\.webp(?:[?#].*)?$/i.test( url ) ) {
-				return CATALOG_BASE_URL + '/icons/scene-' + encodeURIComponent( slug ) + '.webp';
+				var catalogBase = String( state.cfg.catalogBaseUrl || '' ).replace( /\/+$/, '' );
+				if ( catalogBase ) {
+					return catalogBase + '/icons/scene-' + encodeURIComponent( slug ) + '.webp';
+				}
 			}
 			return url;
 		}
@@ -2177,35 +2179,35 @@
 			} );
 		}
 
-			function onInstallSuccessInPanel( data, type, slug, name, message, reloadOpts ) {
-				reloadOpts       = reloadOpts || {};
-				var scheduleReload = !! reloadOpts.scheduleReload;
-				var reloadDelayMs = typeof reloadOpts.delayMs === 'number' ? reloadOpts.delayMs : ODD_RELOAD_DELAY_MS_DEFAULT;
-				var row          = data && data.row;
-				var appSurfaces  = null;
-				var appSurfaceWrite = null;
-				clearInstallFlow( type, slug );
-				if ( 'app' === type ) {
-					appSurfaces = ( row && row.surfaces ) || ( data && data.manifest && data.manifest.surfaces ) || null;
-					row = Object.assign(
-						{},
-						row || {},
-						{
-							slug: slug,
-							name: ( row && row.name ) || name || slug,
-							installed: true,
-							requiresReload: false,
-						}
-					);
-					message = message || installSuccessMessage( 'app', name, false );
-				}
-				spliceInstalledRow( type, slug, row, data && data.manifest );
-				if ( 'app' === type ) {
-					appSurfaceWrite = writeCoreAppSurfaceState( slug, appSurfaces || { desktop: true, taskbar: false } );
-				}
-				if ( 'app' === type && data && data.serve_url ) {
-					syncWindowOddAfterAppInstall( slug, data.serve_url );
-				}
+		function onInstallSuccessInPanel( data, type, slug, name, message, reloadOpts ) {
+			reloadOpts       = reloadOpts || {};
+			var scheduleReload = !! reloadOpts.scheduleReload;
+			var reloadDelayMs = typeof reloadOpts.delayMs === 'number' ? reloadOpts.delayMs : ODD_RELOAD_DELAY_MS_DEFAULT;
+			var row          = data && data.row;
+			var appSurfaces  = null;
+			var appSurfaceWrite = null;
+			clearInstallFlow( type, slug );
+			if ( 'app' === type ) {
+				appSurfaces = ( row && row.surfaces ) || ( data && data.manifest && data.manifest.surfaces ) || null;
+				row = Object.assign(
+					{},
+					row || {},
+					{
+						slug: slug,
+						name: ( row && row.name ) || name || slug,
+						installed: true,
+						requiresReload: false,
+					}
+				);
+				message = message || installSuccessMessage( 'app', name, false );
+			}
+			spliceInstalledRow( type, slug, row, data && data.manifest );
+			if ( 'app' === type ) {
+				appSurfaceWrite = writeCoreAppSurfaceState( slug, appSurfaces || { desktop: true, taskbar: false } );
+			}
+			if ( 'app' === type && data && data.serve_url ) {
+				syncWindowOddAfterAppInstall( slug, data.serve_url );
+			}
 			state.justInstalled = { type: type, slug: slug, name: name, at: Date.now() };
 			playShopSound( 'success' );
 			if ( scheduleReload ) {
@@ -2850,7 +2852,7 @@
 
 		/**
 		 * Non-blocking recovery UI: structured server payload + one-click
-		 * diagnostics for GitHub issues (plan item 21).
+		 * diagnostics for GitHub issues.
 		 */
 		function showInstallTroubleshoot( res, message, code, data ) {
 			var root = document.querySelector( '.odd-shop' ) || document.body;
@@ -6495,120 +6497,21 @@
 			try { close.focus(); } catch ( e ) {}
 		}
 
-		// Artwork region of the tile. Shape changes by type:
-		//
-		//  - scene    → full-bleed preview.webp
-		//  - icon-set → five canonical desktop shortcut icons on the shared dark Shop
-		//               surface, so sets compare by glyph language
-		//               instead of competing background colours
-		//  - cursor-set → full-bleed preview tile, falling back to a glyph plate
-		//  - widget   → gradient plate with the widget's glyph
-		//  - app      → generated square card art, falling back to its app icon
+		// Artwork region of the tile. Kept in its own script so the main
+		// panel renderer can focus on state and interaction.
 		function renderShopCardArt( row ) {
-			var art = el( 'div', { class: 'odd-shop__card-art odd-shop__card-art--' + row.type, 'aria-hidden': 'true' } );
-			function artImg( src, className ) {
-				var img = el( 'img', {
-					src: src,
-					alt: '',
-					loading: 'lazy',
-					decoding: 'async',
-					width: '512',
-					height: '512',
+			var renderer = window.__odd && window.__odd.panelCardArt;
+			if ( renderer && typeof renderer.render === 'function' ) {
+				return renderer.render( row, {
+					el: el,
+					restUrl: state.cfg.restUrl || '',
 				} );
-				if ( className ) img.classList.add( className );
-				return img;
 			}
 
-			if ( row.type === 'scene' ) {
-				art.style.backgroundColor = row.fallbackColor || '#1d1d22';
-				// Catalog rows only ship `icon_url` (a single thumbnail);
-				// installed rows have a richer `previewUrl`. Fall back
-				// through the chain before `cardUrl` so wallpapers always
-				// render the actual scene artwork, not parallel card art.
-				var sceneUrl = row.previewUrl || row.iconUrl || row.cardUrl || '';
-				if ( sceneUrl ) {
-					art.appendChild( artImg( sceneUrl, 'odd-shop__card-art-fill' ) );
-				} else {
-					var sceneMono = el( 'div', { class: 'odd-shop__card-mono' } );
-					sceneMono.textContent = ( row.name || row.slug ).slice( 0, 2 ).toUpperCase();
-					art.appendChild( sceneMono );
-				}
-				return art;
-			}
-
-			if ( row.type === 'icon-set' ) {
-				if ( row.icons ) {
-					var iconGrid = el( 'div', { class: 'odd-shop__card-icon-grid' } );
-					var keys = [ 'odd', 'my-wordpress', 'content-graph', 'recycle-bin', 'fallback' ].filter( function ( k ) { return row.icons[ k ]; } );
-					if ( ! keys.length ) keys = Object.keys( row.icons ).slice( 0, 5 );
-					keys.slice( 0, 5 ).forEach( function ( k ) {
-						iconGrid.appendChild( artImg( row.icons[ k ] ) );
-					} );
-					if ( iconGrid.children.length ) {
-						art.classList.add( 'odd-shop__card-art--icon-grid' );
-						art.appendChild( iconGrid );
-						return art;
-					}
-				}
-				// Catalog icon-set rows ship generated card art, while installed
-				// rows with real icon maps return above as a live icon grid.
-				var iconSetUrl = row.cardUrl || row.iconUrl || row.preview;
-				if ( iconSetUrl ) {
-					art.appendChild( artImg( iconSetUrl, 'odd-shop__card-art-fill' ) );
-					return art;
-				}
-				var fallback = el( 'div', { class: 'odd-shop__card-mono' } );
-				fallback.textContent = ( row.name || row.slug ).slice( 0, 2 ).toUpperCase();
-				art.appendChild( fallback );
-				return art;
-			}
-
-			if ( row.cardUrl ) {
-				art.appendChild( artImg( row.cardUrl, 'odd-shop__card-art-fill' ) );
-				return art;
-			}
-
-			if ( row.type === 'cursor-set' ) {
-				art.style.background = row.accent || '#38e8ff';
-				var cursorUrl = row.preview || row.iconUrl;
-				if ( cursorUrl ) {
-					art.appendChild( artImg( cursorUrl, 'odd-shop__card-art-fill' ) );
-					return art;
-				}
-				var cursorMono = el( 'div', { class: 'odd-shop__card-mono' } );
-				cursorMono.textContent = '➹';
-				art.appendChild( cursorMono );
-				return art;
-			}
-
-			if ( row.type === 'widget' ) {
-				art.style.background = 'linear-gradient(135deg,#3b3b52 0%,#6d6d8a 55%,#b5b5cc 100%)';
-				if ( row.iconUrl ) {
-					art.appendChild( artImg( row.iconUrl, 'odd-shop__card-art-fill' ) );
-				} else {
-					var wf = el( 'div', { class: 'odd-shop__card-mono' } );
-					wf.textContent = ( row.name || row.slug ).slice( 0, 2 ).toUpperCase();
-					art.appendChild( wf );
-				}
-				art.appendChild( el( 'span', { class: 'odd-shop__card-shine' } ) );
-				return art;
-			}
-
-			if ( row.type === 'app' ) {
-				if ( row.iconUrl ) {
-					var src = row.iconUrl;
-					if ( src.indexOf( 'data:' ) !== 0 && src.indexOf( 'http' ) !== 0 ) {
-						src = ( ( state.cfg.restUrl || '' ).replace( /\/prefs\/?$/, '' ) + '/apps/icon/' + row.slug );
-					}
-					art.appendChild( artImg( src ) );
-				} else {
-					var mono = el( 'div', { class: 'odd-shop__card-mono' } );
-					mono.textContent = ( row.name || row.slug ).slice( 0, 2 ).toUpperCase();
-					art.appendChild( mono );
-				}
-				return art;
-			}
-
+			var art = el( 'div', { class: 'odd-shop__card-art odd-shop__card-art--' + row.type, 'aria-hidden': 'true' } );
+			var fallback = el( 'div', { class: 'odd-shop__card-mono' } );
+			fallback.textContent = String( row.name || row.label || row.slug || '' ).slice( 0, 2 ).toUpperCase();
+			art.appendChild( fallback );
 			return art;
 		}
 

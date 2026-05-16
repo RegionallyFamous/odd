@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname( fileURLToPath( import.meta.url ) );
 const PANEL_JS = resolve( __dirname, '../../odd/src/panel/index.js' );
 const SHOP_FLOW_JS = resolve( __dirname, '../../odd/src/panel/shop-flow.js' );
+const PANEL_CARD_ART_JS = resolve( __dirname, '../../odd/src/panel/card-art.js' );
 const WORKSPACE_JS = resolve( __dirname, '../../odd/src/shared/workspace.js' );
 
 function seedConfig() {
@@ -55,7 +56,19 @@ function seedConfig() {
 		theme: 'auto',
 		chaosMode: false,
 		sets: [
-			{ slug: 'filament', label: 'Filament', category: 'Filament', accent: '#ff7a3c', icons: { odd: '', 'my-wordpress': '', fallback: '' } },
+			{
+				slug: 'filament',
+				label: 'Filament',
+				category: 'Filament',
+				accent: '#ff7a3c',
+				icons: {
+					odd: '/icons/odd.png',
+					'my-wordpress': '/icons/my-wordpress.png',
+					'content-graph': '/icons/content-graph.png',
+					'recycle-bin': '/icons/recycle-bin.png',
+					fallback: '/icons/fallback.png',
+				},
+			},
 		],
 		iconSet:     '',
 		favorites:   [],
@@ -117,6 +130,9 @@ function loadPanel() {
 	const flowSrc = readFileSync( SHOP_FLOW_JS, 'utf8' );
 	const flowFn = new Function( `${ flowSrc }\n//# sourceURL=panel/shop-flow.js` );
 	flowFn.call( globalThis );
+	const cardArtSrc = readFileSync( PANEL_CARD_ART_JS, 'utf8' );
+	const cardArtFn = new Function( `${ cardArtSrc }\n//# sourceURL=panel/card-art.js` );
+	cardArtFn.call( globalThis );
 	const src = readFileSync( PANEL_JS, 'utf8' );
 	const fn = new Function( `${ src }\n//# sourceURL=panel/index.js` );
 	fn.call( globalThis );
@@ -609,7 +625,19 @@ describe( 'ODD Shop', () => {
 	it( 'imports a .odd workspace and enables saved widgets', async () => {
 		const widgetCalls = installWidgetLayer();
 		window.odd.iconSets = [
-			{ slug: 'filament', label: 'Filament', category: 'ODD Defaults', accent: '#ff7a3c', icons: { dashboard: '', fallback: '' } },
+			{
+				slug: 'filament',
+				label: 'Filament',
+				category: 'ODD Defaults',
+				accent: '#ff7a3c',
+				icons: {
+					odd: '/icons/odd.png',
+					'my-wordpress': '/icons/my-wordpress.png',
+					'content-graph': '/icons/content-graph.png',
+					'recycle-bin': '/icons/recycle-bin.png',
+					fallback: '/icons/fallback.png',
+				},
+			},
 		];
 		const { host, cleanup } = mountPanel();
 		fetchMock.mockResolvedValueOnce( {
@@ -663,7 +691,19 @@ describe( 'ODD Shop', () => {
 
 	it( 'searches across departments and renders unified results', () => {
 		window.odd.iconSets = [
-			{ slug: 'filament', label: 'Filament', category: 'ODD Defaults', accent: '#ff7a3c', icons: { dashboard: '', fallback: '' } },
+			{
+				slug: 'filament',
+				label: 'Filament',
+				category: 'ODD Defaults',
+				accent: '#ff7a3c',
+				icons: {
+					odd: '/icons/odd.png',
+					'my-wordpress': '/icons/my-wordpress.png',
+					'content-graph': '/icons/content-graph.png',
+					'recycle-bin': '/icons/recycle-bin.png',
+					fallback: '/icons/fallback.png',
+				},
+			},
 		];
 		const { host, cleanup } = mountPanel();
 

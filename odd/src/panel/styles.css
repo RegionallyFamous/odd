@@ -598,7 +598,7 @@
   .odd-panel.odd-shop .odd-about{margin:-20px -22px 0;padding:44px 22px 36px}
 }
 
-/* Install failure troubleshoot (plan item 21). */
+/* Install failure troubleshoot dialog. */
 .odd-panel .odd-install-trouble{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(10,10,20,.45);box-sizing:border-box}
 .odd-panel .odd-install-trouble__card{max-width:min(92vw,520px);max-height:88vh;overflow:auto;padding:20px 22px;border-radius:16px;background:#fff;box-shadow:0 24px 60px -20px rgba(0,0,0,.4);color:#1d2327}
 .odd-panel .odd-install-trouble__title{margin:0 0 6px;font-size:17px;font-weight:700}

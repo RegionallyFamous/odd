@@ -109,6 +109,18 @@ describe( 'v1 source guardrails', () => {
 		expect( release ).toContain( 'ODD_VALIDATE_REQUIRE_CATALOG_SIGNATURE' );
 	} );
 
+	it( 'keeps Shop card art split out from the main panel renderer', () => {
+		const enqueue = readRel( 'odd/includes/enqueue.php' );
+		const panel = readRel( 'odd/src/panel/index.js' );
+		const cardArt = readRel( 'odd/src/panel/card-art.js' );
+
+		expect( enqueue ).toContain( "'odd-panel-card-art'" );
+		expect( enqueue ).toMatch( /'odd-panel'[\s\S]*'odd-panel-card-art'/ );
+		expect( panel ).toContain( 'window.__odd && window.__odd.panelCardArt' );
+		expect( cardArt ).toContain( 'window.__odd.panelCardArt' );
+		expect( cardArt ).toContain( "row.type === 'icon-set'" );
+	} );
+
 	it( 'keeps icon-set manifests raster-only with no runtime fun layer contract', () => {
 		const dir = resolve( ROOT, '_tools/catalog-sources/icon-sets' );
 		const expectedKeys = [
@@ -128,6 +140,7 @@ describe( 'v1 source guardrails', () => {
 		for ( const path of [
 			'docs/schemas/manifest.schema.json',
 			'_tools/build-catalog.py',
+			'odd/src/panel/card-art.js',
 			'odd/src/panel/index.js',
 			'odd/includes/enqueue.php',
 		] ) {
