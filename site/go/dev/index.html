@@ -11,8 +11,8 @@
 		( function () {
 			'use strict';
 			var blueprintBase = 'https://odd.regionallyfamous.com/playground/blueprint-dev.json';
-			var desktopModeRef = 'github-trunk';
-			var fallbackKey = 'dev-live-' + Date.now() + '-dm-' + desktopModeRef;
+			var desktopModeVersion = '0.8.5';
+			var fallbackKey = 'dev-live-' + Date.now() + '-dm-' + desktopModeVersion;
 			var done = false;
 			function launch( key ) {
 				if ( done ) {
@@ -46,7 +46,7 @@
 					var sha = data && typeof data.sha === 'string' && /^[0-9a-f]{40}$/i.test( data.sha )
 						? data.sha.slice( 0, 7 )
 						: '';
-					launch( sha ? 'dev-' + sha + '-dm-' + desktopModeRef : fallbackKey );
+					launch( sha ? 'dev-' + sha + '-dm-' + desktopModeVersion : fallbackKey );
 				} )
 				.catch( function () {
 					launch( fallbackKey );
@@ -54,11 +54,11 @@
 		} )();
 	</script>
 	<noscript>
-			<meta http-equiv="refresh" content="0; url=https://playground.wordpress.net/?site-slug=odd-dev-noscript-dm-github-trunk&amp;blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-noscript-dm-github-trunk">
+			<meta http-equiv="refresh" content="0; url=https://playground.wordpress.net/?site-slug=odd-dev-noscript-dm-0.8.5&amp;blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-noscript-dm-0.8.5">
 	</noscript>
 </head>
 <body style="font-family: system-ui, sans-serif; padding: 2rem; background: #0c0f18; color: #e8ecf4;">
 		<p>Finding the newest ODD commit before opening Playground…</p>
-		<p><a style="color: #b8a0ff;" href="https://playground.wordpress.net/?site-slug=odd-dev-manual-dm-github-trunk&amp;blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-manual-dm-github-trunk">Continue without commit lookup →</a></p>
+		<p><a style="color: #b8a0ff;" href="https://playground.wordpress.net/?site-slug=odd-dev-manual-dm-0.8.5&amp;blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-manual-dm-0.8.5">Continue without commit lookup →</a></p>
 </body>
 </html>

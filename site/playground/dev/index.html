@@ -14,8 +14,8 @@
 		( function () {
 			'use strict';
 			var blueprintBase = 'https://odd.regionallyfamous.com/playground/blueprint-dev.json';
-			var desktopModeRef = 'github-trunk';
-			var fallbackKey = 'dev-live-' + Date.now() + '-dm-' + desktopModeRef;
+			var desktopModeVersion = '0.8.5';
+			var fallbackKey = 'dev-live-' + Date.now() + '-dm-' + desktopModeVersion;
 			var done = false;
 			function launch( key ) {
 				if ( done ) {
@@ -49,7 +49,7 @@
 					var sha = data && typeof data.sha === 'string' && /^[0-9a-f]{40}$/i.test( data.sha )
 						? data.sha.slice( 0, 7 )
 						: '';
-					launch( sha ? 'dev-' + sha + '-dm-' + desktopModeRef : fallbackKey );
+					launch( sha ? 'dev-' + sha + '-dm-' + desktopModeVersion : fallbackKey );
 				} )
 				.catch( function () {
 					launch( fallbackKey );
@@ -57,17 +57,17 @@
 		} )();
 	</script>
 	<noscript>
-			<meta http-equiv="refresh" content="0; url=https://playground.wordpress.net/?site-slug=odd-dev-noscript-dm-github-trunk&amp;blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-noscript-dm-github-trunk">
+			<meta http-equiv="refresh" content="0; url=https://playground.wordpress.net/?site-slug=odd-dev-noscript-dm-0.8.5&amp;blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-noscript-dm-0.8.5">
 	</noscript>
 </head>
 <body>
 	<main class="shell hero">
 		<div>
 			<div class="kicker">Dev / trunk</div>
-			<h1>Opening ODD <code>main</code> with WP Desktop Mode GitHub <code>trunk</code>.</h1>
-			<p class="lede">Ephemeral — may break. The launcher checks the newest ODD <code>main</code> commit before opening Playground.</p>
+			<h1>Opening ODD <code>main</code> with pinned WP Desktop Mode 0.8.5.</h1>
+			<p class="lede">Ephemeral — may break. The launcher checks the newest <code>main</code> commit before opening Playground.</p>
 			<div class="actions">
-				<a class="button primary" href="https://playground.wordpress.net/?site-slug=odd-dev-manual-dm-github-trunk&amp;blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-manual-dm-github-trunk">Open Playground</a>
+				<a class="button primary" href="https://playground.wordpress.net/?site-slug=odd-dev-manual-dm-0.8.5&amp;blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-manual-dm-0.8.5">Open Playground</a>
 				<a class="button" href="/playground/">Stable demo</a>
 				<a class="button" href="/">Back to ODD</a>
 			</div>

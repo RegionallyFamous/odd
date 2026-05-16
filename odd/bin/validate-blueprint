@@ -20,8 +20,11 @@ The public blueprints intentionally install both WP Desktop Mode and ODD from
 the WordPress.org Plugin Directory with `resource: "wordpress.org/plugins"`.
 That keeps the public Playground link on the latest approved dotorg release
 without republishing the blueprint every time either plugin ships.
-The dev blueprints intentionally float: Desktop Mode comes from the GitHub
-`WordPress/desktop-mode` development branch and ODD comes from `main`.
+The dev blueprints stay deterministic: Desktop Mode is pinned with
+`resource: "url"` to
+`https://downloads.wordpress.org/plugin/desktop-mode.{version}.zip` where
+`{version}` equals `ODDOUT_DESKTOP_MODE_PLAYGROUND_VERSION` when defined,
+otherwise `ODDOUT_DESKTOP_MODE_MIN_VERSION`, while ODD comes from `main`.
 
 Release blueprint pins must agree with values in `odd/odd.php` (checklist #8).
 
@@ -46,16 +49,18 @@ Checks (all emit bullets; any failure → exit code 1):
      cannot point at `github.com/*/releases/download/…`.
   6. Any `installPlugin` with `resource: "wordpress.org/plugins"` must
      include `slug`, and prefer `targetFolderName` alongside `slug`.
-  7. Public blueprints must not install WP Desktop Mode from `git:directory`;
-     they should use the WordPress.org package. Dev blueprints may use the
-     GitHub development branch.
+  7. WP Desktop Mode must not be installed from `git:directory` because
+     its source archives do not include the compiled desktop shell JS
+     (`assets/js/desktop.min.js`). Install packaged zips (`downloads.
+     wordpress.org` or HTTPS mirrors), never raw plugin source repos.
   8. Public blueprints install Desktop Mode and ODD from
      `resource: "wordpress.org/plugins"` with slugs `desktop-mode` and
      `odd-outlandish-desktop-decorator`, and deterministic folder names.
   9. Every blueprint requests a Playground PHP runtime that satisfies
      the plugin header's `Requires PHP` value.
- 10. Dev blueprints: Desktop Mode from `git:directory` **branch** `trunk` on
-     `WordPress/desktop-mode`; ODD from `git:directory` **branch** `main` on
+ 10. Dev blueprints: Desktop Mode from the pinned release zip matching
+     `ODDOUT_DESKTOP_MODE_PLAYGROUND_VERSION` (targetFolderName desktop-mode);
+     ODD from `git:directory` **branch** `main` on
      `RegionallyFamous/odd` with `path` `odd`.
 """
 from __future__ import annotations
@@ -84,7 +89,7 @@ ODD_CONST_RE = re.compile(
 ODD_GIT_COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 REQUIRES_PHP_RE = re.compile(r"^\s*\*\s*Requires PHP:\s*([0-9]+(?:\.[0-9]+)*)\s*$", re.MULTILINE)
 
-# Dev Playground: Desktop Mode GitHub trunk + ODD main.
+# Dev Playground: pinned current shell from WordPress.org + ODD trunk.
 
 
 def odd_peeled_tag_commit(repo_root: Path, odd_version: str) -> str | None:
@@ -108,6 +113,14 @@ def odd_peeled_tag_commit(repo_root: Path, odd_version: str) -> str | None:
         return None
     peeled = out.strip()
     return peeled if ODD_GIT_COMMIT_RE.fullmatch(peeled) else None
+
+
+def desktop_mode_zip_url(dm_min: str) -> str:
+    """Canonical WordPress.org release zip URL for pinned Desktop Mode."""
+    return (
+        "https://downloads.wordpress.org/"
+        + f"plugin/desktop-mode.{dm_min}.zip"
+    )
 
 
 def odd_php_constants() -> tuple[str, str, str, str]:
@@ -172,7 +185,7 @@ def fail(problems: list[str]) -> None:
     sys.exit(1)
 
 
-def validate_file(path: Path, odd_version: str, requires_php: str) -> tuple[list[str], int]:
+def validate_file(path: Path, odd_version: str, dm_min: str, requires_php: str) -> tuple[list[str], int]:
     problems: list[str] = []
 
     if not path.exists():
@@ -206,7 +219,6 @@ def validate_file(path: Path, odd_version: str, requires_php: str) -> tuple[list
 
         resource = plugin.get("resource", "")
         options = step.get("options") or {}
-        ref_type = plugin.get("refType")
 
         if resource == "url":
             url = str(plugin.get("url", ""))
@@ -330,8 +342,8 @@ def validate_file(path: Path, odd_version: str, requires_php: str) -> tuple[list
     return problems, len(steps or [])
 
 
-def validate_dev_file(path: Path, requires_php: str) -> tuple[list[str], int]:
-    """Lint the floating GitHub dev blueprint."""
+def validate_dev_file(path: Path, dm_min: str, requires_php: str) -> tuple[list[str], int]:
+    """Lint the trunk / pinned-Desktop-Mode dev blueprint."""
 
     problems: list[str] = []
 
@@ -349,8 +361,9 @@ def validate_dev_file(path: Path, requires_php: str) -> tuple[list[str], int]:
     problems.extend(validate_preferred_versions(data, path, requires_php))
 
     allowed_ref_types = {"tag", "branch", "commit", "refname"}
-    pinned_dm_trunk = False
+    pinned_dm_release = False
     pinned_odd_trunk = False
+    dm_zip_expected = desktop_mode_zip_url(dm_min)
 
     for idx, step in enumerate(steps or []):
         if not isinstance(step, dict):
@@ -365,7 +378,6 @@ def validate_dev_file(path: Path, requires_php: str) -> tuple[list[str], int]:
 
         resource = plugin.get("resource", "")
         options = step.get("options") or {}
-        ref_type = plugin.get("refType")
 
         if resource == "url":
             url = str(plugin.get("url", ""))
@@ -378,41 +390,43 @@ def validate_dev_file(path: Path, requires_php: str) -> tuple[list[str], int]:
                 problems.append(
                     f"step[{idx}] resource=url must be https, got {url!r}"
                 )
+            if url == dm_zip_expected:
+                if options.get("targetFolderName") != "desktop-mode":
+                    problems.append(
+                        f"step[{idx}] Desktop Mode zip must use "
+                        'options.targetFolderName "desktop-mode"'
+                    )
+                else:
+                    pinned_dm_release = True
 
         elif resource == "wordpress.org/plugins":
             slug = plugin.get("slug")
             if slug == "desktop-mode":
                 problems.append(
-                    f"step[{idx}] dev blueprint must install Desktop Mode from "
-                    "the GitHub development branch, not wordpress.org/plugins"
+                    f"step[{idx}] dev blueprint must install Desktop Mode via "
+                    f"resource=url → {dm_zip_expected!r} "
+                    "(wordpress.org/plugins slug installs cannot pin a version)"
                 )
 
         elif resource == "git:directory":
             url = str(plugin.get("url", ""))
             if "github.com/WordPress/desktop-mode" in url:
-                ref = str(plugin.get("ref", ""))
-                if ref_type != "branch" or ref != "trunk":
-                    problems.append(
-                        f"step[{idx}] dev Desktop Mode must use refType "
-                        f'"branch" and ref "trunk"; got {ref_type!r} {ref!r}'
-                    )
-                elif options.get("targetFolderName") != "desktop-mode":
-                    problems.append(
-                        f"step[{idx}] Desktop Mode GitHub install must use "
-                        'options.targetFolderName "desktop-mode"'
-                    )
-                else:
-                    pinned_dm_trunk = True
+                problems.append(
+                    f"step[{idx}] installs WP Desktop Mode from git:directory — "
+                    "source archives miss compiled shell assets; use "
+                    "the downloads.wordpress.org zip URL"
+                )
             if not plugin.get("ref"):
                 problems.append(
                     f"step[{idx}] git:directory resource is missing `ref`"
                 )
+            ref_type = plugin.get("refType")
             if ref_type not in allowed_ref_types:
                 problems.append(
                     f"step[{idx}] git:directory resource has refType={ref_type!r}; "
                     f"allowed: {sorted(allowed_ref_types)}"
                 )
-            if "RegionallyFamous/odd" in url and "path" not in plugin:
+            if "path" not in plugin:
                 problems.append(
                     f"step[{idx}] git:directory resource must specify `path`"
                 )
@@ -431,11 +445,10 @@ def validate_dev_file(path: Path, requires_php: str) -> tuple[list[str], int]:
                     pinned_odd_trunk = True
 
     rel = path.relative_to(REPO_ROOT)
-    if not pinned_dm_trunk:
+    if not pinned_dm_release:
         problems.append(
             f"{rel}: dev blueprint must install Desktop Mode from "
-            "github.com/WordPress/desktop-mode branch trunk "
-            "(git:directory, targetFolderName=desktop-mode)"
+            f"{dm_zip_expected!r} (resource=url, targetFolderName=desktop-mode)"
         )
     if not pinned_odd_trunk:
         problems.append(
@@ -450,16 +463,16 @@ def main() -> int:
     if not PLUGIN_MAIN.is_file():
         print(f"error: missing {PLUGIN_MAIN}", file=sys.stderr)
         return 1
-    odd_version, _dm_min, _dm_pin, requires_php = odd_php_constants()
+    odd_version, _dm_min, dm_pin, requires_php = odd_php_constants()
     problems: list[str] = []
     total_steps = 0
     for path in (BLUEPRINT, SITE_BLUEPRINT):
-        file_problems, step_count = validate_file(path, odd_version, requires_php)
+        file_problems, step_count = validate_file(path, odd_version, dm_pin, requires_php)
         problems.extend(file_problems)
         total_steps += step_count
 
     for path in (BLUEPRINT_DEV, SITE_BLUEPRINT_DEV):
-        file_problems, step_count = validate_dev_file(path, requires_php)
+        file_problems, step_count = validate_dev_file(path, dm_pin, requires_php)
         problems.extend(file_problems)
         total_steps += step_count
 
