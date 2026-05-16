@@ -102,7 +102,7 @@ class Test_ODD_Playground_Compat extends WP_UnitTestCase {
 			$this->assertFalse( $wp_meta_boxes['dashboard']['side']['core']['dashboard_primary'] );
 			$this->assertFalse( $wp_meta_boxes['dashboard']['side']['core']['dashboard_secondary'] );
 		} finally {
-			$_SERVER      = $server;
+			$_SERVER       = $server;
 			$wp_meta_boxes = $meta_boxes;
 		}
 	}
@@ -113,7 +113,7 @@ class Test_ODD_Playground_Compat extends WP_UnitTestCase {
 			$_SERVER['HTTP_HOST'] = 'playground.wordpress.net';
 			wp_register_script( 'desktop-mode-admin-bar', false, array(), 'test', true );
 
-			do_action( 'admin_enqueue_scripts' );
+			oddout_playground_compat_admin_bar_navigation();
 
 			$scripts = wp_scripts();
 			$after   = isset( $scripts->registered['desktop-mode-admin-bar']->extra['after'] )
