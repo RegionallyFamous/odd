@@ -26,14 +26,14 @@
  *         "version":      "1.0.0",
  *         "author":       "Vendor",
  *         "description":  "Short paragraph",
- *         "franchise":    "Category",
+ *         "category":     "Category",
  *         "tags":         ["optional"],
  *         "icon_url":     "https://.../icons/<name>.webp",
  *         "card_url":     "https://.../cards/<name>.webp",
  *         "download_url": "https://.../bundles/<name>.wp",
  *         "sha256":       "<64 hex chars>",
  *         "size":         12345,
- *         "requires":     {"odd":"1.0.0","desktopMode":"0.8.0","api":"2.3.0"}
+ *         "requires":     {"odd":"1.0.0","desktopMode":"0.8.5","api":"2.3.0"}
  *       }
  *     ]
  *   }
@@ -779,81 +779,12 @@ function oddout_catalog_drop_incompatible_rows( array $registry ) {
 	return $registry;
 }
 
-function oddout_catalog_bundle_type_count( array $registry, $type ) {
-	$count = 0;
-	if ( empty( $registry['bundles'] ) || ! is_array( $registry['bundles'] ) ) {
-		return 0;
-	}
-	foreach ( $registry['bundles'] as $entry ) {
-		if ( is_array( $entry ) && isset( $entry['type'] ) && (string) $entry['type'] === (string) $type && empty( $entry['incompatible'] ) ) {
-			++$count;
-		}
-	}
-	return $count;
-}
-
-function oddout_catalog_merge_fallback_icon_sets( array $registry ) {
-	if ( oddout_catalog_bundle_type_count( $registry, 'icon-set' ) > 0 || ! function_exists( 'oddout_catalog_fallback_load' ) ) {
-		return $registry;
-	}
-
-	$fallback = oddout_catalog_fallback_load();
-	if ( empty( $fallback['bundles'] ) || ! is_array( $fallback['bundles'] ) ) {
-		return $registry;
-	}
-
-	$seen = array();
-	if ( isset( $registry['bundles'] ) && is_array( $registry['bundles'] ) ) {
-		foreach ( $registry['bundles'] as $entry ) {
-			if ( is_array( $entry ) && ! empty( $entry['slug'] ) ) {
-				$seen[ sanitize_key( (string) $entry['slug'] ) ] = true;
-			}
-		}
-	} else {
-		$registry['bundles'] = array();
-	}
-
-	$merged_icon_sets = array();
-	foreach ( $fallback['bundles'] as $entry ) {
-		if ( ! is_array( $entry ) || ! isset( $entry['type'], $entry['slug'] ) || 'icon-set' !== (string) $entry['type'] ) {
-			continue;
-		}
-		if ( ! oddout_catalog_icon_set_row_is_supported( $entry ) ) {
-			continue;
-		}
-		$slug = sanitize_key( (string) $entry['slug'] );
-		if ( '' === $slug || isset( $seen[ $slug ] ) ) {
-			continue;
-		}
-		$registry['bundles'][]     = $entry;
-		$seen[ $slug ]             = true;
-		$merged_icon_sets[ $slug ] = true;
-	}
-
-	if ( ! empty( $merged_icon_sets ) ) {
-		$fallback_icon_sets = array_keys( $merged_icon_sets );
-		if ( isset( $fallback['starter_pack']['iconSets'] ) && is_array( $fallback['starter_pack']['iconSets'] ) ) {
-			$fallback_icon_sets = $fallback['starter_pack']['iconSets'];
-		}
-		$registry['starter_pack']['iconSets'] = array_values(
-			array_filter(
-				array_map( 'sanitize_key', $fallback_icon_sets ),
-				static function ( $slug ) use ( $merged_icon_sets ) {
-					return isset( $merged_icon_sets[ $slug ] );
-				}
-			)
-		);
-	}
-
-	return $registry;
-}
-
 function oddout_catalog_effective_registry( array $registry ) {
 	$registry = oddout_catalog_drop_incompatible_rows( $registry );
 	if ( oddout_catalog_registry_bundle_count( $registry ) <= 0 ) {
 		return $registry;
 	}
-	return oddout_catalog_merge_fallback_icon_sets( $registry );
+	return $registry;
 }
 
 function oddout_catalog_is_transient_download_error( WP_Error $error ) {
@@ -1549,7 +1480,7 @@ function oddout_catalog_normalise( $data ) {
 			continue;
 		}
 		if ( ! oddout_catalog_icon_set_row_is_supported( $entry ) ) {
-			// Legacy SVG icon-set bundles cannot install under the raster-only v1 contract.
+			// SVG icon-set rows cannot install under the raster-only v1 contract.
 			continue;
 		}
 		$row = array(
@@ -1559,7 +1490,7 @@ function oddout_catalog_normalise( $data ) {
 			'version'      => isset( $entry['version'] ) ? sanitize_text_field( (string) $entry['version'] ) : '',
 			'author'       => isset( $entry['author'] ) ? sanitize_text_field( (string) $entry['author'] ) : '',
 			'description'  => isset( $entry['description'] ) ? wp_kses_post( (string) $entry['description'] ) : '',
-			'franchise'    => isset( $entry['franchise'] ) ? sanitize_text_field( (string) $entry['franchise'] ) : '',
+			'category'     => isset( $entry['category'] ) ? sanitize_text_field( (string) $entry['category'] ) : '',
 			'icon_url'     => isset( $entry['icon_url'] )
 				? oddout_url_current_scheme( esc_url_raw( (string) $entry['icon_url'] ) )
 				: '',

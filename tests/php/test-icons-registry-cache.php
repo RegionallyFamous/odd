@@ -2,8 +2,7 @@
 /**
  * Regression tests for `oddout_icons_get_sets( $reset = true )` semantics.
  *
- * History: in v1.8.x a test (`Test_Bundle_Install::test_iconset_round_trip_install_register_uninstall`)
- * failed intermittently because `oddout_icons_get_sets( true )` cleared the
+ * Regression context: `oddout_icons_get_sets( true )` once cleared the
  * static cache but short-circuited without rebuilding the fresh registry,
  * so the call returned an empty array. Commit 8344c2f fixed it by also
  * busting the version-keyed transient and then falling through to

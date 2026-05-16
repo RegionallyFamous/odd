@@ -148,6 +148,43 @@ describe( 'ODD diagnostics metrics', () => {
 		expect( snap.recentErrors[0].href ).toContain( '_wpnonce=[redacted]' );
 	} );
 
+	it( 'ignores iframe diagnostics from unknown sources or malformed payloads', () => {
+		loadFoundation( {
+			config: {
+				appsEnabled: true,
+				appServeUrls: { demo: '/odd-app/demo/?_wpnonce=secret' },
+				userApps: { installed: [ 'demo' ], pinned: [] },
+			},
+		} );
+
+		const mount = document.createElement( 'div' );
+		mount.className = 'odd-app-host';
+		mount.setAttribute( 'data-odd-app-slug', 'demo' );
+		const frame = document.createElement( 'iframe' );
+		frame.className = 'odd-app-frame';
+		frame.src = '/odd-app/demo/?_wpnonce=secret';
+		mount.appendChild( frame );
+		document.body.appendChild( mount );
+
+		window.dispatchEvent( new MessageEvent( 'message', {
+			source: window,
+			data: {
+				type: 'odd-app-diagnostic',
+				event: { type: 'error', message: 'spoofed' },
+			},
+		} ) );
+		window.dispatchEvent( new MessageEvent( 'message', {
+			source: frame.contentWindow,
+			data: {
+				type: 'odd-app-diagnostic',
+				event: { type: { nested: true }, message: 'bad shape' },
+			},
+		} ) );
+
+		const snap = window.__odd.diagnostics.appIframes()[0];
+		expect( snap.recentErrors ).toHaveLength( 0 );
+	} );
+
 	it( 'finds app iframes inside open shadow roots', () => {
 		loadFoundation( {
 			config: {

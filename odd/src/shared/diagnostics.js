@@ -237,6 +237,45 @@
 		return slugFromFrame( frameForContentWindow( source ) );
 	}
 
+	function frameForDiagnosticMessage( event ) {
+		try {
+			if ( ! event || ! event.source ) return null;
+			var frame = frameForContentWindow( event.source );
+			if ( ! frame ) return null;
+			if ( event.origin && event.origin !== 'null' ) {
+				var expected = new URL( frame.getAttribute( 'src' ) || frame.src || '', window.location.href ).origin;
+				if ( expected && expected !== event.origin ) return null;
+			}
+			return frame;
+		} catch ( _ ) {
+			return null;
+		}
+	}
+
+	function scalarOrEmpty( value ) {
+		return value === undefined || value === null || [ 'string', 'number', 'boolean' ].indexOf( typeof value ) !== -1;
+	}
+
+	function diagnosticEventLooksSafe( row ) {
+		if ( ! row || typeof row !== 'object' || Array.isArray( row ) ) return false;
+		var allowed = [ 'at', 'source', 'type', 'slug', 'href', 'message', 'filename', 'lineno', 'colno', 'stack', 'reason', 'error' ];
+		for ( var key in row ) {
+			if ( Object.prototype.hasOwnProperty.call( row, key ) && allowed.indexOf( key ) === -1 ) return false;
+		}
+		return scalarOrEmpty( row.at ) &&
+			scalarOrEmpty( row.source ) &&
+			scalarOrEmpty( row.type ) &&
+			scalarOrEmpty( row.slug ) &&
+			scalarOrEmpty( row.href ) &&
+			scalarOrEmpty( row.message ) &&
+			scalarOrEmpty( row.filename ) &&
+			scalarOrEmpty( row.lineno ) &&
+			scalarOrEmpty( row.colno ) &&
+			scalarOrEmpty( row.stack ) &&
+			scalarOrEmpty( row.reason ) &&
+			scalarOrEmpty( row.error );
+	}
+
 	function normalizeAppIframeError( row, source ) {
 		row = row || {};
 		return {
@@ -441,7 +480,10 @@
 		try {
 			var data = e && e.data;
 			if ( ! data || data.type !== 'odd-app-diagnostic' || ! data.event ) return;
+			var frame = frameForDiagnosticMessage( e );
+			if ( ! frame || ! diagnosticEventLooksSafe( data.event ) ) return;
 			var row = pushAppIframeError( data.event, e.source );
+			if ( ! row.slug ) row.slug = slugFromFrame( frame );
 			record(
 				row.type === 'console.warn' ? 'warn' : 'error',
 				[ 'odd.app.iframe', row.slug, row.type, row.message ]

@@ -98,7 +98,7 @@ class Test_Bundle_Install extends ODDOUT_REST_Test_Case {
 				'name'          => 'Test Scene',
 				'label'         => 'Test Scene',
 				'version'       => '1.0.0',
-				'franchise'     => 'Test',
+				'category'     => 'Test',
 				'tags'          => array( 'test' ),
 				'fallbackColor' => '#112233',
 				'added'         => '2025-01-01',
@@ -334,26 +334,20 @@ class Test_Bundle_Install extends ODDOUT_REST_Test_Case {
 		$this->assertSame( 'insecure_download', $insecure->get_error_code() );
 	}
 
-	public function test_unknown_type_defaults_to_app() {
-		// Omitting manifest.type falls back to "app" — preserves the
-		// v1.7.2-era contract so existing .wp bundles keep installing.
+	public function test_bundle_requires_explicit_manifest_type() {
 		$zip = $this->build_bundle_zip(
 			array(
-				'slug'    => 'legacy-app',
-				'name'    => 'Legacy',
+				'slug'    => 'missing-type-app',
+				'name'    => 'Missing Type',
 				'version' => '1.0.0',
 				'entry'   => 'index.html',
 			),
-			array( 'index.html' => '<h1>legacy</h1>' )
+			array( 'index.html' => '<h1>missing type</h1>' )
 		);
-		$res = oddout_bundle_install( $zip, 'legacy-app.wp' );
+		$res = oddout_bundle_install( $zip, 'missing-type-app.wp' );
 		@unlink( $zip );
-		$this->assertIsArray( $res, is_wp_error( $res ) ? $res->get_error_message() : 'legacy install returned non-array' );
-		$this->assertSame( 'app', $res['type'] );
-		$this->installed[] = array(
-			'slug' => 'legacy-app',
-			'type' => 'app',
-		);
+		$this->assertWPError( $res );
+		$this->assertSame( 'missing_manifest_field', $res->get_error_code() );
 	}
 
 	public function test_catalog_download_manifest_type_must_match_catalog_row() {

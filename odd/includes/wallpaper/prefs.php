@@ -40,7 +40,7 @@ function oddout_wallpaper_get_user_slug_list( $uid, $key ) {
 
 /**
  * Normalize an incoming shuffle preference into { enabled, minutes }.
- * Accepts booleans (legacy) or an object from the picker toolbar.
+ * Accepts either a boolean shortcut or the full picker-toolbar object.
  * Minutes are clamped to a sane 1..240 range.
  */
 function oddout_wallpaper_sanitize_shuffle( $raw ) {

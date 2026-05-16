@@ -91,6 +91,13 @@ add_action(
 				array(
 					'methods'             => array( 'PUT', 'POST' ),
 					'callback'            => 'oddout_apps_rest_store_put',
+					'args'                => array(
+						'value' => array(
+							'description'       => __( 'JSON value to store for this app segment.', 'odd-outlandish-desktop-decorator' ),
+							'required'          => false,
+							'validate_callback' => 'oddout_apps_rest_store_value_is_valid',
+						),
+					),
 					'permission_callback' => static function () {
 						return current_user_can( 'read' );
 					},
@@ -153,6 +160,22 @@ add_action(
 			array(
 				'methods'             => 'POST',
 				'callback'            => 'oddout_apps_rest_toggle',
+				'args'                => array(
+					'enabled'  => array(
+						'description'       => __( 'Whether the app should be enabled.', 'odd-outlandish-desktop-decorator' ),
+						'type'              => 'boolean',
+						'required'          => false,
+						'sanitize_callback' => 'rest_sanitize_boolean',
+					),
+					'surfaces' => array(
+						'description'       => __( 'Desktop Mode launch surfaces for this app.', 'odd-outlandish-desktop-decorator' ),
+						'type'              => 'object',
+						'required'          => false,
+						'validate_callback' => static function ( $value ) {
+							return null === $value || is_array( $value );
+						},
+					),
+				),
 				'permission_callback' => function () {
 					return current_user_can( 'manage_options' );
 				},
@@ -271,12 +294,12 @@ function oddout_apps_rest_toggle( WP_REST_Request $req ) {
 	$enabled  = $req->get_param( 'enabled' );
 	$surfaces = $req->get_param( 'surfaces' );
 
-	// Back-compat: a bare POST with no body still toggles `enabled`,
-	// matching the original contract. A payload can now ALSO carry
-	// a `surfaces` object; either field alone (or both) is valid.
 	if ( null === $enabled && null === $surfaces ) {
-		$index   = oddout_apps_index_load();
-		$enabled = ! ( isset( $index[ $slug ]['enabled'] ) && $index[ $slug ]['enabled'] );
+		return new WP_Error(
+			'missing_toggle_fields',
+			__( 'Provide enabled and/or surfaces when updating an app.', 'odd-outlandish-desktop-decorator' ),
+			array( 'status' => 400 )
+		);
 	}
 
 	if ( null !== $enabled ) {
@@ -322,9 +345,6 @@ function oddout_apps_rest_toggle( WP_REST_Request $req ) {
  * static file types. Unknowns fall back to application/octet-stream.
  */
 function oddout_apps_rest_serve_permission( WP_REST_Request $req ) {
-	if ( ! is_user_logged_in() ) {
-		return false;
-	}
 	$slug  = sanitize_key( $req['slug'] );
 	$index = oddout_apps_index_load();
 	if ( ! isset( $index[ $slug ] ) ) {
@@ -1171,6 +1191,14 @@ function oddout_apps_kv_segments_for_slug( $user_id, $slug ) {
 	return $tree['stores'][ $slug ];
 }
 
+function oddout_apps_rest_store_value_is_valid( $value ) {
+	$encoded = wp_json_encode( $value );
+	if ( false === $encoded ) {
+		return false;
+	}
+	return strlen( $encoded ) <= 64 * 1024;
+}
+
 function oddout_apps_rest_runtime_errors( WP_REST_Request $request ) {
 	unset( $request );
 
@@ -1202,8 +1230,15 @@ function oddout_apps_rest_store_put( WP_REST_Request $request ) {
 	if ( ! is_array( $params ) ) {
 		$params = array();
 	}
+	if ( ! array_key_exists( 'value', $params ) ) {
+		return new WP_Error(
+			'missing_value',
+			__( 'Provide a value when writing to app storage.', 'odd-outlandish-desktop-decorator' ),
+			array( 'status' => 400 )
+		);
+	}
 
-	$value       = isset( $params['value'] ) ? $params['value'] : null;
+	$value       = $params['value'];
 	$tree        = oddout_apps_kv_load_tree( $user_id );
 	$tree_stores = isset( $tree['stores'] ) && is_array( $tree['stores'] ) ? $tree['stores'] : array();
 	if ( ! isset( $tree_stores[ $slug ] ) || ! is_array( $tree_stores[ $slug ] ) ) {

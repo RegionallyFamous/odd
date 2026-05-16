@@ -66,7 +66,7 @@ benefits from better compression.
     "name":        "My Icons",
     "label":       "My Icons",
     "version":     "1.0.0",
-    "franchise":   "My Icons",
+    "category":   "My Icons",
     "accent":      "#ff7a3c",
     "description": "Warm hand-drawn icons with a coffee-stained palette.",
     "preview":     "preview.webp",
@@ -99,7 +99,7 @@ benefits from better compression.
 | `name`        | yes      | Display name in the Shop quilt + hero.                                     |
 | `label`       | no       | Falls back to `name`.                                                      |
 | `version`     | yes      | Semver-ish string.                                                         |
-| `franchise`   | no       | Soft historical label. Shelves are categorized by slug — the field is retained for third-party tooling that may still read it. |
+| `category`   | no       | Optional grouping label for Shop shelves and catalog tooling. |
 | `accent`      | yes      | `#hex` used for Shop accents and catalog previews.|
 | `description` | no       | Longer copy shown on the detail sheet.                                     |
 | `preview`     | no       | Relative path to a PNG/WebP hero (falls back to the `dashboard` icon).|
@@ -124,7 +124,7 @@ stable logical keys via `oddout_icons_slug_to_key()`:
 | `settings`    | yes      | Settings, Options                         |
 | `fallback`    | yes      | Anything unmapped                         |
 | `profile`     | yes      | Your own profile tile                     |
-| `links`       | yes      | Legacy Links, any URL-browsing tool       |
+| `links`       | yes      | WordPress Links menu, any URL-browsing tool |
 | `recycle-bin` | yes      | WP Desktop Mode Recycle Bin (`desktop-mode-recycle-bin`) |
 | `os-settings` | yes      | Desktop Mode OS Settings system tile      |
 | `import`      | yes      | Import/PWA install/download-style rail action |
@@ -163,9 +163,9 @@ rewrite, or ODD-owned renderer in between.
 - Avoid baking in UI chrome from the host desktop. The icon file should be
   the icon, not a replacement dock/taskbar tile.
 
-First-party catalog sets use raster exports from a larger source canvas.
-Third-party sets do not have to copy that treatment, but all files in the
-manifest `icons` map must be PNG or WebP.
+First-party catalog sets start from Image Gen contact sheets and are sliced
+into transparent raster exports. Third-party sets do not have to copy that
+treatment, but all files in the manifest `icons` map must be PNG or WebP.
 
 ## preview.webp (optional)
 

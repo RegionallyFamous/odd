@@ -1,0 +1,32 @@
+{
+  "$schema": "https://raw.githubusercontent.com/RegionallyFamous/odd/main/docs/schemas/manifest.schema.json",
+  "type": "icon-set",
+  "slug": "arctic",
+  "name": "Arctic Icons",
+  "label": "Arctic",
+  "category": "Crystal OS",
+  "accent": "#7ddcff",
+  "preview": "dashboard.webp",
+  "description": "Frosted blue-white raster glyphs with icy accents and transparent full-canvas scale.",
+  "version": "1.2.0",
+  "author": "Regionally Famous",
+  "icons": {
+    "dashboard": "dashboard.webp",
+    "posts": "posts.webp",
+    "pages": "pages.webp",
+    "media": "media.webp",
+    "comments": "comments.webp",
+    "appearance": "appearance.webp",
+    "plugins": "plugins.webp",
+    "users": "users.webp",
+    "tools": "tools.webp",
+    "settings": "settings.webp",
+    "profile": "profile.webp",
+    "links": "links.webp",
+    "recycle-bin": "recycle-bin.webp",
+    "fallback": "fallback.webp",
+    "os-settings": "os-settings.webp",
+    "import": "import.webp",
+    "classic-admin": "classic-admin.webp"
+  }
+}

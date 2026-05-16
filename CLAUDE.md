@@ -18,7 +18,7 @@ All four are managed from a single native WP Desktop Mode window (the **ODD Shop
 - **Repo:** `RegionallyFamous/odd`
 - **Live demo (stable, ODD 1.0.0):** Hosted blueprint [`site/playground/blueprint.json`](https://odd.regionallyfamous.com/playground/blueprint.json?oddbp=v3-1.0.0-dm-0.8.5) or short redirect [`/go/`](https://odd.regionallyfamous.com/go/) → Playground — pins Desktop Mode **0.8.5** zip + ODD **v1.0.0** release ref (`?oddbp=` avoids stale blueprint caching). Raw GitHub: [`blueprint.json`](https://raw.githubusercontent.com/RegionallyFamous/odd/main/blueprint.json?oddbp=v3-1.0.0-dm-0.8.5). **Dev / trunk (bleeding edge, not release-track):** use short redirect [`/go/dev`](https://odd.regionallyfamous.com/go/dev/) or launcher [`/playground/dev/`](https://odd.regionallyfamous.com/playground/dev/). Those launchers derive both `oddbp` and `site-slug` from current ODD `main` so Playground does not reuse old dev scopes or old browser storage. The hosted [`blueprint-dev.json`](https://odd.regionallyfamous.com/playground/blueprint-dev.json) still installs Desktop Mode **0.8.5** from WP.org (pinned zip) + ODD **`main`** from GitHub.
 - **Remote catalog:** https://odd.regionallyfamous.com/catalog/v1/registry.json
-- **Host plugin (required at runtime):** WP Desktop Mode v0.8.0+ (wordpress.org/plugins/desktop-mode)
+- **Host plugin (required at runtime):** WP Desktop Mode v0.8.5+ (wordpress.org/plugins/desktop-mode)
 
 ## Architecture at a glance
 
@@ -51,7 +51,7 @@ odd/
 │ │ └── index.js native-window render callback (ODD Shop)
 │ └── wallpaper/
 │ ├── index.js registerWallpaper('odd', …) + scene mount runner + odd-pending fallback
-│ └── picker.js legacy in-canvas picker (hidden; kept for fallback)
+│ └── picker.js in-canvas picker module
 └── bin/
  ├── build-zip → dist/odd.zip (2 MB budget)
  ├── validate-catalog assert site/catalog/v1/ schema + hashes + starter-pack
@@ -131,7 +131,7 @@ Permission callbacks are `is_user_logged_in`. The panel also ships the same stat
 
 ### Live scene swaps
 
-Panel clicks fire `wp.hooks.doAction( 'odd/pickScene', slug )` in parallel with the REST POST. The wallpaper engine subscribes to this hook (`odd/wallpaper` namespace) and swaps the scene immediately through its `swap()` path — no reload needed.
+Panel clicks fire `wp.hooks.doAction( 'odd.pickScene', slug )` in parallel with the REST POST. The wallpaper engine subscribes to this hook and swaps the scene immediately through its `swap()` path — no reload needed.
 
 The wallpaper runtime also exposes `window.__odd.mountSceneInto(container, slug, opts)` for the Shop hero. It creates a low-power Pixi v8 app for a single scene and returns `{ app, env, state, destroy }`; the desktop wallpaper path still owns the full `registerWallpaper('odd', …)` runner. Scene manifests can set `heroSafe:false` when they require desktop-only APIs like `wp.desktop.getWallpaperSurfaces()`.
 
@@ -200,7 +200,7 @@ All new scenes / icon sets / widgets / apps land in `_tools/catalog-sources/` an
 ### A new scene
 
 1. Create `_tools/catalog-sources/scenes/<slug>/`.
-2. Add `meta.json` with `{ slug, label, franchise, tags, fallbackColor, previewUrl, wallpaperUrl }` (URLs default to `site/catalog/v1/bundles/<slug>/...` if omitted — the builder fills them in).
+2. Add `meta.json` with `{ slug, label, category, tags, fallbackColor, previewUrl, wallpaperUrl }` (URLs default to `site/catalog/v1/bundles/<slug>/...` if omitted — the builder fills them in).
 3. Add `scene.js` (self-registering; see above).
 4. Add `preview.webp` (~640×360, WebP q80) and `wallpaper.webp` (1920×1080, WebP q82).
 5. `python3 _tools/build-catalog.py && odd/bin/validate-catalog` locally to confirm it builds.
@@ -210,7 +210,7 @@ All new scenes / icon sets / widgets / apps land in `_tools/catalog-sources/` an
 Icon-set authoring now treats each set as a finished catalog bundle:
 
 1. Create `_tools/catalog-sources/icon-sets/<slug>/`.
-2. Add `manifest.json` with `{ slug, label, franchise, accent (#hex), description?, preview?, icons: { dashboard, posts, pages, media, comments, appearance, plugins, users, tools, settings, profile, links, fallback } }`.
+2. Add `manifest.json` with `{ slug, label, category, accent (#hex), description?, preview?, icons: { dashboard, posts, pages, media, comments, appearance, plugins, users, tools, settings, profile, links, fallback } }`.
 3. Add the final icon asset files named in `manifest.icons`, dropped next to the manifest.
 4. `odd/bin/validate-catalog` checks the bundle before publish.
 

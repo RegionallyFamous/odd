@@ -19,9 +19,8 @@ class ODDOUT_Registry_Fixtures {
 	 * The priority is `20` so tests that register their own filter at
 	 * the default priority `10` still take precedence where needed.
 	 *
-	 * @param string $slug Bundle slug. Defaults to `flux` so legacy
-	 *                     tests that hard-coded the old bundled scene
-	 *                     keep passing.
+	 * @param string $slug Bundle slug. Defaults to `flux`, the common
+	 *                     wallpaper fixture used by registry tests.
 	 * @return void
 	 */
 	public static function install_scene( $slug = 'flux' ) {
@@ -31,7 +30,7 @@ class ODDOUT_Registry_Fixtures {
 				$scenes[] = array(
 					'slug'          => $slug,
 					'label'         => ucfirst( $slug ),
-					'franchise'     => 'Fixtures',
+					'category'     => 'Fixtures',
 					'tags'          => array( 'fixture' ),
 					'fallbackColor' => '#112233',
 					'previewUrl'    => 'https://example.test/' . rawurlencode( $slug ) . '/preview.webp',
@@ -53,9 +52,8 @@ class ODDOUT_Registry_Fixtures {
 	 * file-existence checks — `icons` values are treated as opaque
 	 * URLs by the native Desktop Mode icon filters.
 	 *
-	 * @param string $slug Set slug. Defaults to `filament` so legacy
-	 *                     tests that hard-coded the old bundled set
-	 *                     keep passing.
+	 * @param string $slug Set slug. Defaults to `filament`, the common icon-set
+	 *                     fixture used by registry tests.
 	 * @return void
 	 */
 	public static function install_iconset( $slug = 'filament' ) {
@@ -65,7 +63,7 @@ class ODDOUT_Registry_Fixtures {
 				$sets[ $slug ] = array(
 					'slug'        => $slug,
 					'label'       => ucfirst( $slug ),
-					'franchise'   => 'Fixtures',
+					'category'   => 'Fixtures',
 					'accent'      => '#888888',
 					'description' => 'Test fixture',
 					'preview'     => 'https://example.test/icons/' . rawurlencode( $slug ) . '/preview.webp',

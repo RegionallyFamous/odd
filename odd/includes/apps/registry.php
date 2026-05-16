@@ -117,9 +117,8 @@ function oddout_apps_install( $tmp_path, $filename ) {
 
 	// Manifest authors can declare the default surfaces (desktop
 	// icon + taskbar icon) per app; users can override after install.
-	// Defaults favor the historical behavior — desktop icon on,
-	// taskbar off — so upgrades don't sprout new taskbar icons
-	// unsolicited.
+		// Defaults favor a visible desktop launcher and keep the taskbar
+		// quiet unless the manifest opts into the dock.
 	$surfaces = array(
 		'desktop' => isset( $manifest['surfaces']['desktop'] ) ? (bool) $manifest['surfaces']['desktop'] : true,
 		'taskbar' => isset( $manifest['surfaces']['taskbar'] ) ? (bool) $manifest['surfaces']['taskbar'] : false,
@@ -264,11 +263,8 @@ function oddout_apps_set_surfaces( $slug, $surfaces ) {
 }
 
 /**
- * Normalize the `surfaces` field on an app index row, filling any
- * missing keys with the back-compat defaults. Pre-upgrade rows that
- * lack the field entirely behave as if `{ desktop: true, taskbar:
- * false }` was persisted — identical to the historical register_icon
- * + placement: 'none' behavior.
+ * Normalize the `surfaces` field on an app index row. App manifests may omit
+ * the field; the current v1 default is `{ desktop: true, taskbar: false }`.
  *
  * @param array $row
  * @return array { desktop: bool, taskbar: bool }
@@ -290,9 +286,7 @@ function oddout_apps_list() {
 	$index = oddout_apps_index_load();
 	$rows  = array_values( $index );
 	foreach ( $rows as &$row ) {
-		// Backfill surfaces so the REST response (and, by extension,
-		// the Shop panel's JS) always sees the full shape, even for
-		// rows installed before the `surfaces` field existed.
+			// Keep the REST response and Shop store on a complete shape.
 		$row['surfaces'] = oddout_apps_row_surfaces( $row );
 	}
 	unset( $row );

@@ -57,9 +57,8 @@
  *   Errors:
  *     odd.error               { source, err, severity, message, stack }
  *
- * Legacy pre-0.14.0 actions `odd.pickScene` + `odd.pickIconSet` are
- * still fired by api.js during the transition period, but new code
- * should subscribe to `odd.scene-changed` / `odd.icon-set-changed`.
+ * Live command hooks such as `odd.pickScene` are emitted by api.js and
+ * mirrored into the richer lifecycle events above.
  *
  * The `log()` accessor exposes the most recent 200 events when debug
  * mode is on (`desktopModeConfig.debug === true` or ?odd-debug=1). In

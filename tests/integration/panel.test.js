@@ -8,7 +8,7 @@
  *
  *   - Rail lists the expected departments (Wallpapers, Icon Sets,
  *     Widgets, About).
- *   - Wallpaper department renders franchise shelves + scene cards.
+ *   - Wallpaper department renders category shelves + scene cards.
  *   - Clicking a scene card opens the preview bar.
  *   - Clicking "Keep" POSTs /odd/v1/prefs with { wallpaper: slug }.
  *   - Clicking "Cancel" clears the preview bar.
@@ -46,17 +46,17 @@ function seedConfig() {
 		scene:     'flux',
 		// Three slugs, three distinct categories: flux→Forms,
 		// aurora→Skies, circuit-garden→Wilds. Lets us assert the
-		// shelf grouping without depending on the per-franchise
+		// shelf grouping without depending on the per-category
 		// labels that no longer drive layout.
 		scenes: [
-			{ slug: 'flux',           label: 'Flux',           franchise: 'Generative',    tags: [], fallbackColor: '#222233' },
-			{ slug: 'aurora',         label: 'Aurora',         franchise: 'Atmosphere',    tags: [], fallbackColor: '#112233' },
-			{ slug: 'circuit-garden', label: 'Circuit Garden', franchise: 'ODD Originals', tags: [], fallbackColor: '#0b1a10' },
+			{ slug: 'flux',           label: 'Flux',           category: 'Generative',    tags: [], fallbackColor: '#222233' },
+			{ slug: 'aurora',         label: 'Aurora',         category: 'Atmosphere',    tags: [], fallbackColor: '#112233' },
+			{ slug: 'circuit-garden', label: 'Circuit Garden', category: 'ODD Originals', tags: [], fallbackColor: '#0b1a10' },
 		],
 		theme: 'auto',
 		chaosMode: false,
 		sets: [
-			{ slug: 'filament', label: 'Filament', franchise: 'Filament', accent: '#ff7a3c', icons: { dashboard: '', fallback: '' } },
+			{ slug: 'filament', label: 'Filament', category: 'Filament', accent: '#ff7a3c', icons: { dashboard: '', fallback: '' } },
 		],
 		iconSet:     '',
 		favorites:   [],
@@ -296,7 +296,7 @@ describe( 'ODD Shop', () => {
 			{
 				slug: 'filament',
 				label: 'Filament',
-				franchise: 'ODD Defaults',
+				category: 'ODD Defaults',
 				accent: '#ff7a3c',
 				icons: {
 					posts: 'https://example.test/icons/posts.webp',
@@ -325,8 +325,8 @@ describe( 'ODD Shop', () => {
 		window.odd.wallpaper = 'aurora';
 		window.odd.scene = 'aurora';
 		window.odd.scenes = [
-			{ slug: 'flux', label: 'Flux', franchise: 'Generative', tags: [], fallbackColor: '#222233' },
-			{ slug: 'aurora', label: 'Aurora', franchise: 'Atmosphere', tags: [], fallbackColor: '#112233', heroSafe: false },
+			{ slug: 'flux', label: 'Flux', category: 'Generative', tags: [], fallbackColor: '#222233' },
+			{ slug: 'aurora', label: 'Aurora', category: 'Atmosphere', tags: [], fallbackColor: '#112233', heroSafe: false },
 		];
 		const { host, cleanup } = mountPanel();
 
@@ -662,7 +662,7 @@ describe( 'ODD Shop', () => {
 	it( 'imports a .odd workspace and enables saved widgets', async () => {
 		const widgetCalls = installWidgetLayer();
 		window.odd.iconSets = [
-			{ slug: 'filament', label: 'Filament', franchise: 'ODD Defaults', accent: '#ff7a3c', icons: { dashboard: '', fallback: '' } },
+			{ slug: 'filament', label: 'Filament', category: 'ODD Defaults', accent: '#ff7a3c', icons: { dashboard: '', fallback: '' } },
 		];
 		const { host, cleanup } = mountPanel();
 		fetchMock.mockResolvedValueOnce( {
@@ -716,7 +716,7 @@ describe( 'ODD Shop', () => {
 
 	it( 'searches across departments and renders unified results', () => {
 		window.odd.iconSets = [
-			{ slug: 'filament', label: 'Filament', franchise: 'ODD Defaults', accent: '#ff7a3c', icons: { dashboard: '', fallback: '' } },
+			{ slug: 'filament', label: 'Filament', category: 'ODD Defaults', accent: '#ff7a3c', icons: { dashboard: '', fallback: '' } },
 		];
 		const { host, cleanup } = mountPanel();
 
@@ -733,7 +733,7 @@ describe( 'ODD Shop', () => {
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );
 
-	it( 'uses franchise chips as filters without filling the search field', () => {
+	it( 'uses category chips as filters without filling the search field', () => {
 		const { host, cleanup } = mountPanel();
 
 		const chip = Array.from( host.querySelectorAll( '.odd-shop__search-chip' ) )

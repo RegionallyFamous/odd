@@ -170,7 +170,7 @@
 *
 * Scopes under `.odd-shop` so the redesign never leaks into
 * other windows or into callers who style `.odd-panel` alone.
-* Overrides a handful of legacy tokens (rail width, spacing
+* Overrides a handful of base tokens (rail width, spacing
 * shelf grids, preview bar) without touching the semantic
 * markup — cards, switches and the About hero all inherit.
 * ------------------------------------------------------------ */
@@ -321,7 +321,7 @@
 @keyframes odd-shop-widget-pop{0%,100%{transform:translateY(-50%) scale(1)}45%{transform:translateY(calc(-50% - 12px)) scale(1.05)}55%{transform:translateY(calc(-50% - 8px)) scale(.98)}}
 @media (prefers-reduced-motion:reduce){.odd-panel.odd-shop .odd-shop__hero--icons .odd-shop__hero-quartet,.odd-panel.odd-shop .odd-shop__hero--icons .odd-shop__hero-quartet img,.odd-panel.odd-shop .odd-shop__hero--cursors::before,.odd-panel.odd-shop .odd-shop__hero--apps::before,.odd-panel.odd-shop .odd-shop__hero--widgets .odd-shop__hero-glyph{animation:none}}
 
-/* Category quilt — gradient franchise tiles that jump
+/* Category quilt — gradient category tiles that jump
 * to their shelf. Two columns on wide, single on narrow. */
 .odd-panel.odd-shop .odd-shop__quilt{margin:0 0 32px}
 .odd-panel.odd-shop .odd-shop__quilt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
@@ -354,7 +354,7 @@
 .odd-panel.odd-shop .odd-shop__reset-btn:hover{background:rgba(0,113,227,.1);border-color:rgba(0,113,227,.5)}
 .odd-panel.odd-shop .odd-shop__reset-btn:focus-visible{outline:3px solid var(--odd-shop-accent);outline-offset:2px}
 
-/* Shelves — franchise row with an anchor-style title + count
+/* Shelves — category row with an anchor-style title + count
 * pill and a horizontally-scrolling track beneath.
 * A tiny fade-up-on-enter reads as "this pane just loaded"
 * without being showy; dropped under reduced-motion. */
@@ -445,8 +445,8 @@
 .odd-panel.odd-shop .odd-shop__shelf--search{margin-bottom:34px}
 .odd-panel.odd-shop .odd-shop__grid--search{grid-template-columns:repeat(auto-fill,minmax(172px,1fr))}
 
-/* Legacy card + catalog rows inherit the old styling when
-* they surface outside a shelf (About hero, Apps section). */
+/* Base card + catalog rows keep the same styling when they surface
+* outside a shelf (About hero, Apps section). */
 .odd-panel.odd-shop .odd-card{border-radius:var(--odd-shop-radius);border-color:var(--odd-shop-border);background:#fff}
 .odd-panel.odd-shop .odd-card__title{font-size:14px}
 .odd-panel.odd-shop .odd-card__sub{font-size:11px;color:var(--odd-shop-ink-3)}
@@ -491,7 +491,7 @@
 .odd-panel.odd-shop .odd-catalog-row:hover{transform:translateY(-1px);border-color:var(--odd-shop-border-strong);box-shadow:0 14px 28px -22px rgba(20,14,40,.35)}
 .odd-panel.odd-shop .odd-catalog-row--iconset.is-active{border-color:var(--odd-shop-accent);box-shadow:0 0 0 1px var(--odd-shop-accent) inset,0 14px 28px -22px rgba(0,113,227,.3)}
 
-/* Primary pills use the shop blue. "Preview" stays legacy-styled
+/* Primary pills use the shop blue. "Preview" stays amber-styled
 * so the amber preview state still reads as "staging", not "live". */
 .odd-panel.odd-shop .odd-apps-btn--primary{background:var(--odd-shop-accent);border-color:var(--odd-shop-accent)}
 .odd-panel.odd-shop .odd-apps-btn--primary:hover{background:#0a66cf;border-color:#0a66cf}
@@ -500,7 +500,7 @@
 /* Preview bar — floating pill anchored to the bottom-right
 * of the content pane. Compact, rounded, with the eye
 * glyph + message text + two pill buttons. Replaces the
-* legacy full-width "sticky toolbar" look. */
+* full-width sticky toolbar look. */
 .odd-panel.odd-shop .odd-preview-bar{position:sticky;bottom:16px;margin:16px 0 0 auto;padding:10px 14px 10px 16px;background:rgba(255,255,255,.96);-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);border:1px solid var(--odd-shop-border-strong);border-radius:999px;box-shadow:0 18px 40px -22px rgba(20,14,40,.4),0 2px 4px rgba(0,0,0,.04);display:flex;align-items:center;gap:12px;width:fit-content;max-width:min(640px,calc(100% - 16px));z-index:5;animation:odd-shop-preview-in .22s cubic-bezier(.2,.8,.2,1)}
 .odd-panel.odd-shop .odd-preview-bar__eye{width:24px;height:24px;border-radius:999px;background:var(--odd-shop-accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
 .odd-panel.odd-shop .odd-preview-bar__text{font-size:12px;color:var(--odd-shop-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -668,7 +668,7 @@
  * drives the card's state (Install / Preview / Add / Open / Active).
  *
  * These rules are the post-v3.1 visual treatment; they intentionally
- * override several of the legacy `.odd-card` + `.odd-shop__tile`
+ * override several of the base `.odd-card` + `.odd-shop__tile`
  * declarations above so existing selectors (tests, third-party CSS)
  * keep matching without the old "catalog row" visual baggage.
  */
@@ -691,16 +691,18 @@
 .odd-panel .odd-shop__card-art > img{display:block;width:100%;height:100%;object-fit:cover;background:inherit}
 .odd-panel .odd-shop__card--scene .odd-shop__card-art{aspect-ratio:16/9;border-radius:0}
 .odd-panel .odd-shop__card--app .odd-shop__card-art{aspect-ratio:1/1}
-.odd-panel .odd-shop__card--app .odd-shop__card-art > img{padding:10%;object-fit:contain;background:transparent}
+.odd-panel .odd-shop__card--app .odd-shop__card-art > img:not(.odd-shop__card-art-fill){padding:10%;object-fit:contain;background:transparent}
+.odd-panel .odd-shop__card--app .odd-shop__card-art > img.odd-shop__card-art-fill{padding:0;object-fit:cover;background:inherit}
 .odd-panel .odd-shop__card--icon-set .odd-shop__card-art{background:radial-gradient(120% 90% at 28% 18%,rgba(88,86,214,.36) 0%,rgba(88,86,214,0) 52%),linear-gradient(135deg,#171126 0%,#080511 100%)}
-/* Icon-set art: when we fall back to a single thumbnail (`icon_url`
- * from the remote catalog) the image is a square icon, not a full-
- * bleed preview, so contain it and pad it like an app tile rather
- * than cover-cropping it. The quartet path already lays out four
- * mini icons inside the same art region. */
-.odd-panel .odd-shop__card--icon-set .odd-shop__card-art > img.odd-shop__card-art-fill{padding:0;object-fit:cover;background:transparent}
-.odd-panel .odd-shop__card-quartet{position:relative;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:10%;width:72%;aspect-ratio:1/1}
-.odd-panel .odd-shop__card-quartet > img{width:100%;height:100%;object-fit:contain;background:transparent;border-radius:0;padding:0;filter:drop-shadow(0 6px 10px rgba(0,0,0,.48)) drop-shadow(0 0 10px rgba(255,255,255,.12))}
+/* Icon-set art: catalog fallback thumbnails are complete card/icon
+ * artwork, so keep them inside the plate instead of cover-cropping.
+ * Installed rows with real icon maps use the quartet modifier below
+ * for extra internal breathing room. */
+.odd-panel .odd-shop__card--icon-set .odd-shop__card-art > img.odd-shop__card-art-fill{box-sizing:border-box;padding:12%;object-fit:contain;background:transparent}
+.odd-panel .odd-shop__card-art--quartet{box-sizing:border-box;padding:clamp(18px,13%,28px);overflow:visible}
+.odd-panel .odd-shop__card-art--quartet .odd-shop__card-quartet{width:100%;height:100%;gap:clamp(12px,12%,20px)}
+.odd-panel .odd-shop__card-quartet{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,1fr);gap:10%;width:72%;aspect-ratio:1/1;min-width:0;min-height:0}
+.odd-panel .odd-shop__card-quartet > img{width:100%;height:100%;min-width:0;min-height:0;object-fit:contain;background:transparent;border-radius:0;padding:0;filter:drop-shadow(0 6px 10px rgba(0,0,0,.48)) drop-shadow(0 0 10px rgba(255,255,255,.12))}
 .odd-panel .odd-shop__card-glyph{position:relative;font-size:68px;line-height:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.35))}
 .odd-panel .odd-shop__card-mono{position:relative;font:800 44px/1 -apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:-.02em;color:rgba(255,255,255,.92)}
 .odd-panel .odd-shop__card-shine{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 60% at 50% -10%,rgba(255,255,255,.45) 0%,rgba(255,255,255,0) 60%)}
@@ -814,14 +816,15 @@
 @media (prefers-reduced-motion:reduce){.odd-panel.odd-shop .odd-shop__editorial-eyebrow{animation:none}}
 
 /* High-specificity cleanup for the unified cards. Each card also
- * carries legacy `.odd-card` / `.odd-shop__tile` classes for tests
+ * carries base `.odd-card` / `.odd-shop__tile` classes for tests
  * and third-party hooks; these rules make sure the old bordered-tile
  * preview state cannot draw an inset outline through the metadata. */
 .odd-panel.odd-shop .odd-shop__card.odd-card.odd-shop__tile{overflow:hidden;border-radius:20px;background:#fff;border:1px solid rgba(60,60,67,.12);box-shadow:0 1px 2px rgba(12,10,29,.04),0 12px 28px -24px rgba(12,10,29,.42)}
 .odd-panel.odd-shop .odd-shop__card.odd-card.odd-shop__tile:hover{border-color:rgba(60,60,67,.22);box-shadow:0 2px 4px rgba(12,10,29,.06),0 18px 36px -24px rgba(12,10,29,.48)}
 .odd-panel.odd-shop .odd-shop__card.odd-card.odd-shop__tile.is-previewing{border-color:#f59e0b;box-shadow:0 0 0 2px #f59e0b,0 18px 36px -24px rgba(245,158,11,.55)}
 .odd-panel.odd-shop .odd-shop__card.odd-card.odd-shop__tile.is-previewing::after{content:none}
-.odd-panel.odd-shop .odd-shop__card.odd-card.odd-shop__tile .odd-shop__card-art{border-radius:0}
+.odd-panel.odd-shop .odd-shop__card.odd-card.odd-shop__tile .odd-shop__card-art{border-radius:22.5%}
+.odd-panel.odd-shop .odd-shop__card.odd-card.odd-shop__tile.odd-shop__card--scene .odd-shop__card-art{border-radius:0}
 .odd-panel.odd-shop .odd-shop__card.odd-card.odd-shop__tile .odd-shop__card-meta{min-height:106px;padding:13px 14px 48px;background:var(--odd-shop-surface)}
 .odd-panel.odd-shop .odd-shop__card.odd-card.odd-shop__tile + .odd-shop__card-btn{margin:0}
 .odd-panel .odd-shop__iris-sticker{position:absolute;bottom:10px;right:10px;width:36px;height:36px;z-index:3}

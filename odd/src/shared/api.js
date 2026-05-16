@@ -21,7 +21,7 @@
  *   api.cursorSets()      — live cursor-set list
  *   api.currentCursorSet() — active cursor slug or '' for default
  *   api.savePrefs(p, cb)  — POST /odd/v1/prefs, merges response
- *   api.setScene(slug)    — save + broadcast 'odd.pickScene' + toast
+	 *   api.setScene(slug)    — save + broadcast scene hooks + toast
  *   api.setIconSet(slug)  — save + soft reload so dock rebuilds
  *   api.setCursorSet(slug) — save + live cursor refresh
  *   api.setShuffle(prefs) — save shuffle prefs
@@ -48,10 +48,7 @@
 	window.__odd = window.__odd || {};
 	if ( window.__odd.api ) return;
 
-	// Legacy hook names prior to v0.14.0 used '/' which @wordpress/hooks
-	// validates against; swap to the compliant '.' form. Anyone already
-	// subscribed to the old names needs to migrate. Internal ODD code
-	// all routes through the event bus constants in odd-events now.
+		// Command hooks use the same dotted naming convention as Desktop Mode.
 	var HOOK_SCENE    = 'odd.pickScene';
 	var HOOK_ICONSET  = 'odd.pickIconSet';
 	var TOAST_TONE    = 'odd-muse';
@@ -326,13 +323,12 @@
 		var prev = currentScene();
 		if ( slug === prev ) return false;
 
-		// Update the store optimistically so subscribers see the new
-		// scene before the server round-trip finishes. The wallpaper
-		// engine listens to the legacy HOOK_SCENE hook for the actual
-		// visual swap; we fire both during the transition period.
+		// Update the store optimistically so subscribers see the new scene before
+		// the server round-trip finishes. The wallpaper engine listens to the
+		// internal hook bridge for the visual swap.
 		if ( store ) store.set( { user: { wallpaper: slug } }, { source: 'api.setScene' } );
 		emitBus( 'odd.scene-changed', { from: prev, to: slug } );
-		// Only `odd.pickScene` — slash `odd/pickScene` is not a valid @wordpress/hooks name.
+		// Broadcast the live scene-pick hook for wallpaper previews.
 		doAction( HOOK_SCENE, slug );
 		savePrefs( { wallpaper: slug } );
 

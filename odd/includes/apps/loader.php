@@ -13,7 +13,7 @@
  *                                    extensions, per-file compression ratio
  *   5. Total uncompressed cap        ODDOUT_APPS_MAX_UNCOMPRESSED
  *   6. manifest.json at root
- *   7. Required fields               name, slug, version
+ *   7. Required fields               type, name, slug, version
  *   8. Slug format                   ^[a-z0-9-]+$
  *   9. Slug uniqueness               registry lookup
  *  10. Entry path validation         ^[a-zA-Z0-9._-]+(/[a-zA-Z0-9._-]+)*$
@@ -147,11 +147,16 @@ function oddout_apps_validate_archive( $tmp_path, $filename ) {
 		return new WP_Error( 'invalid_manifest', __( 'manifest.json is not valid JSON.', 'odd-outlandish-desktop-decorator' ) );
 	}
 
-	foreach ( array( 'name', 'slug', 'version' ) as $field ) {
+	foreach ( array( 'type', 'name', 'slug', 'version' ) as $field ) {
 		if ( empty( $manifest[ $field ] ) || ! is_string( $manifest[ $field ] ) ) {
 			$zip->close();
 			return new WP_Error( 'missing_manifest_field', sprintf( /* translators: %s field name */ __( 'manifest.json is missing required field: %s', 'odd-outlandish-desktop-decorator' ), $field ) );
 		}
+	}
+
+	if ( 'app' !== strtolower( (string) $manifest['type'] ) ) {
+		$zip->close();
+		return new WP_Error( 'invalid_type', __( 'App archives must declare manifest type "app".', 'odd-outlandish-desktop-decorator' ) );
 	}
 
 	if ( ! preg_match( '/^[a-z0-9-]+$/', $manifest['slug'] ) ) {

@@ -24,8 +24,7 @@ odd/                                the plugin — JS/PHP/CSS only, no bundled c
 ├── includes/
 │   ├── enqueue.php                 odd-api / odd / odd-panel / odd-commands / odd-desktop-hooks handles
 │   ├── rest.php                    /odd/v1/prefs (GET+POST)
-│   ├── migrate.php                 activation-time b-roll → odd migration (idempotent)
-│   ├── migrations.php              versioned per-user migration runner (oddout_schema_version)
+│   ├── migrations.php              current v1 schema marker (oddout_schema_version)
 │   ├── native-window.php           desktop_mode_register_window('odd', ...)
 │   ├── starter-pack.php            inline starter install + backoff + retry REST
 │   ├── content/
@@ -50,12 +49,12 @@ odd/                                the plugin — JS/PHP/CSS only, no bundled c
 │       ├── native-surfaces.php     per-app desktop icon + native window registration
 └── src/
     ├── shared/api.js               window.__odd.api — prefs, Shop, toast, settings, badge, diagnostics helpers
-    ├── shared/desktop-hooks.js     newer WP Desktop Mode hook bridge + ODD Settings tab
+    ├── shared/desktop-hooks.js     WP Desktop Mode hook bridge + ODD Settings tab
     ├── panel/index.js              Shop native-window render callback (unified catalog/installed cards)
     ├── cursors/index.js            active cursor stylesheet + pointer bridge runtime
     ├── wallpaper/
     │   ├── index.js                registerWallpaper('odd') + shared mount runner + 'odd-pending' fallback
-    │   ├── picker.js               legacy in-canvas picker (hidden, kept for fallback)
+    │   ├── picker.js               in-canvas picker module
     │   └── audio.js  easter-eggs.js
     └── apps/window-host.js         iframe injector + odd.app-* event re-emitter
 
@@ -68,7 +67,7 @@ _tools/                             author-side content, never shipped to users
 │   ├── widgets/<slug>/             widget.js + widget.css? + manifest.json + preview.svg?
 │   └── apps/<slug>/                prebuilt bundle.wp + icon.svg + meta.json
 ├── build-catalog.py                deterministic builder → site/catalog/v1/
-└── (legacy generators for icons, wallpaper painters, etc.)
+└── helper scripts for catalog art, screenshots, and build checks
 
 site/                               GitHub Pages deploy target
 ├── index.html  styles.css  wild.js marketing site
@@ -118,7 +117,7 @@ registers its own `baseId: 'odd-app-<slug>'` window, so users can
 have the Shop plus any number of app windows open simultaneously
 (still capped to one window per app).
 
-ODD targets WP Desktop Mode v0.8.0+ as its host baseline. It declares
+ODD targets WP Desktop Mode v0.8.5+ as its host baseline. It declares
 command, settings-tab, and title-bar button scripts through Desktop
 Mode's registration APIs, then uses `src/shared/desktop-hooks.js` as the
 single bridge for window, iframe, widget, wallpaper, dock, command,
@@ -136,7 +135,7 @@ button to ODD windows.
 | Prefs       | `/odd/v1/prefs`                   | GET + POST user prefs (wallpaper, icon set, shuffle, …)     |
 | Bundles     | `/odd/v1/bundles/*`               | Universal .wp catalog + upload + install                    |
 | Starter     | `/odd/v1/starter`, `/starter/retry` | Read starter-pack state + force a retry                   |
-| Apps (compat) | `/odd/v1/apps/*`                | Legacy apps surface — forwards to /bundles/* + serves files |
+| Apps        | `/odd/v1/apps/*`                | App management surface — forwards uploads to /bundles/* + serves files |
 
 `POST /wp-json/odd/v1/prefs` accepts any subset of:
 
@@ -482,17 +481,9 @@ already installed. The workflow then reads `oddout_starter_get_state()`
 and asserts `status === 'installed'`. Determinism of the catalog
 build is enforced by `ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog`.
 
-## Migration from b-roll / b-roll-icons
+## v1 Data Baseline
 
-ODD replaced two earlier plugins, `b-roll` (wallpapers) and
-`b-roll-icons` (desktop icon sets). An activation-time migration in
-`includes/migrate.php` copies every `b_roll_*` / `b_roll_icons_set`
-user_meta key into the matching `oddout_*` key non-destructively, and
-rewrites each user's `desktop_mode_os_settings.wallpaper` from
-`'b-roll'` to `'odd'` so WP Desktop Mode picks up the renamed
-wallpaper.
-
-GitHub keeps a permanent redirect from the old
-`RegionallyFamous/b-roll` repo so historical Playground links keep
-working — but new content should always use the canonical
-`RegionallyFamous/odd` URL.
+ODD v1 starts from a clean public baseline. User content lives in the
+database and `wp-content/uploads/odd/`; plugin runtime code lives in
+the plugin directory; catalog content comes from the current remote
+registry plus the bundled full-registry fallback.

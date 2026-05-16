@@ -4,7 +4,7 @@
 	"title": "ODD .wp bundle manifest",
 	"description": "Authoritative schema for the manifest.json that ships at the root of every ODD .wp bundle. Mirrors the PHP validators in odd/includes/content/*.php. Bundle authors can enable live validation by adding `\"$schema\": \"https://raw.githubusercontent.com/RegionallyFamous/odd/main/docs/schemas/manifest.schema.json\"` to their manifest.\n\nThis schema is advisory — the canonical behaviour lives in the PHP validators and _tools/validators/validate_manifest.py. When the two disagree, the PHP validator wins at install time; this schema is kept in sync by CI (see tests/php/test-manifest-schema-alignment.php once that test lands).",
 	"type": "object",
-	"required": ["name", "slug", "version"],
+	"required": ["type", "name", "slug", "version"],
 	"additionalProperties": true,
 	"properties": {
 		"$schema": {
@@ -13,9 +13,8 @@
 		},
 		"type": {
 			"type": "string",
-			"enum": ["app", "scene", "icon-set", "iconset", "cursor-set", "widget"],
-			"default": "app",
-			"description": "Bundle type. `iconset` is accepted as a legacy alias for `icon-set`; installers canonicalise to the hyphenated form."
+			"enum": ["app", "scene", "icon-set", "cursor-set", "widget"],
+			"description": "Bundle type. Public v1 manifests must declare the canonical type explicitly."
 		},
 		"slug": {
 			"type": "string",
@@ -40,9 +39,9 @@
 		},
 		"author": { "type": "string" },
 		"description": { "type": "string" },
-		"franchise": {
+		"category": {
 			"type": "string",
-			"description": "Optional soft historical label — 'Generative', 'Atmosphere', 'Paper', etc. Not surfaced in the current UI."
+			"description": "Optional Shop grouping label such as 'Generative', 'Atmosphere', or 'ODD Originals'."
 		},
 		"tags": {
 			"type": "array",
@@ -166,7 +165,7 @@
 		},
 		"surfaces": {
 			"type": "object",
-			"description": "App manifests only. Install-time defaults for which Desktop Mode launch surfaces ODD should register. Both keys default to the historical behaviour (desktop: true, taskbar: false) when missing. Users override per install from the ODD Shop.",
+				"description": "App manifests only. Install-time defaults for which Desktop Mode launch surfaces ODD should register. Both keys default to the v1 surfaces (desktop: true, taskbar: false) when missing. Users override per install from the ODD Shop.",
 			"additionalProperties": false,
 			"properties": {
 				"desktop": { "type": "boolean", "description": "Render a desktop shortcut icon for this app." },
@@ -180,12 +179,7 @@
 			"then": { "required": ["entry", "preview", "wallpaper"] }
 		},
 		{
-			"if": {
-				"anyOf": [
-					{ "properties": { "type": { "const": "icon-set" } }, "required": ["type"] },
-					{ "properties": { "type": { "const": "iconset" } }, "required": ["type"] }
-				]
-			},
+			"if": { "properties": { "type": { "const": "icon-set" } }, "required": ["type"] },
 			"then": {
 				"required": ["icons"],
 				"properties": {

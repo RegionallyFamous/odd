@@ -359,19 +359,19 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		);
 	}
 
-	public function test_catalog_normalise_drops_legacy_svg_icon_sets() {
+	public function test_catalog_normalise_drops_svg_icon_sets() {
 		$registry = oddout_catalog_normalise(
 			array(
 				'version'      => 1,
 				'starter_pack' => array(
-					'iconSets' => array( 'legacy-icons', 'modern-icons' ),
+					'iconSets' => array( 'svg-icons', 'modern-icons' ),
 				),
 				'bundles'      => array(
 					$this->catalog_row(
-						'legacy-icons',
+						'svg-icons',
 						array(
 							'type'     => 'icon-set',
-							'icon_url' => 'https://odd.regionallyfamous.com/catalog/v1/icons/iconset-legacy-icons.svg',
+							'icon_url' => 'https://odd.regionallyfamous.com/catalog/v1/icons/iconset-svg-icons.svg',
 						)
 					),
 					$this->catalog_row(
@@ -387,45 +387,42 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		);
 
 		$slugs = wp_list_pluck( $registry['bundles'], 'slug' );
-		$this->assertNotContains( 'legacy-icons', $slugs );
+		$this->assertNotContains( 'svg-icons', $slugs );
 		$this->assertContains( 'modern-icons', $slugs );
 		$this->assertContains( 'still-valid-widget', $slugs );
 		$this->assertSame( array( 'modern-icons' ), $registry['starter_pack']['iconSets'] );
 	}
 
-	public function test_catalog_merges_fallback_icon_sets_when_remote_icon_sets_are_legacy() {
+	public function test_catalog_uses_full_registry_fallback_only() {
 		$registry = oddout_catalog_normalise(
 			array(
 				'version'      => 1,
 				'starter_pack' => array(
-					'iconSets' => array( 'legacy-icons' ),
+					'iconSets' => array( 'svg-icons' ),
 				),
 				'bundles'      => array(
 					$this->catalog_row(
-						'legacy-icons',
+						'svg-icons',
 						array(
 							'type'     => 'icon-set',
-							'icon_url' => 'https://odd.regionallyfamous.com/catalog/v1/icons/iconset-legacy-icons.svg',
+							'icon_url' => 'https://odd.regionallyfamous.com/catalog/v1/icons/iconset-svg-icons.svg',
 						)
 					),
 					$this->catalog_row( 'still-valid-widget' ),
 				),
 			)
 		);
-		$merged   = oddout_catalog_merge_fallback_icon_sets( $registry );
 		$iconsets = array_values(
 			array_filter(
-				$merged['bundles'],
+				$registry['bundles'],
 				static function ( $row ) {
 					return is_array( $row ) && isset( $row['type'] ) && 'icon-set' === $row['type'];
 				}
 			)
 		);
 
-		$this->assertNotEmpty( $iconsets );
-		$this->assertSame( 'oddlings', $iconsets[0]['slug'] );
-		$this->assertStringEndsWith( '.webp', $iconsets[0]['icon_url'] );
-		$this->assertSame( array( 'oddlings' ), $merged['starter_pack']['iconSets'] );
+		$this->assertSame( array(), $iconsets );
+		$this->assertSame( array(), $registry['starter_pack']['iconSets'] );
 	}
 
 	public function test_catalog_rest_keeps_install_fields_for_admins() {
@@ -705,7 +702,7 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 			static function () {
 				return array(
 					'odd'         => '1.0.0',
-					'desktopMode' => '0.8.0',
+					'desktopMode' => '0.8.5',
 					'api'         => '2.3.0',
 				);
 			}

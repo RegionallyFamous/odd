@@ -15,7 +15,7 @@ Create `_tools/catalog-sources/cursor-sets/<slug>/manifest.json`:
   "version": "1.0.0",
   "author": "Your Name",
   "description": "A short sentence for the ODD Shop.",
-  "franchise": "Example",
+  "category": "Example",
   "accent": "#38e8ff",
   "preview": "preview.svg",
   "cursors": {

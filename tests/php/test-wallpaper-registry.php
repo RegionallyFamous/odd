@@ -69,7 +69,7 @@ class Test_Wallpaper_Registry extends WP_UnitTestCase {
 				$scenes[] = array(
 					'slug'          => 'sample',
 					'label'         => 'Sample',
-					'franchise'     => 'Test',
+					'category'     => 'Test',
 					'tags'          => array( 'fake' ),
 					'fallbackColor' => '#112233',
 					'previewUrl'    => 'https://example.com/sample/preview.webp',
@@ -95,7 +95,7 @@ class Test_Wallpaper_Registry extends WP_UnitTestCase {
 			$this->assertArrayHasKey( 'slug', $s, "meta.json missing slug for {$slug}" );
 			$this->assertSame( $slug, $s['slug'], "folder/slug mismatch for {$slug}" );
 			$this->assertArrayHasKey( 'label', $s );
-			$this->assertArrayHasKey( 'franchise', $s );
+			$this->assertArrayHasKey( 'category', $s );
 			$this->assertArrayHasKey( 'tags', $s );
 			$this->assertArrayHasKey( 'fallbackColor', $s );
 			$this->assertIsArray( $s['tags'] );

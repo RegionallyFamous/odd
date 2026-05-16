@@ -78,11 +78,11 @@ class Test_Dependency_Guards extends WP_UnitTestCase {
 		$this->assertSame( oddout_desktop_mode_version_available() && array() === $missing, $available );
 	}
 
-	public function test_desktop_mode_minimum_version_is_080() {
-		$this->assertSame( '0.8.0', oddout_desktop_mode_min_version() );
+	public function test_desktop_mode_minimum_version_is_085() {
+		$this->assertSame( '0.8.5', oddout_desktop_mode_min_version() );
 		if ( defined( 'DESKTOP_MODE_VERSION' ) ) {
 			$this->assertSame(
-				version_compare( DESKTOP_MODE_VERSION, '0.8.0', '>=' ),
+				version_compare( DESKTOP_MODE_VERSION, '0.8.5', '>=' ),
 				oddout_desktop_mode_version_available()
 			);
 		} else {
@@ -151,7 +151,7 @@ class Test_Dependency_Guards extends WP_UnitTestCase {
 		ob_start();
 		do_action( 'admin_notices' );
 		$buffer = ob_get_clean();
-		$this->assertStringContainsString( 'ODD requires WP Desktop Mode 0.8.0 or newer', $buffer );
+		$this->assertStringContainsString( 'ODD requires WP Desktop Mode 0.8.5 or newer', $buffer );
 	}
 
 	public function test_init_hook_does_not_call_missing_host_apis() {

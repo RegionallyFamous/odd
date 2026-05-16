@@ -88,9 +88,8 @@ The minimum viable `manifest.json`:
 }
 ```
 
-`type` is optional and defaults to `"app"` when absent — so v1.7.x apps
-keep working without touching their manifest. Every other field is
-optional and has sensible defaults — see [`.wp` Manifest Reference](wp-manifest.md).
+`type` is required and must be `"app"`. Every other field is optional and has
+sensible defaults — see [`.wp` Manifest Reference](wp-manifest.md).
 
 ---
 
@@ -118,12 +117,11 @@ The fastest path to a working app. No tools, no npm, no bundler.
 
 The `surfaces` object is optional. It sets the **install-time
 defaults** for whether ODD registers a desktop icon and/or a Desktop
-Mode taskbar icon for your app. Both default to the historical
-behavior (`desktop: true`, `taskbar: false`), so omitting the key is
-equivalent to "desktop icon only." Users can flip either independently
-from the **ODD Shop → Apps** card after install — the manifest value
-only controls what the app looks like the moment it lands. Regardless
-of the visible surfaces, the app is always reachable via
+Mode taskbar icon for your app. The v1 default is `desktop: true` and
+`taskbar: false`, so omitting the key is equivalent to "desktop icon
+only." Users can flip either independently from the **ODD Shop → Apps**
+card after install — the manifest value only controls what the app
+looks like the moment it lands. Regardless of the visible surfaces, the app is always reachable via
 `wp.desktop.openWindow( 'odd-app-{slug}' )`, the ODD Shop's **Open**
 button, and slash commands.
 

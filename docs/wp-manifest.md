@@ -47,7 +47,7 @@ alongside:
 
 | Field         | Required | Pattern / Type                              | Notes                                                                  |
 |---------------|----------|---------------------------------------------|------------------------------------------------------------------------|
-| `type`        | no       | `"app" \| "icon-set" \| "cursor-set" \| "scene" \| "widget"` | Defaults to `"app"` for back-compat with v1.7.x bundles.              |
+| `type`        | yes      | `"app" \| "icon-set" \| "cursor-set" \| "scene" \| "widget"` | Public v1 bundles must declare the canonical type explicitly.          |
 | `slug`        | yes      | `^[a-z0-9-]+$`, 1–64 chars                  | Globally unique across **all** installed bundles (any type).           |
 | `name`        | yes      | non-empty string                            | Display name on Shop cards + native window titles.                     |
 | `version`     | yes      | non-empty string                            | Semver recommended. Drives the `ver` query on every enqueued asset.    |
@@ -106,7 +106,7 @@ Covered in full by [Building an Icon Set](building-an-icon-set.md).
     "slug":      "aurora",
     "name":      "Aurora",
     "version":   "1.0.0",
-    "franchise": "Aurora",
+    "category": "Aurora",
     "accent":    "#7cc0ff",
     "preview":   "preview.webp",
     "icons": {
@@ -130,7 +130,7 @@ Covered in full by [Building an Icon Set](building-an-icon-set.md).
 
 | Field       | Required | Notes                                                                    |
 |-------------|----------|--------------------------------------------------------------------------|
-| `franchise` | no       | Soft historical label. The Shop now derives the shelf category from the slug — `franchise` is kept for third-party tooling that may still read it. |
+| `category` | no       | Optional grouping label for Shop shelves and catalog tooling. |
 | `accent`    | yes      | `#hex`. Paints the Shop tile, quilt gradient, and catalog metadata.      |
 | `preview`   | no       | Relative path to a hero PNG/WebP. Falls back to `icons.dashboard`.       |
 | `icons`     | yes      | Map of all 14 semantic icon keys to relative PNG/WebP paths. |
@@ -153,7 +153,7 @@ Covered in full by [Building a Cursor Set](building-a-cursor-set.md).
     "slug":      "oddlings",
     "name":      "Oddlings",
     "version":   "1.0.0",
-    "franchise": "ODD Defaults",
+    "category": "ODD Defaults",
     "accent":    "#38e8ff",
     "preview":   "preview.svg",
     "cursors": {
@@ -186,7 +186,7 @@ Covered in full by [Building a Scene](building-a-scene.md).
     "slug":          "my-scene",
     "name":          "My Scene",
     "version":       "1.0.0",
-    "franchise":     "Generative",
+    "category":     "Generative",
     "tags":          [ "blue", "slow" ],
     "fallbackColor": "#112233",
     "added":         "2026-04-26",
@@ -198,7 +198,7 @@ Covered in full by [Building a Scene](building-a-scene.md).
 
 | Field           | Required | Notes                                                                |
 |-----------------|----------|----------------------------------------------------------------------|
-| `franchise`     | no       | Soft historical label. Shop shelves are categorized by slug — `franchise` is retained for backwards compatibility. |
+| `category`     | no       | Optional grouping label for Shop shelves and catalog tooling. |
 | `tags`          | yes      | Array of short strings. Drives search + muse tone selection.         |
 | `fallbackColor` | yes      | `#hex` painted under the canvas before the first frame draws.        |
 | `added`         | yes      | `YYYY-MM-DD`. Used for "new" badges + sort-by-freshness.             |

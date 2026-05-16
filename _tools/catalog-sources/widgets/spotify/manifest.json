@@ -3,7 +3,7 @@
   "id": "odd/spotify",
   "label": "Spotify Embed",
   "description": "Paste a Spotify playlist, album, track, artist, show, or episode URL and Spotify's official player lives on your desktop.",
-  "franchise": "ODD Originals",
+  "category": "ODD Originals",
   "version": "1.0.0",
   "author": "Regionally Famous",
   "entry": "widget.js"

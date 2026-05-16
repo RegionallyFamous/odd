@@ -50,7 +50,7 @@ function oddout_wallpaper_scenes( $reset = false ) {
 		 *
 		 * @param array $registry List of scene descriptors. Each descriptor
 		 *                        must have at least a `slug`; ODD also reads
-		 *                        `label`, `franchise`, `tags`, `fallbackColor`,
+		 *                        `label`, `category`, `tags`, `fallbackColor`,
 		 *                        `previewUrl`, `wallpaperUrl`.
 		 */
 		$cache = apply_filters( 'oddout_scene_registry', array() );

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://raw.githubusercontent.com/RegionallyFamous/odd/main/docs/schemas/manifest.schema.json",
+  "type": "icon-set",
+  "slug": "eyeball-avenue",
+  "name": "Eyeball Avenue Icons",
+  "label": "Eyeball Avenue",
+  "category": "ODD Original",
+  "accent": "#b35cff",
+  "preview": "dashboard.webp",
+  "description": "Surreal purple raster glyphs with bright odd accents and no facial clutter.",
+  "version": "1.2.0",
+  "author": "Regionally Famous",
+  "icons": {
+    "dashboard": "dashboard.webp",
+    "posts": "posts.webp",
+    "pages": "pages.webp",
+    "media": "media.webp",
+    "comments": "comments.webp",
+    "appearance": "appearance.webp",
+    "plugins": "plugins.webp",
+    "users": "users.webp",
+    "tools": "tools.webp",
+    "settings": "settings.webp",
+    "profile": "profile.webp",
+    "links": "links.webp",
+    "recycle-bin": "recycle-bin.webp",
+    "fallback": "fallback.webp",
+    "os-settings": "os-settings.webp",
+    "import": "import.webp",
+    "classic-admin": "classic-admin.webp"
+  }
+}

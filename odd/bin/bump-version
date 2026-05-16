@@ -4,9 +4,9 @@
 Updates all declared versions in sync:
   1. `Version:` header in odd/odd.php
   2. `ODDOUT_VERSION` constant in odd/odd.php
-  3. Legacy ODD Playground installs that still use **`git:directory`** are
-     repinned to the matching release tag/commit. Current public Playgrounds
-     install ODD from WordPress.org and are left alone.
+  3. ODD Playground installs that still use **`git:directory`** are repinned
+     to the matching release tag/commit. Current public Playgrounds install
+     ODD from WordPress.org and are left alone.
 
 Usage:
     odd/bin/bump-version 0.14.0            # edits in place

@@ -37,7 +37,7 @@ function seedConfig( apps ) {
 		installedWidgets: [],
 		wallpaper: 'flux',
 		scene:     'flux',
-		scenes:    [ { slug: 'flux', label: 'Flux', franchise: 'Generative', tags: [], fallbackColor: '#222' } ],
+		scenes:    [ { slug: 'flux', label: 'Flux', category: 'Generative', tags: [], fallbackColor: '#222' } ],
 		sets:      [],
 		iconSet:   '',
 		favorites: [],

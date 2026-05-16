@@ -38,10 +38,10 @@ SCHEMA_PATH = REPO_ROOT / "docs" / "schemas" / "manifest.schema.json"
 def structural_fallback(manifest: dict) -> list[str]:
     """Minimal structural checks when jsonschema isn't installed. These
     are the subset of the JSON Schema that have the highest blast
-    radius when broken — missing slug/name/version, or a slug that
+    radius when broken — missing type/slug/name/version, or a slug that
     would break URLs and user-meta keys."""
     problems: list[str] = []
-    for field in ("name", "slug", "version"):
+    for field in ("type", "name", "slug", "version"):
         if field not in manifest or not isinstance(manifest[field], str) or not manifest[field]:
             problems.append(f"missing or empty required field: {field}")
     slug = manifest.get("slug", "")
@@ -52,8 +52,8 @@ def structural_fallback(manifest: dict) -> list[str]:
                 f"slug '{slug}' must match ^[a-z0-9-]+$ "
                 f"(lowercase letters, digits, hyphens)"
             )
-    bundle_type = manifest.get("type", "app")
-    if bundle_type not in ("app", "scene", "icon-set", "iconset", "cursor-set", "widget"):
+    bundle_type = manifest.get("type", "")
+    if bundle_type not in ("app", "scene", "icon-set", "cursor-set", "widget"):
         problems.append(
             f"type '{bundle_type}' is not one of "
             f"app, scene, icon-set, cursor-set, widget"

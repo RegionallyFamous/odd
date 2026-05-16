@@ -3,7 +3,7 @@
   "id": "odd/sticky",
   "label": "Sticky Note",
   "description": "A tilted handwritten sticky note that auto-saves as you type.",
-  "franchise": "ODD Originals",
+  "category": "ODD Originals",
   "version": "1.0.0",
   "author": "Regionally Famous",
   "entry": "widget.js",

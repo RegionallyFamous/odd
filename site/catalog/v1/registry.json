@@ -23,7 +23,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Abyssal Aquarium \u2014 a painted ODD wallpaper scene.",
-      "franchise": "ODD Originals",
+      "category": "ODD Originals",
       "tags": [
         "gpt-image-2",
         "aquarium",
@@ -35,8 +35,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-abyssal-aquarium.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-abyssal-aquarium.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-abyssal-aquarium.wp",
-      "sha256": "b8ee2f40e7efc1796bf4faa1cf71fad12609f3fdb50febbde16a9404c2470a58",
-      "size": 249182
+      "sha256": "8fb129ea28231a6e3248a700a07453e9541742f7d2343add73a80e0f212c6265",
+      "size": 249181
     },
     {
       "type": "scene",
@@ -45,7 +45,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Aurora \u2014 a painted ODD wallpaper scene.",
-      "franchise": "Atmosphere",
+      "category": "Atmosphere",
       "tags": [
         "sky",
         "stars",
@@ -57,7 +57,7 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-aurora.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-aurora.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-aurora.wp",
-      "sha256": "da97e9803977e29354c34c347088c2560dc88ecebe4b5866a36c51c7f67319fe",
+      "sha256": "598c75b3d2fe9bc30adf94050765d749265e2825efd94777bba55a2afa877280",
       "size": 160815
     },
     {
@@ -67,7 +67,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Balcony Noon \u2014 a painted ODD wallpaper scene.",
-      "franchise": "ODD Originals",
+      "category": "ODD Originals",
       "tags": [
         "gpt-image-2",
         "city",
@@ -79,8 +79,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-balcony-noon.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-balcony-noon.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-balcony-noon.wp",
-      "sha256": "7273f902f7f3e58574b6d8ebdd87fd071bd0a10a7ebae394f6c6092fec273a1d",
-      "size": 245667
+      "sha256": "a030e17e9ea409e754e747551d9b8a017febad0e3b8432a3fe3ba12dd59023bd",
+      "size": 245666
     },
     {
       "type": "scene",
@@ -89,7 +89,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Beach Umbrellas \u2014 a painted ODD wallpaper scene.",
-      "franchise": "ODD Originals",
+      "category": "ODD Originals",
       "tags": [
         "gpt-image-2",
         "beach",
@@ -101,7 +101,7 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-beach-umbrellas.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-beach-umbrellas.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-beach-umbrellas.wp",
-      "sha256": "38af738ada803a5b528cdafbd24cd1b158de7f352e32ec3e2ec5af1ead686b18",
+      "sha256": "4689a1a2f851a3082c8013f52646bf9d2a08e6052d0da4b875742514bbeb8f7a",
       "size": 311597
     },
     {
@@ -111,7 +111,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Big Sky \u2014 a painted ODD wallpaper scene.",
-      "franchise": "ODD Originals",
+      "category": "ODD Originals",
       "tags": [
         "gpt-image-2",
         "clouds",
@@ -123,8 +123,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-big-sky.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-big-sky.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-big-sky.wp",
-      "sha256": "2a2ce2cd9db06074ae6bb8b5869e8af80cf89181f242ede8c39cf0daa6d28610",
-      "size": 202567
+      "sha256": "d3e4c09f182cb1228769d351cbfc53f6cf1e148bc60a5717d90d623ab0db3f1f",
+      "size": 202564
     },
     {
       "type": "scene",
@@ -133,7 +133,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Circuit Garden \u2014 a painted ODD wallpaper scene.",
-      "franchise": "ODD Originals",
+      "category": "ODD Originals",
       "tags": [
         "gpt-image-2",
         "circuit",
@@ -145,8 +145,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-circuit-garden.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-circuit-garden.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-circuit-garden.wp",
-      "sha256": "2a9b593890e323a23a80df9d5fbdeffd2da8cfd0bfd6d01a6bd460502fc6f1fa",
-      "size": 459734
+      "sha256": "2db11368b6b0079ac524c23a72ce7a69ebb22ddb6563d16eee92c51f7433291c",
+      "size": 459735
     },
     {
       "type": "scene",
@@ -155,7 +155,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Cloud City \u2014 a painted ODD wallpaper scene.",
-      "franchise": "ODD Originals",
+      "category": "ODD Originals",
       "tags": [
         "gpt-image-2",
         "sky",
@@ -167,8 +167,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-cloud-city.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-cloud-city.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-cloud-city.wp",
-      "sha256": "13c48b5fa54a5a13822a47b189c45682f62c6ac7373525d7b44a5de483dfc7df",
-      "size": 194852
+      "sha256": "c66aab95916c44a47c94340289079aa42d712f3cc9a9b6290a146958444a5639",
+      "size": 194853
     },
     {
       "type": "scene",
@@ -177,7 +177,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Flux \u2014 a painted ODD wallpaper scene.",
-      "franchise": "Generative",
+      "category": "Generative",
       "tags": [
         "abstract",
         "particles",
@@ -189,8 +189,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-flux.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-flux.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-flux.wp",
-      "sha256": "0102ba4d04146eacc95aad2609d235024ac6dd52c0d6b7e3c083f7831500dbfb",
-      "size": 240254
+      "sha256": "2f8454f0a5601b47eb49817f2ed3effb84030d454fabbfb47b67c93602a71f22",
+      "size": 240253
     },
     {
       "type": "scene",
@@ -199,7 +199,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Iris Observatory \u2014 a painted ODD wallpaper scene.",
-      "franchise": "ODD Originals",
+      "category": "ODD Originals",
       "tags": [
         "gpt-image-2",
         "observatory",
@@ -211,8 +211,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-iris-observatory.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-iris-observatory.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-iris-observatory.wp",
-      "sha256": "d136f59f6ade6f3572de7e2e6ed289833e83d56dc86b4caa724d4ea50ed41e2c",
-      "size": 269730
+      "sha256": "16b007114402043958ff82ce27365ec4d0a90ba85bfbf5999a2a76beea6b868c",
+      "size": 269728
     },
     {
       "type": "scene",
@@ -221,7 +221,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Mercado \u2014 a painted ODD wallpaper scene.",
-      "franchise": "ODD Originals",
+      "category": "ODD Originals",
       "tags": [
         "gpt-image-2",
         "market",
@@ -233,8 +233,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-mercado.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-mercado.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-mercado.wp",
-      "sha256": "1f8c85a409948b5857648c0afb7c5ec01c32cf9612f06de4a5de8be177c2d80b",
-      "size": 338735
+      "sha256": "bd08b586969799feb42934ffb5453b0f6caf2a78f7b209e67084f86365714212",
+      "size": 338734
     },
     {
       "type": "scene",
@@ -243,7 +243,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "A living CRT terrarium and specimen cabinet. Tiny desktop oddlings drift over glass drawers while curious eyes blink from the edges.",
-      "franchise": "ODD Defaults",
+      "category": "ODD Defaults",
       "tags": [
         "weird",
         "creatures",
@@ -257,8 +257,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-oddling-desktop.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-oddling-desktop.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-oddling-desktop.wp",
-      "sha256": "e0af701d447476838dbd5bda2124b1a0ddd996e54d32cf4f742a8877e1458ace",
-      "size": 163566
+      "sha256": "5a21e5581c22a4822058769534a9248d0d17760560430db50174b6a04b88fdb5",
+      "size": 163565
     },
     {
       "type": "scene",
@@ -267,7 +267,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Origami \u2014 a painted ODD wallpaper scene.",
-      "franchise": "Paper",
+      "category": "Paper",
       "tags": [
         "soft",
         "pastel",
@@ -279,7 +279,7 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-origami.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-origami.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-origami.wp",
-      "sha256": "c1ce9fb1d9dcd535ec21a1272f5f82f78dd03252ef13a82edd5735d91bc359b1",
+      "sha256": "aa3b601e58fecb7033f8f74cd9ade722f4a1a7298b4ac9548b645b3d1a97b3fb",
       "size": 219661
     },
     {
@@ -289,7 +289,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Pocket Dimension \u2014 a painted ODD wallpaper scene.",
-      "franchise": "ODD Originals",
+      "category": "ODD Originals",
       "tags": [
         "gpt-image-2",
         "surreal",
@@ -301,8 +301,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-pocket-dimension.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-pocket-dimension.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-pocket-dimension.wp",
-      "sha256": "b010ab6516aa370e737722177b60e819ff786d46187ad97804d4dc131f98fa20",
-      "size": 258519
+      "sha256": "4da9c6167ef228b8e227822332cdc5544eebfae692954d089b8b8aa72a4f76a5",
+      "size": 258521
     },
     {
       "type": "scene",
@@ -311,7 +311,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Rainfall \u2014 a painted ODD wallpaper scene.",
-      "franchise": "Atmosphere",
+      "category": "Atmosphere",
       "tags": [
         "rain",
         "night",
@@ -323,8 +323,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-rainfall.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-rainfall.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-rainfall.wp",
-      "sha256": "026b388dea298d5dc6270defda8efe9510ca023a711e82571db68b0289f4f37e",
-      "size": 233907
+      "sha256": "2b0455b61903b96cdbb6dbf0273ce6e1b4e17657eba2b2325fbb019f00f1a69f",
+      "size": 233906
     },
     {
       "type": "scene",
@@ -333,7 +333,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Sun Print \u2014 a painted ODD wallpaper scene.",
-      "franchise": "ODD Originals",
+      "category": "ODD Originals",
       "tags": [
         "gpt-image-2",
         "cyanotype",
@@ -345,8 +345,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-sun-print.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-sun-print.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-sun-print.wp",
-      "sha256": "5b548f2b2906906d53f71494385a66a893c85d106956509ddcc97843e3ef3ec8",
-      "size": 705257
+      "sha256": "7bfb18e86959c48aad915858ac39f813ea39dbfb0ad5f0968611105430b93a5e",
+      "size": 705254
     },
     {
       "type": "scene",
@@ -355,7 +355,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Terrazzo \u2014 a painted ODD wallpaper scene.",
-      "franchise": "ODD Originals",
+      "category": "ODD Originals",
       "tags": [
         "gpt-image-2",
         "pattern",
@@ -367,8 +367,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-terrazzo.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-terrazzo.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-terrazzo.wp",
-      "sha256": "d7e51334997d7628106bf7a402b61e188a7624cbd203992ad32fbd071531a1ef",
-      "size": 431108
+      "sha256": "9908d214863f5f33d0c9b8346c1a550b5245176855a7e304fddaa8bc7f19dbb0",
+      "size": 431107
     },
     {
       "type": "scene",
@@ -377,7 +377,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Tide Pool \u2014 a painted ODD wallpaper scene.",
-      "franchise": "ODD Originals",
+      "category": "ODD Originals",
       "tags": [
         "gpt-image-2",
         "water",
@@ -389,7 +389,7 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-tide-pool.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-tide-pool.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-tide-pool.wp",
-      "sha256": "b3fade38e406037ef61166ec78b250c72835e56fa33af5679ce681e54dad5849",
+      "sha256": "d473e6af97dd53f871bc409be6f542e5e25992b540f6111a59e158723488f42e",
       "size": 395990
     },
     {
@@ -399,7 +399,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Tropical Greenhouse \u2014 a painted ODD wallpaper scene.",
-      "franchise": "ODD Originals",
+      "category": "ODD Originals",
       "tags": [
         "gpt-image-2",
         "plants",
@@ -411,8 +411,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-tropical-greenhouse.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-tropical-greenhouse.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-tropical-greenhouse.wp",
-      "sha256": "1555602535e38ffe35b8788a758cbc6a89a3752a91699abf0a5726d19b659706",
-      "size": 561204
+      "sha256": "b14f7bc42d909e88dd8b222e5f3c123d1610783f402b48e65f2bc1841f315af2",
+      "size": 561203
     },
     {
       "type": "scene",
@@ -421,7 +421,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Weather Factory \u2014 a painted ODD wallpaper scene.",
-      "franchise": "ODD Originals",
+      "category": "ODD Originals",
       "tags": [
         "gpt-image-2",
         "whimsical",
@@ -433,8 +433,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-weather-factory.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-weather-factory.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-weather-factory.wp",
-      "sha256": "70c2f02cfd1c0be29fc2cb00c7d6942b353e7663156dd13a7c6c028be1160900",
-      "size": 284960
+      "sha256": "f072c689a0150d403ff024bceb9dcec2f791d5706aaf9f361bee78230744d803",
+      "size": 284959
     },
     {
       "type": "scene",
@@ -443,7 +443,7 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Wildflower Meadow \u2014 a painted ODD wallpaper scene.",
-      "franchise": "ODD Originals",
+      "category": "ODD Originals",
       "tags": [
         "gpt-image-2",
         "flowers",
@@ -455,8 +455,218 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-wildflower-meadow.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-wildflower-meadow.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-wildflower-meadow.wp",
-      "sha256": "8876d57c2c996564886e86916909e0b1e00c124383269779f2dc31ddc165c90b",
-      "size": 348471
+      "sha256": "f4f1eb2cec1572bd9fe8b82bca48889ac37e46c6fd59ba104900fe03c644ad6d",
+      "size": 348472
+    },
+    {
+      "type": "icon-set",
+      "slug": "arcade-tokens",
+      "name": "Arcade Tokens",
+      "version": "1.2.0",
+      "author": "Regionally Famous",
+      "description": "Bronze-and-gold raster token glyphs with bold arcade contrast and no boxed tile.",
+      "category": "Retro",
+      "accent": "#b07a2a",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-arcade-tokens.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-arcade-tokens.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-arcade-tokens.wp",
+      "sha256": "3075d15e9c6d470f63c6885b073a62b6295bc850001e61dece7e1ad83fda3f0c",
+      "size": 414821
+    },
+    {
+      "type": "icon-set",
+      "slug": "arctic",
+      "name": "Arctic",
+      "version": "1.2.0",
+      "author": "Regionally Famous",
+      "description": "Frosted blue-white raster glyphs with icy accents and transparent full-canvas scale.",
+      "category": "Crystal OS",
+      "accent": "#7ddcff",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-arctic.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-arctic.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-arctic.wp",
+      "sha256": "5f5c6acab9db6b0f6d286555e9becd30c4483bfd994a1e603a9b257e6db2fc99",
+      "size": 810922
+    },
+    {
+      "type": "icon-set",
+      "slug": "blueprint",
+      "name": "Blueprint",
+      "version": "1.2.0",
+      "author": "Regionally Famous",
+      "description": "Cobalt-and-cyan raster drafting glyphs with simple construction-line energy.",
+      "category": "Drafting",
+      "accent": "#4da3ff",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-blueprint.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-blueprint.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-blueprint.wp",
+      "sha256": "d4daced42263530ecf3017d3369001207d9c6b31ae7f015da405520beae4178e",
+      "size": 498810
+    },
+    {
+      "type": "icon-set",
+      "slug": "botanical-plate",
+      "name": "Botanical Plate",
+      "version": "1.2.0",
+      "author": "Regionally Famous",
+      "description": "Field-guide green raster glyphs with warm paper fills and botanical accent marks.",
+      "category": "Illustrated",
+      "accent": "#6a8f3b",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-botanical-plate.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-botanical-plate.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-botanical-plate.wp",
+      "sha256": "67d42e344128239b6a7ddfbce943574baa0e85b1d9ac724fe3bc09bfab619254",
+      "size": 857415
+    },
+    {
+      "type": "icon-set",
+      "slug": "brutalist-stencil",
+      "name": "Brutalist Stencil",
+      "version": "1.2.0",
+      "author": "Regionally Famous",
+      "description": "Chunky concrete-and-hazard raster glyphs with strong silhouettes for small docks.",
+      "category": "Concrete Arcade",
+      "accent": "#ff5f4f",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-brutalist-stencil.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-brutalist-stencil.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-brutalist-stencil.wp",
+      "sha256": "7ec95daa7ba5f388fcd2fa2b2597b5a1b95239966d4ab230b2de06ef095c7d18",
+      "size": 1048503
+    },
+    {
+      "type": "icon-set",
+      "slug": "circuit-bend",
+      "name": "Circuit Bend",
+      "version": "1.2.0",
+      "author": "Regionally Famous",
+      "description": "PCB-green raster glyphs with solder-bright accents and transparent edges.",
+      "category": "Technical",
+      "accent": "#2fb37a",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-circuit-bend.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-circuit-bend.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-circuit-bend.wp",
+      "sha256": "ae89ffed396b1d94dc5be88e721b18a20a90b8aa1fa5df8410d55c6634d9194c",
+      "size": 514851
+    },
+    {
+      "type": "icon-set",
+      "slug": "claymation",
+      "name": "Claymation",
+      "version": "1.2.0",
+      "author": "Regionally Famous",
+      "description": "Warm handmade raster glyphs with soft clay color and readable rounded mass.",
+      "category": "Handmade",
+      "accent": "#ffb84d",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-claymation.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-claymation.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-claymation.wp",
+      "sha256": "69d269af2094d05d1a5105b57c2f1d8235d8a0533ce5823fbfe069e8c27698a9",
+      "size": 356608
+    },
+    {
+      "type": "icon-set",
+      "slug": "cross-stitch",
+      "name": "Cross-Stitch",
+      "version": "1.2.0",
+      "author": "Regionally Famous",
+      "description": "Rose-and-linen raster glyphs with a chunky stitch texture that stays legible.",
+      "category": "Craft",
+      "accent": "#e87ca7",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-cross-stitch.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-cross-stitch.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-cross-stitch.wp",
+      "sha256": "c3d3217c29fb4d98e40e055093d4d3a8c5596b12e832ddcede2c09c05a1b65d9",
+      "size": 807366
+    },
+    {
+      "type": "icon-set",
+      "slug": "eyeball-avenue",
+      "name": "Eyeball Avenue",
+      "version": "1.2.0",
+      "author": "Regionally Famous",
+      "description": "Surreal purple raster glyphs with bright odd accents and no facial clutter.",
+      "category": "ODD Original",
+      "accent": "#b35cff",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-eyeball-avenue.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-eyeball-avenue.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-eyeball-avenue.wp",
+      "sha256": "194687d7cad67606d2bd5e5b94972860fc2852660b190b896734643df9846bb5",
+      "size": 518802
+    },
+    {
+      "type": "icon-set",
+      "slug": "filament",
+      "name": "Filament",
+      "version": "1.2.0",
+      "author": "Regionally Famous",
+      "description": "Neon filament raster glyphs over transparent canvas, simplified for rail size.",
+      "category": "Lightbox",
+      "accent": "#ffb000",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-filament.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-filament.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-filament.wp",
+      "sha256": "3143dec2e7fc2b317fe8943061c88b32f09755a248c684d8b1e56976451db7a6",
+      "size": 573381
+    },
+    {
+      "type": "icon-set",
+      "slug": "fold",
+      "name": "Fold",
+      "version": "1.2.0",
+      "author": "Regionally Famous",
+      "description": "Origami-tinted raster glyphs with violet facets and simple paper-light contrast.",
+      "category": "Paper Arcade",
+      "accent": "#7c5cff",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-fold.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-fold.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-fold.wp",
+      "sha256": "8878b4b9643f09f4bb2da6708d12fab79c39c9bc31b09e9f9927f0854cd72127",
+      "size": 398655
+    },
+    {
+      "type": "icon-set",
+      "slug": "hologram",
+      "name": "Hologram",
+      "version": "1.2.0",
+      "author": "Regionally Famous",
+      "description": "Pastel hologram raster glyphs with a light offset shimmer and clean alpha.",
+      "category": "Synthetic",
+      "accent": "#9fd0ff",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-hologram.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-hologram.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-hologram.wp",
+      "sha256": "d4ac156631f2283b390ffa20712b366f97fb58537b02bc75244bcd93e25c64f4",
+      "size": 441900
+    },
+    {
+      "type": "icon-set",
+      "slug": "lemonade-stand",
+      "name": "Lemonade Stand",
+      "version": "1.2.0",
+      "author": "Regionally Famous",
+      "description": "Sunny yellow raster glyphs with crayon-bright accents and big readable forms.",
+      "category": "Summer",
+      "accent": "#ffd64b",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-lemonade-stand.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-lemonade-stand.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-lemonade-stand.wp",
+      "sha256": "5a86e49da3e30260874c4b1f1c38094e788fafe70a436c7701652e85ee23b21a",
+      "size": 857814
+    },
+    {
+      "type": "icon-set",
+      "slug": "monoline",
+      "name": "Monoline",
+      "version": "1.2.0",
+      "author": "Regionally Famous",
+      "description": "Pop-cyan raster glyphs with thick monoline clarity and transparent canvases.",
+      "category": "Pop UI",
+      "accent": "#00c2ff",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-monoline.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-monoline.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-monoline.wp",
+      "sha256": "ee122d74e24c0db475ea0eb5d80fb3a3bd113973a256f0b23d2486679f68b298",
+      "size": 384820
     },
     {
       "type": "icon-set",
@@ -465,13 +675,58 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "The default ODD raster icon set: transparent, high-contrast glyphs with native admin clarity, dark rims, and small off-kilter accent marks.",
-      "franchise": "ODD Defaults",
+      "category": "ODD Defaults",
       "accent": "#38e8ff",
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-odd-default-icons.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-odd-default-icons.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-odd-default-icons.wp",
-      "sha256": "39effa3c921b90e008b8030210693d5df0e9158578c280ca97d9cbe0ec2a076a",
-      "size": 447553
+      "sha256": "723a0380ab26797f50d41e75ddd4ae28dae59dbc466f9e3dd097f2ce37f7b996",
+      "size": 402549
+    },
+    {
+      "type": "icon-set",
+      "slug": "risograph",
+      "name": "Risograph",
+      "version": "1.2.0",
+      "author": "Regionally Famous",
+      "description": "Two-color riso raster glyphs with small off-register color and no backplate.",
+      "category": "Print",
+      "accent": "#ff4fa8",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-risograph.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-risograph.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-risograph.wp",
+      "sha256": "979299c0423e9b114a15b89152ec55831b7a037612185f6da387bfcc45cb3870",
+      "size": 849618
+    },
+    {
+      "type": "icon-set",
+      "slug": "stadium",
+      "name": "Stadium",
+      "version": "1.2.0",
+      "author": "Regionally Famous",
+      "description": "Varsity raster glyphs with crimson contrast, cream fills, and strong icon mass.",
+      "category": "Sport",
+      "accent": "#d73a3a",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-stadium.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-stadium.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-stadium.wp",
+      "sha256": "4aafd0e15413a7c69dbff0d7edc9b6dbdaf632ef27f7752557c08d3a04838ea0",
+      "size": 1033855
+    },
+    {
+      "type": "icon-set",
+      "slug": "tiki",
+      "name": "Tiki",
+      "version": "1.2.0",
+      "author": "Regionally Famous",
+      "description": "Warm lounge raster glyphs with cocoa rims, carved color, and clear small-size shapes.",
+      "category": "Lounge",
+      "accent": "#c47a3c",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-tiki.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-tiki.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-tiki.wp",
+      "sha256": "3d636213929d76ac83d95e380e7543c074182ae287fa42c8fb11f9dc20abab77",
+      "size": 962266
     },
     {
       "type": "cursor-set",
@@ -480,13 +735,13 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Cursor-first pointer shapes lightly possessed by ODD gel, eye-dots, and tiny sparks.",
-      "franchise": "ODD Defaults",
+      "category": "ODD Defaults",
       "accent": "#42d9d2",
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/cursor-set-odd-default-cursors.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/cursor-set-odd-default-cursors.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/cursor-set-odd-default-cursors.wp",
-      "sha256": "65cf5e8404382db0e5381ba934f1649e3a70132426ef9ccc8c4fe85daa793b45",
-      "size": 7383
+      "sha256": "fc337f3e89ab875845edafec8fc5583fb4dd9f92edf560b1fcf8c86b23fc7d86",
+      "size": 7384
     },
     {
       "type": "cursor-set",
@@ -495,13 +750,13 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Native-feeling cursors with tiny Oddling eyes, plum glass bodies, and cyan gelatin highlights.",
-      "franchise": "ODD Defaults",
+      "category": "ODD Defaults",
       "accent": "#38e8ff",
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/cursor-set-oddlings-cursors.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/cursor-set-oddlings-cursors.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/cursor-set-oddlings-cursors.wp",
-      "sha256": "d1992393a943e5f1aecc7dd98cca4b47e7bd27266bb3e4575b7d305b35a2063a",
-      "size": 5866
+      "sha256": "6932009e18b17cabb60be5cbb5100537453ecb466aa37485719c3d2edd7857ac",
+      "size": 5864
     },
     {
       "type": "widget",
@@ -510,12 +765,12 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "A WordPress-flavored magic 8-ball. Click to shake for wisdom.",
-      "franchise": "ODD Originals",
+      "category": "ODD Originals",
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/widget-eight-ball.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/widget-eight-ball.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/widget-eight-ball.wp",
-      "sha256": "93496fe18830abb4fdb0d8cec8e25ea619bb9baed937ec84128c83ad1a843255",
-      "size": 107389
+      "sha256": "0d81ce7820884289bc1afdced5df2bf6f8abb06c7bb1e4e44e2a10bab9b60d2f",
+      "size": 107387
     },
     {
       "type": "widget",
@@ -524,12 +779,12 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "Paste a Spotify playlist, album, track, artist, show, or episode URL and Spotify's official player lives on your desktop.",
-      "franchise": "ODD Originals",
+      "category": "ODD Originals",
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/widget-spotify.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/widget-spotify.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/widget-spotify.wp",
-      "sha256": "8bdcfd9c535132628caf96b0ba5ed985f1cd950258a659faf4e76e7d41132f40",
-      "size": 5504
+      "sha256": "d32b234f087fab7c909a8f0166b8da1988caf160d027959a450c35c0af543f17",
+      "size": 5503
     },
     {
       "type": "widget",
@@ -538,12 +793,12 @@
       "version": "1.0.0",
       "author": "Regionally Famous",
       "description": "A tilted handwritten sticky note that auto-saves as you type.",
-      "franchise": "ODD Originals",
+      "category": "ODD Originals",
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/widget-sticky.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/widget-sticky.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/widget-sticky.wp",
-      "sha256": "988f30d60de8db981fa8ec087590c25f928a1ce9a1d908485514ddf1fab85212",
-      "size": 3385
+      "sha256": "5ba203435a652ad37f8cac459da73676ee786f88fb7fcca0449e3542de37f9b6",
+      "size": 3383
     },
     {
       "type": "app",

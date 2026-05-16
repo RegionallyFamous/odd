@@ -175,8 +175,7 @@ function oddout_content_archive_read_manifest( ZipArchive $zip ) {
 
 /**
  * Validate the shared header that every bundle type requires:
- * slug / name / version plus optional type. Returns the
- * normalised header (slug sanitised, type defaulted) or a WP_Error.
+ * type / name / slug / version. Returns the normalised header or a WP_Error.
  *
  * @param array $manifest
  * @return array|WP_Error
@@ -185,7 +184,7 @@ function oddout_content_validate_header( $manifest ) {
 	if ( ! is_array( $manifest ) ) {
 		return new WP_Error( 'invalid_manifest', __( 'manifest.json must be a JSON object.', 'odd-outlandish-desktop-decorator' ) );
 	}
-	foreach ( array( 'name', 'slug', 'version' ) as $field ) {
+	foreach ( array( 'type', 'name', 'slug', 'version' ) as $field ) {
 		if ( empty( $manifest[ $field ] ) || ! is_string( $manifest[ $field ] ) ) {
 			return new WP_Error(
 				'missing_manifest_field',
@@ -197,12 +196,7 @@ function oddout_content_validate_header( $manifest ) {
 		return new WP_Error( 'invalid_slug', __( 'Slug must contain only lowercase letters, numbers, and hyphens.', 'odd-outlandish-desktop-decorator' ) );
 	}
 
-	$type = isset( $manifest['type'] ) ? strtolower( (string) $manifest['type'] ) : 'app';
-	// Accept either camelCase or hyphenated forms for readability in
-	// hand-authored manifests. Canonicalise to the hyphenated form.
-	if ( 'iconset' === $type ) {
-		$type = 'icon-set';
-	}
+	$type = strtolower( (string) $manifest['type'] );
 	if ( ! in_array( $type, array( 'app', 'icon-set', 'cursor-set', 'scene', 'widget' ), true ) ) {
 		return new WP_Error(
 			'invalid_type',

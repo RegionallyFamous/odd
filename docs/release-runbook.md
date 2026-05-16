@@ -66,7 +66,7 @@ catalog-only changes.
 ## Playground Smoke
 
 1. Open `https://odd.regionallyfamous.com/playground/` (stable: newest approved ODD + Desktop Mode releases from WordPress.org). For trunk, use [`/playground/dev/`](https://odd.regionallyfamous.com/playground/dev/) instead — **do not** use the stable URL to validate `main`.
-2. Confirm WordPress Playground loads Desktop Mode v0.8.0+ and ODD.
+2. Confirm WordPress Playground loads Desktop Mode v0.8.5+ and ODD.
 3. Confirm the ODD Shop opens.
 4. Confirm the starter wallpaper, icon set, and cursor set install or show a
    visible retry state.
@@ -150,7 +150,7 @@ catalog-only changes.
 ## Rollback
 
 The 1.0 reset backup lives outside the plugin tree in the local release backup
-created before deleting old tags/releases. To recover a deleted historical tag:
+created before pruning superseded tags/releases. To recover a deleted tag:
 
 ```sh
 git tag <old-tag> <recorded-sha>

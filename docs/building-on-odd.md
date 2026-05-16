@@ -45,7 +45,7 @@ add_action( 'plugins_loaded', function () {
     oddout_register_scene( [
         'slug'          => 'my-scene',
         'label'         => 'My Scene',
-        'franchise'     => 'Mine',
+        'category'     => 'Mine',
         'tags'          => [ 'custom' ],
         'fallbackColor' => '#111827',
         'added'         => '2026-05-01',
@@ -168,7 +168,7 @@ add_filter( 'oddout_scene_registry', function ( $scenes ) {
     $scenes[] = [
         'slug'          => 'my-scene',
         'label'         => 'My Scene',
-        'franchise'     => 'Mine',
+        'category'     => 'Mine',
         'fallbackColor' => '#111827',
     ];
     return $scenes;
@@ -187,7 +187,7 @@ wp.hooks.addFilter( 'odd.scenes', 'myplugin/extra-scene', ( scenes ) => {
         {
             slug: 'my-scene',
             label: 'My Scene',
-            franchise: 'Mine',
+            category: 'Mine',
             fallbackColor: '#111827',
         },
     ] );

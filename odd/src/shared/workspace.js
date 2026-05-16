@@ -22,15 +22,6 @@
 		widget: true,
 		app: true,
 	};
-	var TYPE_ALIASES = {
-		wallpaper: 'scene',
-		iconSet: 'icon-set',
-		iconset: 'icon-set',
-		icons: 'icon-set',
-		cursorSet: 'cursor-set',
-		cursors: 'cursor-set',
-	};
-
 	function cfg() {
 		return window.odd || {};
 	}
@@ -66,7 +57,6 @@
 
 	function cleanType( value ) {
 		value = cleanString( value, 40 );
-		value = TYPE_ALIASES[ value ] || value;
 		return TYPES[ value ] ? value : '';
 	}
 

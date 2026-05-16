@@ -611,7 +611,7 @@ def build_scene(slug: str, src_dir: Path) -> dict:
         "version": meta.get("version", "1.0.0"),
         "author": meta.get("author", "Regionally Famous"),
         "description": meta.get("description", ""),
-        "franchise": meta.get("franchise", "Community"),
+        "category": meta.get("category", "Community"),
         "tags": meta.get("tags", []),
         "fallbackColor": meta.get("fallbackColor", "#111"),
         "heroSafe": meta.get("heroSafe", True),
@@ -634,7 +634,7 @@ def build_scene(slug: str, src_dir: Path) -> dict:
     # "first initial on a flat swatch" SVG fallback looked identical
     # for every scene whose label started with the same letter — and
     # we already ship the real art. Still emit the SVG fallback on
-    # disk for legacy clients / validators but point `icon_url` at the
+    # disk for validator fixtures but point `icon_url` at the
     # webp so the Shop renders the actual scene imagery.
     icon_svg_name = f"scene-{slug}.svg"
     (OUT_ICONS / icon_svg_name).write_text(
@@ -650,7 +650,7 @@ def build_scene(slug: str, src_dir: Path) -> dict:
         "version": manifest["version"],
         "author": manifest["author"],
         "description": manifest["description"],
-        "franchise": manifest["franchise"],
+        "category": manifest["category"],
         "tags": manifest["tags"],
         "heroSafe": manifest["heroSafe"],
         "icon_url": f"{CATALOG_BASE}/icons/{icon_webp_name}",
@@ -677,7 +677,7 @@ def build_iconset(slug: str, src_dir: Path) -> dict:
         "version": meta.get("version", "1.0.0"),
         "author": meta.get("author", "Regionally Famous"),
         "description": meta.get("description", ""),
-        "franchise": meta.get("franchise", "Community"),
+        "category": meta.get("category", "Community"),
         "accent": meta.get("accent", "#888"),
         "preview": meta.get("preview", "dashboard.webp"),
         "icons": meta["icons"],
@@ -712,7 +712,7 @@ def build_iconset(slug: str, src_dir: Path) -> dict:
         "version": manifest["version"],
         "author": manifest["author"],
         "description": manifest["description"],
-        "franchise": manifest["franchise"],
+        "category": manifest["category"],
         "accent": manifest["accent"],
         "icon_url": f"{CATALOG_BASE}/icons/{icon_name}",
         "card_url": publish_card(src_dir, "iconset", slug),
@@ -787,7 +787,7 @@ def build_cursorset(slug: str, src_dir: Path) -> dict:
         "version": meta.get("version", "1.0.0"),
         "author": meta.get("author", "Regionally Famous"),
         "description": meta.get("description", ""),
-        "franchise": meta.get("franchise", "Community"),
+        "category": meta.get("category", "Community"),
         "accent": meta.get("accent", "#38e8ff"),
         "preview": meta.get("preview", "preview.svg"),
         "cursors": cursors,
@@ -843,7 +843,7 @@ def build_cursorset(slug: str, src_dir: Path) -> dict:
         "version": manifest["version"],
         "author": manifest["author"],
         "description": manifest["description"],
-        "franchise": manifest["franchise"],
+        "category": manifest["category"],
         "accent": manifest["accent"],
         "icon_url": f"{CATALOG_BASE}/icons/{icon_name}",
         "card_url": publish_card(src_dir, "cursor-set", slug),
@@ -871,7 +871,7 @@ def build_widget(slug: str, src_dir: Path) -> dict:
         "version": meta.get("version", "1.0.0"),
         "author": meta.get("author", "Regionally Famous"),
         "description": meta.get("description", ""),
-        "franchise": meta.get("franchise", "Community"),
+        "category": meta.get("category", "Community"),
         "entry": "widget.js",
         "css": css_rel,
     }
@@ -914,7 +914,7 @@ def build_widget(slug: str, src_dir: Path) -> dict:
         "version": manifest["version"],
         "author": manifest["author"],
         "description": manifest["description"],
-        "franchise": manifest["franchise"],
+        "category": manifest["category"],
         "icon_url": f"{CATALOG_BASE}/icons/{icon_name}",
         "card_url": publish_card(src_dir, "widget", slug),
         "download_url": f"{CATALOG_BASE}/bundles/{bundle.name}",
@@ -1015,7 +1015,7 @@ SCHEMA = {
                     },
                     "author": {"type": "string"},
                     "description": {"type": "string"},
-                    "franchise": {"type": "string"},
+                    "category": {"type": "string"},
                     "tags": {"type": "array", "items": {"type": "string"}},
                     "icon_url": {"type": "string"},
                     "card_url": {"type": "string"},

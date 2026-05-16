@@ -47,7 +47,7 @@ function oddout_rest_prefs_get() {
 		$sets[] = array(
 			'slug'        => $set['slug'],
 			'label'       => $set['label'],
-			'franchise'   => $set['franchise'],
+			'category'    => $set['category'],
 			'accent'      => $set['accent'],
 			'description' => $set['description'],
 			'preview'     => $set['preview'],
@@ -60,7 +60,7 @@ function oddout_rest_prefs_get() {
 		$cursor_sets[] = array(
 			'slug'        => $set['slug'],
 			'label'       => $set['label'],
-			'franchise'   => $set['franchise'],
+			'category'    => $set['category'],
 			'accent'      => $set['accent'],
 			'description' => $set['description'],
 			'preview'     => $set['preview'],

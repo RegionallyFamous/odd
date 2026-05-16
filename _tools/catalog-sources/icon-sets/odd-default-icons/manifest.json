@@ -4,7 +4,7 @@
   "slug": "odd-default-icons",
   "name": "ODD Default Icons",
   "label": "ODD Default",
-  "franchise": "ODD Defaults",
+  "category": "ODD Defaults",
   "accent": "#38e8ff",
   "preview": "dashboard.webp",
   "description": "The default ODD raster icon set: transparent, high-contrast glyphs with native admin clarity, dark rims, and small off-kilter accent marks.",
@@ -23,8 +23,8 @@
     "settings": "settings.webp",
     "profile": "profile.webp",
     "links": "links.webp",
-    "fallback": "fallback.webp",
     "recycle-bin": "recycle-bin.webp",
+    "fallback": "fallback.webp",
     "os-settings": "os-settings.webp",
     "import": "import.webp",
     "classic-admin": "classic-admin.webp"

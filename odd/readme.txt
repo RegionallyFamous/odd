@@ -1,9 +1,9 @@
 === ODD — Outlandish Desktop Decorator ===
 Contributors: nickhamze
 Tags: wp-desktop-mode, desktop, wallpaper, widgets, apps
-Requires at least: 6.0
+Requires at least: 6.8
 Tested up to: 6.9
-Requires PHP: 7.4
+Requires PHP: 8.1
 Requires Plugins: desktop-mode
 Stable tag: 1.0.0
 License: GPLv2 or later
@@ -53,7 +53,7 @@ It works with Desktop Mode's own windows, dock, taskbar, desktop icons, and widg
 
 == Installation ==
 
-1. Install and activate [WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/) v0.8.0 or newer. WordPress will also show it as a required plugin dependency for ODD.
+1. Install and activate [WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/) v0.8.5 or newer. WordPress will also show it as a required plugin dependency for ODD.
 2. Install and activate ODD.
 3. Enable Desktop Mode for your user.
 4. Open the ODD Shop from the desktop.
@@ -126,4 +126,4 @@ Welcome to ODD. The first public release brings living wallpapers, icon sets, cu
 
 = 1.0.0 =
 
-Initial WordPress.org release. Requires WP Desktop Mode v0.8.0 or newer.
+Initial WordPress.org release. Requires WP Desktop Mode v0.8.5 or newer.

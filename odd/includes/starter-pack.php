@@ -5,11 +5,11 @@
  * The plugin ships empty. The starter pack (a handful of scenes + icon
  * sets + widgets pulled from the remote catalog) has to land on every
  * new install so the desktop doesn't boot into a blank, unselectable
- * state. Historically this ran through a one-shot WP-Cron event
- * scheduled on activation. That's fragile: cron only ticks when
- * someone hits the site, DISABLE_WP_CRON is common in production, and
- * a freshly-activated site that never receives a visitor can sit
- * "pending" forever.
+ * state. This runs through an explicit admin-triggered install path
+ * instead of activation scheduling. Cron only ticks when someone hits
+ * the site, DISABLE_WP_CRON is common in production, and a freshly
+ * activated site that never receives a visitor can sit "pending"
+ * forever.
  *
  * So: no cron. Install attempts happen synchronously on two hooks:
  *
@@ -341,10 +341,8 @@ function oddout_starter_ensure_installed( $force = false ) {
 	$after['prefs_set'] = $after['prefs_set'] || (bool) $run['prefs_set'];
 	$after['catalog']   = isset( $run['catalog'] ) && is_array( $run['catalog'] ) ? $run['catalog'] : array();
 
-	// Aggregate the last error for the top-level `last_error` field
-	// so old callers (Shop, install-smoke) still see a non-empty
-	// string when anything failed this run. Per-slug detail lives
-	// in `slugs`.
+	// Aggregate the last error for the top-level `last_error` field so the Shop
+	// and smoke tests get a concise summary. Per-slug detail lives in `slugs`.
 	$run_errors = array();
 	foreach ( $run['results'] as $slug => $row ) {
 		if ( isset( $row['status'] ) && 'failed' === $row['status'] && ! empty( $row['error'] ) ) {
@@ -357,9 +355,7 @@ function oddout_starter_ensure_installed( $force = false ) {
 		$after['last_error'] = implode( '; ', $run_errors );
 	}
 
-	// Back-compat: keep the flat `installed` string list populated
-	// with the set of slugs currently marked `done` so callers that
-	// only read `state.installed` still see the complete slug list.
+	// Keep a flat installed slug list for the public REST state.
 	$installed_flat = array();
 	foreach ( $after['slugs'] as $slug => $row ) {
 		if ( isset( $row['status'] ) && 'done' === $row['status'] ) {
@@ -386,14 +382,6 @@ function oddout_starter_ensure_installed( $force = false ) {
 		'slugs'     => $after['slugs'],
 		'status'    => $after['status'],
 	);
-}
-
-/**
- * Back-compat alias. Older code and CI shims call `oddout_starter_run()`.
- * Keep it as a thin forwarder so nothing downstream breaks.
- */
-function oddout_starter_run() {
-	oddout_starter_ensure_installed( false );
 }
 
 /**
@@ -857,24 +845,6 @@ function oddout_starter_safety_net() {
 	oddout_starter_ensure_installed( false );
 }
 add_action( 'init', 'oddout_starter_safety_net', 20 );
-
-/**
- * Clean up any starter-pack cron events from old development installs that
- * might still be floating in wp_options. No-op on sites that never had one.
- */
-add_action(
-	'init',
-	function () {
-		if ( get_option( 'oddout_starter_cron_cleaned', '' ) === ODDOUT_VERSION ) {
-			return;
-		}
-		if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
-			wp_clear_scheduled_hook( 'oddout_install_starter_pack' );
-		}
-		update_option( 'oddout_starter_cron_cleaned', ODDOUT_VERSION, false );
-	},
-	5
-);
 
 /**
  * REST: GET the current starter-pack state so the Shop can render

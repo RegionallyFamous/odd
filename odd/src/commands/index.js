@@ -90,7 +90,7 @@
 			return {
 				value:       s.slug,
 				label:       s.label || s.slug,
-				description: s.franchise || '',
+				description: s.category || '',
 				icon:        'dashicons-art',
 			};
 		} ) );
@@ -103,7 +103,7 @@
 				return {
 					value:       s.slug,
 					label:       s.label || s.slug,
-					description: s.franchise || '',
+					description: s.category || '',
 					icon:        'dashicons-grid-view',
 				};
 			} );
@@ -235,7 +235,7 @@
 					'Wallpaper',
 					'dashicons-art',
 					'Use ' + ( scene.label || scene.slug ),
-					scene.franchise || 'ODD scene',
+					scene.category || 'ODD scene',
 					function () { a.setScene( scene.slug ); }
 				) );
 			} );
@@ -245,7 +245,7 @@
 			out.push( action( 'Icons', 'dashicons-no-alt', 'Use default icons', 'Return Desktop Mode icons to their original set.', function () { a.setIconSet( 'none' ); } ) );
 			a.iconSets().forEach( function ( set ) {
 				if ( ! set || ! set.slug ) return;
-				out.push( action( 'Icons', 'dashicons-grid-view', 'Use ' + ( set.label || set.slug ), set.franchise || 'Icon set', function () { a.setIconSet( set.slug ); } ) );
+				out.push( action( 'Icons', 'dashicons-grid-view', 'Use ' + ( set.label || set.slug ), set.category || 'Icon set', function () { a.setIconSet( set.slug ); } ) );
 			} );
 		}
 
@@ -253,14 +253,14 @@
 			out.push( action( 'Cursors', 'dashicons-marker', 'Use default cursors', 'Return to browser and Desktop Mode cursors.', function () { a.setCursorSet( 'none' ); } ) );
 			a.cursorSets().forEach( function ( set ) {
 				if ( ! set || ! set.slug ) return;
-				out.push( action( 'Cursors', 'dashicons-marker', 'Use ' + ( set.label || set.slug ), set.franchise || 'Cursor set', function () { a.setCursorSet( set.slug ); } ) );
+				out.push( action( 'Cursors', 'dashicons-marker', 'Use ' + ( set.label || set.slug ), set.category || 'Cursor set', function () { a.setCursorSet( set.slug ); } ) );
 			} );
 		}
 
 		if ( typeof a.installedWidgets === 'function' ) {
 			a.installedWidgets().forEach( function ( widget ) {
 				if ( ! widget || ! widget.id ) return;
-				out.push( action( 'Widgets', 'dashicons-screenoptions', 'Add ' + ( widget.label || widget.slug || widget.id ), widget.franchise || widget.description || 'Desktop widget', function () { a.mountWidget( widget.id ); } ) );
+				out.push( action( 'Widgets', 'dashicons-screenoptions', 'Add ' + ( widget.label || widget.slug || widget.id ), widget.category || widget.description || 'Desktop widget', function () { a.mountWidget( widget.id ); } ) );
 			} );
 		}
 

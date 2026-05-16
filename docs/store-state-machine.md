@@ -27,7 +27,7 @@ capabilities, hashes, and manifest fields are never trusted from the browser.
 
 | Type | Installed action | Notes |
 |------|------------------|-------|
-| `scene` | Preview | Preview calls `odd/pickScene` and persists through preferences. |
+| `scene` | Preview | Preview calls `odd.pickScene` and persists through preferences. |
 | `icon-set` | Preview | Preview opens the bar; applying triggers the server-side icon filter path. |
 | `cursor-set` | Preview | Preview injects a temporary cursor style before apply. |
 | `widget` | Add | Adds the widget to the Desktop Mode widget layer. |

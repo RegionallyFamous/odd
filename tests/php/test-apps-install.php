@@ -53,6 +53,7 @@ class Test_Apps_Install extends ODDOUT_REST_Test_Case {
 	protected function install_fixture( $slug = 'hello-odd', array $overrides = array() ) {
 		$manifest = array_merge(
 			array(
+				'type'    => 'app',
 				'name'    => 'Hello ODD',
 				'slug'    => $slug,
 				'version' => '0.0.1',
@@ -139,6 +140,7 @@ class Test_Apps_Install extends ODDOUT_REST_Test_Case {
 	public function test_install_rejects_wrong_extension() {
 		$zip = $this->build_wp_zip(
 			array(
+				'type'    => 'app',
 				'name'    => 'X',
 				'slug'    => 'x',
 				'version' => '0.0.1',
@@ -153,7 +155,7 @@ class Test_Apps_Install extends ODDOUT_REST_Test_Case {
 
 	public function test_install_rejects_missing_manifest_field() {
 		$zip = $this->build_wp_zip(
-			array( 'name' => 'X' ), // no slug, no version
+			array( 'name' => 'X' ), // no type, slug, or version
 			array( 'index.html' => '<h1>x</h1>' )
 		);
 		$res = oddout_apps_install( $zip, 'x.wp' );
@@ -165,6 +167,7 @@ class Test_Apps_Install extends ODDOUT_REST_Test_Case {
 	public function test_install_rejects_invalid_slug() {
 		$zip = $this->build_wp_zip(
 			array(
+				'type'    => 'app',
 				'name'    => 'X',
 				'slug'    => 'BAD SLUG!!',
 				'version' => '1.0.0',
@@ -180,6 +183,7 @@ class Test_Apps_Install extends ODDOUT_REST_Test_Case {
 	public function test_install_rejects_forbidden_file_type() {
 		$zip = $this->build_wp_zip(
 			array(
+				'type'    => 'app',
 				'name'    => 'X',
 				'slug'    => 'forbidden-x',
 				'version' => '1.0.0',
@@ -198,6 +202,7 @@ class Test_Apps_Install extends ODDOUT_REST_Test_Case {
 	public function test_install_rejects_missing_entry_file() {
 		$zip = $this->build_wp_zip(
 			array(
+				'type'    => 'app',
 				'name'    => 'X',
 				'slug'    => 'missing-entry',
 				'version' => '1.0.0',
@@ -214,6 +219,7 @@ class Test_Apps_Install extends ODDOUT_REST_Test_Case {
 	public function test_install_rejects_traversal_entry_in_manifest() {
 		$zip = $this->build_wp_zip(
 			array(
+				'type'    => 'app',
 				'name'    => 'X',
 				'slug'    => 'traversal-entry',
 				'version' => '1.0.0',
@@ -316,6 +322,33 @@ class Test_Apps_Install extends ODDOUT_REST_Test_Case {
 		$res = $this->dispatch_json( 'POST', '/odd/v1/apps/toggle-me/toggle', array( 'enabled' => true ) );
 		$this->assertSame( 200, $res->get_status() );
 		$this->assertTrue( $res->get_data()['enabled'] );
+	}
+
+	public function test_rest_toggle_rejects_empty_payload() {
+		$this->login_as();
+		$this->install_fixture( 'toggle-empty' );
+		$this->installed[] = 'toggle-empty';
+
+		$res = $this->dispatch_json( 'POST', '/odd/v1/apps/toggle-empty/toggle', array() );
+		$this->assertSame( 400, $res->get_status() );
+		$this->assertSame( 'missing_toggle_fields', $res->as_error()->get_error_code() );
+	}
+
+	public function test_rest_app_store_put_requires_explicit_value() {
+		$this->login_as();
+
+		$res = $this->dispatch_json( 'POST', '/odd/v1/apps/store/demo/settings', array() );
+		$this->assertSame( 400, $res->get_status() );
+		$this->assertSame( 'missing_value', $res->as_error()->get_error_code() );
+	}
+
+	public function test_rest_app_store_put_accepts_null_value_when_explicit() {
+		$this->login_as();
+
+		$res = $this->dispatch_json( 'POST', '/odd/v1/apps/store/demo/settings', array( 'value' => null ) );
+		$this->assertSame( 200, $res->get_status() );
+		$this->assertArrayHasKey( 'value', $res->get_data() );
+		$this->assertNull( $res->get_data()['value'] );
 	}
 
 	public function test_app_cookieauth_csp_keeps_compat_allowances_but_blocks_plugins() {
@@ -513,9 +546,10 @@ class Test_Apps_Install extends ODDOUT_REST_Test_Case {
 
 	public function test_app_diag_reports_scoped_urls_transforms_and_asset_probes() {
 		$zip = $this->build_wp_zip(
-			array(
-				'name'    => 'Diag App',
-				'slug'    => 'diag-app',
+				array(
+					'type'    => 'app',
+					'name'    => 'Diag App',
+					'slug'    => 'diag-app',
 				'version' => '0.0.1',
 				'entry'   => 'index.html',
 			),

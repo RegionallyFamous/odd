@@ -2,7 +2,7 @@
 /**
  * ODD — host-plugin dependency guards.
  *
- * ODD is an add-on for WP Desktop Mode v0.8.0+. In normal installs WordPress
+ * ODD is an add-on for WP Desktop Mode v0.8.5+. In normal installs WordPress
  * loads Desktop Mode first, then ODD. In Playground or manual installs, though,
  * the host plugin can fail to download or activate. Keep ODD loadable in that
  * state so recovery is possible, but never call host APIs unless the baseline
@@ -25,11 +25,8 @@ function oddout_desktop_mode_required_functions() {
 }
 
 /**
- * OS-settings helpers are a secondary Desktop Mode API group used by
- * the starter-pack runner to seed the host wallpaper selection. They
- * are optional — older Desktop Mode builds don't expose them — so
- * they live in their own capability group and callers use
- * oddout_desktop_mode_supports( 'os_settings' ) before invoking them.
+ * Secondary Desktop Mode API groups are feature-detected because some
+ * host-owned surfaces are optional or can be disabled by the host plugin.
  */
 function oddout_desktop_mode_capability_functions( $capability ) {
 	$map = array(
@@ -84,9 +81,6 @@ function oddout_desktop_mode_capability_functions( $capability ) {
 		'ai'             => array(
 			'desktop_mode_register_ai_tool',
 		),
-		// Window-chrome framework — wordpress.org desktop-mode 0.8.0+
-		// (includes/window-chrome.php). Optional; extensions use
-		// oddout_desktop_mode_supports( 'window_chrome' ) before registering themes / controls / slots.
 		'window_chrome'  => array(
 			'desktop_mode_register_window_theme_script',
 			'desktop_mode_register_window_theme',
@@ -112,7 +106,7 @@ function oddout_desktop_mode_missing_functions( $capability = 'core' ) {
 }
 
 function oddout_desktop_mode_min_version() {
-	return defined( 'ODDOUT_DESKTOP_MODE_MIN_VERSION' ) ? ODDOUT_DESKTOP_MODE_MIN_VERSION : '0.8.0';
+	return defined( 'ODDOUT_DESKTOP_MODE_MIN_VERSION' ) ? ODDOUT_DESKTOP_MODE_MIN_VERSION : '0.8.5';
 }
 
 function oddout_desktop_mode_version() {

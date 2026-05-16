@@ -159,7 +159,7 @@
 	var PENDING_DESC = {
 		slug:          PENDING_SLUG,
 		label:         'Setting up ODD…',
-		franchise:     'ODD',
+		category:     'ODD',
 		tags:          [ 'pending', 'builtin' ],
 		fallbackColor: '#10121a',
 		installed:     true,
@@ -529,11 +529,9 @@
 	};
 
 	// ------------------------------------------------------------ //
-	// Live scene picks (`odd.pickScene`) can fire from the Shop
-	// while `mountODD` is still awaiting Pixi (`app.init`). Bridge
-	// early: queue the slug until the mount assigns a real `swap`.
-	// (Legacy slash hook names are invalid in @wordpress/hooks — use
-	// `odd.pickScene` only.)
+		// Live scene picks (`odd.pickScene`) can fire from the Shop while
+		// `mountODD` is still awaiting Pixi (`app.init`). Bridge early:
+		// queue the slug until the mount assigns a real `swap`.
 	// ------------------------------------------------------------ //
 
 	var wallpaperPickSink  = null;

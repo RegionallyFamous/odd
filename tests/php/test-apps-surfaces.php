@@ -49,8 +49,9 @@ class Test_Apps_Surfaces extends ODDOUT_REST_Test_Case {
 	 */
 	protected function install_fixture( $slug, array $manifest_overrides = array() ) {
 		$manifest = array_merge(
-			array(
-				'name'    => 'Surfaces ' . $slug,
+				array(
+					'type'    => 'app',
+					'name'    => 'Surfaces ' . $slug,
 				'slug'    => $slug,
 				'version' => '0.0.1',
 				'entry'   => 'index.html',
@@ -72,10 +73,10 @@ class Test_Apps_Surfaces extends ODDOUT_REST_Test_Case {
 		return $res;
 	}
 
-	public function test_row_surfaces_defaults_when_missing_are_back_compat() {
-		$s = oddout_apps_row_surfaces( array( 'slug' => 'legacy' ) );
-		$this->assertTrue( $s['desktop'], 'Pre-upgrade rows keep the desktop icon.' );
-		$this->assertFalse( $s['taskbar'], 'Pre-upgrade rows do NOT sprout a taskbar icon.' );
+	public function test_row_surfaces_defaults_when_missing_use_v1_defaults() {
+		$s = oddout_apps_row_surfaces( array( 'slug' => 'default-surfaces' ) );
+		$this->assertTrue( $s['desktop'], 'Default rows keep the desktop icon.' );
+		$this->assertFalse( $s['taskbar'], 'Default rows do not add a taskbar icon.' );
 	}
 
 	public function test_row_surfaces_coerces_truthy_values_to_bool() {
@@ -219,14 +220,13 @@ class Test_Apps_Surfaces extends ODDOUT_REST_Test_Case {
 		$this->assertTrue( $data['surfaces']['taskbar'] );
 	}
 
-	public function test_apps_list_backfills_surfaces_for_legacy_rows() {
-		// Inject a row directly — bypass the installer — to simulate
-		// what a row persisted BEFORE the `surfaces` field existed
-		// looks like.
+	public function test_apps_list_normalizes_surfaces_for_manual_rows() {
+		// Inject a row directly — bypass the installer — to verify REST always
+		// returns the complete v1 shape.
 		$index               = oddout_apps_index_load();
-		$index['legacy-row'] = array(
-			'slug'      => 'legacy-row',
-			'name'      => 'Legacy Row',
+		$index['manual-row'] = array(
+			'slug'      => 'manual-row',
+			'name'      => 'Manual Row',
 			'version'   => '0.0.1',
 			'enabled'   => true,
 			'installed' => time(),
@@ -236,7 +236,7 @@ class Test_Apps_Surfaces extends ODDOUT_REST_Test_Case {
 		$rows    = oddout_apps_list();
 		$matched = null;
 		foreach ( $rows as $r ) {
-			if ( 'legacy-row' === $r['slug'] ) {
+			if ( 'manual-row' === $r['slug'] ) {
 				$matched = $r;
 				break;
 			}
@@ -247,7 +247,7 @@ class Test_Apps_Surfaces extends ODDOUT_REST_Test_Case {
 		$this->assertFalse( $matched['surfaces']['taskbar'] );
 
 		// Tidy.
-		unset( $index['legacy-row'] );
+		unset( $index['manual-row'] );
 		oddout_apps_index_save( $index );
 	}
 
@@ -347,11 +347,11 @@ class Test_Apps_Surfaces extends ODDOUT_REST_Test_Case {
 		$this->assertStringContainsString( '/odd/v1/apps/icon/register-icon-match', $window['args']['icon'] );
 	}
 
-	public function test_register_surfaces_legacy_row_without_field_keeps_current_behavior() {
+	public function test_register_surfaces_row_without_field_uses_v1_defaults() {
 		$this->require_desktop_mode_stubs();
 		$row = array(
-			'slug'    => 'legacy-register',
-			'name'    => 'Legacy Register',
+			'slug'    => 'default-register',
+			'name'    => 'Default Register',
 			'enabled' => true,
 			// No 'surfaces' key at all.
 		);
@@ -359,8 +359,8 @@ class Test_Apps_Surfaces extends ODDOUT_REST_Test_Case {
 		self::$calls = array();
 		oddout_apps_register_surfaces( $row );
 
-		$window = $this->find_call( 'window', 'odd-app-legacy-register' );
-		$icon   = $this->find_call( 'icon', 'odd-app-legacy-register' );
+		$window = $this->find_call( 'window', 'odd-app-default-register' );
+		$icon   = $this->find_call( 'icon', 'odd-app-default-register' );
 
 		$this->assertNotNull( $window );
 		$this->assertSame( 'none', $window['args']['placement'], 'Default surfaces: no taskbar icon.' );
@@ -406,7 +406,7 @@ class Test_Apps_Surfaces extends ODDOUT_REST_Test_Case {
 		}
 		define( 'ODDOUT_TEST_DM_STUBS', 1 );
 		if ( ! defined( 'DESKTOP_MODE_VERSION' ) ) {
-			define( 'DESKTOP_MODE_VERSION', '0.8.0' );
+			define( 'DESKTOP_MODE_VERSION', '0.8.5' );
 		}
 		// phpcs:disable
 		eval(

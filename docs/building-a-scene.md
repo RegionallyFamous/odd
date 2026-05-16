@@ -37,7 +37,7 @@ scenes follow.
     "name":          "My Scene",
     "label":         "My Scene",
     "version":       "1.0.0",
-    "franchise":     "Generative",
+    "category":     "Generative",
     "tags":          [ "blue", "slow", "particles" ],
     "fallbackColor": "#112233",
     "added":         "2026-04-26",
@@ -55,7 +55,7 @@ scenes follow.
 | `name`          | yes      | Display name in the Shop quilt + hero.                                         |
 | `label`         | no       | Falls back to `name` when absent.                                              |
 | `version`       | yes      | Semver-ish string; shown in the tile + debug inspector.                        |
-| `franchise`     | no       | Soft historical label. Shop shelves are now categorized by slug — include it if you like, but omitting it is fine. |
+| `category`     | no       | Optional grouping label for Shop shelves and catalog tooling. |
 | `tags`          | yes      | Array of short strings; used for search + muse mood.                           |
 | `fallbackColor` | yes      | `#hex` painted behind the canvas before the first frame draws.                 |
 | `added`         | yes      | `YYYY-MM-DD`; used for "new" badges and sort-by-freshness.                     |

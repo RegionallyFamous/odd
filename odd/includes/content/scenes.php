@@ -6,7 +6,7 @@
  * bundle is self-contained:
  *
  *   manifest.json          slug / name / version / type / entry /
- *                          preview / wallpaper / label / franchise /
+ *                          preview / wallpaper / label / category /
  *                          tags[] / fallbackColor
  *   scene.js               self-registers into window.__odd.scenes
  *   preview.webp           640×360, shown on Shop cards
@@ -128,7 +128,7 @@ function oddout_scene_bundle_validate( $tmp_path, $filename, ZipArchive $zip, ar
 		'type'          => 'scene',
 		'author'        => $header['author'],
 		'description'   => isset( $manifest['description'] ) ? sanitize_text_field( (string) $manifest['description'] ) : $header['description'],
-		'franchise'     => isset( $manifest['franchise'] ) ? sanitize_text_field( (string) $manifest['franchise'] ) : 'Community',
+		'category'      => isset( $manifest['category'] ) ? sanitize_text_field( (string) $manifest['category'] ) : 'Community',
 		'tags'          => $tags,
 		'fallbackColor' => $fallback ? $fallback : '#111',
 		'heroSafe'      => array_key_exists( 'heroSafe', $manifest ) ? (bool) $manifest['heroSafe'] : true,
@@ -161,7 +161,7 @@ function oddout_scene_bundle_install( $tmp_path, array $manifest ) {
 		'name'          => $manifest['name'],
 		'label'         => $manifest['label'],
 		'version'       => $manifest['version'],
-		'franchise'     => $manifest['franchise'],
+		'category'      => $manifest['category'],
 		'tags'          => $manifest['tags'],
 		'fallbackColor' => $manifest['fallbackColor'],
 		'heroSafe'      => isset( $manifest['heroSafe'] ) ? (bool) $manifest['heroSafe'] : true,
@@ -234,7 +234,7 @@ add_filter(
 			$registry[] = array(
 				'slug'          => $slug,
 				'label'         => isset( $row['label'] ) ? $row['label'] : $slug,
-				'franchise'     => isset( $row['franchise'] ) ? $row['franchise'] : 'Community',
+				'category'      => isset( $row['category'] ) ? $row['category'] : 'Community',
 				'tags'          => isset( $row['tags'] ) && is_array( $row['tags'] ) ? $row['tags'] : array(),
 				'fallbackColor' => isset( $row['fallbackColor'] ) ? $row['fallbackColor'] : '#111',
 				'heroSafe'      => isset( $row['heroSafe'] ) ? (bool) $row['heroSafe'] : true,

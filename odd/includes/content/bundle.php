@@ -9,10 +9,9 @@
  *   oddout_bundle_type_for_slug( $slug )          → 'app' | 'icon-set' | 'cursor-set' | 'scene' | 'widget' | ''
  *   oddout_bundle_slug_in_use( $slug )            → bool
  *
- * The dispatcher reads `manifest.type` (defaulting to `app` for
- * back-compat with every bundle shipped before v1.8.0), routes to the
- * per-type validator for field-level checks, and then to the per-type
- * installer to extract + register.
+ * The dispatcher requires an explicit `manifest.type`, routes to the per-type
+ * validator for field-level checks, and then to the per-type installer to
+ * extract + register.
  *
  * Slugs are a single global namespace across all content types — the
  * same slug can't be installed as both a scene and a widget. That
@@ -231,7 +230,7 @@ function oddout_bundle_panel_row_for( array $manifest ) {
 			return array(
 				'slug'          => $slug,
 				'label'         => isset( $manifest['label'] ) ? (string) $manifest['label'] : $slug,
-				'franchise'     => isset( $manifest['franchise'] ) ? (string) $manifest['franchise'] : 'Community',
+				'category'      => isset( $manifest['category'] ) ? (string) $manifest['category'] : 'Community',
 				'tags'          => isset( $manifest['tags'] ) && is_array( $manifest['tags'] ) ? array_values( $manifest['tags'] ) : array(),
 				'fallbackColor' => isset( $manifest['fallbackColor'] ) ? (string) $manifest['fallbackColor'] : '#111',
 				'installed'     => true,
@@ -253,7 +252,7 @@ function oddout_bundle_panel_row_for( array $manifest ) {
 			return array(
 				'slug'        => $slug,
 				'label'       => isset( $manifest['label'] ) ? (string) $manifest['label'] : $slug,
-				'franchise'   => isset( $manifest['franchise'] ) ? (string) $manifest['franchise'] : 'Community',
+				'category'    => isset( $manifest['category'] ) ? (string) $manifest['category'] : 'Community',
 				'accent'      => isset( $manifest['accent'] ) ? (string) $manifest['accent'] : '',
 				'description' => isset( $manifest['description'] ) ? (string) $manifest['description'] : '',
 				'preview'     => ( '' === $preview || '' === $base ) ? '' : oddout_content_url_for_relative( $base, $preview ),
@@ -278,7 +277,7 @@ function oddout_bundle_panel_row_for( array $manifest ) {
 			return array(
 				'slug'        => $slug,
 				'label'       => isset( $manifest['label'] ) ? (string) $manifest['label'] : $slug,
-				'franchise'   => isset( $manifest['franchise'] ) ? (string) $manifest['franchise'] : 'Community',
+				'category'    => isset( $manifest['category'] ) ? (string) $manifest['category'] : 'Community',
 				'accent'      => isset( $manifest['accent'] ) ? (string) $manifest['accent'] : '',
 				'description' => isset( $manifest['description'] ) ? (string) $manifest['description'] : '',
 				'preview'     => ( '' === $preview || '' === $base ) ? '' : oddout_content_url_for_relative( $base, $preview ),
@@ -292,7 +291,7 @@ function oddout_bundle_panel_row_for( array $manifest ) {
 				'slug'        => $slug,
 				'label'       => isset( $manifest['label'] ) ? (string) $manifest['label'] : $slug,
 				'description' => isset( $manifest['name'] ) ? (string) $manifest['name'] : ( isset( $manifest['description'] ) ? (string) $manifest['description'] : '' ),
-				'franchise'   => isset( $manifest['franchise'] ) ? (string) $manifest['franchise'] : 'Community',
+				'category'    => isset( $manifest['category'] ) ? (string) $manifest['category'] : 'Community',
 				'installed'   => true,
 			);
 

@@ -75,7 +75,7 @@ Nothing yet.
   bundle/icon/card URLs outside the configured catalog base by default.
 
 ### Compatibility
-- Requires WordPress 6.0+, PHP 7.4+, and WP Desktop Mode 0.8.0+.
+- Requires WordPress 6.8+, PHP 8.1+, and WP Desktop Mode 0.8.5+.
 - Playground blueprints, redirects, smoke workflows, and docs pin WP Desktop
   Mode to the official 0.8.5 release zip.
 - Desktop Mode 0.8.5 diagnostics/cursor coverage includes host widgets,

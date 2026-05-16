@@ -187,7 +187,7 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 
 		$registry_before = array(
 			'trash' => array(
-				'id'     => 'legacy-trash',
+				'id'     => 'baseline-trash',
 				'title'  => 'Recycle Bin',
 				'icon'   => 'original-trash.png',
 				'window' => 'desktop-mode-recycle-bin',

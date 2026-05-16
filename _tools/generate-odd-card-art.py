@@ -88,7 +88,7 @@ def collect_items() -> list[Item]:
                 slug=folder.name,
                 name=meta.get("label", folder.name),
                 description=meta.get("description", ""),
-                tags=[meta.get("franchise", ""), meta.get("accent", "")],
+                tags=[meta.get("category", ""), meta.get("accent", "")],
                 source_dir=folder,
             )
         )
@@ -103,7 +103,7 @@ def collect_items() -> list[Item]:
                 slug=folder.name,
                 name=meta.get("label", folder.name),
                 description=meta.get("description", ""),
-                tags=[meta.get("franchise", ""), meta.get("accent", "")],
+                tags=[meta.get("category", ""), meta.get("accent", "")],
                 source_dir=folder,
             )
         )
@@ -118,7 +118,7 @@ def collect_items() -> list[Item]:
                 slug=folder.name,
                 name=meta.get("label", folder.name),
                 description=meta.get("description", ""),
-                tags=[meta.get("franchise", "")],
+                tags=[meta.get("category", "")],
                 source_dir=folder,
             )
         )

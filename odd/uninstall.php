@@ -44,8 +44,8 @@
  *     Deletion on uninstall would be surprising. Clean up by hand
  *     if desired.
  *
- *   - Third-party plugin data (`b-roll` legacy keys, unrelated `*_index`
- *     options). Those plugins own their own lifecycle.
+	 *   - Third-party plugin data and unrelated `*_index` options.
+	 *     Other plugins own their own lifecycle.
  *
  * When a new bundle type is added to odd/includes/content/,
  * extend both the options list above AND the content directory

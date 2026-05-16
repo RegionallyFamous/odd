@@ -22,17 +22,17 @@ describe( 'ODD Desktop Mode palette', () => {
 		loadFoundation( {
 			config: {
 				scenes: [
-					{ slug: 'first', label: 'First Scene', franchise: 'Test' },
-					{ slug: 'second', label: 'Second Scene', franchise: 'Test' },
+					{ slug: 'first', label: 'First Scene', category: 'Test' },
+					{ slug: 'second', label: 'Second Scene', category: 'Test' },
 				],
 				iconSets: [
-					{ slug: 'soft', label: 'Soft Icons', franchise: 'Test' },
+					{ slug: 'soft', label: 'Soft Icons', category: 'Test' },
 				],
 				cursorSets: [
-					{ slug: 'spark', label: 'Spark Cursor', franchise: 'Test' },
+					{ slug: 'spark', label: 'Spark Cursor', category: 'Test' },
 				],
 				installedWidgets: [
-					{ id: 'odd/sticky', slug: 'sticky', label: 'Sticky Note', franchise: 'ODD Originals' },
+					{ id: 'odd/sticky', slug: 'sticky', label: 'Sticky Note', category: 'ODD Originals' },
 				],
 				apps: [
 					{ slug: 'timer', name: 'Timer' },

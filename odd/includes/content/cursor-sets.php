@@ -215,7 +215,7 @@ function oddout_cursorset_bundle_validate( $tmp_path, $filename, ZipArchive $zip
 		'type'        => 'cursor-set',
 		'author'      => $header['author'],
 		'description' => isset( $manifest['description'] ) ? sanitize_text_field( (string) $manifest['description'] ) : $header['description'],
-		'franchise'   => isset( $manifest['franchise'] ) ? sanitize_text_field( (string) $manifest['franchise'] ) : '',
+		'category'    => isset( $manifest['category'] ) ? sanitize_text_field( (string) $manifest['category'] ) : '',
 		'accent'      => $accent ? $accent : '#38e8ff',
 		'preview'     => $preview,
 		'cursors'     => $cursors,
@@ -264,7 +264,7 @@ function oddout_cursorset_bundle_install( $tmp_path, array $manifest ) {
 		'name'      => $manifest['name'],
 		'label'     => $manifest['label'],
 		'version'   => $manifest['version'],
-		'franchise' => $manifest['franchise'],
+		'category'  => $manifest['category'],
 		'accent'    => $manifest['accent'],
 		'installed' => time(),
 	);

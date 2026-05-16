@@ -7,9 +7,7 @@
  *   POST   /wp-json/odd/v1/bundles/upload
  *   DELETE /wp-json/odd/v1/bundles/{slug}
  *
- * The per-type REST surfaces (`/apps/upload`, `/apps/{slug}`) stay
- * as thin back-compat aliases so pre-1.8.0 clients keep working.
- * See odd/includes/apps/rest.php for the Apps routes.
+ * See odd/includes/apps/rest.php for app runtime and app-management routes.
  */
 
 defined( 'ABSPATH' ) || exit;

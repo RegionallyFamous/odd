@@ -67,12 +67,12 @@ First load takes ~20–30 seconds while Playground boots the site and installs t
 
 ### A real WordPress install
 
-1. Install and activate [WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/) **v0.8.0** or newer. ODD declares Desktop Mode as a required plugin dependency, so WordPress can surface that relationship during install.
+1. Install and activate [WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/) **v0.8.5** or newer. ODD declares Desktop Mode as a required plugin dependency, so WordPress can surface that relationship during install.
 2. Install ODD from [WordPress.org](https://wordpress.org/plugins/odd-outlandish-desktop-decorator/) or download the latest `odd.zip` from the [Releases](https://github.com/RegionallyFamous/odd/releases/latest) page.
 3. WP Admin → Plugins → Add New → Upload Plugin → pick the zip → Activate.
 4. Double-click the **ODD** desktop icon, use the taskbar icon, or run `/odd-panel` from the command palette to open the Shop.
 
-**Requires:** WordPress 6.0+ · PHP 7.4+ · WP Desktop Mode v0.8.0+
+**Requires:** WordPress 6.8+ · PHP 8.1+ · WP Desktop Mode v0.8.5+
 
 ---
 

@@ -28,6 +28,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname( fileURLToPath( import.meta.url ) );
 const PANEL_JS = resolve( __dirname, '../../odd/src/panel/index.js' );
+const PANEL_CSS = resolve( __dirname, '../../odd/src/panel/styles.css' );
 
 function loadPanel() {
 	const src = readFileSync( PANEL_JS, 'utf8' );
@@ -138,7 +139,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 					{
 						slug:       'eight-ball',
 						label:      'Magic 8-Ball',
-						franchise:  'ODD Originals',
+						category:  'ODD Originals',
 						icon_url:   'https://example.com/catalog/v1/icons/widget-eight-ball.svg',
 						installed:  false,
 					},
@@ -220,7 +221,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 	it( 'catalog-only scene is canonical and not duplicated by Discover', () => {
 		seed( {
 			bundleCatalog: {
-				scene: [ { slug: 'gusts', label: 'Gusts', franchise: 'Atmosphere', featured: true, installed: false } ],
+				scene: [ { slug: 'gusts', label: 'Gusts', category: 'Atmosphere', featured: true, installed: false } ],
 				iconSet: [],
 				cursorSet: [],
 				widget: [],
@@ -242,7 +243,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 					{
 						slug:        'gusts',
 						label:       'Gusts',
-						franchise:   'Atmosphere',
+						category:   'Atmosphere',
 						featured:    true,
 						installed:   false,
 						card_url:    'https://example.com/catalog/v1/cards/unrelated-art.webp',
@@ -271,8 +272,8 @@ describe( 'ODD Shop · unified card state machine', () => {
 			wallpaper: 'gusts',
 			scene:     'gusts',
 			scenes: [
-				{ slug: 'gusts',   label: 'Gusts',   franchise: 'Atmosphere', fallbackColor: '#333' },
-				{ slug: 'terrazzo', label: 'Terrazzo', franchise: 'Forms',    fallbackColor: '#444' },
+				{ slug: 'gusts',   label: 'Gusts',   category: 'Atmosphere', fallbackColor: '#333' },
+				{ slug: 'terrazzo', label: 'Terrazzo', category: 'Forms',    fallbackColor: '#444' },
 			],
 		} );
 		loadPanel();
@@ -297,8 +298,8 @@ describe( 'ODD Shop · unified card state machine', () => {
 			wallpaper: 'gusts',
 			scene:     'gusts',
 			scenes: [
-				{ slug: 'gusts',   label: 'Gusts',   franchise: 'Atmosphere', fallbackColor: '#333' },
-				{ slug: 'terrazzo', label: 'Terrazzo', franchise: 'Forms',    fallbackColor: '#444' },
+				{ slug: 'gusts',   label: 'Gusts',   category: 'Atmosphere', fallbackColor: '#333' },
+				{ slug: 'terrazzo', label: 'Terrazzo', category: 'Forms',    fallbackColor: '#444' },
 			],
 		} );
 		loadPanel();
@@ -330,7 +331,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 			wallpaper: 'gusts',
 			scene:     'gusts',
 			scenes: [
-				{ slug: 'gusts', label: 'Gusts', franchise: 'Atmosphere', fallbackColor: '#333' },
+				{ slug: 'gusts', label: 'Gusts', category: 'Atmosphere', fallbackColor: '#333' },
 			],
 		} );
 		loadPanel();
@@ -402,7 +403,17 @@ describe( 'ODD Shop · unified card state machine', () => {
 				iconSet: [],
 				cursorSet: [],
 				widget: [],
-				app: [ { slug: 'board', label: 'Board', type: 'app', version: '1.0.0', installed: false } ],
+				app: [
+					{
+						slug:      'board',
+						label:     'Board',
+						type:      'app',
+						version:   '1.0.0',
+						installed: false,
+						card_url:  'https://example.com/catalog/v1/cards/app-board.webp',
+						icon_url:  'https://example.com/catalog/v1/icons/board.svg',
+					},
+				],
 			},
 		} );
 		loadPanel();
@@ -413,6 +424,10 @@ describe( 'ODD Shop · unified card state machine', () => {
 
 		const card = host.querySelector( '[data-odd-shop-card][data-slug="board"]' );
 		expect( card, 'embedded app catalog row must render' ).toBeTruthy();
+		const img = card.querySelector( '.odd-shop__card-art--app img.odd-shop__card-art-fill' );
+		expect( img, 'catalog app cards should render generated card_url art' ).toBeTruthy();
+		expect( img.getAttribute( 'src' ) ).toBe( 'https://example.com/catalog/v1/cards/app-board.webp' );
+		expect( card.querySelector( 'img[src="https://example.com/catalog/v1/icons/board.svg"]' ) ).toBeNull();
 		expect( card.querySelector( '.odd-shop__card-btn' ).textContent.trim() ).toBe( 'Install' );
 		expect( host.querySelector( '.odd-apps-empty' ) ).toBeNull();
 	} );
@@ -443,7 +458,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 		seed( {
 			iconSet:   '',
 			iconSets:  [
-				{ slug: 'filament', label: 'Filament', franchise: 'Filament', accent: '#ff7a3c', icons: { dashboard: '', fallback: '' } },
+				{ slug: 'filament', label: 'Filament', category: 'Filament', accent: '#ff7a3c', icons: { dashboard: '', fallback: '' } },
 			],
 		} );
 		loadPanel();
@@ -493,15 +508,34 @@ describe( 'ODD Shop · unified card state machine', () => {
 
 		const card = host.querySelector( '[data-odd-shop-card][data-set-slug="odd-default-icons"]' );
 		expect( card, 'icon-set tile must render' ).toBeTruthy();
-		expect( card.querySelectorAll( '.odd-shop__card-quartet img' ) ).toHaveLength( 4 );
+		const art = card.querySelector( '.odd-shop__card-art--icon-set' );
+		expect( art.classList.contains( 'odd-shop__card-art--quartet' ) ).toBe( true );
+		const quartetIcons = Array.from( card.querySelectorAll( '.odd-shop__card-quartet img' ) );
+		expect( quartetIcons ).toHaveLength( 4 );
+		expect( quartetIcons.map( ( img ) => img.getAttribute( 'src' ) ) ).toEqual( [
+			'https://example.test/dashboard.webp',
+			'https://example.test/posts.webp',
+			'https://example.test/pages.webp',
+			'https://example.test/media.webp',
+		] );
 		expect( card.querySelector( 'img[src="https://example.test/catalog-card.webp"]' ) ).toBeNull();
+	} );
+
+	it( 'icon set card art CSS gives live quartets breathing room instead of cover-cropping', () => {
+		const css = readFileSync( PANEL_CSS, 'utf8' );
+		expect( css ).toMatch( /\.odd-panel \.odd-shop__card--app \.odd-shop__card-art > img:not\(\.odd-shop__card-art-fill\)\{[^}]*padding:10%[^}]*object-fit:contain/ );
+		expect( css ).toMatch( /\.odd-panel \.odd-shop__card--app \.odd-shop__card-art > img\.odd-shop__card-art-fill\{[^}]*padding:0[^}]*object-fit:cover/ );
+		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__card\.odd-card\.odd-shop__tile \.odd-shop__card-art\{[^}]*border-radius:22\.5%/ );
+		expect( css ).toMatch( /\.odd-panel \.odd-shop__card--icon-set \.odd-shop__card-art > img\.odd-shop__card-art-fill\{[^}]*padding:12%[^}]*object-fit:contain/ );
+		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-art--quartet\{[^}]*padding:clamp\(18px,13%,28px\)[^}]*overflow:visible/ );
+		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-art--quartet \.odd-shop__card-quartet\{[^}]*width:100%[^}]*gap:clamp\(12px,12%,20px\)/ );
 	} );
 
 	it( 'catalog-only icon set appears as the canonical Install card', () => {
 		seed( {
 			bundleCatalog: {
 				scene: [],
-				iconSet: [ { slug: 'filament', label: 'Filament', franchise: 'Filament', installed: false } ],
+				iconSet: [ { slug: 'filament', label: 'Filament', category: 'Filament', installed: false } ],
 				cursorSet: [],
 				widget: [],
 			},
@@ -520,7 +554,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 			bundleCatalog: {
 				scene: [],
 				iconSet: [],
-				cursorSet: [ { slug: 'oddlings-cursors', label: 'Oddlings Cursors', franchise: 'ODD Originals', installed: false } ],
+				cursorSet: [ { slug: 'oddlings-cursors', label: 'Oddlings Cursors', category: 'ODD Originals', installed: false } ],
 				widget: [],
 			},
 		} );
@@ -538,7 +572,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 		seed( {
 			cursorSet: '',
 			cursorSets: [
-				{ slug: 'oddlings-cursors', label: 'Oddlings Cursors', franchise: 'ODD Originals', cursors: { default: { url: '/cursor.svg', hotspot: [ 1, 1 ] } } },
+				{ slug: 'oddlings-cursors', label: 'Oddlings Cursors', category: 'ODD Originals', cursors: { default: { url: '/cursor.svg', hotspot: [ 1, 1 ] } } },
 			],
 		} );
 		loadPanel();

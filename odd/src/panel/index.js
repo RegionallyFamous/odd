@@ -8,7 +8,7 @@
  *
  * Layout: Mac App Store–style shop with a top bar, a left
  * department rail (Wallpapers / Icon Sets / Apps / About), and
- * a right content pane that groups items into franchise
+ * a right content pane that groups items into category
  * "shelves". All state still flows through the same REST
  * endpoint used by ODD's runtime — wallpaper via WP Desktop Mode's
  * per-user settings, icons via Desktop Mode's dock/icon registries.
@@ -127,10 +127,9 @@
 			url = String( url || '' );
 			if ( ! url ) return '';
 			if ( isAbsoluteUrl( url ) || url.charAt( 0 ) === '/' ) return url;
-			// Older scene rows may only carry a bare preview filename
-			// from the pre-1.0 in-plugin asset era. Those files no
-			// longer ship in the runtime zip, but the remote catalog
-			// always publishes the matching scene thumbnail.
+			// Scene rows may carry a bare preview filename. The runtime zip does
+			// not ship catalog art, but the remote catalog publishes the matching
+			// scene thumbnail.
 			if ( rowType === 'scene' && slug && /\.webp(?:[?#].*)?$/i.test( url ) ) {
 				return CATALOG_BASE_URL + '/icons/scene-' + encodeURIComponent( slug ) + '.webp';
 			}
@@ -247,12 +246,12 @@
 			renderSection( state.active, { keepQuery: true } );
 		} );
 		searchTools.appendChild( scopeToggle );
-		var franchiseChips = {};
+		var categoryChips = {};
 		var allStylesChip = el( 'button', { type: 'button', class: 'odd-shop__search-chip odd-shop__search-chip--all is-active' } );
 		allStylesChip.textContent = __( 'All styles' );
 		allStylesChip.setAttribute( 'aria-pressed', 'true' );
 		allStylesChip.addEventListener( 'click', function () {
-			state.franchiseFilter = '';
+			state.categoryFilter = '';
 			updateSearchToolState();
 			renderSection( state.active, { keepQuery: true } );
 		} );
@@ -263,11 +262,11 @@
 			chip.textContent = label;
 			chip.setAttribute( 'aria-pressed', 'false' );
 			chip.addEventListener( 'click', function () {
-				state.franchiseFilter = state.franchiseFilter === label ? '' : label;
+				state.categoryFilter = state.categoryFilter === label ? '' : label;
 				updateSearchToolState();
 				renderSection( state.active, { keepQuery: true } );
 			} );
-			franchiseChips[ label ] = chip;
+			categoryChips[ label ] = chip;
 			searchTools.appendChild( chip );
 		} );
 		try {
@@ -278,7 +277,7 @@
 					recent.textContent = label;
 					recent.addEventListener( 'click', function () {
 						state.query = String( label || '' );
-						state.franchiseFilter = '';
+						state.categoryFilter = '';
 						searchInput.value = state.query;
 						updateSearchToolState();
 						renderSection( state.active, { keepQuery: true } );
@@ -351,7 +350,7 @@
 			// unless the caller passes `keepQuery: true` (e.g. the
 			// search field re-rendering its result surface).
 			query:         '',
-			franchiseFilter: '',
+			categoryFilter: '',
 			searchScope:   'all',
 			storeView:     'all',
 			sortMode:      'featured',
@@ -469,11 +468,11 @@
 		}
 
 		function updateSearchToolState() {
-			var active = String( state.franchiseFilter || '' );
+			var active = String( state.categoryFilter || '' );
 			allStylesChip.classList.toggle( 'is-active', ! active );
 			allStylesChip.setAttribute( 'aria-pressed', active ? 'false' : 'true' );
-			Object.keys( franchiseChips ).forEach( function ( label ) {
-				var chip = franchiseChips[ label ];
+			Object.keys( categoryChips ).forEach( function ( label ) {
+				var chip = categoryChips[ label ];
 				var isActive = active === label;
 				chip.classList.toggle( 'is-active', isActive );
 				chip.setAttribute( 'aria-pressed', isActive ? 'true' : 'false' );
@@ -1087,8 +1086,7 @@
 			var cardWrap = renderShopCard( normalised );
 			if ( ! cardWrap ) return el( 'div' );
 
-			// Legacy hooks so existing tests / styles (e.g. the
-			// per-app surfaces-checkbox matcher) still resolve.
+				// Stable selectors used by tests and the app-management controls.
 			cardWrap.classList.add( 'odd-card--app' );
 			cardWrap.setAttribute( 'data-app-slug', row.slug );
 
@@ -2803,8 +2801,7 @@
 			return shelf;
 		}
 
-		// Thin compat adapter — any lingering call sites that render
-		// a single catalog row pass through the unified card too.
+			// Thin adapter: single-row render paths pass through the unified card too.
 		function renderDiscoverRow( raw ) {
 			var type = 'scene';
 			// Best-effort type detection from the source row.
@@ -3672,7 +3669,7 @@
 			var wallpaperEditorial = renderEditorialStrip( rows, 'wallpaper' );
 			if ( wallpaperEditorial ) wrap.appendChild( wallpaperEditorial );
 
-			// Category quilt — gradient franchise tiles that jump
+			// Category quilt — gradient category tiles that jump
 			// to their shelf when clicked. Hidden while searching so
 			// the result-focused view stays tight.
 			if ( ! state.query ) {
@@ -3706,7 +3703,7 @@
 
 			var shelves = groupByCategory( rows, 'wallpaper', 'More' );
 			shelves.forEach( function ( shelf ) {
-				wrap.appendChild( renderShelf( shelf.franchise, shelf.items, renderSceneCard, { scope: 'wallpaper' } ) );
+				wrap.appendChild( renderShelf( shelf.category, shelf.items, renderSceneCard, { scope: 'wallpaper' } ) );
 			} );
 
 			return wrap;
@@ -3859,15 +3856,15 @@
 
 		/**
 		 * Tagline copy for the hero. Uses the scene's tags where
-		 * available so each franchise hero reads as distinct; falls
-		 * back to a franchise-flavoured line otherwise.
+		 * available so each category hero reads as distinct; falls
+		 * back to a category-flavoured line otherwise.
 		 */
 		function heroTagline( scene ) {
 			if ( scene.tagline && typeof scene.tagline === 'string' ) return scene.tagline;
 			if ( Array.isArray( scene.tags ) && scene.tags.length ) {
 				return scene.tags.slice( 0, 3 ).join( ' · ' );
 			}
-			switch ( scene.franchise ) {
+			switch ( scene.category ) {
 				case 'Atmosphere':    return 'Painterly weather and ambient light.';
 				case 'Paper':         return 'Folded forms drifting through negative space.';
 				case 'ODD Originals': return 'House specials from the ODD studio, gently misbehaving.';
@@ -4055,7 +4052,7 @@
 		}
 
 		function activeFilterLabel() {
-			return String( state.query || state.franchiseFilter || '' ).trim();
+			return String( state.query || state.categoryFilter || '' ).trim();
 		}
 
 		function rowTypeLabel( type, plural ) {
@@ -4193,12 +4190,12 @@
 			sortLabel.appendChild( sort );
 			controls.appendChild( sortLabel );
 
-			if ( state.query || state.franchiseFilter || state.storeView !== 'all' || state.sortMode !== 'featured' ) {
+			if ( state.query || state.categoryFilter || state.storeView !== 'all' || state.sortMode !== 'featured' ) {
 				var clear = el( 'button', { type: 'button', class: 'odd-shop__clear-filters' } );
 				clear.textContent = 'Clear';
 				clear.addEventListener( 'click', function () {
 					state.query = '';
-					state.franchiseFilter = '';
+					state.categoryFilter = '';
 					state.storeView = 'all';
 					state.sortMode = 'featured';
 					searchInput.value = '';
@@ -4214,23 +4211,23 @@
 
 		/**
 		 * Client-side filter used by the top-bar search pill. Matches
-		 * against label, slug, franchise, and any tag — everything the
+		 * against label, slug, category, and any tag — everything the
 		 * user can actually see on a card.
 		 */
 		function filterByQuery( items, query ) {
-			var franchise = String( state.franchiseFilter || '' ).toLowerCase().trim();
-			if ( ! query && ! franchise ) return items;
+			var category = String( state.categoryFilter || '' ).toLowerCase().trim();
+			if ( ! query && ! category ) return items;
 			var q = String( query ).toLowerCase().trim();
-			if ( ! q && ! franchise ) return items;
+			if ( ! q && ! category ) return items;
 			return items.filter( function ( item ) {
 				if ( ! item ) return false;
-				if ( franchise ) {
-					var itemFranchise = String( item.franchise || ( item.raw && item.raw.franchise ) || '' ).toLowerCase();
+				if ( category ) {
+					var itemCategory = String( item.category || ( item.raw && item.raw.category ) || '' ).toLowerCase();
 					var tags = Array.isArray( item.tags ) ? item.tags : [];
 					var tagMatch = tags.some( function ( tag ) {
-						return String( tag || '' ).toLowerCase() === franchise;
+						return String( tag || '' ).toLowerCase() === category;
 					} );
-					if ( itemFranchise !== franchise && ! tagMatch ) return false;
+					if ( itemCategory !== category && ! tagMatch ) return false;
 				}
 				if ( ! q ) return true;
 				var hay = [
@@ -4239,7 +4236,7 @@
 					item.slug,
 					item.type,
 					item.subtitle,
-					item.franchise,
+					item.category,
 					item.description,
 					item.version,
 					item.raw && item.raw.label,
@@ -4263,13 +4260,12 @@
 		 * and a string hash makes new categories pick a stable color
 		 * without hand-tuning this list every time. Palette tables
 		 * live inside the function so they survive the `var`-hoist
-		 * ordering — `franchiseGradient` gets called during initial
+		 * ordering — `categoryGradient` gets called during initial
 		 * render before sibling `var`-decl palettes would be assigned.
 		 *
-		 * Named after `franchise` for legacy continuity; we feed
-		 * category names through it now (Skies / Wilds / Places /
-		 * Forms / Playful / Crafted / Technical / Cool / Default),
-		 * keeping a few legacy franchise entries below for fallback.
+		 * Category names flow through it now (Skies / Wilds / Places / Forms /
+		 * Playful / Crafted / Technical / Cool / Default), with fallbacks for
+		 * any new catalog grouping.
 		 */
 		/**
 		 * SVG artwork for each category tile. Each returns a compact
@@ -4280,7 +4276,7 @@
 		 * via preserveAspectRatio="xMaxYMid slice".
 		 *
 		 * Unknown categories fall back to a concentric-dots default,
-		 * so new franchises always get *something* visual.
+		 * so new categories always get *something* visual.
 		 */
 		function categoryArtwork( name ) {
 			var SVG_OPEN = '<svg viewBox="0 0 240 120" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMaxYMid slice" aria-hidden="true">';
@@ -4371,7 +4367,7 @@
 			return SVG_OPEN + inner + SVG_CLOSE;
 		}
 
-		function franchiseGradient( name ) {
+		function categoryGradient( name ) {
 			var PALETTE = {
 				'Skies':            'linear-gradient(135deg,#1a4b8e 0%,#5dadec 60%,#a3d8f4 100%)',
 				'Wilds':            'linear-gradient(135deg,#0f6b3a 0%,#2fa970 60%,#a8dca0 100%)',
@@ -4406,12 +4402,12 @@
 
 		/**
 		 * Resolve an item to its display category. Each manifest
-		 * declares a narrow `franchise` string (one per item, more
-		 * or less); shelving by franchise produced one-row shelves
+		 * declares a narrow `category` string (one per item, more
+		 * or less); shelving by category produced one-row shelves
 		 * everywhere. The slug → category tables below roll those
 		 * up into broader buckets so each shelf has real siblings.
 		 * Items that aren't curated yet fall back to their declared
-		 * franchise so nothing disappears — they'll just appear on
+		 * category so nothing disappears — they'll just appear on
 		 * their own shelf at the bottom until the table catches up.
 		 *
 		 * Tables live inside the function so they survive `var`-
@@ -4464,13 +4460,13 @@
 			if ( ! item ) return 'More';
 			var table = kind === 'icons' ? ICON_SET_CATEGORY : SCENE_CATEGORY;
 			if ( item.slug && table[ item.slug ] ) return table[ item.slug ];
-			return ( item.franchise && String( item.franchise ) ) || 'More';
+			return ( item.category && String( item.category ) ) || 'More';
 		}
 
 		/**
 		 * Stable display order for the bucketed shelves. Listed in
 		 * descending breadth so the densest categories surface
-		 * first; uncategorized franchises fall to the bottom.
+		 * first; uncategorized categories fall to the bottom.
 		 */
 		function compareCategoryNames( a, b ) {
 			var CATEGORY_ORDER = [
@@ -4515,8 +4511,8 @@
 				var tile = el( 'button', {
 					type: 'button',
 					class: 'odd-shop__quilt-tile',
-					style: 'background:' + franchiseGradient( category ),
-					'data-franchise-jump': category,
+					style: 'background:' + categoryGradient( category ),
+					'data-category-jump': category,
 					'data-scope': scope,
 				} );
 				var art = el( 'span', {
@@ -4555,7 +4551,7 @@
 
 		/**
 		 * Group an array of items by their resolved category. Items
-		 * without a slug-table entry collapse into their `franchise`
+		 * without a slug-table entry collapse into their `category`
 		 * (or `fallback`) so nothing disappears. Categories are then
 		 * sorted by `CATEGORY_ORDER` so curated buckets come first
 		 * and uncategorized stragglers fall to the bottom.
@@ -4574,12 +4570,12 @@
 			} );
 			order.sort( compareCategoryNames );
 			return order.map( function ( c ) {
-				return { franchise: c, items: bag[ c ] };
+				return { category: c, items: bag[ c ] };
 			} );
 		}
 
 		/**
-		 * Render a MAS-style shelf: franchise title + count anchor
+		 * Render a MAS-style shelf: category title + count anchor
 		 * over a horizontally-scrolling row of cards built by
 		 * `cardFn`. `opts.scope` ("wallpaper" | "icons") swaps the
 		 * card track class so wallpapers get wide preview cards
@@ -4609,16 +4605,16 @@
 			return renderShelf( title, items, renderSceneCard, { scope: scope || 'wallpaper' } );
 		}
 
-		function renderShelf( franchise, items, cardFn, opts ) {
+		function renderShelf( category, items, cardFn, opts ) {
 			opts = opts || {};
 			var scope = opts.scope || 'wallpaper';
 			var shelf = el( 'section', {
 				class: 'odd-shop__shelf',
-				'data-shelf-anchor': franchise,
+				'data-shelf-anchor': category,
 			} );
 			var head = el( 'div', { class: 'odd-shop__shelf-head' } );
 			var title = el( 'h3', { class: 'odd-shop__shelf-title' } );
-			title.textContent = franchise;
+			title.textContent = category;
 			var count = el( 'span', { class: 'odd-shop__shelf-count' } );
 			var noun;
 			if ( scope === 'wallpaper' ) {
@@ -4652,13 +4648,13 @@
 			var prev = el( 'button', {
 				type: 'button',
 				class: 'odd-shop__slider-btn odd-shop__slider-btn--prev',
-				'aria-label': 'Scroll ' + franchise + ' back',
+				'aria-label': 'Scroll ' + category + ' back',
 			} );
 			prev.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M15 4 L7 12 L15 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 			var next = el( 'button', {
 				type: 'button',
 				class: 'odd-shop__slider-btn odd-shop__slider-btn--next',
-				'aria-label': 'Scroll ' + franchise + ' forward',
+				'aria-label': 'Scroll ' + category + ' forward',
 			} );
 			next.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 4 L17 12 L9 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 			slider.appendChild( prev );
@@ -5025,7 +5021,7 @@
 			var defaultSet = {
 				slug:        'none',
 				label:       'Default',
-				franchise:   'WP Desktop Mode',
+				category:   'WP Desktop Mode',
 				description: 'Bring back the stock Dashicons and WP Desktop Mode icons.',
 				preview:     '',
 				icons:       {},
@@ -5088,7 +5084,7 @@
 
 			var shelves = groupByCategory( filtered, 'icons', 'More' );
 			shelves.forEach( function ( shelf ) {
-				wrap.appendChild( renderShelf( shelf.franchise, shelf.items, renderIconSetCard, { scope: 'icons' } ) );
+				wrap.appendChild( renderShelf( shelf.category, shelf.items, renderIconSetCard, { scope: 'icons' } ) );
 			} );
 
 			return wrap;
@@ -5227,9 +5223,8 @@
 			if ( ! row ) return el( 'div' );
 			var wrap = renderShopCard( row );
 			if ( wrap ) {
-				// Legacy marker + data-slug on the inner card so the
-				// in-place preview decorator (`redecorateIconGrid`)
-				// still finds its tiles after a selection changes.
+					// Stable marker + data-slug on the inner card so the in-place
+					// preview decorator finds its tiles after a selection changes.
 				var inner = wrap.querySelector( '.odd-shop__card' );
 				if ( inner ) {
 					inner.classList.add( 'odd-catalog-row--iconset' );
@@ -5263,7 +5258,7 @@
 			var defaultSet = {
 				slug: 'none',
 				label: 'Default',
-				franchise: 'Browser',
+				category: 'Browser',
 				description: 'Return to the stock browser and operating-system cursors.',
 				preview: '',
 				cursors: {},
@@ -5315,7 +5310,7 @@
 
 			var shelves = groupByCategory( filtered, 'cursors', 'More' );
 			shelves.forEach( function ( shelf ) {
-				wrap.appendChild( renderShelf( shelf.franchise, shelf.items, renderCursorSetCard, { scope: 'cursors' } ) );
+				wrap.appendChild( renderShelf( shelf.category, shelf.items, renderCursorSetCard, { scope: 'cursors' } ) );
 			} );
 			return wrap;
 		}
@@ -5578,10 +5573,8 @@
 				}
 
 				// Support both the unified tile button class and the
-				// legacy `.odd-apps-btn` class — the latter still
-				// lives on the Icons-department "Reset to default"
-				// pill plus any third-party shelves that haven't
-				// rebased yet.
+				// `.odd-apps-btn` remains on a few current utility pills, including
+				// the Icons-department "Reset to default" action.
 				var btn = ( wrap && wrap.querySelector( '.odd-shop__card-btn' ) )
 					|| row.querySelector( '.odd-shop__card-btn' )
 					|| row.querySelector( '.odd-apps-btn' );
@@ -6227,13 +6220,13 @@
 
 			var subtitle = '';
 			if ( type === 'scene' ) {
-				subtitle = ( categoryOf( raw, 'wallpaper' ) || raw.franchise || 'Scene' ) + ' · Scene';
+				subtitle = ( categoryOf( raw, 'wallpaper' ) || raw.category || 'Scene' ) + ' · Scene';
 			} else if ( type === 'icon-set' ) {
-				subtitle = ( raw.franchise || 'Icon set' ) + ' · Icon set';
+				subtitle = ( raw.category || 'Icon set' ) + ' · Icon set';
 			} else if ( type === 'cursor-set' ) {
-				subtitle = ( raw.franchise || 'Cursor set' ) + ' · Cursor set';
+				subtitle = ( raw.category || 'Cursor set' ) + ' · Cursor set';
 			} else if ( type === 'widget' ) {
-				subtitle = ( raw.franchise || 'Widget' ) + ' · Widget';
+				subtitle = ( raw.category || 'Widget' ) + ' · Widget';
 			} else if ( type === 'app' ) {
 				subtitle = ( raw.version ? 'v' + raw.version : 'App' ) + ( raw.description ? ' · ' + raw.description.slice( 0, 48 ) : '' );
 			}
@@ -6245,7 +6238,7 @@
 				subtitle:      subtitle,
 				description:   raw.description || '',
 				version:       raw.version || '',
-				franchise:     raw.franchise || '',
+				category:     raw.category || '',
 				tags:          Array.isArray( raw.tags ) ? raw.tags : [],
 				previewUrl:    normaliseCatalogAssetUrl( raw.previewUrl || raw.preview_url || raw.preview || '', type, slug ),
 				wallpaperUrl:  normaliseCatalogAssetUrl( raw.wallpaperUrl || raw.wallpaper_url || raw.wallpaper || '', type, slug ),
@@ -6276,9 +6269,8 @@
 
 		// Return the list of installed rows for a type, normalised to
 		// the unified row shape. Apps come from `state.cfg.apps` (the
-		// extension-registry snapshot) — the REST /apps list is only
-		// used inside the legacy Apps gallery, but the unified grid
-		// doesn't need it.
+		// extension-registry snapshot); the REST /apps list powers installed app
+		// management, but the unified grid does not need it here.
 		function installedRowsFor( type ) {
 			var cfg = state.cfg || {};
 			var src;
@@ -6344,7 +6336,7 @@
 			takeIfEmpty( 'previewUrl' );
 			takeIfEmpty( 'wallpaperUrl' );
 			takeIfEmpty( 'preview' );
-			takeIfEmpty( 'franchise' );
+			takeIfEmpty( 'category' );
 			takeIfEmpty( 'accent' );
 			takeIfEmpty( 'fallbackColor' );
 			takeIfEmpty( 'version' );
@@ -6359,17 +6351,17 @@
 			}
 			if ( cat.description && ! ins.description ) ins.description = cat.description;
 
-			// Refresh subline copy when franchise/version arrive from catalog.
+			// Refresh subline copy when category/version arrive from catalog.
 			if ( ins.type === 'widget' ) {
-				ins.subtitle = ( ins.franchise || 'Widget' ) + ' · Widget';
+				ins.subtitle = ( ins.category || 'Widget' ) + ' · Widget';
 			} else if ( ins.type === 'app' ) {
 				ins.subtitle = ( ins.version ? 'v' + ins.version : 'App' ) + ( ins.description ? ' · ' + ins.description.slice( 0, 48 ) : '' );
 			} else if ( ins.type === 'scene' ) {
-				ins.subtitle = ( categoryOf( ins.raw, 'wallpaper' ) || ins.franchise || 'Scene' ) + ' · Scene';
+				ins.subtitle = ( categoryOf( ins.raw, 'wallpaper' ) || ins.category || 'Scene' ) + ' · Scene';
 			} else if ( ins.type === 'icon-set' ) {
-				ins.subtitle = ( ins.franchise || 'Icon set' ) + ' · Icon set';
+				ins.subtitle = ( ins.category || 'Icon set' ) + ' · Icon set';
 			} else if ( ins.type === 'cursor-set' ) {
-				ins.subtitle = ( ins.franchise || 'Cursor set' ) + ' · Cursor set';
+				ins.subtitle = ( ins.category || 'Cursor set' ) + ' · Cursor set';
 			}
 		}
 
@@ -6629,7 +6621,7 @@
 			var facts = el( 'div', { class: 'odd-shop__detail-facts' } );
 			[
 				[ 'Type', rowTypeLabel( normalised.type, false ) ],
-				[ 'Style', normalised.franchise || 'ODD' ],
+				[ 'Style', normalised.category || 'ODD' ],
 				[ 'Version', normalised.version || 'Catalog' ],
 			].forEach( function ( pair ) {
 				var fact = el( 'div', { class: 'odd-shop__detail-fact' } );
@@ -6721,7 +6713,7 @@
 		//               instead of competing background colours
 		//  - cursor-set → full-bleed preview tile, falling back to a glyph plate
 		//  - widget   → gradient plate with the widget's glyph
-		//  - app      → square app icon centered on a soft plate
+		//  - app      → generated square card art, falling back to its app icon
 		function renderShopCardArt( row ) {
 			var art = el( 'div', { class: 'odd-shop__card-art odd-shop__card-art--' + row.type, 'aria-hidden': 'true' } );
 			function artImg( src, className ) {
@@ -6763,12 +6755,13 @@
 						quartet.appendChild( artImg( row.icons[ k ] ) );
 					} );
 					if ( quartet.children.length ) {
+						art.classList.add( 'odd-shop__card-art--quartet' );
 						art.appendChild( quartet );
 						return art;
 					}
 				}
-				// `preview` is the legacy combined preview image; the
-				// remote catalog usually uses `icon_url`/`card_url`.
+				// `preview` is the installed combined preview image; the remote
+				// catalog usually uses `icon_url`/`card_url`.
 				// Prefer live quartet art when installed; catalog-only
 				// rows can fall back to the generated card.
 				var iconSetUrl = row.preview || row.iconUrl || row.cardUrl;
@@ -6873,9 +6866,7 @@
 			if ( row.type === 'cursor-set' ) card.setAttribute( 'data-cursor-set-slug', row.slug );
 			if ( row.type === 'widget' )   card.setAttribute( 'data-widget-id',   'odd/' + row.slug );
 			if ( ! row.installed )         card.setAttribute( 'data-catalog-slug', row.slug );
-			// Legacy hooks so existing selectors in tests + styles
-			// keep matching (e.g. `.odd-card`, `.odd-shop__tile`, the
-			// widget-specific `.odd-shop__tile--widget`).
+				// Stable selectors for tests, styling, and delegated card actions.
 			card.classList.add( 'odd-card', 'odd-shop__tile' );
 			if ( row.type === 'widget' ) card.classList.add( 'odd-shop__tile--widget' );
 

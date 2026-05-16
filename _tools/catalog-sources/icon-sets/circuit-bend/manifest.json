@@ -1,0 +1,32 @@
+{
+  "$schema": "https://raw.githubusercontent.com/RegionallyFamous/odd/main/docs/schemas/manifest.schema.json",
+  "type": "icon-set",
+  "slug": "circuit-bend",
+  "name": "Circuit Bend Icons",
+  "label": "Circuit Bend",
+  "category": "Technical",
+  "accent": "#2fb37a",
+  "preview": "dashboard.webp",
+  "description": "PCB-green raster glyphs with solder-bright accents and transparent edges.",
+  "version": "1.2.0",
+  "author": "Regionally Famous",
+  "icons": {
+    "dashboard": "dashboard.webp",
+    "posts": "posts.webp",
+    "pages": "pages.webp",
+    "media": "media.webp",
+    "comments": "comments.webp",
+    "appearance": "appearance.webp",
+    "plugins": "plugins.webp",
+    "users": "users.webp",
+    "tools": "tools.webp",
+    "settings": "settings.webp",
+    "profile": "profile.webp",
+    "links": "links.webp",
+    "recycle-bin": "recycle-bin.webp",
+    "fallback": "fallback.webp",
+    "os-settings": "os-settings.webp",
+    "import": "import.webp",
+    "classic-admin": "classic-admin.webp"
+  }
+}

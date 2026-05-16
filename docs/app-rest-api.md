@@ -33,7 +33,7 @@ Permission shorthand used below:
 |----------|----------------------------------------------|---------------|--------------------------------------------|
 | `GET`    | `/apps`                                      | login         | List installed apps.                       |
 | `GET`    | `/apps/{slug}`                               | login         | Full manifest for one app.                 |
-| `POST`   | `/apps/upload`                               | admin         | Legacy app upload endpoint for `.wp` archives. |
+| `POST`   | `/apps/upload`                               | admin         | App bundle upload endpoint for `.wp` archives. |
 | `DELETE` | `/apps/{slug}`                               | admin         | Uninstall an app and delete its files.     |
 | `POST`   | `/apps/{slug}/toggle`                        | admin         | Enable/disable an installed app or update its desktop/taskbar surfaces. |
 | `GET`    | `/apps/serve/{slug}/{path...}`               | per-app cap   | Serve a file from the app bundle.          |
@@ -215,7 +215,7 @@ is disabled and take effect on the next Desktop Mode registration pass.
 **Auth:** admin
 **Content-Type:** `application/json`
 
-**Request body (optional):**
+**Request body (at least one field required):**
 
 ```json
 {
@@ -224,9 +224,10 @@ is disabled and take effect on the next Desktop Mode registration pass.
 }
 ```
 
-If `enabled` is omitted, the endpoint flips the current state.
-If `surfaces` is present, only the provided keys are changed; missing
-keys keep their current values. Both keys are booleans.
+Send `enabled`, `surfaces`, or both. Empty requests are rejected with
+`missing_toggle_fields`; the endpoint never flips state implicitly. If
+`surfaces` is present, only the provided keys are changed; missing keys
+keep their current values. Both keys are booleans.
 
 **Response** — `200 OK`:
 
@@ -242,6 +243,7 @@ keys keep their current values. Both keys are booleans.
 | Status | Code             | Meaning                    |
 |--------|------------------|----------------------------|
 | 400    | `invalid_slug`   | Slug parameter was empty.  |
+| 400    | `missing_toggle_fields` | Request did not include `enabled` or `surfaces`. |
 | 404    | `not_installed`  | No app with that slug.     |
 
 ---

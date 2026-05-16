@@ -319,7 +319,7 @@ add_action(
 			$sets[] = array(
 				'slug'        => $set['slug'],
 				'label'       => $set['label'],
-				'franchise'   => $set['franchise'],
+				'category'    => $set['category'],
 				'accent'      => $set['accent'],
 				'description' => $set['description'],
 				'preview'     => $set['preview'],
@@ -332,7 +332,7 @@ add_action(
 			$cursor_sets[] = array(
 				'slug'        => $set['slug'],
 				'label'       => $set['label'],
-				'franchise'   => $set['franchise'],
+				'category'    => $set['category'],
 				'accent'      => $set['accent'],
 				'description' => $set['description'],
 				'preview'     => $set['preview'],
@@ -424,8 +424,8 @@ add_action(
 			// filtered through oddout_app_registry. `userApps` is the
 			// current user's personal slice — which apps they chose
 			// to pin, and which they've installed themselves. Both
-			// ship only when the apps feature is flag-enabled so the
-			// JS store stays empty on legacy installs.
+				// ship only when the apps feature is flag-enabled so the
+				// JS store stays empty when apps are disabled.
 			'appsEnabled'       => $apps_enabled,
 			'apps'              => ( $apps_enabled && $has_ext ) ? oddout_extensions_collect( 'apps' ) : array(),
 			'appServeUrls'      => $app_serve_urls,
@@ -447,7 +447,7 @@ add_action(
 							'slug'        => $row['slug'],
 							'label'       => isset( $row['label'] ) ? $row['label'] : $row['slug'],
 							'description' => isset( $row['name'] ) ? $row['name'] : '',
-							'franchise'   => isset( $row['franchise'] ) ? $row['franchise'] : 'Community',
+							'category'    => isset( $row['category'] ) ? $row['category'] : 'Community',
 							'installed'   => true,
 						);
 					},
@@ -491,7 +491,7 @@ add_action(
 					'windowChromeThemes'   => oddout_desktop_mode_supports( 'window_chrome' ),
 					'hostWidgets'          => oddout_desktop_mode_supports( 'host_widgets' ),
 					'desktopFiles'         => oddout_desktop_mode_supports( 'desktop_files' ),
-					'shortcutFileLayer'    => oddout_desktop_mode_version_at_least( '0.8.0' ),
+					'shortcutFileLayer'    => oddout_desktop_mode_version_at_least( '0.8.5' ),
 					'sharedFolders'        => oddout_desktop_mode_supports( 'shared_folders' ),
 					'presence'             => oddout_desktop_mode_supports( 'presence' ),
 					'heartbeatWidget'      => oddout_desktop_mode_supports( 'heartbeat' ),
@@ -505,7 +505,7 @@ add_action(
 			// Pre-compute the Discover shelves by type so the panel
 			// can render the catalog without a REST round-trip on
 			// first paint. The `installed` flag is annotated so the
-			// "Install" → "Installed" toggle is decided server-side.
+			// "Install" -> "Installed" state is decided server-side.
 			'bundleCatalog'     => function_exists( 'oddout_bundle_catalog' ) ? array(
 				'scene'     => oddout_bundle_catalog_for_type( 'scene' ),
 				'iconSet'   => oddout_bundle_catalog_for_type( 'icon-set' ),

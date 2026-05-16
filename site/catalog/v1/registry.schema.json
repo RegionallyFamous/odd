@@ -96,7 +96,7 @@
           "description": {
             "type": "string"
           },
-          "franchise": {
+          "category": {
             "type": "string"
           },
           "tags": {
