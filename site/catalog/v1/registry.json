@@ -479,14 +479,14 @@
       "name": "ODD Default",
       "version": "1.0.0",
       "author": "Regionally Famous",
-      "description": "Native-feeling cursor shapes with a small cyan ODD accent.",
+      "description": "Cursor-first pointer shapes lightly possessed by ODD gel, eye-dots, and tiny sparks.",
       "franchise": "ODD Defaults",
-      "accent": "#38bdf8",
+      "accent": "#42d9d2",
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/cursor-set-odd-default-cursors.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/cursor-set-odd-default-cursors.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/cursor-set-odd-default-cursors.wp",
-      "sha256": "755655a7216ffd0c4b0844bbc20e72b3f5eeed2e34c4a53b1379802b572692bd",
-      "size": 5453
+      "sha256": "e01957cae621d988b5f7178b8a32091b62bc3017ca129c507f15e1abe5e6cc73",
+      "size": 6627
     },
     {
       "type": "cursor-set",
