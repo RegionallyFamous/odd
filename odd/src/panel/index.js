@@ -4614,9 +4614,6 @@
 				if ( at !== bt ) return bt - at;
 				return ( a.name || a.slug || '' ).localeCompare( b.name || b.slug || '' );
 			}
-			var aActive = shopCardIsActive( a );
-			var bActive = shopCardIsActive( b );
-			if ( aActive !== bActive ) return aActive ? -1 : 1;
 			if ( !! a.updateAvailable !== !! b.updateAvailable ) return a.updateAvailable ? -1 : 1;
 			if ( !! a.featured !== !! b.featured ) return a.featured ? -1 : 1;
 			if ( !! a.installed !== !! b.installed ) return a.installed ? -1 : 1;
@@ -6593,7 +6590,9 @@
 		// icon-set quartets). Those MUST layer in when the thin installed
 		// row lacks them — otherwise widgets lose their thumbnails, apps lose
 		// catalogue icons, and icon-set quartet data never appears.
-		// Sort: active → installed alphabetical → not-installed alphabetical.
+		// Preserve a stable shelf order: installed alphabetical, then
+		// not-installed alphabetical. Active state is rendered in-place
+		// so applying a row never makes the target jump to the front.
 		function mergeCatalogOntoInstalled( ins, cat ) {
 			if ( ! ins || ! cat ) return;
 			function isEmptyIcons( obj ) {
@@ -6671,9 +6670,6 @@
 				if ( Object.prototype.hasOwnProperty.call( bySlug, k ) ) list.push( bySlug[ k ] );
 			}
 			list.sort( function ( a, b ) {
-				var aActive = shopCardIsActive( a );
-				var bActive = shopCardIsActive( b );
-				if ( aActive !== bActive ) return aActive ? -1 : 1;
 				if ( a.installed !== b.installed ) return a.installed ? -1 : 1;
 				return ( a.name || '' ).localeCompare( b.name || '' );
 			} );

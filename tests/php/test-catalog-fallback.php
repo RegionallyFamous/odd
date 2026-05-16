@@ -810,6 +810,25 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		$this->assertSame( 'skipped', oddout_catalog_meta()['signature_status'] );
 	}
 
+	public function test_record_source_preserves_known_signature_status_for_unsigned_runtime_sources() {
+		oddout_catalog_update_meta(
+			array(
+				'signature_status' => 'valid',
+			)
+		);
+
+		$registry = oddout_catalog_normalise(
+			array(
+				'version' => 1,
+				'bundles' => array( $this->catalog_row( 'fallback-widget' ) ),
+			)
+		);
+		$registry['_oddout_signature_status'] = 'unknown';
+
+		oddout_catalog_record_source( 'fallback_file', $registry );
+		$this->assertSame( 'valid', oddout_catalog_meta()['signature_status'] );
+	}
+
 	public function test_remote_acceptance_saves_previous_stale_for_rollback_restore() {
 		$previous = oddout_catalog_stamp_accepted_registry(
 			oddout_catalog_normalise(

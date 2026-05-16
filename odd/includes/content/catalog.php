@@ -529,6 +529,10 @@ function oddout_catalog_record_source( $source, $registry, array $extra = array(
 	$stale_age    = $stale_at > 0 ? max( 0, time() - $stale_at ) : 0;
 	$raw_count    = isset( $extra['raw_bundle_count'] ) ? (int) $extra['raw_bundle_count'] : oddout_catalog_registry_bundle_count( $registry );
 	$effect_count = isset( $extra['effective_bundle_count'] ) ? (int) $extra['effective_bundle_count'] : oddout_catalog_registry_bundle_count( $registry );
+	$signature    = isset( $registry['_oddout_signature_status'] ) ? sanitize_key( (string) $registry['_oddout_signature_status'] ) : '';
+	if ( '' === $signature || 'unknown' === $signature ) {
+		$signature = isset( $current_meta['signature_status'] ) ? sanitize_key( (string) $current_meta['signature_status'] ) : 'unknown';
+	}
 	return oddout_catalog_update_meta(
 		array_merge(
 			array(
@@ -540,7 +544,7 @@ function oddout_catalog_record_source( $source, $registry, array $extra = array(
 				'registry_sha256'        => oddout_catalog_registry_hash( $registry ),
 				'registry_bytes'         => isset( $registry['_oddout_registry_bytes'] ) ? (int) $registry['_oddout_registry_bytes'] : 0,
 				'catalog_base_url'       => oddout_catalog_base_url(),
-				'signature_status'       => isset( $registry['_oddout_signature_status'] ) ? sanitize_key( (string) $registry['_oddout_signature_status'] ) : $current_meta['signature_status'],
+				'signature_status'       => $signature,
 				'signature_key'          => isset( $registry['_oddout_signature_key'] ) ? sanitize_text_field( (string) $registry['_oddout_signature_key'] ) : $current_meta['signature_key'],
 				'signature_url'          => isset( $registry['_oddout_signature_url'] ) ? esc_url_raw( (string) $registry['_oddout_signature_url'] ) : $current_meta['signature_url'],
 				'fallback_available'     => function_exists( 'oddout_catalog_fallback_available' ) ? (bool) oddout_catalog_fallback_available() : false,

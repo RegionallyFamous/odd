@@ -448,6 +448,36 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( card.querySelector( '.odd-shop__card-state' )?.textContent.trim() ).toBe( 'Active' );
 	} );
 
+	it( 'keeps scene cards in place when activation changes', async () => {
+		globalThis.fetch = vi.fn( () => Promise.resolve( {
+			ok:   true,
+			json: () => Promise.resolve( { wallpaper: 'mango' } ),
+		} ) );
+		seed( {
+			wallpaper: 'zeta',
+			scene:     'zeta',
+			scenes: [
+				{ slug: 'zeta',  label: 'Zeta',  category: 'Atmosphere', fallbackColor: '#333' },
+				{ slug: 'alpha', label: 'Alpha', category: 'Atmosphere', fallbackColor: '#444' },
+				{ slug: 'mango', label: 'Mango', category: 'Atmosphere', fallbackColor: '#555' },
+			],
+		} );
+		loadPanel();
+		const { host } = mount();
+		const orderedSlugs = () => Array.from( host.querySelectorAll( '[data-odd-shop-card][data-scene-slug]' ) )
+			.map( ( card ) => card.getAttribute( 'data-scene-slug' ) );
+
+		expect( orderedSlugs() ).toEqual( [ 'alpha', 'mango', 'zeta' ] );
+
+		host.querySelector( '[data-odd-shop-card][data-scene-slug="mango"] .odd-shop__card' )
+			.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+		await flush();
+
+		expect( orderedSlugs() ).toEqual( [ 'alpha', 'mango', 'zeta' ] );
+		expect( host.querySelector( '[data-odd-shop-card][data-scene-slug="mango"]' ).getAttribute( 'data-odd-card-state' ) ).toBe( 'active' );
+		expect( host.querySelector( '[data-odd-shop-card][data-scene-slug="zeta"]' ).getAttribute( 'data-odd-card-state' ) ).toBe( 'ready' );
+	} );
+
 	it( 'incompatible catalog rows render a disabled Unavailable button', () => {
 		seed( {
 			bundleCatalog: {
