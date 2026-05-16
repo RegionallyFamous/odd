@@ -680,9 +680,9 @@
  *
  * Every tile in the Shop — scene / icon set / widget / app,
  * installed or not — flows through `.odd-shop__card-wrap`. The
- * artwork region (`.odd-shop__card-art`) is a continuous-curvature
- * squircle that mirrors the app icons themselves, so the Shop reads
- * like a uniform app grid regardless of what's inside each tile.
+ * artwork region (`.odd-shop__card-art`) is full-bleed and square
+ * inside the card, so generated catalog art can occupy the whole
+ * preview without an extra rounded crop.
  * The pill button below the tile is the single CTA whose label
  * drives the card's state (Install / Apply / Add / Open / Active).
  *
@@ -702,12 +702,7 @@
 .odd-panel .odd-shop__card:focus-visible{outline:0}
 .odd-panel.odd-shop .odd-shop__card:focus-visible{outline:0;box-shadow:none}
 .odd-panel .odd-shop__card:hover{transform:none;border-color:transparent;box-shadow:none}
-.odd-panel .odd-shop__card-art{position:relative;display:flex;align-items:center;justify-content:center;aspect-ratio:1/1;width:100%;overflow:hidden;background:#1d1d22;color:#fff;
-	/* Continuous-curvature squircle. 22.5% is the iOS-adjacent
-	 * corner value that reads as a smooth card crop at tile sizes
-	 * without looking like a circle. */
-	border-radius:22.5%;
-	box-shadow:0 14px 30px -18px rgba(12,10,29,.45),0 2px 4px rgba(12,10,29,.12),inset 0 1px 0 rgba(255,255,255,.25)}
+.odd-panel .odd-shop__card-art{position:relative;display:flex;align-items:center;justify-content:center;aspect-ratio:1/1;width:100%;overflow:hidden;background:#1d1d22;color:#fff;border-radius:0;box-shadow:0 14px 30px -18px rgba(12,10,29,.45),0 2px 4px rgba(12,10,29,.12),inset 0 1px 0 rgba(255,255,255,.25)}
 .odd-panel .odd-shop__card-art::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(140% 100% at 30% 20%,rgba(255,255,255,.35) 0%,rgba(255,255,255,0) 55%);mix-blend-mode:screen}
 .odd-panel .odd-shop__card-art > img{display:block;width:100%;height:100%;object-fit:cover;background:inherit}
 .odd-panel .odd-shop__card--scene .odd-shop__card-art{aspect-ratio:16/9;border-radius:0}
@@ -831,7 +826,7 @@
  * from drawing an inset outline through the metadata. */
 .odd-panel.odd-shop .odd-shop__card.odd-card.odd-shop__tile{overflow:hidden;border-radius:0;background:transparent;border:0;box-shadow:none}
 .odd-panel.odd-shop .odd-shop__card.odd-card.odd-shop__tile:hover{border-color:transparent;box-shadow:none}
-.odd-panel.odd-shop .odd-shop__card.odd-card.odd-shop__tile .odd-shop__card-art{border-radius:22.5%}
+.odd-panel.odd-shop .odd-shop__card.odd-card.odd-shop__tile .odd-shop__card-art{border-radius:0}
 .odd-panel.odd-shop .odd-shop__card.odd-card.odd-shop__tile.odd-shop__card--scene .odd-shop__card-art{border-radius:0}
 .odd-panel.odd-shop .odd-shop__card.odd-card.odd-shop__tile .odd-shop__card-meta{min-height:86px;padding:13px 14px 8px;background:var(--odd-shop-surface)}
 .odd-panel.odd-shop .odd-shop__card.odd-card.odd-shop__tile + .odd-shop__card-actions{margin:0}
