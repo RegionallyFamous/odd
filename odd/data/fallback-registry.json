@@ -462,16 +462,16 @@
       "type": "icon-set",
       "slug": "oddlings",
       "name": "Oddlings",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": "Regionally Famous",
-      "description": "Transparent flat raster glyphs with native admin clarity, full-canvas scale, and tiny ODD creature details.",
+      "description": "Transparent chunky raster glyphs with native admin clarity, full-canvas scale, dark rims, and single odd accent marks.",
       "franchise": "ODD Defaults",
       "accent": "#38e8ff",
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-oddlings.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-oddlings.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-oddlings.wp",
-      "sha256": "18aa66753b27ab6e09abc280fdaf3bc9eaba34b85b455044a00c35569c173a39",
-      "size": 679575
+      "sha256": "23938026aae6430774076883c425ff9f7bc35cd1b3e336e698f04e28d2119e80",
+      "size": 447542
     },
     {
       "type": "cursor-set",
