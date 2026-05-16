@@ -203,7 +203,6 @@ function oddout_icons_filter_dock_item( $item, $menu_slug ) {
 	return $item;
 }
 add_filter( 'desktop_mode_dock_item', 'oddout_icons_filter_dock_item', 20, 2 );
-add_filter( 'wp_desktop_dock_item', 'oddout_icons_filter_dock_item', 20, 2 );
 
 function oddout_icons_filter_desktop_icons_registry( $registry ) {
 	if ( ! is_array( $registry ) || empty( $registry ) ) {
@@ -246,7 +245,6 @@ function oddout_icons_filter_desktop_icons_registry( $registry ) {
 	return $registry;
 }
 add_filter( 'desktop_mode_icons', 'oddout_icons_filter_desktop_icons_registry', 20 );
-add_filter( 'wp_desktop_icons', 'oddout_icons_filter_desktop_icons_registry', 20 );
 
 function oddout_icons_filter_shell_config_icon_payloads( $config ) {
 	if ( ! is_array( $config ) ) {
@@ -298,7 +296,6 @@ function oddout_icons_filter_shell_config_icon_payloads( $config ) {
 	return $config;
 }
 add_filter( 'desktop_mode_shell_config', 'oddout_icons_filter_shell_config_icon_payloads', 17 );
-add_filter( 'wp_desktop_shell_config', 'oddout_icons_filter_shell_config_icon_payloads', 17 );
 
 function oddout_icons_align_native_window_icons_with_shortcuts( $config ) {
 	if ( ! is_array( $config ) ) {
@@ -339,7 +336,6 @@ function oddout_icons_align_native_window_icons_with_shortcuts( $config ) {
 	return $config;
 }
 add_filter( 'desktop_mode_shell_config', 'oddout_icons_align_native_window_icons_with_shortcuts', 18 );
-add_filter( 'wp_desktop_shell_config', 'oddout_icons_align_native_window_icons_with_shortcuts', 18 );
 
 /**
  * Re-run {@see desktop_mode_icons} against a single static-registry entry so

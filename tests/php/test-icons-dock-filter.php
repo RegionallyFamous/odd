@@ -75,17 +75,6 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 		$this->assertStringEndsWith( '/posts.webp', $item_after['icon'] );
 	}
 
-	public function test_wp_desktop_dock_item_filter_uses_same_native_mapping() {
-		$set_slug = $this->pick_set_with_fallback();
-		oddout_icons_set_active_slug( $set_slug );
-
-		$item_after = apply_filters( 'wp_desktop_dock_item', array( 'icon' => 'original.png' ), 'edit.php' );
-
-		$this->assertIsArray( $item_after );
-		$this->assertNotSame( 'original.png', $item_after['icon'] );
-		$this->assertStringEndsWith( '/posts.webp', $item_after['icon'] );
-	}
-
 	public function test_dock_item_filter_falls_back_for_unknown_menu_slug() {
 		$set_slug = $this->pick_set_with_fallback();
 		oddout_icons_set_active_slug( $set_slug );
@@ -127,25 +116,6 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 
 		$this->assertSame( 'odd-gear.png', $registry_after['odd']['icon'], 'ODD Shop icon must be preserved.' );
 		$this->assertNotSame( 'original-posts.png', $registry_after['posts']['icon'], 'Regular desktop icon gets re-themed.' );
-		$this->assertStringEndsWith( '/posts.webp', $registry_after['posts']['icon'] );
-	}
-
-	public function test_wp_desktop_icons_filter_uses_same_native_mapping() {
-		$set_slug = $this->pick_set_with_fallback();
-		oddout_icons_set_active_slug( $set_slug );
-
-		$registry_after = apply_filters(
-			'wp_desktop_icons',
-			array(
-				'posts' => array(
-					'id'     => 'posts',
-					'icon'   => 'original-posts.png',
-					'window' => 'edit.php',
-				),
-			)
-		);
-
-		$this->assertNotSame( 'original-posts.png', $registry_after['posts']['icon'] );
 		$this->assertStringEndsWith( '/posts.webp', $registry_after['posts']['icon'] );
 	}
 

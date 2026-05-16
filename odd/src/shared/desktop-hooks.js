@@ -111,8 +111,7 @@
 
 	function hookTail( hookName ) {
 		return String( hookName || '' )
-			.replace( /^desktop-mode\./, '' )
-			.replace( /^wp-desktop\./, '' );
+			.replace( /^desktop-mode\./, '' );
 	}
 
 	function hookIs( hookName, tail ) {
@@ -790,7 +789,6 @@
 			[ 'WINDOW_CLOSED', 'desktop-mode.window.closed', 'odd.window-closed' ],
 			[ 'WINDOW_FOCUSED', 'desktop-mode.window.focused', 'odd.window-focused' ],
 			[ '', 'desktop-mode.window.blurred', 'odd.window-blurred' ],
-			[ '', 'desktop-mode.window.changed', 'odd.window-changed' ],
 			[ 'WINDOW_DETACHED', 'desktop-mode.window.detached', 'odd.window-detached' ],
 			[ 'WINDOW_BOUNDS_CHANGED', 'desktop-mode.window.bounds-changed', 'odd.window-bounds-changed' ],
 			[ 'WINDOW_BODY_RESIZED', 'desktop-mode.window.body-resized', 'odd.window-body-resized' ],
@@ -1129,7 +1127,6 @@
 			}
 			return items;
 		}
-		addFilter( 'wp-desktop.open-command.items', openCommandItemsFilter );
 		addFilter( 'desktop-mode.open-command.items', openCommandItemsFilter );
 	}
 
@@ -1255,22 +1252,21 @@
 			record( 'info', 'desktop-mode.window.attention', payload || {} );
 		} );
 		[
-			'desktop-mode.file.added',
-			'desktop-mode.file.updated',
-			'desktop-mode.file.removed',
-			'desktop-mode.file.opened',
-			'desktop-mode.file.context-menu',
+			'desktop-mode.files.type-registered',
+			'desktop-mode.files.type-unregistered',
+			'desktop-mode.files.opener-registered',
+			'desktop-mode.files.opener-unregistered',
+			'desktop-mode.files.opening',
+			'desktop-mode.files.opened',
+			'desktop-mode.files.open-failed',
 			'desktop-mode.files.tile-rendered',
-			'desktop-mode.folder.created',
-			'desktop-mode.folder.updated',
-			'desktop-mode.folder.deleted',
-			'desktop-mode.folder.shared',
-			'desktop-mode.shared-folder.changed',
-			'desktop-mode.presence.changed',
-			'desktop-mode.presence.snapshot-applied',
-			'desktop-mode.heartbeat.pulse',
-			'desktop-mode.heartbeat-widget.rendered',
-			'desktop-mode.arrange-menu.opened',
+			'desktop-mode.files.tile-menu.opened',
+			'desktop-mode.files.tile-menu.closed',
+			'desktop-mode.files.create-folder.opened',
+			'desktop-mode.files.create-folder.closed',
+			'desktop-mode.files.grid-rendered',
+			'desktop-mode.files.tile-manually-placed',
+			'desktop-mode.files.shortcut-dropped',
 		].forEach( function ( hookName ) {
 			addAction( hookName, function ( payload ) {
 				var el = elementFromPayload( payload );
@@ -1318,39 +1314,6 @@
 		addActionFor( 'ARRANGE_CUSTOM_ACTION', 'desktop-mode.arrange.custom-action', function ( payload ) {
 			var id = payload && payload.id ? String( payload.id ) : '';
 			runOddSurfaceAction( id, 'desktop-mode.arrange.custom-action' );
-		} );
-	}
-
-	function setupDesktopIconMenuActions() {
-		addFilterFor( 'DESKTOP_ICON_MENU_ITEMS', 'desktop-mode.desktop-icon.menu-items', function ( items, context ) {
-			var icon = context && context.icon;
-			if ( ! icon || icon.id !== 'odd' ) {
-				return items;
-			}
-			var actions = [];
-			var next = Array.isArray( items ) ? items.slice() : [];
-			ODD_ACTIONS.forEach( function ( action ) {
-				actions.push( {
-					id:       action.id,
-					label:    action.label,
-					icon:     action.icon,
-					disabled: ! canRunOddAction( action ) && ! action.fallbackOpen,
-					onSelect: function ( ctx ) {
-						if ( runOddSurfaceAction( action.id, 'desktop-mode.desktop-icon.menu' ) ) {
-							return;
-						}
-						if ( action.fallbackOpen && ctx && typeof ctx.open === 'function' ) {
-							ctx.open();
-						}
-					},
-				} );
-			} );
-			return actions.concat( next );
-		} );
-		addActionFor( 'DESKTOP_ICON_MENU_OPENED', 'desktop-mode.desktop-icon.menu.opened', function ( payload ) {
-			if ( payload && payload.id === 'odd' ) {
-				record( 'info', 'desktop-mode.desktop-icon.menu.opened', payload );
-			}
 		} );
 	}
 
@@ -1709,7 +1672,6 @@
 			return next;
 		}
 		addFilter( 'desktop-mode.files.tile-menu', tileMenuFilter );
-		addFilter( 'wp-desktop.files.tile-menu', tileMenuFilter );
 
 		function wallpaperMenuFilter( items ) {
 			var next = Array.isArray( items ) ? items.slice() : [];
@@ -1720,7 +1682,6 @@
 			return next;
 		}
 		addFilter( 'desktop-mode.wallpaper-context-menu', wallpaperMenuFilter );
-		addFilter( 'wp-desktop.wallpaper-context-menu', wallpaperMenuFilter );
 	}
 
 	function setupAppWindowLifecycleEnhancements() {
@@ -1843,7 +1804,6 @@
 	setupFileIntegration();
 	setupAppWindowLifecycleEnhancements();
 	setupArrangeActions();
-	setupDesktopIconMenuActions();
 	setupTitlebarButton();
 	setupDevtoolsDiagnostics();
 	setupBroadSurfaceDiagnostics();

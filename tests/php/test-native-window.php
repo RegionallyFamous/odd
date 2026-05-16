@@ -1,7 +1,7 @@
 <?php
 /**
  * Tests for odd/includes/native-window.php — specifically the
- * desktop_mode_shell_config / wp_desktop_shell_config filters that govern
+ * desktop_mode_shell_config filter that governs
  * how the ODD Shop window participates in WP Desktop Mode's shell boot config.
  *
  * These exercise classes of behavior:
@@ -84,7 +84,7 @@ class Test_Native_Window extends WP_UnitTestCase {
 
 	public function test_native_window_entry_gets_camelcase_and_snakecase_mins() {
 		$config = apply_filters(
-			'wp_desktop_shell_config',
+			'desktop_mode_shell_config',
 			array(
 				'nativeWindows' => array(
 					array(
@@ -114,7 +114,7 @@ class Test_Native_Window extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'min_width', $config['nativeWindows'][1], 'Other windows must not be touched.' );
 	}
 
-	public function test_native_window_entry_still_supports_classic_shell_config_filter() {
+	public function test_native_window_entry_uses_desktop_mode_shell_config_filter() {
 		$config = apply_filters(
 			'desktop_mode_shell_config',
 			array(
@@ -137,7 +137,7 @@ class Test_Native_Window extends WP_UnitTestCase {
 
 	public function test_session_window_for_odd_preserves_user_size_within_bounds() {
 		$config = apply_filters(
-			'wp_desktop_shell_config',
+			'desktop_mode_shell_config',
 			array(
 				'session' => array(
 					'windows' => array(
@@ -166,7 +166,7 @@ class Test_Native_Window extends WP_UnitTestCase {
 	 */
 	public function test_session_window_for_odd_preserves_valid_host_state( $state ) {
 		$config = apply_filters(
-			'wp_desktop_shell_config',
+			'desktop_mode_shell_config',
 			array(
 				'session' => array(
 					'windows' => array(
@@ -198,7 +198,7 @@ class Test_Native_Window extends WP_UnitTestCase {
 
 	public function test_session_window_for_odd_normalizes_invalid_state() {
 		$config = apply_filters(
-			'wp_desktop_shell_config',
+			'desktop_mode_shell_config',
 			array(
 				'session' => array(
 					'windows' => array(
@@ -218,7 +218,7 @@ class Test_Native_Window extends WP_UnitTestCase {
 
 	public function test_oversized_saved_widths_are_preserved() {
 		$config = apply_filters(
-			'wp_desktop_shell_config',
+			'desktop_mode_shell_config',
 			array(
 				'session' => array(
 					'windows' => array(
@@ -239,7 +239,7 @@ class Test_Native_Window extends WP_UnitTestCase {
 
 	public function test_session_window_for_odd_clamps_low_start_position_upward() {
 		$config = apply_filters(
-			'wp_desktop_shell_config',
+			'desktop_mode_shell_config',
 			array(
 				'session' => array(
 					'windows' => array(
@@ -264,7 +264,7 @@ class Test_Native_Window extends WP_UnitTestCase {
 
 	public function test_session_window_for_odd_keeps_existing_top_position() {
 		$config = apply_filters(
-			'wp_desktop_shell_config',
+			'desktop_mode_shell_config',
 			array(
 				'session' => array(
 					'windows' => array(

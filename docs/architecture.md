@@ -223,13 +223,13 @@ Icon-set changes save via the normal preferences endpoint and schedule a
 short reload so Desktop Mode can rebuild its native icon payloads. Re-render
 happens server-side through filters in `includes/icons/dock-filter.php`:
 
-- `desktop_mode_dock_item` / `wp_desktop_dock_item` (priority 20, 2-arg):
+- `desktop_mode_dock_item` (priority 20, 2-arg):
   swaps dock/taskbar item `icon` values keyed by
   `oddout_icons_slug_to_key( $menu_slug )`, e.g. `edit.php` → `posts`.
-- `desktop_mode_icons` / `wp_desktop_icons` (priority 20): re-skins desktop
+- `desktop_mode_icons` (priority 20): re-skins desktop
   shortcuts by the same key logic, but skips ODD-owned launchers so apps
   keep their own art.
-- `desktop_mode_shell_config` / `wp_desktop_shell_config` (priority 18):
+- `desktop_mode_shell_config` (priority 18):
   aligns matching native-window taskbar icons with their themed desktop
   shortcut icon when Desktop Mode exposes both shapes.
 

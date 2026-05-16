@@ -430,7 +430,6 @@
 		var d = window.wp && window.wp.desktop;
 		var names = [
 			d && d.HOOKS && d.HOOKS.DOCK_ITEM_APPENDED,
-			'wp-desktop.dock.item-appended',
 			'desktop-mode.dock.item-appended',
 		];
 		names.forEach( function ( name ) {

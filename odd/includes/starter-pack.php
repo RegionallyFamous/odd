@@ -597,19 +597,12 @@ function oddout_starter_host_settings_meta_key() {
 	if ( defined( 'DESKTOP_MODE_OS_SETTINGS_META_KEY' ) ) {
 		return DESKTOP_MODE_OS_SETTINGS_META_KEY;
 	}
-	if ( defined( 'WPDM_OS_SETTINGS_META_KEY' ) ) {
-		return WPDM_OS_SETTINGS_META_KEY;
-	}
 	return 'desktop_mode_os_settings';
 }
 
 function oddout_starter_host_default_settings() {
 	if ( function_exists( 'desktop_mode_default_os_settings' ) ) {
 		$defaults = desktop_mode_default_os_settings();
-		return is_array( $defaults ) ? $defaults : null;
-	}
-	if ( function_exists( 'wpdm_default_os_settings' ) ) {
-		$defaults = wpdm_default_os_settings();
 		return is_array( $defaults ) ? $defaults : null;
 	}
 	return null;
@@ -631,9 +624,6 @@ function oddout_starter_get_host_settings_for_user( $user_id ) {
 	if ( function_exists( 'desktop_mode_get_os_settings' ) ) {
 		return desktop_mode_get_os_settings( $user_id );
 	}
-	if ( function_exists( 'wpdm_get_os_settings' ) ) {
-		return wpdm_get_os_settings( $user_id );
-	}
 	$settings = get_user_meta( $user_id, oddout_starter_host_settings_meta_key(), true );
 	return is_array( $settings ) ? $settings : null;
 }
@@ -646,24 +636,17 @@ function oddout_starter_save_host_settings_for_user( $user_id, array $settings )
 	if ( function_exists( 'desktop_mode_save_os_settings' ) ) {
 		return (bool) desktop_mode_save_os_settings( $user_id, $settings );
 	}
-	if ( function_exists( 'wpdm_save_os_settings' ) ) {
-		return (bool) wpdm_save_os_settings( $user_id, $settings );
-	}
 	return (bool) update_user_meta( $user_id, oddout_starter_host_settings_meta_key(), $settings );
 }
 
 function oddout_starter_host_os_settings_available() {
-	$desktop_mode_api = function_exists( 'desktop_mode_get_os_settings' )
+	return function_exists( 'desktop_mode_get_os_settings' )
 		&& function_exists( 'desktop_mode_save_os_settings' )
 		&& function_exists( 'desktop_mode_default_os_settings' );
-	$wpdm_api         = function_exists( 'wpdm_get_os_settings' )
-		&& function_exists( 'wpdm_save_os_settings' )
-		&& function_exists( 'wpdm_default_os_settings' );
-	return $desktop_mode_api || $wpdm_api;
 }
 
 function oddout_starter_host_wallpaper_registration_available() {
-	return function_exists( 'desktop_mode_register_wallpaper' ) || function_exists( 'wp_register_desktop_wallpaper' );
+	return function_exists( 'desktop_mode_register_wallpaper' );
 }
 
 function oddout_starter_host_dock_is_large( array $settings ) {
@@ -687,7 +670,6 @@ function oddout_desktop_mode_large_dock_when_odd_active( $config ) {
 	return $config;
 }
 add_filter( 'desktop_mode_shell_config', 'oddout_desktop_mode_large_dock_when_odd_active', 20 );
-add_filter( 'wp_desktop_shell_config', 'oddout_desktop_mode_large_dock_when_odd_active', 20 );
 
 /**
  * Point WP Desktop Mode's outer wallpaper selection at `"odd"` for a

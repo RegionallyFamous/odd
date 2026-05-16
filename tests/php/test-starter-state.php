@@ -89,7 +89,7 @@ class Test_Starter_State extends WP_UnitTestCase {
 			),
 		);
 
-		$after = apply_filters( 'wp_desktop_shell_config', $config );
+		$after = apply_filters( 'desktop_mode_shell_config', $config );
 
 		$this->assertSame( 'large', $after['osSettings']['dockSize'] );
 	}
@@ -102,7 +102,7 @@ class Test_Starter_State extends WP_UnitTestCase {
 			),
 		);
 
-		$after = apply_filters( 'wp_desktop_shell_config', $config );
+		$after = apply_filters( 'desktop_mode_shell_config', $config );
 
 		$this->assertSame( 'compact', $after['osSettings']['dockSize'] );
 	}

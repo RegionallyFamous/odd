@@ -20,14 +20,14 @@ Status values:
 
 ## 0.8.5 Surface Notes
 
-Desktop Mode 0.8.5 exposes the current `wp-desktop.*` JavaScript hook catalog
+Desktop Mode 0.8.5 exposes the current `desktop-mode.*` JavaScript hook catalog
 through `wp.desktop.HOOKS`, alongside the public `wp.desktop.*` APIs for
 commands, palettes, modules, wallpaper surfaces, native windows, system tiles,
 AI, and drag bridging. ODD registers through those native hooks/contracts when
-they are present and keeps the older `desktop-mode.*` names covered only where
-the shipping plugin still emits them. Host-owned surfaces stay host-owned:
-ODD observes and annotates, but does not live-swap dock DOM, restyle the host
-rails, or move host window geometry.
+they are present. It does not register old hook aliases or pre-0.8.5 PHP
+fallbacks. Host-owned surfaces stay host-owned: ODD
+observes and annotates, but does not live-swap dock DOM, restyle the host rails,
+or move host window geometry.
 
 ## PHP Hooks And Helpers
 
@@ -58,17 +58,17 @@ rails, or move host window geometry.
 
 | Desktop Mode family | ODD status | Notes |
 |---|---|---|
-| Bootstrap: `wp.desktop.whenReady()`, `ready()`, `isReady()`, `wp-desktop.init`, `desktop-mode-init` | supported | ODD uses Desktop Mode readiness for commands, settings, and hook registration. |
-| Window lifecycle: `wp-desktop.window.*` / `desktop-mode.window.*` opened, closing, closed, focused, detached, bounds/body/state hooks | supported | ODD normalizes ODD Shop/app window events and records lifecycle data without changing host window placement. |
+| Bootstrap: `wp.desktop.whenReady()`, `ready()`, `isReady()`, `desktop-mode-init` | supported | ODD uses Desktop Mode readiness for commands, settings, and hook registration. |
+| Window lifecycle: `desktop-mode.window.*` opened, closing, closed, focused, detached, bounds/body/state hooks | supported | ODD normalizes ODD Shop/app window events and records lifecycle data without changing host window placement. |
 | Window APIs: `registerWindow()`, `windowManager`, `openWindow()`, `getWindowConfig()`, `debug.window()`, `Window.markContentLoading()`, `Window.markContentLoaded()`, `Window.send()`, `Window.on()` | supported | ODD uses these for Shop/app opening, app loading state, and diagnostics snapshots. |
-| Native-window hooks: `wp-desktop.native-window.before-render`, `after-render`, `before-close` plus `desktop-mode.*` equivalents | supported | ODD decorates ODD native surfaces and records lifecycle events. |
-| Iframe hooks: `wp-desktop.iframe.ready`, `error`, `network-completed` plus `desktop-mode.*` equivalents | supported | ODD app failures and network errors flow into diagnostics. |
-| Widget hooks: `wp-desktop.widget.mounting`, `mounted`, `unmounting`, `mount-failed`, `added`, `removed` plus `desktop-mode.*` equivalents | supported | ODD records installed widget lifecycle and surfaces mount failures. |
-| File/folder hooks: `desktop-mode.file.*`, `desktop-mode.folder.*`, shared-folder changes | diagnostics-only | ODD records 0.8.5 file/folder activity and marks payload elements as cursor roots so custom cursors work on host-owned file surfaces. |
-| Wallpaper hooks: `wp-desktop.wallpapers`, `wp-desktop.wallpaper.mounting`, `mounted`, `unmounting`, `mount-failed`, `visibility`, `surfaces` plus `desktop-mode.*` equivalents | supported | ODD uses visibility, records lifecycle/surface data, and exposes a Desktop Mode wallpaper editor for scene/shuffle/audio controls. |
-| Dock hooks: `wp-desktop.dock.item-appended`, `desktop-mode.dock.before-render`, `tile-class`, `tile-element`, `tile-tooltip`, `tile-rendered`, `after-render`, `item-removed` | supported | ODD decorates only ODD tile data/elements returned by hooks and records dock behavior. It does not replace host dock icon DOM. |
+| Native-window hooks: `desktop-mode.native-window.before-render`, `after-render`, `before-close` | supported | ODD decorates ODD native surfaces and records lifecycle events. |
+| Iframe hooks: `desktop-mode.iframe.ready`, `error`, `network-completed` | supported | ODD app failures and network errors flow into diagnostics. |
+| Widget hooks: `desktop-mode.widget.mounting`, `mounted`, `unmounting`, `mount-failed`, `added`, `removed` | supported | ODD records installed widget lifecycle and surfaces mount failures. |
+| File/folder hooks: `desktop-mode.files.*` file-type, opener, opening/opened, tile, grid, placement, and folder-dialog events | diagnostics-only | ODD records 0.8.5 file/folder activity and marks payload elements as cursor roots so custom cursors work on host-owned file surfaces. |
+| Wallpaper hooks: `desktop-mode.wallpapers`, `desktop-mode.wallpaper.mounting`, `mounted`, `unmounting`, `mount-failed`, `visibility`, `surfaces` | supported | ODD uses visibility, records lifecycle/surface data, and exposes a Desktop Mode wallpaper editor for scene/shuffle/audio controls. |
+| Dock hooks: `desktop-mode.dock.item-appended`, `desktop-mode.dock.before-render`, `tile-class`, `tile-element`, `tile-tooltip`, `tile-rendered`, `after-render`, `item-removed` | supported | ODD decorates only ODD tile data/elements returned by hooks and records dock behavior. It does not replace host dock icon DOM. |
 | Dock APIs: `registerSystemTile()`, `listSystemTiles()`, `getSystemTile()`, `openOsSettings()`, `getMenuItems()`, `renderIcon()`, `isDockElement()` | supported | ODD uses these where available for settings, diagnostics, and launcher integration. |
-| Command APIs and hooks: `registerCommand()`, `listCommands()`, `registerPalette()`, `listPalettes()`, `wp-desktop.command.before-run`, `after-run`, `error`, `wp-desktop.open-command.items` plus `desktop-mode.*` equivalents | supported | ODD registers commands, contributes `/open` items, registers an ODD palette, and records command lifecycle. |
+| Command APIs and hooks: `registerCommand()`, `listCommands()`, `registerPalette()`, `listPalettes()`, `desktop-mode.command.before-run`, `after-run`, `error`, `desktop-mode.open-command.items` | supported | ODD registers commands, contributes `/open` items, registers an ODD palette, and records command lifecycle. |
 | Settings tabs: `registerSettingsTab()`, `listSettingsTabs()` | supported | ODD renders an OS Settings tab with health and diagnostics actions. |
 | Activity channels: toast, attention, badge, open-requested, presence-changed, presence-snapshot-applied | diagnostics-only | ODD records activity and uses toast/attention/badge helpers when relevant. |
 | Toast API: `wp.desktop.showToast()` and `desktop-mode.shell.toast` | supported | ODD uses the host toast API from its shared client API. |

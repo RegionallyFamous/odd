@@ -199,6 +199,32 @@ describe( 'v1 source guardrails', () => {
 } );
 
 describe( 'Desktop Mode integration source contracts', () => {
+	it( 'keeps Desktop Mode hook integration on 0.8.5 hook names', () => {
+		const sources = [
+			'odd/includes/native-window.php',
+			'odd/includes/starter-pack.php',
+			'odd/includes/icons/dock-filter.php',
+			'odd/src/apps/window-host.js',
+			'odd/src/shared/desktop-hooks.js',
+			'odd/src/shell/odd-dock-rail.js',
+		].map( readRel ).join( '\n' );
+
+		expect( sources ).not.toMatch( /wp_desktop_/ );
+		expect( sources ).not.toMatch( /wpdm_/ );
+		expect( sources ).not.toMatch( /wp_register_desktop_/ );
+		expect( sources ).not.toMatch( /wp-desktop\./ );
+		expect( sources ).not.toMatch( /desktop-mode\.desktop-icon\.menu/ );
+		expect( sources ).not.toMatch( /desktop-mode\.file\./ );
+		expect( sources ).not.toMatch( /desktop-mode\.folder\./ );
+		expect( sources ).not.toMatch( /desktop-mode\.presence\./ );
+		expect( sources ).not.toMatch( /desktop-mode\.heartbeat/ );
+		expect( sources ).not.toMatch( /desktop-mode\.shared-folder/ );
+		expect( sources ).not.toMatch( /desktop-mode\.window\.changed/ );
+		expect( sources ).not.toMatch( /desktop-mode\.arrange-menu\.opened/ );
+		expect( sources ).toContain( 'desktop_mode_shell_config' );
+		expect( sources ).toContain( 'desktop-mode.window.opened' );
+	} );
+
 	it( 'keeps rail icon integration on Desktop Mode data contracts', () => {
 		const src = readRel( 'odd/src/shell/odd-dock-rail.js' );
 

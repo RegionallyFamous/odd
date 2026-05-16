@@ -17,7 +17,7 @@ describe( 'ODD Desktop Mode adapter', () => {
 			ready: ( cb ) => cb(),
 			isReady: () => true,
 			HOOKS: {
-				DESKTOP_ICON_MENU_ITEMS: 'wp-desktop.desktop-icon.menu-items',
+				DOCK_ITEM_APPENDED: 'desktop-mode.dock.item-appended',
 			},
 			registerCommand,
 			registerNamespace,
@@ -57,22 +57,22 @@ describe( 'ODD Desktop Mode adapter', () => {
 		const seen = [];
 		window.wp.desktop = {
 			HOOKS: {
-				DESKTOP_ICON_MENU_ITEMS: 'wp-desktop.desktop-icon.menu-items',
+				DOCK_ITEM_APPENDED: 'desktop-mode.dock.item-removed',
 			},
 		};
 		const adapter = window.__odd.desktop;
 
 		const off = adapter.addActionFor(
-			'DESKTOP_ICON_MENU_ITEMS',
-			'desktop-mode.desktop-icon.menu-items',
+			'DOCK_ITEM_APPENDED',
+			'desktop-mode.dock.item-appended',
 			( payload ) => seen.push( payload.id ),
 			'odd.test',
 		);
 
-		window.wp.hooks.doAction( 'wp-desktop.desktop-icon.menu-items', { id: 'current' } );
-		window.wp.hooks.doAction( 'desktop-mode.desktop-icon.menu-items', { id: 'fallback' } );
+		window.wp.hooks.doAction( 'desktop-mode.dock.item-removed', { id: 'current' } );
+		window.wp.hooks.doAction( 'desktop-mode.dock.item-appended', { id: 'fallback' } );
 		off();
-		window.wp.hooks.doAction( 'wp-desktop.desktop-icon.menu-items', { id: 'after' } );
+		window.wp.hooks.doAction( 'desktop-mode.dock.item-removed', { id: 'after' } );
 
 		expect( seen ).toEqual( [ 'current', 'fallback' ] );
 	} );

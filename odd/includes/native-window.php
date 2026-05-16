@@ -180,7 +180,6 @@ function oddout_shop_normalize_window_config( $config ) {
 	return $config;
 }
 add_filter( 'desktop_mode_shell_config', 'oddout_shop_normalize_window_config', 20 );
-add_filter( 'wp_desktop_shell_config', 'oddout_shop_normalize_window_config', 20 );
 
 add_filter(
 	'desktop_mode_arrange_menu_items',

@@ -60,7 +60,7 @@ describe( 'ODD dock rail system icon skinning', () => {
 			i18n:  { __: ( text ) => text },
 			hooks: createHooks(),
 			desktop: {
-				HOOKS:                    { DOCK_ITEM_APPENDED: 'wp-desktop.dock.item-appended' },
+				HOOKS:                    { DOCK_ITEM_APPENDED: 'desktop-mode.dock.item-appended' },
 				ready:                    ( cb ) => cb(),
 				registerDockRailRenderer: vi.fn(),
 				listSystemTiles:          () => tiles,
@@ -107,7 +107,7 @@ describe( 'ODD dock rail system icon skinning', () => {
 		expect( document.querySelectorAll( '.desktop-mode-dock__item--system .dashicons' ) ).toHaveLength( 0 );
 
 		tiles[ 0 ].icon = 'dashicons-desktop';
-		window.wp.hooks.doAction( 'wp-desktop.dock.item-appended', {
+		window.wp.hooks.doAction( 'desktop-mode.dock.item-appended', {
 			id:        'desktop-mode-os-settings',
 			placement: 'dock',
 		} );

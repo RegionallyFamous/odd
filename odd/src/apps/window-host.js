@@ -717,7 +717,6 @@
 		if ( desktopAdapter && typeof desktopAdapter.addActionFor === 'function' ) {
 			desktopAdapter.addActionFor( 'NATIVE_WINDOW_AFTER_RENDER', [
 				'desktop-mode.native-window.after-render',
-				'wp-desktop.native-window.after-render',
 			], handleWindowShown, 'odd.apps.native-window-after-render' );
 			return;
 		}
@@ -725,7 +724,6 @@
 		if ( ! h || typeof h.addAction !== 'function' ) return;
 		hostHookNames( 'NATIVE_WINDOW_AFTER_RENDER', [
 			'desktop-mode.native-window.after-render',
-			'wp-desktop.native-window.after-render',
 		] ).forEach( function ( name, index ) {
 			try {
 				h.addAction( name, 'odd.apps.native-window-after-render-' + index, handleWindowShown );
