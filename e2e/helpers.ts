@@ -320,8 +320,8 @@ async function ensureInstalledInactiveScene( pane: Locator ): Promise<Locator | 
 
 /**
  * Assumes the ODD Shop is already open. Clicks every visible rail department,
- * exercises search, and opens a wallpaper preview then cancels — no prefs
- * commit and no icon-set reload.
+ * exercises search, and direct-applies an installed wallpaper without opening
+ * the old staging preview bar.
  */
 export async function exerciseOddShopInteractions( page: Page ) {
 	const shop = page.locator( '.odd-panel.odd-shop' ).first();
@@ -348,18 +348,22 @@ export async function exerciseOddShopInteractions( page: Page ) {
 	await shop.getByTestId( 'odd-shop-nav-wallpaper' ).click();
 
 	const pane = shop.getByTestId( 'odd-shop-content' );
-	const previewTile = await ensureInstalledInactiveScene( pane );
-	if ( previewTile ) {
-		const sceneCard = previewTile.locator( '.odd-shop__card' ).first();
+	const applyTile = await ensureInstalledInactiveScene( pane );
+	if ( applyTile ) {
+		const slug = await applyTile.getAttribute( 'data-slug' );
+		const sceneCard = applyTile.locator( '.odd-shop__card' ).first();
 		await expect( sceneCard ).toBeVisible( { timeout: 20_000 } );
 		await sceneCard.click();
+		if ( slug ) {
+			await expect(
+				pane.locator( `[data-odd-card-type="scene"][data-slug="${ slug }"].is-active` ).first(),
+			).toBeVisible( { timeout: 45_000 } );
+		}
 	}
 
-	await expect( shop.getByTestId( 'odd-preview-cancel' ) ).toBeVisible( { timeout: 15_000 } );
-	await expect( shop.getByTestId( 'odd-preview-commit' ) ).toBeVisible();
-
-	await shop.getByTestId( 'odd-preview-cancel' ).click();
 	await expect( shop.locator( '[data-odd-preview-bar]' ) ).toHaveCount( 0, { timeout: 10_000 } );
+	await expect( shop.getByTestId( 'odd-preview-cancel' ) ).toHaveCount( 0 );
+	await expect( shop.getByTestId( 'odd-preview-commit' ) ).toHaveCount( 0 );
 }
 
 /**
