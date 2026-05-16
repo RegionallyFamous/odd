@@ -76,6 +76,9 @@ function oddout_iconsets_required_keys() {
 		'links',
 		'recycle-bin',
 		'fallback',
+		'os-settings',
+		'import',
+		'classic-admin',
 	);
 }
 

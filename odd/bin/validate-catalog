@@ -59,6 +59,7 @@ FIRST_PARTY_ICON_KEYS = {
     "dashboard", "posts", "pages", "media", "comments",
     "appearance", "plugins", "users", "tools", "settings",
     "profile", "links", "recycle-bin", "fallback",
+    "os-settings", "import", "classic-admin",
 }
 ICON_IMAGE_MAX_BYTES = 768 * 1024
 ICON_IMAGE_EXTENSIONS = {"png": "PNG", "webp": "WEBP"}

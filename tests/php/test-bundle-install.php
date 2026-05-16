@@ -59,6 +59,9 @@ class Test_Bundle_Install extends ODDOUT_REST_Test_Case {
 			'links',
 			'recycle-bin',
 			'fallback',
+			'os-settings',
+			'import',
+			'classic-admin',
 		);
 		$png   = base64_decode( 'iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAw0lEQVR42u3awRXCIBBFUZhjmdqJWWkn2meswUCAwH0FwJ/HrDg/JQAAAKxJrnnY/bnvrYJ/3zkPI6Dl4LVF5KsOXktEzDB8SZ6YYfiSXDHL8EfzRVqcmOn1j+S0AbO9/r95bQABBKzN7ewLPq/yMx6bDSCAAAIIIIAAAggggAACCCCAAALSdT5EzvzMsAEEEEBAMwG1OjlpsMaIDejRzBqpL2QDevXzRmmLRc+S4ghVuejd1OzdE9QUTYt3hQEAAJblByY0PzQWCSylAAAAAElFTkSuQmCC' );
 		$icons = array();
@@ -210,6 +213,9 @@ class Test_Bundle_Install extends ODDOUT_REST_Test_Case {
 			'links',
 			'recycle-bin',
 			'fallback',
+			'os-settings',
+			'import',
+			'classic-admin',
 		);
 		$icons = array();
 		foreach ( $keys as $key ) {

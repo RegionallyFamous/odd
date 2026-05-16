@@ -38,16 +38,19 @@ my-icons.wp
     ├── profile.webp
     ├── links.webp
     ├── recycle-bin.webp
-    └── fallback.webp
+    ├── fallback.webp
+    ├── os-settings.webp
+    ├── import.webp
+    └── classic-admin.webp
 ```
 
 Paths inside `icons/` can be anything — the manifest maps the
 required semantic keys to paths of your choosing. ODD requires all
-14 core keys so Desktop Mode's dock, desktop, taskbar, file shortcut,
-and Recycle Bin surfaces can all resolve through one complete native
-feed. Sets may also declare optional shell-action keys such as
-`os-settings`, `import`, and `classic-admin` for compact rail actions
-that are not normal WordPress menu rows.
+17 keys so Desktop Mode's dock, desktop, taskbar, file shortcut,
+Recycle Bin, and compact rail action surfaces can all resolve through
+one complete native feed. The compact rail actions are `os-settings`,
+`import`, `plugins`, and `classic-admin`; `plugins` is also a core
+WordPress menu key.
 
 Icon files must be PNG or WebP images. Use PNG when you need crisp
 transparency; use WebP when the art is painted, textured, or otherwise
@@ -80,7 +83,10 @@ benefits from better compression.
         "profile":    "icons/profile.webp",
         "links":      "icons/links.webp",
         "recycle-bin": "icons/recycle-bin.webp",
-        "fallback":   "icons/fallback.webp"
+        "fallback":   "icons/fallback.webp",
+        "os-settings": "icons/os-settings.webp",
+        "import":     "icons/import.webp",
+        "classic-admin": "icons/classic-admin.webp"
     }
 }
 ```
@@ -96,7 +102,7 @@ benefits from better compression.
 | `accent`      | yes      | `#hex` used for Shop accents and catalog previews.|
 | `description` | no       | Longer copy shown on the detail sheet.                                     |
 | `preview`     | no       | Relative path to a PNG/WebP hero (falls back to the `dashboard` icon).|
-| `icons`       | yes      | Map of all 14 core semantic keys, plus any optional shell-action keys, to relative PNG/WebP paths. |
+| `icons`       | yes      | Map of all 17 required semantic keys to relative PNG/WebP paths. |
 
 ### Why these keys?
 
@@ -119,9 +125,9 @@ stable logical keys via `oddout_icons_slug_to_key()`:
 | `profile`     | yes      | Your own profile tile                     |
 | `links`       | yes      | Legacy Links, any URL-browsing tool       |
 | `recycle-bin` | yes      | WP Desktop Mode Recycle Bin (`desktop-mode-recycle-bin`) |
-| `os-settings` | no       | Desktop Mode OS Settings system tile      |
-| `import`      | no       | Import/download-style rail action         |
-| `classic-admin` | no     | Exit/classic-admin rail action            |
+| `os-settings` | yes      | Desktop Mode OS Settings system tile      |
+| `import`      | yes      | Import/download-style rail action         |
+| `classic-admin` | yes    | Exit/classic-admin rail action            |
 
 If the active set can't provide one of the logical keys, ODD reaches
 for the set's own `fallback`, then for whatever WP Desktop Mode served

@@ -71,7 +71,7 @@
 		},
 		"icons": {
 			"type": "object",
-			"description": "Icon-set manifests only. All 14 semantic Desktop Mode icon keys map to relative PNG/WebP image paths.",
+			"description": "Icon-set manifests only. All 17 semantic Desktop Mode and compact rail icon keys map to relative PNG/WebP image paths.",
 			"patternProperties": {
 				"^[a-z0-9_-]+$": {
 					"type": "string",
@@ -193,7 +193,8 @@
 						"required": [
 							"dashboard", "posts", "pages", "media", "comments",
 							"appearance", "plugins", "users", "tools", "settings",
-							"fallback"
+							"profile", "links", "recycle-bin", "fallback",
+							"os-settings", "import", "classic-admin"
 						]
 					}
 				}
