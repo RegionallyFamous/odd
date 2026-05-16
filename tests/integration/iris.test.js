@@ -141,7 +141,7 @@ describe( 'iris — shell error reactivity', () => {
 		loadIris( [ 'muse.js', 'motion.js', 'reactivity.js' ] );
 	} );
 
-	it( 'logs shell problems instead of showing Iris copy', () => {
+	it( 'logs shell problems without showing Iris copy or motion', () => {
 		const log = vi.spyOn( window.console, 'log' ).mockImplementation( () => {} );
 		const toast = vi.fn();
 		const said = [];
@@ -158,7 +158,23 @@ describe( 'iris — shell error reactivity', () => {
 		} );
 		expect( toast ).not.toHaveBeenCalled();
 		expect( said ).toEqual( [] );
-		expect( motions ).toHaveLength( 1 );
+		expect( motions ).toEqual( [] );
+
+		log.mockRestore();
+	} );
+
+	it( 'logs iframe problems without visual effects', () => {
+		const log = vi.spyOn( window.console, 'log' ).mockImplementation( () => {} );
+		const motions = [];
+		window.__odd.events.on( 'odd.motion.glitch', ( payload ) => motions.push( payload ) );
+
+		window.__odd.events.emit( 'odd.iframe-error', { slug: 'demo', message: 'iframe load failed' } );
+
+		expect( log ).toHaveBeenCalledWith( '[ODD] Shell issue', {
+			source:  'odd.iframe-error',
+			payload: { slug: 'demo', message: 'iframe load failed' },
+		} );
+		expect( motions ).toEqual( [] );
 
 		log.mockRestore();
 	} );

@@ -64,7 +64,7 @@
 		};
 	}
 
-	var throttleShellErr   = throttle( 30000 );
+	var throttleShellIssueLog = throttle( 30000 );
 	var throttleWelcomeBck = throttle( 10 * 60 * 1000 );
 
 	onOdd( 'odd.window-opened', function ( payload ) {
@@ -81,12 +81,10 @@
 	} );
 	on( 'desktop-mode.shell.error', function ( payload ) {
 		emit( 'odd.shell-error', payload || {} );
-		motion( 'glitch', { ms: 220 } );
-		throttleShellErr( function () { logShellIssue( 'desktop-mode.shell.error', payload ); } );
+		throttleShellIssueLog( function () { logShellIssue( 'desktop-mode.shell.error', payload ); } );
 	} );
 	onOdd( 'odd.iframe-error', function ( payload ) {
-		motion( 'glitch', { ms: 220 } );
-		throttleShellErr( function () { logShellIssue( 'odd.iframe-error', payload ); } );
+		throttleShellIssueLog( function () { logShellIssue( 'odd.iframe-error', payload ); } );
 	} );
 	on( 'desktop-mode.dock.item-appended', function ( payload ) {
 		var c = centerOf( payload && payload.bounds );
