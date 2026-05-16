@@ -18,6 +18,21 @@
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Preferred first-run geometry for the ODD Shop native window.
+ *
+ * Desktop Mode owns actual window creation and persists user changes.
+ * ODD only provides a top-friendly default and a small stale-session
+ * guard so the Shop cannot keep reopening halfway down the desktop.
+ */
+function oddout_shop_window_geometry() {
+	return array(
+		'x'     => 96,
+		'y'     => 32,
+		'max_y' => 48,
+	);
+}
+
 add_action(
 	'init',
 	function () {
@@ -85,6 +100,10 @@ add_filter(
 		$min_h        = 420;
 		$default_w    = 1080;
 		$default_h    = 720;
+		$geometry     = oddout_shop_window_geometry();
+		$default_x    = (int) $geometry['x'];
+		$default_y    = (int) $geometry['y'];
+		$max_y        = (int) $geometry['max_y'];
 		$valid_states = array( 'normal', 'minimized', 'maximized', 'fullscreen' );
 
 		// Native-window registry → some shell builds use these to
@@ -104,6 +123,8 @@ add_filter(
 				$config['nativeWindows'][ $i ]['min_height'] = $min_h;
 				$config['nativeWindows'][ $i ]['minWidth']   = $min_w;
 				$config['nativeWindows'][ $i ]['minHeight']  = $min_h;
+				$config['nativeWindows'][ $i ]['x']          = isset( $entry['x'] ) ? max( 0, (int) $entry['x'] ) : $default_x;
+				$config['nativeWindows'][ $i ]['y']          = isset( $entry['y'] ) ? min( $max_y, max( 0, (int) $entry['y'] ) ) : $default_y;
 			}
 		}
 
@@ -126,12 +147,16 @@ add_filter(
 			$width  = isset( $window['width'] ) ? (int) $window['width'] : $default_w;
 			$height = isset( $window['height'] ) ? (int) $window['height'] : $default_h;
 			$state  = isset( $window['state'] ) ? (string) $window['state'] : 'normal';
+			$x      = isset( $window['x'] ) ? max( 0, (int) $window['x'] ) : $default_x;
+			$y      = isset( $window['y'] ) ? min( $max_y, max( 0, (int) $window['y'] ) ) : $default_y;
 
 			if ( ! in_array( $state, $valid_states, true ) ) {
 				$state = 'normal';
 			}
 
 			$config['session']['windows'][ $i ]['state']      = $state;
+			$config['session']['windows'][ $i ]['x']          = $x;
+			$config['session']['windows'][ $i ]['y']          = $y;
 			$config['session']['windows'][ $i ]['width']      = max( $min_w, $width );
 			$config['session']['windows'][ $i ]['height']     = max( $min_h, $height );
 			$config['session']['windows'][ $i ]['min_width']  = $min_w;

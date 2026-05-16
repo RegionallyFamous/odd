@@ -9,8 +9,10 @@
  *  1. Registered native-window minimum size limits (420x420) on BOTH
  *     `nativeWindows[]` entries (snake_case and camelCase) AND any
  *     `session.windows[]` replayed at boot (shell variants differ).
- *  2. Preserving Desktop Mode persisted state values (fullscreen/maximized).
- *  3. `desktop_mode_file_serialize` (registered in dock-filter.php): themed
+ *  2. Keeping the ODD Shop near the top of the desktop when stale
+ *     session geometry would otherwise reopen it too low.
+ *  3. Preserving Desktop Mode persisted state values (fullscreen/maximized).
+ *  4. `desktop_mode_file_serialize` (registered in dock-filter.php): themed
  *     desktop shortcut snapshots + HTTPS preview URLs for Desktop Mode ≥0.9 placements.
  */
 
@@ -105,6 +107,8 @@ class Test_Native_Window extends WP_UnitTestCase {
 		$this->assertSame( 420, $odd['min_height'] );
 		$this->assertSame( 420, $odd['minWidth'] );
 		$this->assertSame( 420, $odd['minHeight'] );
+		$this->assertSame( 96, $odd['x'] );
+		$this->assertSame( 32, $odd['y'] );
 		$this->assertArrayNotHasKey( 'min_width', $config['nativeWindows'][1], 'Other windows must not be touched.' );
 	}
 
@@ -127,6 +131,8 @@ class Test_Native_Window extends WP_UnitTestCase {
 		$window = $config['session']['windows'][0];
 		$this->assertSame( 500, $window['width'], 'Intentional user resize preserved.' );
 		$this->assertSame( 500, $window['height'], 'Intentional user resize preserved.' );
+		$this->assertSame( 96, $window['x'], 'Missing saved x uses the ODD Shop default.' );
+		$this->assertSame( 32, $window['y'], 'Missing saved y uses the ODD Shop default.' );
 		$this->assertSame( 'normal', $window['state'] );
 		$this->assertSame( 420, $window['min_width'] );
 		$this->assertSame( 420, $window['minWidth'] );
@@ -206,6 +212,54 @@ class Test_Native_Window extends WP_UnitTestCase {
 		$window = $config['session']['windows'][0];
 		$this->assertSame( 2400, $window['width'] );
 		$this->assertSame( 1400, $window['height'] );
+	}
+
+	public function test_session_window_for_odd_clamps_low_start_position_upward() {
+		$config = apply_filters(
+			'desktop_mode_shell_config',
+			array(
+				'session' => array(
+					'windows' => array(
+						array(
+							'id'     => 'odd',
+							'x'      => 140,
+							'y'      => 240,
+							'width'  => 900,
+							'height' => 640,
+						),
+					),
+				),
+			)
+		);
+
+		$window = $config['session']['windows'][0];
+		$this->assertSame( 140, $window['x'], 'Horizontal user placement remains native and user-owned.' );
+		$this->assertSame( 48, $window['y'], 'Stale low vertical placement is capped near the top.' );
+		$this->assertSame( 900, $window['width'] );
+		$this->assertSame( 640, $window['height'] );
+	}
+
+	public function test_session_window_for_odd_keeps_existing_top_position() {
+		$config = apply_filters(
+			'desktop_mode_shell_config',
+			array(
+				'session' => array(
+					'windows' => array(
+						array(
+							'id'     => 'odd',
+							'x'      => 80,
+							'y'      => 24,
+							'width'  => 900,
+							'height' => 640,
+						),
+					),
+				),
+			)
+		);
+
+		$window = $config['session']['windows'][0];
+		$this->assertSame( 80, $window['x'] );
+		$this->assertSame( 24, $window['y'], 'Already-good top placement is preserved.' );
 	}
 
 	public function test_non_odd_session_windows_are_untouched() {
