@@ -108,11 +108,7 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 			array(
 				'version' => 1,
 				'bundles' => array(
-					array(
-						'type' => 'widget',
-						'slug' => 'known-good',
-						'name' => 'Known Good',
-					),
+					$this->catalog_row( 'known-good' ),
 				),
 			)
 		);
