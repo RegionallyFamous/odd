@@ -152,6 +152,54 @@ describe( 'Desktop Mode hook bridge', () => {
 		expect( requestMaximize ).not.toHaveBeenCalled();
 	} );
 
+	it( 'keeps the ODD Shop host window near the top when the host opens it too low', () => {
+		const element = document.createElement( 'div' );
+		element.style.left = '120px';
+		element.style.top = '260px';
+		const emitChange = vi.fn();
+		const win = { id: 'odd', state: 'normal', element, config: { id: 'odd', y: 260 }, _emitChange: emitChange };
+		window.wp.desktop = {
+			ready: ( cb ) => cb(),
+			windowManager: {
+				getById: vi.fn( () => win ),
+			},
+		};
+
+		loadDesktopHooks();
+		window.wp.hooks.doAction( 'desktop-mode.window.opened', {
+			windowId: 'odd',
+			bounds: { x: 120, y: 260, width: 1080, height: 720 },
+		} );
+
+		expect( element.style.top ).toBe( '32px' );
+		expect( win.config.y ).toBe( 32 );
+		expect( emitChange ).toHaveBeenCalledWith( 'moved' );
+		expect( window.__odd.desktopState.windows.all.find( ( row ) => row.id === 'odd' ).bounds.y ).toBe( 32 );
+	} );
+
+	it( 'does not move ODD app windows or fullscreen Shop windows during top correction', () => {
+		const shop = document.createElement( 'div' );
+		shop.style.top = '260px';
+		const app = document.createElement( 'div' );
+		app.style.top = '260px';
+		window.wp.desktop = {
+			ready: ( cb ) => cb(),
+			windowManager: {
+				getById: vi.fn( () => ( { id: 'odd', state: 'fullscreen', element: shop } ) ),
+			},
+		};
+
+		loadDesktopHooks();
+		window.wp.hooks.doAction( 'desktop-mode.window.opened', { windowId: 'odd' } );
+		window.wp.hooks.doAction( 'desktop-mode.window.opened', {
+			windowId: 'odd-app-demo',
+			element: app,
+		} );
+
+		expect( shop.style.top ).toBe( '260px' );
+		expect( app.style.top ).toBe( '260px' );
+	} );
+
 	it( 'emits one normalized wallpaper visibility event from the hook bridge', () => {
 		window.wp.desktop = { ready: ( cb ) => cb() };
 		const seen = [];

@@ -128,6 +128,8 @@
 	var windowStateById = {};
 	var activityTimers = {};
 	var warnedShopFullscreen = false;
+	var SHOP_TOP_Y = 32;
+	var SHOP_TOP_MAX_Y = 48;
 	window.__odd.desktopState = desktopState;
 
 	function stateNow() {
@@ -148,6 +150,12 @@
 
 	function numericOrNull( value ) {
 		var n = Number( value );
+		return isFinite( n ) ? n : null;
+	}
+
+	function cssPxOrNull( value ) {
+		if ( value == null || value === '' ) return null;
+		var n = parseFloat( String( value ) );
 		return isFinite( n ) ? n : null;
 	}
 
@@ -586,6 +594,51 @@
 		return out;
 	}
 
+	function shopWindowFromPayload( payload ) {
+		var win = windowInstance( 'odd' );
+		if ( win ) return win;
+		if ( payload && payload.window && windowIdFromWindow( payload.window ) === 'odd' ) return payload.window;
+		return null;
+	}
+
+	function shopWindowElement( win, payload ) {
+		return ( win && win.element ) || windowElementFromPayload( payload );
+	}
+
+	function shopWindowTop( el, payload ) {
+		var styleTop = el && el.style ? cssPxOrNull( el.style.top ) : null;
+		if ( styleTop !== null ) return styleTop;
+		var bounds = normalizeBounds( payload );
+		if ( bounds && bounds.y != null ) return bounds.y;
+		if ( el && typeof el.offsetTop === 'number' ) return el.offsetTop;
+		return null;
+	}
+
+	function keepOddShopNearTop( payload ) {
+		if ( windowIdFromPayload( payload ) !== 'odd' ) return;
+		var win = shopWindowFromPayload( payload );
+		var state = win && win.state || payload && payload.state || '';
+		if ( state === 'fullscreen' || state === 'maximized' || state === 'minimized' ) return;
+		var el = shopWindowElement( win, payload );
+		if ( ! el || ! el.style ) return;
+		var y = shopWindowTop( el, payload );
+		if ( y === null || y <= SHOP_TOP_MAX_Y ) return;
+		el.style.top = SHOP_TOP_Y + 'px';
+		if ( win && win.config && typeof win.config === 'object' ) {
+			try { win.config.y = SHOP_TOP_Y; } catch ( _ ) {}
+		}
+		if ( win && typeof win._emitChange === 'function' ) {
+			try { win._emitChange( 'moved' ); } catch ( _ ) {}
+		}
+		if ( windowStateById.odd && windowStateById.odd.bounds ) {
+			windowStateById.odd.bounds.y = SHOP_TOP_Y;
+			windowStateById.odd.updatedAt = stateNow();
+			refreshWindowList();
+			bumpDesktopState();
+		}
+		record( 'info', 'odd.shop-window.top-corrected', { from: y, to: SHOP_TOP_Y } );
+	}
+
 	function setupWindowDiagnostics() {
 		var map = {
 			'desktop-mode.window.opened':              'odd.window-opened',
@@ -613,6 +666,10 @@
 				updateDesktopWindowState( hookName, payload || {} );
 				if ( hookName === 'desktop-mode.window.opened' || hookName === 'desktop-mode.window.reopened' ) {
 					fullscreenOddShopOnTouch( payload || {} );
+					keepOddShopNearTop( payload || {} );
+				}
+				if ( hookName === 'desktop-mode.native-window.after-render' ) {
+					keepOddShopNearTop( payload || {} );
 				}
 				if ( ! isOddWindow( windowId ) ) return;
 				var normalized = normalizeWindowPayload( payload );
