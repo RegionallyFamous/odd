@@ -2,9 +2,9 @@
 /**
  * ODD cursors — set registry + active preference.
  *
- * Cursor sets mirror icon sets: a manifest.json plus SVG assets can be
- * shipped by the remote catalog, installed under wp-content, and selected
- * per user. The selected set is rendered as CSS by css-endpoint.php.
+ * Cursor sets are now living-cursor effect packs. They keep the browser's
+ * native cursor intact and provide metadata, preview art, and effect tokens
+ * for the top-level cursor aura layer.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -29,7 +29,7 @@ function oddout_cursors_resolve_set_path( $set_dir, $rel ) {
 }
 
 function oddout_cursors_registry_transient_key() {
-	return 'oddout_cursor_registry_v' . ( defined( 'ODDOUT_VERSION' ) ? ODDOUT_VERSION : '0' ) . '_asset1';
+	return 'oddout_cursor_registry_v' . ( defined( 'ODDOUT_VERSION' ) ? ODDOUT_VERSION : '0' ) . '_effects1';
 }
 
 add_action(
@@ -41,6 +41,38 @@ add_action(
 
 function oddout_cursors_allowed_kinds() {
 	return array( 'default', 'pointer', 'text', 'grab', 'grabbing', 'crosshair', 'not-allowed', 'wait', 'help', 'progress' );
+}
+
+function oddout_cursors_allowed_recipes() {
+	return array( 'signal-bloom', 'gel-pop', 'paper-sparks', 'solar-orbit', 'moonlight-focus' );
+}
+
+function oddout_cursors_clean_effects( array $data ) {
+	$effects = isset( $data['effects'] ) && is_array( $data['effects'] ) ? $data['effects'] : array();
+	$accent  = isset( $effects['accent'] ) ? (string) $effects['accent'] : ( isset( $data['accent'] ) ? (string) $data['accent'] : '' );
+	$recipe  = isset( $effects['recipe'] ) ? sanitize_key( (string) $effects['recipe'] ) : '';
+	$out     = array(
+		'accent' => '' !== $accent ? $accent : '#42d9d2',
+		'spark'  => isset( $effects['spark'] ) ? (string) $effects['spark'] : '#ff4f8b',
+		'warm'   => isset( $effects['warm'] ) ? (string) $effects['warm'] : '#f6b73c',
+		'ink'    => isset( $effects['ink'] ) ? (string) $effects['ink'] : '#19091f',
+		'recipe' => in_array( $recipe, oddout_cursors_allowed_recipes(), true ) ? $recipe : '',
+	);
+	$fallbacks = array(
+		'accent' => '#42d9d2',
+		'spark'  => '#ff4f8b',
+		'warm'   => '#f6b73c',
+		'ink'    => '#19091f',
+	);
+	foreach ( $out as $key => $value ) {
+		if ( 'recipe' === $key ) {
+			continue;
+		}
+		if ( ! preg_match( '/^#[0-9A-Fa-f]{3,8}$/', $value ) ) {
+			$out[ $key ] = $fallbacks[ $key ];
+		}
+	}
+	return $out;
 }
 
 function oddout_cursors_get_sets( $reset = false ) {
@@ -101,45 +133,13 @@ function oddout_cursors_get_sets( $reset = false ) {
 		}
 	}
 
-	$cache   = array();
-	$allowed = oddout_cursors_allowed_kinds();
+	$cache = array();
 	foreach ( $sources as $slug => $entry ) {
 		$data     = $entry['data'];
 		$base_dir = $entry['base_dir'];
 		$base_url = $entry['base_url'];
 		$source   = isset( $entry['source'] ) ? (string) $entry['source'] : '';
-		$cursors  = array();
-		if ( isset( $data['cursors'] ) && is_array( $data['cursors'] ) ) {
-			foreach ( $data['cursors'] as $kind => $def ) {
-				$kind = sanitize_key( (string) $kind );
-				if ( ! in_array( $kind, $allowed, true ) || ! is_array( $def ) ) {
-					continue;
-				}
-				$file = isset( $def['file'] ) ? (string) $def['file'] : '';
-				$abs  = oddout_cursors_resolve_set_path( $base_dir, $file );
-				if ( '' === $abs || ! is_readable( $abs ) ) {
-					continue;
-				}
-				$hotspot = isset( $def['hotspot'] ) && is_array( $def['hotspot'] ) ? array_values( $def['hotspot'] ) : array( 0, 0 );
-				$x       = isset( $hotspot[0] ) ? max( 0, min( 128, (int) $hotspot[0] ) ) : 0;
-				$y       = isset( $hotspot[1] ) ? max( 0, min( 128, (int) $hotspot[1] ) ) : 0;
-				$url     = $base_url ? $base_url . '/' . rawurlencode( basename( $abs ) ) : '';
-				if ( 'installed' === $source && function_exists( 'oddout_cursorsets_asset_url' ) ) {
-					$url = oddout_cursorsets_asset_url( $slug, $file );
-				}
-				if ( '' === $url ) {
-					continue;
-				}
-				$cursors[ $kind ] = array(
-					'file'    => basename( $abs ),
-					'url'     => $url,
-					'hotspot' => array( $x, $y ),
-				);
-			}
-		}
-		if ( empty( $cursors['default'] ) ) {
-			continue;
-		}
+		$effects  = oddout_cursors_clean_effects( $data );
 		$preview = '';
 		if ( ! empty( $data['preview'] ) ) {
 			$preview_abs = oddout_cursors_resolve_set_path( $base_dir, (string) $data['preview'] );
@@ -158,7 +158,8 @@ function oddout_cursors_get_sets( $reset = false ) {
 			'description' => isset( $data['description'] ) ? (string) $data['description'] : '',
 			'version'     => isset( $data['version'] ) ? (string) $data['version'] : '',
 			'preview'     => $preview,
-			'cursors'     => $cursors,
+			'effects'     => $effects,
+			'cursors'     => array(),
 			'source'      => $entry['source'],
 		);
 	}
@@ -233,22 +234,18 @@ function oddout_cursors_stylesheet_version( $slug = null ) {
 	$slug = null === $slug ? oddout_cursors_get_active_slug() : sanitize_key( (string) $slug );
 	$set  = '' === $slug ? null : oddout_cursors_get_set( $slug );
 	if ( ! $set ) {
-		return ( defined( 'ODDOUT_VERSION' ) ? ODDOUT_VERSION : '0' ) . '-desktop-hover2-none';
+		return ( defined( 'ODDOUT_VERSION' ) ? ODDOUT_VERSION : '0' ) . '-living-effects1-none';
 	}
 
 	$parts = array(
 		defined( 'ODDOUT_VERSION' ) ? ODDOUT_VERSION : '0',
-		'desktop-hover2',
+		'living-effects1',
 		$slug,
 		isset( $set['version'] ) ? (string) $set['version'] : '',
 	);
-	if ( isset( $set['cursors'] ) && is_array( $set['cursors'] ) ) {
-		foreach ( oddout_cursors_allowed_kinds() as $kind ) {
-			if ( empty( $set['cursors'][ $kind ] ) || ! is_array( $set['cursors'][ $kind ] ) ) {
-				continue;
-			}
-			$cursor  = $set['cursors'][ $kind ];
-			$parts[] = $kind . ':' . ( isset( $cursor['url'] ) ? (string) $cursor['url'] : '' ) . ':' . implode( ',', isset( $cursor['hotspot'] ) && is_array( $cursor['hotspot'] ) ? array_map( 'intval', $cursor['hotspot'] ) : array() );
+	if ( isset( $set['effects'] ) && is_array( $set['effects'] ) ) {
+		foreach ( array( 'accent', 'spark', 'warm', 'ink', 'recipe' ) as $key ) {
+			$parts[] = $key . ':' . ( isset( $set['effects'][ $key ] ) ? (string) $set['effects'][ $key ] : '' );
 		}
 	}
 	return substr( md5( implode( '|', $parts ) ), 0, 16 );
@@ -261,12 +258,7 @@ function oddout_cursors_token_map( $slug = null ) {
 		return array();
 	}
 
-	$out = array();
-	foreach ( oddout_cursors_allowed_kinds() as $kind ) {
-		$fallback     = 'not-allowed' === $kind ? 'not-allowed' : $kind;
-		$out[ $kind ] = oddout_cursors_css_cursor( $set, $kind, $fallback );
-	}
-	return $out;
+	return isset( $set['effects'] ) && is_array( $set['effects'] ) ? $set['effects'] : oddout_cursors_clean_effects( $set );
 }
 
 function oddout_cursors_shell_contract( $slug = null ) {

@@ -30,7 +30,7 @@ Bundle types:
     icon-set    source: catalog-sources/icon-sets/<slug>/ (manifest
                 + PNG/WebP raster icons)
     cursor-set  source: catalog-sources/cursor-sets/<slug>/ (manifest
-                + SVG cursors)
+                + living-layer preview art)
     widget      source: catalog-sources/widgets/<slug>/{widget.js,
                 widget.css?, manifest.json, preview.svg?, assets/*}
     app         source: catalog-sources/apps/<slug>/{bundle.wp, icon.svg,
@@ -722,29 +722,12 @@ def build_iconset(slug: str, src_dir: Path) -> dict:
     }, meta)
 
 
-CURSOR_KINDS = {
-    "default",
-    "pointer",
-    "text",
-    "grab",
-    "grabbing",
-    "crosshair",
-    "not-allowed",
-    "wait",
-    "help",
-    "progress",
-}
 CURSOR_SIZE_BUDGET = 8192
-CURSOR_RENDER_SIZE = 64
+CURSOR_EFFECT_KEYS = {"accent", "spark", "warm", "ink", "recipe"}
+CURSOR_EFFECT_RECIPES = {"signal-bloom", "gel-pop", "paper-sparks", "solar-orbit", "moonlight-focus"}
 
 
-def _svg_dimension(root: ET.Element, attr: str) -> int | None:
-    raw = (root.attrib.get(attr) or "").strip()
-    match = re.fullmatch(r"(\d+)(?:px)?", raw)
-    return int(match.group(1)) if match else None
-
-
-def _validate_cursor_svg(slug: str, rel: str, data: bytes, require_cursor_dimensions: bool = False) -> None:
+def _validate_cursor_preview_svg(slug: str, rel: str, data: bytes) -> None:
     label = f"cursor-set {slug}: {rel}"
     if len(data) > CURSOR_SIZE_BUDGET:
         raise SystemExit(f"{label}: {len(data)} bytes exceeds {CURSOR_SIZE_BUDGET} budget")
@@ -760,13 +743,6 @@ def _validate_cursor_svg(slug: str, rel: str, data: bytes, require_cursor_dimens
         raise SystemExit(f"{label}: invalid XML: {exc}")
     if root.tag != "{http://www.w3.org/2000/svg}svg":
         raise SystemExit(f"{label}: root element is not <svg>")
-    if require_cursor_dimensions:
-        width = _svg_dimension(root, "width")
-        height = _svg_dimension(root, "height")
-        if width != CURSOR_RENDER_SIZE or height != CURSOR_RENDER_SIZE:
-            raise SystemExit(
-                f'{label}: CSS cursor SVGs must declare width="{CURSOR_RENDER_SIZE}" height="{CURSOR_RENDER_SIZE}"'
-            )
     if not (root.attrib.get("viewBox") or root.attrib.get("width")):
         raise SystemExit(f"{label}: SVG must include viewBox or width")
 
@@ -774,8 +750,20 @@ def _validate_cursor_svg(slug: str, rel: str, data: bytes, require_cursor_dimens
 def build_cursorset(slug: str, src_dir: Path) -> dict:
     meta = json.loads((src_dir / "manifest.json").read_text())
     cursors = meta.get("cursors") or {}
-    if not isinstance(cursors, dict) or "default" not in cursors:
-        raise SystemExit(f"cursor-set {slug}: manifest must declare cursors.default")
+    if cursors:
+        raise SystemExit(f"cursor-set {slug}: cursor image files are no longer supported; use effects instead")
+    effects = meta.get("effects") or {}
+    if not isinstance(effects, dict):
+        raise SystemExit(f"cursor-set {slug}: effects must be an object when provided")
+    for key, value in effects.items():
+        if key not in CURSOR_EFFECT_KEYS:
+            raise SystemExit(f"cursor-set {slug}: unsupported effect token {key!r}")
+        if key == "recipe":
+            if not isinstance(value, str) or value not in CURSOR_EFFECT_RECIPES:
+                raise SystemExit(f"cursor-set {slug}: unsupported effect recipe {value!r}")
+            continue
+        if not isinstance(value, str) or not re.fullmatch(r"#[0-9A-Fa-f]{3,8}", value):
+            raise SystemExit(f"cursor-set {slug}: effect token {key!r} must be a hex color")
 
     files: dict[str, bytes] = {}
     manifest = {
@@ -790,30 +778,12 @@ def build_cursorset(slug: str, src_dir: Path) -> dict:
         "category": meta.get("category", "Community"),
         "accent": meta.get("accent", "#38e8ff"),
         "preview": meta.get("preview", "preview.svg"),
-        "cursors": cursors,
+        "effects": effects,
+        "cursors": {},
     }
     files["manifest.json"] = json.dumps(manifest, indent=2).encode() + b"\n"
 
     rels: set[str] = set()
-    cursor_rels: set[str] = set()
-    for kind, spec in cursors.items():
-        if kind not in CURSOR_KINDS:
-            raise SystemExit(f"cursor-set {slug}: unsupported cursor kind {kind!r}")
-        if not isinstance(spec, dict):
-            raise SystemExit(f"cursor-set {slug}: cursor {kind!r} must be an object")
-        rel = spec.get("file")
-        hotspot = spec.get("hotspot")
-        if not isinstance(rel, str) or not rel:
-            raise SystemExit(f"cursor-set {slug}: cursor {kind!r} missing file")
-        if Path(rel).name != rel or "\\" in rel or ".." in rel:
-            raise SystemExit(f"cursor-set {slug}: cursor path {rel!r} must be flat")
-        if Path(rel).suffix.lower() != ".svg":
-            raise SystemExit(f"cursor-set {slug}: cursor {rel!r} must be SVG")
-        if not (isinstance(hotspot, list) and len(hotspot) == 2 and all(isinstance(v, int) for v in hotspot)):
-            raise SystemExit(f"cursor-set {slug}: cursor {kind!r} hotspot must be [x, y] ints")
-        rels.add(rel)
-        cursor_rels.add(rel)
-
     preview = manifest["preview"]
     if isinstance(preview, str) and preview:
         rels.add(preview)
@@ -823,7 +793,7 @@ def build_cursorset(slug: str, src_dir: Path) -> dict:
         if not svg_path.is_file():
             raise SystemExit(f"cursor-set {slug}: missing {rel}")
         data = svg_path.read_bytes()
-        _validate_cursor_svg(slug, rel, data, rel in cursor_rels)
+        _validate_cursor_preview_svg(slug, rel, data)
         files[rel] = data
 
     bundle = OUT_BUNDLES / f"cursor-set-{slug}.wp"

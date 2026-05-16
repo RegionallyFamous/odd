@@ -1,0 +1,20 @@
+{
+  "type": "cursor-set",
+  "slug": "solar-orbit-cursors",
+  "name": "Solar Orbit Cursor Effects",
+  "label": "Solar Orbit",
+  "category": "ODD Effects",
+  "accent": "#ffb000",
+  "preview": "preview.svg",
+  "description": "A native cursor with warm corona rings, comet wake, and bright wait/progress orbit.",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "effects": {
+    "accent": "#ffb000",
+    "spark": "#ff477e",
+    "warm": "#5eead4",
+    "ink": "#1b1028",
+    "recipe": "solar-orbit"
+  },
+  "cursors": {}
+}

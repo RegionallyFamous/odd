@@ -11,7 +11,7 @@ The universal `.wp` installer populates five per-type subtrees under
 |----------------------------------|---------------------|--------------------------------|
 | `wp-content/uploads/odd/apps/<slug>/`    | pre-public app loader | HTML/JS/CSS bundle + manifest |
 | `wp-content/uploads/odd/icon-sets/<slug>/` | 1.0 baseline      | PNG/WebP icons + `manifest.json` |
-| `wp-content/uploads/odd/cursor-sets/<slug>/` | 1.0 baseline    | SVG cursors + `manifest.json`  |
+| `wp-content/uploads/odd/cursor-sets/<slug>/` | 1.0 baseline    | living-layer preview art + `manifest.json` |
 | `wp-content/uploads/odd/scenes/<slug>/`  | 1.0 baseline        | JS scene + preview + wallpaper |
 | `wp-content/uploads/odd/widgets/<slug>/` | 1.0 baseline        | JS/CSS widget + `manifest.json`|
 
@@ -77,8 +77,8 @@ and the cursor CSS endpoint.
 - [x] **Raster image validation.** Installed icon images are parsed with
       server image metadata, must match their PNG/WebP extension, must be
       square, and must stay within the icon-set size limits.
-- [x] **Passive cursor SVG validation.** Installed cursor SVGs are
-      parsed and rejected if they contain scriptable elements,
+- [x] **Passive cursor preview validation.** Installed cursor effect
+      preview SVGs are parsed and rejected if they contain scriptable elements,
       `foreignObject`, embedded images, event handlers, external
       references, or scriptable URL values.
 - [x] **No cross-subtree reads.** The registry only walks

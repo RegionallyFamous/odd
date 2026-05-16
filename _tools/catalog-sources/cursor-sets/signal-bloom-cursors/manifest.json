@@ -1,0 +1,20 @@
+{
+  "type": "cursor-set",
+  "slug": "signal-bloom-cursors",
+  "name": "Signal Bloom Cursor Effects",
+  "label": "Signal Bloom",
+  "category": "ODD Effects",
+  "accent": "#68fff0",
+  "preview": "preview.svg",
+  "description": "A native cursor with CRT ping rings, pixel wake, and radar-bright signal sparks.",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "effects": {
+    "accent": "#68fff0",
+    "spark": "#ff4fd8",
+    "warm": "#ffd166",
+    "ink": "#07131f",
+    "recipe": "signal-bloom"
+  },
+  "cursors": {}
+}

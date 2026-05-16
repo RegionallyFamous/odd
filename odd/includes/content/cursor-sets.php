@@ -85,19 +85,19 @@ function oddout_cursorset_bundle_has( $slug ) {
 	return isset( $index[ $slug ] );
 }
 
-function oddout_cursorset_svg_scrub( $svg ) {
+function oddout_cursorset_preview_svg_validate( $svg ) {
 	$svg = (string) $svg;
 	if ( '' === $svg ) {
-		return new WP_Error( 'empty_svg', __( 'SVG file is empty.', 'odd-outlandish-desktop-decorator' ) );
+		return new WP_Error( 'empty_svg', __( 'Preview SVG file is empty.', 'odd-outlandish-desktop-decorator' ) );
 	}
 	if ( preg_match( '/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $svg ) ) {
-		return new WP_Error( 'invalid_svg', __( 'SVG contains control bytes and cannot be installed.', 'odd-outlandish-desktop-decorator' ) );
+		return new WP_Error( 'invalid_svg', __( 'Preview SVG contains control bytes and cannot be installed.', 'odd-outlandish-desktop-decorator' ) );
 	}
 	if ( false === stripos( $svg, '<svg' ) ) {
-		return new WP_Error( 'invalid_svg', __( 'File is not an SVG.', 'odd-outlandish-desktop-decorator' ) );
+		return new WP_Error( 'invalid_svg', __( 'Preview file is not an SVG.', 'odd-outlandish-desktop-decorator' ) );
 	}
 	if ( ! class_exists( 'DOMDocument' ) ) {
-		return new WP_Error( 'svg_parser_unavailable', __( 'Server cannot safely validate SVG files.', 'odd-outlandish-desktop-decorator' ) );
+		return new WP_Error( 'svg_parser_unavailable', __( 'Server cannot safely validate SVG preview files.', 'odd-outlandish-desktop-decorator' ) );
 	}
 
 	$doc = new DOMDocument();
@@ -109,7 +109,7 @@ function oddout_cursorset_svg_scrub( $svg ) {
 	$document_element = $doc->documentElement;
 	// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOMElement API property.
 	if ( ! $ok || ! $document_element || 'svg' !== strtolower( $document_element->localName ) ) {
-		return new WP_Error( 'invalid_svg', __( 'File is not a well-formed SVG.', 'odd-outlandish-desktop-decorator' ) );
+		return new WP_Error( 'invalid_svg', __( 'Preview file is not a well-formed SVG.', 'odd-outlandish-desktop-decorator' ) );
 	}
 
 	$blocked_elements = array_flip( array( 'script', 'foreignObject', 'iframe', 'object', 'embed', 'audio', 'video', 'canvas', 'image' ) );
@@ -117,7 +117,7 @@ function oddout_cursorset_svg_scrub( $svg ) {
 		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOMElement API property.
 		$tag = $node->localName;
 		if ( isset( $blocked_elements[ $tag ] ) ) {
-			return new WP_Error( 'disallowed_svg_element', sprintf( /* translators: %s SVG element */ __( 'SVG contains disallowed element: %s', 'odd-outlandish-desktop-decorator' ), $tag ) );
+			return new WP_Error( 'disallowed_svg_element', sprintf( /* translators: %s SVG element */ __( 'Preview SVG contains disallowed element: %s', 'odd-outlandish-desktop-decorator' ), $tag ) );
 		}
 		if ( ! $node->hasAttributes() ) {
 			continue;
@@ -127,21 +127,21 @@ function oddout_cursorset_svg_scrub( $svg ) {
 			$name  = '' !== $attr->prefix ? $attr->prefix . ':' . $attr->localName : $attr->localName;
 			$value = trim( (string) $attr->value );
 			if ( 0 === stripos( $name, 'on' ) ) {
-				return new WP_Error( 'disallowed_svg_attribute', __( 'SVG event handler attributes are not allowed.', 'odd-outlandish-desktop-decorator' ) );
+				return new WP_Error( 'disallowed_svg_attribute', __( 'Preview SVG event handler attributes are not allowed.', 'odd-outlandish-desktop-decorator' ) );
 			}
 			if ( in_array( $name, array( 'href', 'xlink:href' ), true ) && '' !== $value && '#' !== $value[0] ) {
-				return new WP_Error( 'disallowed_svg_reference', __( 'SVG external references are not allowed.', 'odd-outlandish-desktop-decorator' ) );
+				return new WP_Error( 'disallowed_svg_reference', __( 'Preview SVG external references are not allowed.', 'odd-outlandish-desktop-decorator' ) );
 			}
 			if ( false !== stripos( $value, 'url(' ) && ! preg_match( '/url\(\s*#[^)]+\)/i', $value ) ) {
-				return new WP_Error( 'disallowed_svg_reference', __( 'SVG external url() references are not allowed.', 'odd-outlandish-desktop-decorator' ) );
+				return new WP_Error( 'disallowed_svg_reference', __( 'Preview SVG external url() references are not allowed.', 'odd-outlandish-desktop-decorator' ) );
 			}
 			if ( preg_match( '/(?:javascript|data|vbscript)\s*:/i', $value ) ) {
-				return new WP_Error( 'disallowed_svg_reference', __( 'SVG scriptable URL values are not allowed.', 'odd-outlandish-desktop-decorator' ) );
+				return new WP_Error( 'disallowed_svg_reference', __( 'Preview SVG scriptable URL values are not allowed.', 'odd-outlandish-desktop-decorator' ) );
 			}
 		}
 	}
 
-	return $svg;
+	return true;
 }
 
 function oddout_cursorset_bundle_validate( $tmp_path, $filename, ZipArchive $zip, array $manifest ) {
@@ -150,47 +150,8 @@ function oddout_cursorset_bundle_validate( $tmp_path, $filename, ZipArchive $zip
 		return $header;
 	}
 
-	if ( empty( $manifest['cursors'] ) || ! is_array( $manifest['cursors'] ) ) {
-		return new WP_Error( 'invalid_manifest', __( 'Cursor set manifest.json must include a "cursors" map.', 'odd-outlandish-desktop-decorator' ) );
-	}
-
-	$allowed = function_exists( 'oddout_cursors_allowed_kinds' ) ? oddout_cursors_allowed_kinds() : array( 'default', 'pointer', 'text', 'grab', 'grabbing', 'crosshair', 'not-allowed', 'wait', 'help', 'progress' );
-	$cursors = array();
-	foreach ( $manifest['cursors'] as $kind => $def ) {
-		$clean_kind = sanitize_key( (string) $kind );
-		if ( ! in_array( $clean_kind, $allowed, true ) || ! is_array( $def ) ) {
-			return new WP_Error( 'invalid_cursor_key', __( 'Cursor set includes an unsupported cursor kind.', 'odd-outlandish-desktop-decorator' ) );
-		}
-		$rel = isset( $def['file'] ) ? oddout_content_sanitize_relative_path( (string) $def['file'] ) : '';
-		if ( '' === $rel ) {
-			return new WP_Error( 'invalid_cursor_path', __( 'Cursor file path is invalid.', 'odd-outlandish-desktop-decorator' ) );
-		}
-		if ( 'svg' !== strtolower( pathinfo( $rel, PATHINFO_EXTENSION ) ) ) {
-			return new WP_Error( 'invalid_cursor_ext', __( 'Cursor files must be SVG.', 'odd-outlandish-desktop-decorator' ) );
-		}
-		$svg = $zip->getFromName( $rel );
-		if ( false === $svg ) {
-			return new WP_Error( 'missing_cursor', __( 'A cursor file declared in manifest.json was not found in the bundle.', 'odd-outlandish-desktop-decorator' ) );
-		}
-		$scrubbed = oddout_cursorset_svg_scrub( $svg );
-		if ( is_wp_error( $scrubbed ) ) {
-			return $scrubbed;
-		}
-		$hotspot = isset( $def['hotspot'] ) && is_array( $def['hotspot'] ) ? array_values( $def['hotspot'] ) : array( 0, 0 );
-		if ( count( $hotspot ) < 2 ) {
-			return new WP_Error( 'invalid_hotspot', __( 'Cursor hotspots must be [x, y] integer pairs.', 'odd-outlandish-desktop-decorator' ) );
-		}
-		$cursors[ $clean_kind ] = array(
-			'file'    => $rel,
-			'hotspot' => array(
-				max( 0, min( 128, (int) $hotspot[0] ) ),
-				max( 0, min( 128, (int) $hotspot[1] ) ),
-			),
-		);
-	}
-
-	if ( empty( $cursors['default'] ) ) {
-		return new WP_Error( 'missing_default_cursor', __( 'Cursor set must include a default cursor.', 'odd-outlandish-desktop-decorator' ) );
+	if ( ! empty( $manifest['cursors'] ) ) {
+		return new WP_Error( 'invalid_manifest', __( 'Cursor effect packs must not include cursor image files.', 'odd-outlandish-desktop-decorator' ) );
 	}
 
 	$preview = '';
@@ -199,6 +160,13 @@ function oddout_cursorset_bundle_validate( $tmp_path, $filename, ZipArchive $zip
 		if ( '' === $preview_rel || false === $zip->getFromName( $preview_rel ) ) {
 			return new WP_Error( 'invalid_preview', __( 'Preview file is not present in the bundle.', 'odd-outlandish-desktop-decorator' ) );
 		}
+		if ( 'svg' !== strtolower( pathinfo( $preview_rel, PATHINFO_EXTENSION ) ) ) {
+			return new WP_Error( 'invalid_preview', __( 'Cursor effect preview files must be SVG.', 'odd-outlandish-desktop-decorator' ) );
+		}
+		$preview_valid = oddout_cursorset_preview_svg_validate( $zip->getFromName( $preview_rel ) );
+		if ( is_wp_error( $preview_valid ) ) {
+			return $preview_valid;
+		}
 		$preview = $preview_rel;
 	}
 
@@ -206,6 +174,27 @@ function oddout_cursorset_bundle_validate( $tmp_path, $filename, ZipArchive $zip
 	if ( '' !== $accent && ! preg_match( '/^#[0-9A-Fa-f]{3,8}$/', $accent ) ) {
 		return new WP_Error( 'invalid_accent', __( 'Cursor set accent must be a hex colour like #38e8ff.', 'odd-outlandish-desktop-decorator' ) );
 	}
+
+	if ( isset( $manifest['effects'] ) && ! is_array( $manifest['effects'] ) ) {
+		return new WP_Error( 'invalid_effects', __( 'Cursor effect tokens must be an object.', 'odd-outlandish-desktop-decorator' ) );
+	}
+	$allowed_effects = array( 'accent' => true, 'spark' => true, 'warm' => true, 'ink' => true, 'recipe' => true );
+	$allowed_recipes = function_exists( 'oddout_cursors_allowed_recipes' ) ? oddout_cursors_allowed_recipes() : array( 'signal-bloom', 'gel-pop', 'paper-sparks', 'solar-orbit', 'moonlight-focus' );
+	foreach ( isset( $manifest['effects'] ) && is_array( $manifest['effects'] ) ? $manifest['effects'] : array() as $key => $value ) {
+		if ( empty( $allowed_effects[ (string) $key ] ) ) {
+			return new WP_Error( 'invalid_effects', __( 'Cursor effect packs may only define accent, spark, warm, ink, and recipe tokens.', 'odd-outlandish-desktop-decorator' ) );
+		}
+		if ( 'recipe' === (string) $key ) {
+			if ( ! is_string( $value ) || ! in_array( sanitize_key( $value ), $allowed_recipes, true ) ) {
+				return new WP_Error( 'invalid_effects', __( 'Cursor effect recipe is not supported.', 'odd-outlandish-desktop-decorator' ) );
+			}
+			continue;
+		}
+		if ( ! is_string( $value ) || ! preg_match( '/^#[0-9A-Fa-f]{3,8}$/', $value ) ) {
+			return new WP_Error( 'invalid_effects', __( 'Cursor effect tokens must be hex colours like #38e8ff.', 'odd-outlandish-desktop-decorator' ) );
+		}
+	}
+	$effects = function_exists( 'oddout_cursors_clean_effects' ) ? oddout_cursors_clean_effects( $manifest ) : array();
 
 	return array(
 		'slug'        => $header['slug'],
@@ -218,7 +207,8 @@ function oddout_cursorset_bundle_validate( $tmp_path, $filename, ZipArchive $zip
 		'category'    => isset( $manifest['category'] ) ? sanitize_text_field( (string) $manifest['category'] ) : '',
 		'accent'      => $accent ? $accent : '#38e8ff',
 		'preview'     => $preview,
-		'cursors'     => $cursors,
+		'effects'     => $effects,
+		'cursors'     => array(),
 	);
 }
 
@@ -232,27 +222,7 @@ function oddout_cursorset_bundle_install( $tmp_path, array $manifest ) {
 		return $extracted;
 	}
 
-	$dir = oddout_cursorsets_dir_for( $slug );
-	foreach ( $manifest['cursors'] as $def ) {
-		$abs = oddout_content_resolve_path( $dir, $def['file'] );
-		if ( '' === $abs ) {
-			continue;
-		}
-		$raw = file_get_contents( $abs ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-		if ( false === $raw ) {
-			continue;
-		}
-		$clean = oddout_cursorset_svg_scrub( $raw );
-		if ( is_wp_error( $clean ) ) {
-			oddout_content_rrmdir( $dir );
-			return $clean;
-		}
-		if ( ! oddout_write_file( $abs, $clean ) ) {
-			oddout_content_rrmdir( $dir );
-			return new WP_Error( 'write_failed', __( 'Could not write scrubbed cursor file.', 'odd-outlandish-desktop-decorator' ) );
-		}
-	}
-
+	$dir       = oddout_cursorsets_dir_for( $slug );
 	$canonical = wp_json_encode( $manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
 	if ( is_string( $canonical ) ) {
 		oddout_write_file( $dir . 'manifest.json', $canonical );

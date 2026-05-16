@@ -1,64 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#2a123d"/>
-      <stop offset=".54" stop-color="#151827"/>
-      <stop offset="1" stop-color="#38e8ff"/>
-    </linearGradient>
-    <radialGradient id="glow" cx=".28" cy=".22" r=".78">
-      <stop offset="0" stop-color="#ffffff" stop-opacity=".32"/>
-      <stop offset=".48" stop-color="#38e8ff" stop-opacity=".18"/>
-      <stop offset="1" stop-color="#38e8ff" stop-opacity="0"/>
-    </radialGradient>
-    <filter id="lift" x="-25%" y="-25%" width="150%" height="150%">
-      <feDropShadow dx="0" dy="28" stdDeviation="24" flood-color="#000" flood-opacity=".4"/>
-    </filter>
-    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#000" flood-opacity=".28"/>
-    </filter>
-  </defs>
-  <rect width="1024" height="1024" rx="190" fill="url(#bg)"/>
-  <rect width="1024" height="1024" rx="190" fill="url(#glow)"/>
-  <circle cx="840" cy="820" r="230" fill="#38e8ff" opacity=".14"/>
-  <circle cx="146" cy="134" r="180" fill="#ffffff" opacity=".12"/>
-  <g filter="url(#lift)" stroke-linecap="round" stroke-linejoin="round">
-    <g transform="translate(126 150) scale(17.5)">
-      <path d="M3 3 L25 15 L16 18 L12 29 Z" fill="#2a123d" stroke="#fdfaf2" stroke-width="2"/>
-      <path d="M7 7 L19 14 L14 16 L11 24 Z" fill="#38e8ff" opacity=".78"/>
-      <path d="M15 18 L20 27" stroke="#fdfaf2" stroke-width="2.4"/>
-      <path d="M15 18 L19 25" stroke="#2a123d" stroke-width="1.2"/>
-      <circle cx="11" cy="12" r="3.7" fill="#fdfaf2" stroke="#2a123d" stroke-width="1.2"/>
-      <circle cx="11" cy="12" r="1.45" fill="#111827"/>
-      <circle cx="10" cy="11" r=".65" fill="#ffffff"/>
-    </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="Oddlings cursor effects preview">
+  <rect width="1024" height="1024" rx="180" fill="#151827"/>
+  <rect x="124" y="154" width="776" height="548" rx="48" fill="#fdfaf2" stroke="#2a123d" stroke-width="10" opacity=".9"/>
+  <rect x="168" y="210" width="296" height="44" rx="22" fill="#2a123d" opacity=".2"/>
+  <rect x="168" y="286" width="508" height="34" rx="17" fill="#38e8ff" opacity=".24"/>
+  <rect x="168" y="344" width="618" height="34" rx="17" fill="#2a123d" opacity=".1"/>
+  <circle cx="380" cy="414" r="132" fill="#38e8ff" opacity=".13"/>
+  <circle cx="380" cy="414" r="84" fill="none" stroke="#38e8ff" stroke-width="18"/>
+  <circle cx="318" cy="488" r="24" fill="#38e8ff" opacity=".56"/>
+  <circle cx="282" cy="528" r="14" fill="#38e8ff" opacity=".34"/>
+  <path d="M510 314 l34 -34 M542 356 h52 M514 398 l38 38" fill="none" stroke="#ff4f8b" stroke-width="18" stroke-linecap="round"/>
+  <path d="M620 470 C684 442 748 472 778 532" fill="none" stroke="#f6b73c" stroke-width="16" stroke-linecap="round"/>
+  <g transform="translate(380 414) scale(5.6)" stroke-linejoin="round">
+    <path d="M0 0 L0 78 L22 57 L36 91 L55 83 L40 50 L70 50 Z" fill="#ffffff" stroke="#111111" stroke-width="5"/>
+    <path d="M7 13 L7 61 L21 47 L38 78" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" opacity=".9"/>
   </g>
-  <g filter="url(#soft)" font-family="Inter, system-ui, -apple-system, sans-serif" font-weight="800">
-    <rect x="548" y="176" width="300" height="104" rx="52" fill="#fdfaf2" opacity=".96"/>
-    <text x="652" y="242" font-size="38" fill="#2a123d">click</text>
-    <g transform="translate(574 196) scale(2.15)" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M9 3 C12 3 14 6 14 10 L14 15 L18 13 C21 11 25 12 27 15 C30 19 27 26 21 28 C15 30 8 27 7 20 L6 9 C6 5 7 3 9 3 Z" fill="#2a123d" stroke="#2a123d" stroke-width="2"/>
-      <path d="M10 6 L10 18 M14 15 C17 17 19 20 20 24" fill="none" stroke="#38e8ff" stroke-width="2.2"/>
-      <circle cx="10" cy="7" r="3.6" fill="#fdfaf2" stroke="#2a123d" stroke-width="1.2"/>
-      <circle cx="10" cy="7" r="1.45" fill="#111827"/>
-    </g>
-    <rect x="596" y="340" width="300" height="104" rx="52" fill="#2a123d" stroke="#fdfaf2" stroke-width="5"/>
-    <text x="700" y="406" font-size="38" fill="#fdfaf2">type</text>
-    <g transform="translate(626 360) scale(2.15)" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M10 5 H22 M16 5 V27 M10 27 H22" fill="none" stroke="#fdfaf2" stroke-width="5"/>
-      <path d="M10 5 H22 M16 5 V27 M10 27 H22" fill="none" stroke="#2a123d" stroke-width="3"/>
-      <path d="M16 8 V24" stroke="#38e8ff" stroke-width="1.7"/>
-      <circle cx="10" cy="5" r="3" fill="#fdfaf2" stroke="#2a123d" stroke-width="1.1"/>
-      <circle cx="22" cy="27" r="3" fill="#fdfaf2" stroke="#2a123d" stroke-width="1.1"/>
-    </g>
-    <rect x="548" y="504" width="300" height="104" rx="52" fill="#38e8ff"/>
-    <text x="652" y="570" font-size="38" fill="#151827">grab</text>
-    <g transform="translate(574 524) scale(2.15)" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M7 16 C7 10 11 5 17 5 C23 5 27 10 27 17 C27 24 22 29 16 29 C10 29 5 25 5 19 C5 17 6 16 7 16 Z" fill="#2a123d" stroke="#fdfaf2" stroke-width="2"/>
-      <path d="M10 17 C10 11 13 10 15 16 M15 16 C15 9 18 9 19 17 M19 17 C21 12 24 13 24 19" fill="none" stroke="#38e8ff" stroke-width="2.2"/>
-      <circle cx="14" cy="13" r="3.25" fill="#fdfaf2" stroke="#2a123d" stroke-width="1.1"/>
-      <circle cx="14" cy="13" r="1.25" fill="#111827"/>
-    </g>
-  </g>
-  <text x="104" y="854" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="84" font-weight="900" fill="#fdfaf2">Oddlings</text>
-  <text x="108" y="914" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="36" font-weight="700" fill="#38e8ff">custom cursors</text>
+  <text x="126" y="828" font-family="Inter, system-ui, sans-serif" font-size="86" font-weight="900" fill="#fdfaf2">Oddlings</text>
+  <text x="130" y="888" font-family="Inter, system-ui, sans-serif" font-size="34" font-weight="800" fill="#38e8ff">Oddling aura behind the native cursor</text>
 </svg>

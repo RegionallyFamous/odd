@@ -1,0 +1,20 @@
+{
+  "type": "cursor-set",
+  "slug": "moonlight-focus-cursors",
+  "name": "Moonlight Focus Cursor Effects",
+  "label": "Moonlight Focus",
+  "category": "ODD Effects",
+  "accent": "#8ab4ff",
+  "preview": "preview.svg",
+  "description": "A native cursor with a calm precision lens, subtle snap ring, and low-noise motion.",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "effects": {
+    "accent": "#8ab4ff",
+    "spark": "#d879ff",
+    "warm": "#f6c177",
+    "ink": "#0b1020",
+    "recipe": "moonlight-focus"
+  },
+  "cursors": {}
+}

@@ -222,10 +222,14 @@ describe( 'ODD Shop · install flows', () => {
 					slug:      'oddlings-cursors',
 					label:     'Oddlings Cursors',
 					installed: true,
-					cursors:   {
-						default: { url: '/cursor-default.svg', hotspot: [ 4, 4 ] },
-						pointer: { url: '/cursor-pointer.svg', hotspot: [ 18, 6 ] },
+					effects:   {
+						accent: '#38e8ff',
+						spark:  '#ff4f8b',
+						warm:   '#f6b73c',
+						ink:    '#19091f',
+						recipe: 'signal-bloom',
 					},
+					cursors:   {},
 				},
 			} ),
 		} ) );
@@ -246,7 +250,8 @@ describe( 'ODD Shop · install flows', () => {
 		const installedTile = host.querySelector( '[data-odd-shop-card][data-cursor-set-slug="oddlings-cursors"]' );
 		expect( installedTile, 'installed cursor set must appear in the grid' ).toBeTruthy();
 		expect( installedTile.querySelector( '.odd-shop__card-btn' ).textContent.trim() ).toBe( 'Apply' );
-		expect( window.odd.cursorSets.find( ( row ) => row.slug === 'oddlings-cursors' )?.cursors?.pointer?.url ).toBe( '/cursor-pointer.svg' );
+		expect( window.odd.cursorSets.find( ( row ) => row.slug === 'oddlings-cursors' )?.effects?.accent ).toBe( '#38e8ff' );
+		expect( window.odd.cursorSets.find( ( row ) => row.slug === 'oddlings-cursors' )?.effects?.recipe ).toBe( 'signal-bloom' );
 
 		installedTile.querySelector( '.odd-shop__card-btn' )
 			.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );

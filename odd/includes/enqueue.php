@@ -336,7 +336,8 @@ add_action(
 				'accent'      => $set['accent'],
 				'description' => $set['description'],
 				'preview'     => $set['preview'],
-				'cursors'     => $set['cursors'],
+				'effects'     => isset( $set['effects'] ) && is_array( $set['effects'] ) ? $set['effects'] : array(),
+				'cursors'     => isset( $set['cursors'] ) && is_array( $set['cursors'] ) ? $set['cursors'] : array(),
 			);
 		}
 

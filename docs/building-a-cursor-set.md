@@ -1,6 +1,6 @@
-# Building a Cursor Set
+# Building A Cursor Set
 
-Cursor sets are `.wp` bundles that theme the pointer across ODD Desktop Mode surfaces, ODD app frames, and classic wp-admin chrome for the current user. They behave like wallpapers and icon sets in the Shop: install from a catalog card, preview, then keep or roll back.
+Cursor sets are `.wp` bundles that theme ODD's living cursor layer. They do **not** replace the browser cursor image. The real cursor stays native (`default`, `pointer`, `text`, `grab`, and friends), while ODD draws a lightweight, pointer-events-none aura above Desktop Mode, ODD app frames, and classic wp-admin chrome.
 
 ## Manifest
 
@@ -10,36 +10,50 @@ Create `_tools/catalog-sources/cursor-sets/<slug>/manifest.json`:
 {
   "type": "cursor-set",
   "slug": "example-cursors",
-  "name": "Example Cursors",
-  "label": "Example Cursors",
+  "name": "Example Cursor Effects",
+  "label": "Example Effects",
   "version": "1.0.0",
   "author": "Your Name",
   "description": "A short sentence for the ODD Shop.",
   "category": "Example",
   "accent": "#38e8ff",
   "preview": "preview.svg",
-  "cursors": {
-    "default": { "file": "default.svg", "hotspot": [2, 2] },
-    "pointer": { "file": "pointer.svg", "hotspot": [9, 3] },
-    "text": { "file": "text.svg", "hotspot": [16, 16] }
-  }
+  "effects": {
+    "accent": "#38e8ff",
+    "spark": "#ff4f8b",
+    "warm": "#f6b73c",
+    "ink": "#19091f",
+    "recipe": "gel-pop"
+  },
+  "cursors": {}
 }
 ```
 
-`default` is required. Supported cursor kinds are `default`, `pointer`, `text`, `grab`, `grabbing`, `crosshair`, `not-allowed`, `wait`, `help`, and `progress`.
+`cursors` is kept as an empty compatibility field. Do not include cursor image files, hotspots, or `url(...)` cursor metadata.
+
+## Effect Tokens
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| `accent` | no | Primary aura, wake, text vein, and catalog accent color. Falls back to the top-level `accent`. |
+| `spark` | no | Pointer sparkle, not-allowed slash, and high-energy states. |
+| `warm` | no | Busy orbit, grab/grabbing warmth, and pressure states. |
+| `ink` | no | Tiny eye/pupil dot in the aura layer. |
+| `recipe` | no | One of `signal-bloom`, `gel-pop`, `paper-sparks`, `solar-orbit`, or `moonlight-focus`. Chooses the aura shape/motion treatment. |
+
+Color token values must be `#hex`. Keep the palette legible over light and dark admin surfaces; the layer is intentionally small and translucent.
 
 ## Asset Rules
 
-- Cursor files must be passive SVG files next to `manifest.json`.
-- Hotspots are `[x, y]` integer pairs, measured from the SVG's top-left corner.
-- Use intrinsic `width` and `height` attributes as well as a `viewBox`; browsers are picky about SVG cursors.
-- Keep each cursor simple. Small SVGs feel better and load faster.
-- Do not include scripts, external images, `foreignObject`, event attributes, external `href` references, or scriptable URL values. Runtime install and catalog validation reject active SVG surfaces.
-- Always provide a precise `text` cursor if your theme changes the default pointer heavily.
+- `preview.svg` is catalog preview art only. It should show the native pointer with the living aura/effects, not a sheet of SVG cursor replacements.
+- Preview SVGs must be passive XML: no scripts, event attributes, external images, `foreignObject`, external `href` references, external `url(...)`, or embedded media.
+- Optional `card.webp` can provide richer Shop art. It should feature the living layer states included in the pack.
+- Do not ship `default.svg`, `pointer.svg`, hotspot metadata, or any other cursor image files.
 
 ## Build And Validate
 
 ```bash
+odd/bin/validate-cursor-sets
 python3 _tools/build-catalog.py
 odd/bin/validate-catalog
 ```

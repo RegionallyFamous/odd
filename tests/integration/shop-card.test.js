@@ -572,7 +572,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 		seed( {
 			cursorSet: '',
 			cursorSets: [
-				{ slug: 'oddlings-cursors', label: 'Oddlings Cursors', category: 'ODD Originals', cursors: { default: { url: '/cursor.svg', hotspot: [ 1, 1 ] } } },
+				{ slug: 'oddlings-cursors', label: 'Oddlings Cursors', category: 'ODD Originals', effects: { accent: '#38e8ff' }, cursors: {} },
 			],
 		} );
 		loadPanel();

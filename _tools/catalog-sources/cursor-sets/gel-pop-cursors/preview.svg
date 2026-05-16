@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="Gel Pop cursor effects preview">
+  <rect width="1024" height="1024" rx="160" fill="#fffaf1"/>
+  <rect x="124" y="154" width="776" height="548" rx="52" fill="#ffffff" stroke="#141018" stroke-width="8" opacity=".84"/>
+  <path d="M176 232 H466 M176 304 H764 M176 366 H684" stroke="#35f2a7" stroke-width="30" stroke-linecap="round" opacity=".22"/>
+  <ellipse cx="390" cy="418" rx="132" ry="104" fill="#35f2a7" opacity=".12"/>
+  <path d="M300 404 C316 328 430 300 490 356 C548 410 506 510 420 524 C340 536 284 478 300 404 Z" fill="none" stroke="#35f2a7" stroke-width="18"/>
+  <circle cx="304" cy="522" r="34" fill="#35f2a7" opacity=".66"/>
+  <circle cx="254" cy="566" r="18" fill="#35f2a7" opacity=".42"/>
+  <circle cx="534" cy="332" r="18" fill="#ff5ea8"/>
+  <circle cx="568" cy="380" r="10" fill="#ff5ea8"/>
+  <g transform="translate(390 418) scale(5.4)" stroke-linejoin="round">
+    <path d="M0 0 L0 78 L22 57 L36 91 L55 83 L40 50 L70 50 Z" fill="#fff" stroke="#101010" stroke-width="4.2"/>
+  </g>
+  <text x="126" y="106" font-family="Inter, system-ui, sans-serif" font-size="78" font-weight="900" fill="#141018">Gel Pop</text>
+  <text x="130" y="148" font-family="Inter, system-ui, sans-serif" font-size="30" font-weight="800" fill="#1ccf84">liquid aura behind the native cursor</text>
+</svg>

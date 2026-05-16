@@ -1,10 +1,10 @@
 /**
  * ODD custom cursor runtime.
  * ---------------------------------------------------------------
- * Owns active cursor state for the shell, wp-admin, Desktop Mode
- * windows, open shadow roots, and same-origin iframe documents.
- * The stylesheet is kept as a broad fallback; pointer-time role
- * resolution applies the active cursor directly to the hovered target.
+ * Owns native cursor roles and the decorative live cursor layer for
+ * the shell, wp-admin, Desktop Mode windows, open shadow roots, and
+ * same-origin iframe documents. The actual cursor remains the browser
+ * cursor; ODD themes the lightweight aura that follows it.
  */
 ( function () {
 	'use strict';
@@ -27,6 +27,14 @@
 		wait:          true,
 		help:          true,
 		progress:      true,
+	};
+	var effectRecipes = {
+		default:           true,
+		'signal-bloom':    true,
+		'gel-pop':         true,
+		'paper-sparks':    true,
+		'solar-orbit':     true,
+		'moonlight-focus': true,
 	};
 	var state = {
 		slug:             '',
@@ -58,6 +66,7 @@
 			contact:     0,
 			coalesced:   0,
 			predicted:   0,
+			recipe:      'default',
 			trail:       [],
 			queued:      false,
 			pending:     null,
@@ -116,74 +125,6 @@
 		return null;
 	}
 
-	function cssVarCursorValue( kind, node ) {
-		var doc = nodeDoc( node );
-		var view = doc && doc.defaultView ? doc.defaultView : window;
-		var root = doc && doc.documentElement ? doc.documentElement : document.documentElement;
-		if ( ! view || ! view.getComputedStyle || ! root ) return '';
-		try {
-			var value = view.getComputedStyle( root ).getPropertyValue( '--odd-cursor-' + kind );
-			value = typeof value === 'string' ? value.trim() : '';
-			if ( value ) return value;
-			if ( kind !== 'default' ) {
-				value = view.getComputedStyle( root ).getPropertyValue( '--odd-cursor-default' );
-				return typeof value === 'string' ? value.trim() : '';
-			}
-		} catch ( e ) {}
-		return '';
-	}
-
-	function cleanHotspot( hotspot ) {
-		var x = Array.isArray( hotspot ) ? parseInt( hotspot[ 0 ], 10 ) : 0;
-		var y = Array.isArray( hotspot ) ? parseInt( hotspot[ 1 ], 10 ) : 0;
-		if ( isNaN( x ) ) x = 0;
-		if ( isNaN( y ) ) y = 0;
-		return [ x, y ];
-	}
-
-	function parseCursorValue( value ) {
-		value = typeof value === 'string' ? value : '';
-		var match = value.match( /url\(\s*(?:"([^"]+)"|'([^']+)'|([^)\s]+))\s*\)\s*(-?\d+)?\s*(-?\d+)?/i );
-		if ( ! match ) {
-			return { value: value, url: '', hotspot: [ 0, 0 ] };
-		}
-		return {
-			value:   value,
-			url:     match[ 1 ] || match[ 2 ] || match[ 3 ] || '',
-			hotspot: cleanHotspot( [ match[ 4 ], match[ 5 ] ] ),
-		};
-	}
-
-	function cursorMeta( kind, node ) {
-		kind = semanticKinds[ kind ] ? kind : 'default';
-		var set = activeSet();
-		var cursors = set && set.cursors;
-		var spec = cursors && ( cursors[ kind ] || cursors.default );
-		if ( ! spec || ! spec.url ) {
-			var tokens = configuredTokens();
-			var fallback = '';
-			if ( typeof tokens[ kind ] === 'string' && tokens[ kind ] ) {
-				fallback = tokens[ kind ];
-			} else {
-				fallback = cssVarCursorValue( kind, node );
-			}
-			var parsed = parseCursorValue( fallback );
-			parsed.kind = kind;
-			return parsed;
-		}
-		var hotspot = cleanHotspot( spec.hotspot );
-		return {
-			kind:    kind,
-			value:   'url("' + spec.url + '") ' + hotspot[ 0 ] + ' ' + hotspot[ 1 ] + ', ' + kind,
-			url:     spec.url,
-			hotspot: hotspot,
-		};
-	}
-
-	function cursorValue( kind, node ) {
-		return cursorMeta( kind, node ).value;
-	}
-
 	function nativeCursorValue( kind ) {
 		kind = semanticKinds[ kind ] ? kind : 'default';
 		if ( kind === 'grabbing' ) return 'grabbing';
@@ -198,8 +139,30 @@
 		return 'default';
 	}
 
-	function usePlainNativeCursor() {
-		return liveCursorMode() === 'aura' && liveCursorEnabledByConfig();
+	function cleanHexColor( value, fallback ) {
+		value = typeof value === 'string' ? value.trim() : '';
+		return /^#[0-9A-Fa-f]{3,8}$/.test( value ) ? value : fallback;
+	}
+
+	function cleanEffectRecipe( value ) {
+		value = typeof value === 'string' ? value.trim() : '';
+		return effectRecipes[ value ] ? value : 'default';
+	}
+
+	function liveCursorTheme() {
+		var set = activeSet() || {};
+		var effects = set.effects && typeof set.effects === 'object' ? set.effects : {};
+		var tokens = configuredTokens();
+		if ( ! effects.accent && ! effects.spark && ! effects.warm && ! effects.ink && ! effects.recipe && tokens && typeof tokens === 'object' ) {
+			effects = tokens;
+		}
+		return {
+			accent: cleanHexColor( effects.accent || set.accent, '#42d9d2' ),
+			spark:  cleanHexColor( effects.spark, '#ff4f8b' ),
+			warm:   cleanHexColor( effects.warm, '#f6b73c' ),
+			ink:    cleanHexColor( effects.ink, '#19091f' ),
+			recipe: cleanEffectRecipe( effects.recipe ),
+		};
 	}
 
 	function nodeDoc( node ) {
@@ -510,11 +473,8 @@
 	}
 
 	function applyResolved( resolved, options ) {
-		if ( ! state.href || ! resolved || ! resolved.node || ! resolved.node.style ) return null;
-		options = options || {};
-		var meta = cursorMeta( resolved.kind, resolved.node );
-		if ( ! meta.value ) return null;
-		var value = options.hideNative ? 'none' : ( usePlainNativeCursor() ? nativeCursorValue( resolved.kind ) : meta.value );
+		if ( ! ( state.slug || configuredSlug() ) || ! resolved || ! resolved.node || ! resolved.node.style ) return null;
+		var value = nativeCursorValue( resolved.kind );
 		var target = resolved.target && resolved.target.nodeType === 1 ? resolved.target : resolved.node;
 		rememberBridge( target, value, resolved.kind );
 		if ( target !== resolved.node ) {
@@ -524,9 +484,9 @@
 			role: resolved.kind,
 			source: resolved.source,
 			roleOwner: nodeSummary( resolved.node ),
-			cursor: meta.value,
+			cursor: value,
 			nativeCursor: value,
-			liveLayer: !! options.hideNative,
+			liveLayer: false,
 			time: Date.now ? Date.now() : 0,
 		} );
 		return resolved;
@@ -536,7 +496,7 @@
 		var path = pathFromEvent( event );
 		var resolved = resolvePath( path );
 		captureDragPointer( event, resolved );
-		var applied = applyResolved( resolved, { hideNative: shouldHideNativeForLayer( event, resolved, path ) } );
+		var applied = applyResolved( resolved );
 		rememberLiveCursorResolved( applied || resolved, path, event && event.target );
 		queueLiveCursorLayerUpdate( event, applied || resolved, path );
 		return applied;
@@ -683,10 +643,7 @@
 	}
 
 	function liveCursorMode() {
-		var c = cfg();
-		var shell = shellConfig();
-		var mode = c.cursorLayerMode || c.cursorOverlayMode || shell.oddCursorLayerMode || shell.cursorLayerMode || '';
-		return mode === 'replace' ? 'replace' : 'aura';
+		return 'aura';
 	}
 
 	function liveCursorUsesPrediction() {
@@ -740,7 +697,7 @@
 	function liveCursorAllowed( event, resolved, path ) {
 		var doc = nodeDoc( resolved && ( resolved.target || resolved.node ) || event && event.target );
 		var pointerType = pointerTypeForEvent( event );
-		if ( ! state.href || ! liveCursorEnabledByConfig() ) return false;
+		if ( ! ( state.slug || configuredSlug() ) || ! liveCursorEnabledByConfig() ) return false;
 		if ( doc !== document ) return false;
 		if ( reducedMotion( doc ) || ! finePointer( doc ) ) return false;
 		if ( pointerType === 'touch' ) return false;
@@ -749,31 +706,43 @@
 
 	function liveCursorCss() {
 		return (
-			'#' + LAYER_ID + '{--odd-cursor-x:0px;--odd-cursor-y:0px;--odd-cursor-aura-scale:1;--odd-cursor-eye-scale:1;--odd-cursor-pen-tilt:0deg;--odd-wake-x:0px;--odd-wake-y:0px;--odd-wake-opacity:.12;--odd-hot-x-px:0px;--odd-hot-y-px:0px;--odd-hot-x-neg:0px;--odd-hot-y-neg:0px;position:fixed;left:0;top:0;width:0;height:0;z-index:2147483647;pointer-events:none;contain:layout style;overflow:visible;opacity:0;transform:translate3d(var(--odd-cursor-x),var(--odd-cursor-y),0);transition:opacity .08s ease;will-change:transform,opacity;}' +
+			'#' + LAYER_ID + '{--odd-live-accent:#42d9d2;--odd-live-spark:#ff4f8b;--odd-live-warm:#f6b73c;--odd-live-ink:#19091f;--odd-cursor-x:0px;--odd-cursor-y:0px;--odd-cursor-aura-scale:1;--odd-cursor-eye-scale:1;--odd-cursor-pen-tilt:0deg;--odd-wake-x:0px;--odd-wake-y:0px;--odd-wake-opacity:.12;position:fixed;left:0;top:0;width:0;height:0;z-index:2147483647;pointer-events:none;contain:layout style;overflow:visible;opacity:0;transform:translate3d(var(--odd-cursor-x),var(--odd-cursor-y),0);transition:opacity .08s ease;will-change:transform,opacity;}' +
 			'#' + LAYER_ID + '[data-visible="true"]{opacity:1;}' +
 			'#' + LAYER_ID + ' span{position:absolute;display:block;pointer-events:none;}' +
-			'#' + LAYER_ID + ' .odd-live-cursor__wake{left:-7px;top:-7px;width:14px;height:14px;border-radius:999px;background:rgba(66,217,210,.72);opacity:var(--odd-wake-opacity);transform:translate3d(var(--odd-wake-x),var(--odd-wake-y),0) scale(.78);will-change:transform,opacity;}' +
-			'#' + LAYER_ID + ' .odd-live-cursor__aura{left:-14px;top:-14px;width:28px;height:28px;border-radius:999px;border:2px solid rgba(66,217,210,.82);background:rgba(66,217,210,.12);box-shadow:0 0 0 4px rgba(66,217,210,.08);transform:rotate(var(--odd-cursor-pen-tilt)) scale(var(--odd-cursor-aura-scale));will-change:transform;}' +
-			'#' + LAYER_ID + ' .odd-live-cursor__eye{left:-3px;top:-3px;width:6px;height:6px;border-radius:999px;background:#19091f;box-shadow:0 0 0 3px #42d9d2;transform:scale(var(--odd-cursor-eye-scale));}' +
-			'#' + LAYER_ID + ' .odd-live-cursor__spark{left:15px;top:-17px;width:10px;height:10px;opacity:0;transform:rotate(45deg);border:2px solid #ff4f8b;border-radius:3px;}' +
-			'#' + LAYER_ID + ' .odd-live-cursor__vein{left:-1px;top:-20px;width:3px;height:40px;border-radius:999px;background:#42d9d2;opacity:0;transform:scaleY(.72);}' +
-			'#' + LAYER_ID + ' .odd-live-cursor__orbit{left:-20px;top:-20px;width:40px;height:40px;border-radius:999px;border:3px solid transparent;border-top-color:#42d9d2;border-right-color:#f6b73c;opacity:0;animation:oddLiveCursorSpin .84s linear infinite;}' +
-			'#' + LAYER_ID + ' .odd-live-cursor__slash{left:-18px;top:-2px;width:36px;height:4px;border-radius:999px;background:#ff4f8b;opacity:0;transform:rotate(-43deg);}' +
-			'#' + LAYER_ID + ' .odd-live-cursor__shape{display:none;left:0;top:0;width:64px;height:64px;background-image:var(--odd-cursor-image,none);background-repeat:no-repeat;background-size:contain;opacity:1;transform-origin:var(--odd-hot-x-px) var(--odd-hot-y-px);transform:translate3d(var(--odd-hot-x-neg),var(--odd-hot-y-neg),0);}' +
-			'#' + LAYER_ID + '[data-mode="replace"] .odd-live-cursor__shape{display:block;}' +
-			'#' + LAYER_ID + '[data-mode="replace"] .odd-live-cursor__aura{opacity:.28;}' +
-			'#' + LAYER_ID + '[data-role="pointer"] .odd-live-cursor__aura,#' + LAYER_ID + '[data-role="help"] .odd-live-cursor__aura{border-color:rgba(255,79,139,.82);background:rgba(255,79,139,.1);box-shadow:0 0 0 4px rgba(255,79,139,.07);}' +
+			'#' + LAYER_ID + ' .odd-live-cursor__wake{left:-7px;top:-7px;width:14px;height:14px;border-radius:999px;background:var(--odd-live-accent);opacity:var(--odd-wake-opacity);transform:translate3d(var(--odd-wake-x),var(--odd-wake-y),0) scale(.78);will-change:transform,opacity;}' +
+			'#' + LAYER_ID + ' .odd-live-cursor__aura{left:-14px;top:-14px;width:28px;height:28px;border-radius:999px;border:2px solid var(--odd-live-accent);background:color-mix(in srgb,var(--odd-live-accent) 12%,transparent);box-shadow:0 0 0 4px color-mix(in srgb,var(--odd-live-accent) 8%,transparent);transform:rotate(var(--odd-cursor-pen-tilt)) scale(var(--odd-cursor-aura-scale));will-change:transform;}' +
+			'#' + LAYER_ID + ' .odd-live-cursor__eye{left:-3px;top:-3px;width:6px;height:6px;border-radius:999px;background:var(--odd-live-ink);box-shadow:0 0 0 3px var(--odd-live-accent);transform:scale(var(--odd-cursor-eye-scale));}' +
+			'#' + LAYER_ID + ' .odd-live-cursor__spark{left:15px;top:-17px;width:10px;height:10px;opacity:0;transform:rotate(45deg);border:2px solid var(--odd-live-spark);border-radius:3px;}' +
+			'#' + LAYER_ID + ' .odd-live-cursor__vein{left:-1px;top:-20px;width:3px;height:40px;border-radius:999px;background:var(--odd-live-accent);opacity:0;transform:scaleY(.72);}' +
+			'#' + LAYER_ID + ' .odd-live-cursor__orbit{left:-20px;top:-20px;width:40px;height:40px;border-radius:999px;border:3px solid transparent;border-top-color:var(--odd-live-accent);border-right-color:var(--odd-live-warm);opacity:0;animation:oddLiveCursorSpin .84s linear infinite;}' +
+			'#' + LAYER_ID + ' .odd-live-cursor__slash{left:-18px;top:-2px;width:36px;height:4px;border-radius:999px;background:var(--odd-live-spark);opacity:0;transform:rotate(-43deg);}' +
+			'#' + LAYER_ID + '[data-role="pointer"] .odd-live-cursor__aura,#' + LAYER_ID + '[data-role="help"] .odd-live-cursor__aura{border-color:var(--odd-live-spark);background:color-mix(in srgb,var(--odd-live-spark) 10%,transparent);box-shadow:0 0 0 4px color-mix(in srgb,var(--odd-live-spark) 7%,transparent);}' +
 			'#' + LAYER_ID + '[data-role="pointer"] .odd-live-cursor__spark,#' + LAYER_ID + '[data-role="help"] .odd-live-cursor__spark{opacity:.9;animation:oddLiveCursorSpark .9s ease-in-out infinite;}' +
 			'#' + LAYER_ID + '[data-role="text"] .odd-live-cursor__vein{opacity:.72;animation:oddLiveCursorPulse .95s ease-in-out infinite;}' +
-			'#' + LAYER_ID + '[data-role="text"] .odd-live-cursor__aura{width:18px;height:34px;left:-9px;top:-17px;border-radius:999px;background:rgba(66,217,210,.07);}' +
+			'#' + LAYER_ID + '[data-role="text"] .odd-live-cursor__aura{width:18px;height:34px;left:-9px;top:-17px;border-radius:999px;background:color-mix(in srgb,var(--odd-live-accent) 7%,transparent);}' +
 			'#' + LAYER_ID + '[data-role="grab"] .odd-live-cursor__aura{border-radius:42% 58% 50% 50%;}' +
-			'#' + LAYER_ID + '[data-role="grabbing"] .odd-live-cursor__aura,#' + LAYER_ID + '[data-pressed="true"] .odd-live-cursor__aura{border-radius:45% 55% 62% 38%;background:rgba(246,183,60,.13);border-color:rgba(246,183,60,.84);}' +
+			'#' + LAYER_ID + '[data-role="grabbing"] .odd-live-cursor__aura,#' + LAYER_ID + '[data-pressed="true"] .odd-live-cursor__aura{border-radius:45% 55% 62% 38%;background:color-mix(in srgb,var(--odd-live-warm) 13%,transparent);border-color:var(--odd-live-warm);}' +
 			'#' + LAYER_ID + '[data-role="wait"] .odd-live-cursor__orbit,#' + LAYER_ID + '[data-role="progress"] .odd-live-cursor__orbit{opacity:.86;}' +
-			'#' + LAYER_ID + '[data-role="wait"] .odd-live-cursor__aura,#' + LAYER_ID + '[data-role="progress"] .odd-live-cursor__aura{border-color:rgba(246,183,60,.84);background:rgba(246,183,60,.1);}' +
-			'#' + LAYER_ID + '[data-role="not-allowed"] .odd-live-cursor__aura{border-color:rgba(255,79,139,.88);background:rgba(255,79,139,.1);}' +
+			'#' + LAYER_ID + '[data-role="wait"] .odd-live-cursor__aura,#' + LAYER_ID + '[data-role="progress"] .odd-live-cursor__aura{border-color:var(--odd-live-warm);background:color-mix(in srgb,var(--odd-live-warm) 10%,transparent);}' +
+			'#' + LAYER_ID + '[data-role="not-allowed"] .odd-live-cursor__aura{border-color:var(--odd-live-spark);background:color-mix(in srgb,var(--odd-live-spark) 10%,transparent);}' +
 			'#' + LAYER_ID + '[data-role="not-allowed"] .odd-live-cursor__slash{opacity:.88;animation:oddLiveCursorBite .48s ease-out;}' +
 			'#' + LAYER_ID + '[data-soft="true"] .odd-live-cursor__spark,#' + LAYER_ID + '[data-soft="true"] .odd-live-cursor__wake,#' + LAYER_ID + '[data-soft="true"] .odd-live-cursor__orbit{display:none;}' +
-			'#' + LAYER_ID + '[data-soft="true"] .odd-live-cursor__aura{box-shadow:none;background:rgba(66,217,210,.06);}' +
+			'#' + LAYER_ID + '[data-soft="true"] .odd-live-cursor__aura{box-shadow:none;background:color-mix(in srgb,var(--odd-live-accent) 6%,transparent);}' +
+			'#' + LAYER_ID + '[data-recipe="signal-bloom"] .odd-live-cursor__aura{border-radius:999px;border-style:double;box-shadow:0 0 0 8px color-mix(in srgb,var(--odd-live-accent) 13%,transparent),0 0 0 18px color-mix(in srgb,var(--odd-live-accent) 7%,transparent);}' +
+			'#' + LAYER_ID + '[data-recipe="signal-bloom"] .odd-live-cursor__wake{width:8px;height:8px;left:-4px;top:-4px;border-radius:2px;}' +
+			'#' + LAYER_ID + '[data-recipe="signal-bloom"] .odd-live-cursor__vein{width:2px;background:repeating-linear-gradient(to bottom,var(--odd-live-accent) 0 4px,transparent 4px 7px);}' +
+			'#' + LAYER_ID + '[data-recipe="gel-pop"] .odd-live-cursor__aura{width:34px;height:30px;left:-17px;top:-15px;border-radius:58% 42% 54% 46%;border-width:3px;box-shadow:0 0 0 7px color-mix(in srgb,var(--odd-live-accent) 10%,transparent);}' +
+			'#' + LAYER_ID + '[data-recipe="gel-pop"] .odd-live-cursor__wake{width:18px;height:18px;left:-9px;top:-9px;border-radius:58% 42% 54% 46%;}' +
+			'#' + LAYER_ID + '[data-recipe="gel-pop"] .odd-live-cursor__spark{border-radius:999px;}' +
+			'#' + LAYER_ID + '[data-recipe="paper-sparks"] .odd-live-cursor__aura{border-radius:4px;transform:rotate(calc(var(--odd-cursor-pen-tilt) + 10deg)) scale(var(--odd-cursor-aura-scale));background:transparent;box-shadow:10px -8px 0 -5px var(--odd-live-spark),-9px 10px 0 -6px var(--odd-live-warm);}' +
+			'#' + LAYER_ID + '[data-recipe="paper-sparks"] .odd-live-cursor__wake{border-radius:3px;transform:translate3d(var(--odd-wake-x),var(--odd-wake-y),0) rotate(12deg) scale(.78);}' +
+			'#' + LAYER_ID + '[data-recipe="paper-sparks"] .odd-live-cursor__spark{border-radius:2px;border-width:0;background:var(--odd-live-spark);}' +
+			'#' + LAYER_ID + '[data-recipe="solar-orbit"] .odd-live-cursor__aura{border-color:var(--odd-live-warm);box-shadow:0 0 0 6px color-mix(in srgb,var(--odd-live-warm) 14%,transparent),0 0 18px 4px color-mix(in srgb,var(--odd-live-warm) 22%,transparent);}' +
+			'#' + LAYER_ID + '[data-recipe="solar-orbit"] .odd-live-cursor__orbit{opacity:.72;width:48px;height:48px;left:-24px;top:-24px;border-width:4px;}' +
+			'#' + LAYER_ID + '[data-recipe="solar-orbit"] .odd-live-cursor__wake{width:20px;height:7px;left:-10px;top:-3px;border-radius:999px;}' +
+			'#' + LAYER_ID + '[data-recipe="moonlight-focus"] .odd-live-cursor__aura{width:24px;height:24px;left:-12px;top:-12px;border-radius:999px;border-width:1px;box-shadow:0 0 0 10px color-mix(in srgb,var(--odd-live-accent) 6%,transparent);}' +
+			'#' + LAYER_ID + '[data-recipe="moonlight-focus"] .odd-live-cursor__eye{width:4px;height:4px;left:-2px;top:-2px;box-shadow:0 0 0 2px var(--odd-live-accent);}' +
+			'#' + LAYER_ID + '[data-recipe="moonlight-focus"] .odd-live-cursor__spark,#' + LAYER_ID + '[data-recipe="moonlight-focus"] .odd-live-cursor__wake{opacity:.42;}' +
 			'@keyframes oddLiveCursorSpark{0%,100%{transform:rotate(45deg) translate3d(0,0,0) scale(.72);opacity:.25;}45%{transform:rotate(45deg) translate3d(2px,-3px,0) scale(1.08);opacity:.9;}}' +
 			'@keyframes oddLiveCursorPulse{0%,100%{transform:scaleY(.65);opacity:.45;}50%{transform:scaleY(1.05);opacity:.9;}}' +
 			'@keyframes oddLiveCursorSpin{to{transform:rotate(360deg);}}' +
@@ -805,7 +774,7 @@
 				layer.setAttribute( 'data-visible', 'false' );
 				layer.setAttribute( 'data-mode', liveCursorMode() );
 				layer.setAttribute( 'data-role', 'default' );
-				layer.innerHTML = '<span class="odd-live-cursor__wake"></span><span class="odd-live-cursor__aura"></span><span class="odd-live-cursor__vein"></span><span class="odd-live-cursor__eye"></span><span class="odd-live-cursor__spark"></span><span class="odd-live-cursor__orbit"></span><span class="odd-live-cursor__slash"></span><span class="odd-live-cursor__shape"></span>';
+				layer.innerHTML = '<span class="odd-live-cursor__wake"></span><span class="odd-live-cursor__aura"></span><span class="odd-live-cursor__vein"></span><span class="odd-live-cursor__eye"></span><span class="odd-live-cursor__spark"></span><span class="odd-live-cursor__orbit"></span><span class="odd-live-cursor__slash"></span>';
 				doc.body.appendChild( layer );
 			}
 			state.layer.el = layer;
@@ -819,11 +788,6 @@
 			try { window.addEventListener( 'blur', hideLiveCursorLayer, true ); } catch ( e ) {}
 		}
 		return state.layer.el;
-	}
-
-	function cssUrlValue( url ) {
-		url = typeof url === 'string' ? url : '';
-		return 'url("' + url.replace( /\\/g, '\\\\' ).replace( /"/g, '\\"' ) + '")';
 	}
 
 	function eventSample( event, usePredicted ) {
@@ -849,7 +813,7 @@
 
 	function liveEventFrame( event ) {
 		var mode = liveCursorMode();
-		var sample = eventSample( event, mode === 'replace' || liveCursorUsesPrediction() );
+		var sample = eventSample( event, liveCursorUsesPrediction() );
 		return {
 			type:        event && event.type || '',
 			target:      event && event.target || null,
@@ -886,14 +850,6 @@
 		var target = resolved.target && resolved.target.setPointerCapture ? resolved.target : resolved.node;
 		if ( ! target || typeof target.setPointerCapture !== 'function' || typeof event.pointerId === 'undefined' ) return;
 		try { target.setPointerCapture( event.pointerId ); } catch ( e ) {}
-	}
-
-	function shouldHideNativeForLayer( event, resolved, path ) {
-		var role = resolved && resolved.kind || 'default';
-		if ( liveCursorMode() !== 'replace' ) return false;
-		if ( ! liveCursorAllowed( event, resolved, path ) ) return false;
-		if ( liveCursorSoftRole( role, resolved ) ) return false;
-		return pointerTypeForEvent( event ) !== 'pen';
 	}
 
 	function scheduleLiveCursorPaint() {
@@ -982,6 +938,7 @@
 		var contact = Math.max( 0, Math.min( 32, Math.max( width, height ) ) );
 		var wakeX = Math.max( -22, Math.min( 22, previousX - sample.x ) ) * 0.55;
 		var wakeY = Math.max( -22, Math.min( 22, previousY - sample.y ) ) * 0.55;
+		var theme = liveCursorTheme();
 		state.layer.trail[ 0 ] = { x: previousX, y: previousY };
 		state.layer.x = sample.x;
 		state.layer.y = sample.y;
@@ -997,8 +954,10 @@
 		state.layer.contact = contact;
 		state.layer.coalesced = sample.coalesced;
 		state.layer.predicted = sample.predicted;
+		state.layer.recipe = theme.recipe;
 		setLayerAttr( layer, 'data-visible', 'true' );
 		setLayerAttr( layer, 'data-role', role );
+		setLayerAttr( layer, 'data-recipe', theme.recipe );
 		setLayerAttr( layer, 'data-mode', state.layer.mode );
 		setLayerAttr( layer, 'data-pointer', state.layer.pointerType || 'mouse' );
 		setLayerAttr( layer, 'data-pressed', state.layer.pressed ? 'true' : 'false' );
@@ -1008,19 +967,13 @@
 		setLayerVar( layer, '--odd-cursor-pen-tilt', round( tiltX * 0.18 + tiltY * 0.12 + twist * 0.02, 1 ) + 'deg' );
 		setLayerVar( layer, '--odd-cursor-aura-scale', scalar( 0.98 + speed * 0.28 + pressure * 0.14 + contact * 0.005 ) );
 		setLayerVar( layer, '--odd-cursor-eye-scale', scalar( 1 + pressure * 0.22 ) );
+		setLayerVar( layer, '--odd-live-accent', theme.accent );
+		setLayerVar( layer, '--odd-live-spark', theme.spark );
+		setLayerVar( layer, '--odd-live-warm', theme.warm );
+		setLayerVar( layer, '--odd-live-ink', theme.ink );
 		setLayerVar( layer, '--odd-wake-x', px( wakeX ) );
 		setLayerVar( layer, '--odd-wake-y', px( wakeY ) );
 		setLayerVar( layer, '--odd-wake-opacity', scalar( 0.08 + speed * 0.22 ) );
-		if ( state.layer.mode === 'replace' ) {
-			var meta = cursorMeta( role, resolved.node );
-			setLayerVar( layer, '--odd-hot-x-px', ( meta.hotspot[ 0 ] || 0 ) + 'px' );
-			setLayerVar( layer, '--odd-hot-y-px', ( meta.hotspot[ 1 ] || 0 ) + 'px' );
-			setLayerVar( layer, '--odd-hot-x-neg', ( -1 * ( meta.hotspot[ 0 ] || 0 ) ) + 'px' );
-			setLayerVar( layer, '--odd-hot-y-neg', ( -1 * ( meta.hotspot[ 1 ] || 0 ) ) + 'px' );
-			setLayerVar( layer, '--odd-cursor-image', meta.url ? cssUrlValue( meta.url ) : 'none' );
-		} else {
-			setLayerVar( layer, '--odd-cursor-image', 'none' );
-		}
 		state.layer.visible = true;
 	}
 
@@ -1327,7 +1280,7 @@
 			tokens:         configuredTokens(),
 			lastResolved:   state.lastResolved,
 			layer:          {
-				enabled:     !! ( state.href && liveCursorEnabledByConfig() && ! reducedMotion( document ) && finePointer( document ) ),
+				enabled:     !! ( ( state.slug || configuredSlug() ) && liveCursorEnabledByConfig() && ! reducedMotion( document ) && finePointer( document ) ),
 				active:      !! ( state.layer.el && state.layer.el.isConnected ),
 				visible:     state.layer.visible,
 				role:        state.layer.role,
@@ -1342,6 +1295,7 @@
 				contact:     state.layer.contact,
 				coalesced:   state.layer.coalesced,
 				predicted:   state.layer.predicted,
+				recipe:      state.layer.recipe,
 			},
 			failures:       state.failures.slice(),
 			samples:        {

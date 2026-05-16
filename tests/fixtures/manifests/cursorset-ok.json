@@ -7,18 +7,12 @@
 	"version": "1.0.0",
 	"accent": "#38e8ff",
 	"preview": "preview.svg",
-	"cursors": {
-		"default": {
-			"file": "default.svg",
-			"hotspot": [2, 2]
-		},
-		"pointer": {
-			"file": "pointer.svg",
-			"hotspot": [9, 3]
-		},
-		"text": {
-			"file": "text.svg",
-			"hotspot": [16, 16]
-		}
-	}
+	"effects": {
+		"accent": "#38e8ff",
+		"spark": "#ff4f8b",
+		"warm": "#f6b73c",
+		"ink": "#19091f",
+		"recipe": "gel-pop"
+	},
+	"cursors": {}
 }

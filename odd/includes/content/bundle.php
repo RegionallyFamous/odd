@@ -261,18 +261,7 @@ function oddout_bundle_panel_row_for( array $manifest ) {
 			);
 
 		case 'cursor-set':
-			$cursors_map = array();
-			$cursors     = isset( $manifest['cursors'] ) && is_array( $manifest['cursors'] ) ? $manifest['cursors'] : array();
-			$base        = function_exists( 'oddout_cursorsets_url_for' ) ? oddout_cursorsets_url_for( $slug ) : '';
-			foreach ( $cursors as $kind => $def ) {
-				if ( ! is_array( $def ) || empty( $def['file'] ) ) {
-					continue;
-				}
-				$cursors_map[ (string) $kind ] = array(
-					'url'     => '' === $base ? '' : oddout_content_url_for_relative( $base, (string) $def['file'] ),
-					'hotspot' => isset( $def['hotspot'] ) && is_array( $def['hotspot'] ) ? array_values( $def['hotspot'] ) : array( 0, 0 ),
-				);
-			}
+			$base    = function_exists( 'oddout_cursorsets_url_for' ) ? oddout_cursorsets_url_for( $slug ) : '';
 			$preview = isset( $manifest['preview'] ) ? (string) $manifest['preview'] : '';
 			return array(
 				'slug'        => $slug,
@@ -281,7 +270,8 @@ function oddout_bundle_panel_row_for( array $manifest ) {
 				'accent'      => isset( $manifest['accent'] ) ? (string) $manifest['accent'] : '',
 				'description' => isset( $manifest['description'] ) ? (string) $manifest['description'] : '',
 				'preview'     => ( '' === $preview || '' === $base ) ? '' : oddout_content_url_for_relative( $base, $preview ),
-				'cursors'     => $cursors_map,
+				'effects'     => isset( $manifest['effects'] ) && is_array( $manifest['effects'] ) ? $manifest['effects'] : array(),
+				'cursors'     => array(),
 				'installed'   => true,
 			);
 

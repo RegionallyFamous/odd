@@ -1,0 +1,20 @@
+{
+  "type": "cursor-set",
+  "slug": "gel-pop-cursors",
+  "name": "Gel Pop Cursor Effects",
+  "label": "Gel Pop",
+  "category": "ODD Effects",
+  "accent": "#35f2a7",
+  "preview": "preview.svg",
+  "description": "A native cursor with soft liquid aura, droplet wake, and squishy grab energy.",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "effects": {
+    "accent": "#35f2a7",
+    "spark": "#ff5ea8",
+    "warm": "#ffe066",
+    "ink": "#141018",
+    "recipe": "gel-pop"
+  },
+  "cursors": {}
+}

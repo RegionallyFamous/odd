@@ -81,28 +81,21 @@
 		},
 		"cursors": {
 			"type": "object",
-			"description": "Cursor-set manifests only. Keys are cursor kinds and values declare an SVG file plus [x, y] hotspot.",
-			"patternProperties": {
-				"^(default|pointer|text|grab|grabbing|crosshair|not-allowed|wait|help|progress)$": {
-					"type": "object",
-					"required": ["file", "hotspot"],
-					"additionalProperties": false,
-					"properties": {
-						"file": {
-							"type": "string",
-							"pattern": "^[^\\0]+\\.svg$"
-						},
-						"hotspot": {
-							"type": "array",
-							"minItems": 2,
-							"maxItems": 2,
-							"items": {
-								"type": "integer",
-								"minimum": 0,
-								"maximum": 128
-							}
-						}
-					}
+			"description": "Cursor-set manifests only. Compatibility field for older clients; must be empty because ODD keeps the native browser cursor and themes only the living layer.",
+			"maxProperties": 0,
+			"additionalProperties": false
+		},
+		"effects": {
+			"type": "object",
+			"description": "Cursor-set manifests only. Living-layer color tokens.",
+			"properties": {
+				"accent": { "type": "string", "pattern": "^#[0-9A-Fa-f]{3,8}$" },
+				"spark": { "type": "string", "pattern": "^#[0-9A-Fa-f]{3,8}$" },
+				"warm": { "type": "string", "pattern": "^#[0-9A-Fa-f]{3,8}$" },
+				"ink": { "type": "string", "pattern": "^#[0-9A-Fa-f]{3,8}$" },
+				"recipe": {
+					"type": "string",
+					"enum": ["signal-bloom", "gel-pop", "paper-sparks", "solar-orbit", "moonlight-focus"]
 				}
 			},
 			"additionalProperties": false
@@ -196,14 +189,7 @@
 		},
 		{
 			"if": { "properties": { "type": { "const": "cursor-set" } }, "required": ["type"] },
-			"then": {
-				"required": ["cursors"],
-				"properties": {
-					"cursors": {
-						"required": ["default"]
-					}
-				}
-			}
+			"then": {}
 		},
 		{
 			"if": { "properties": { "type": { "const": "widget" } }, "required": ["type"] },

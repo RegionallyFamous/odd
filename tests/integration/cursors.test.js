@@ -53,10 +53,15 @@ describe( 'ODD cursor runtime', () => {
 			cursorSets:       [
 				{
 					slug:    'oddlings-cursors',
-					cursors: {
-						default: { url: 'https://example.com/default.svg', hotspot: [ 4, 4 ] },
-						pointer: { url: 'https://example.com/pointer.svg', hotspot: [ 18, 6 ] },
+					accent:  '#6ee7ff',
+					effects: {
+						accent: '#6ee7ff',
+						spark:  '#ff4f8b',
+						warm:   '#f6b73c',
+						ink:    '#101018',
+						recipe: 'gel-pop',
 					},
+					cursors: {},
 				},
 			],
 		};
@@ -167,11 +172,11 @@ describe( 'ODD cursor runtime', () => {
 		expect( window.__odd.cursors.status().lastResolved.roleOwner.className ).toContain( 'desktop-mode-icon' );
 	} );
 
-	it( 'falls back to loaded stylesheet variables when cursor-set config is stale', () => {
+	it( 'ignores stale cursor image variables when cursor-set config is stale', () => {
 		window.odd.cursorSet = 'new-cursors';
 		window.odd.cursorSets = [];
-		document.documentElement.style.setProperty( '--odd-cursor-default', 'url("https://example.com/css-default.svg") 1 2, default' );
-		document.documentElement.style.setProperty( '--odd-cursor-pointer', 'url("https://example.com/css-pointer.svg") 3 4, pointer' );
+		document.documentElement.style.setProperty( '--odd-cursor-default', 'url("https://example.com/stale-default.cur") 1 2, default' );
+		document.documentElement.style.setProperty( '--odd-cursor-pointer', 'url("https://example.com/stale-pointer.cur") 3 4, pointer' );
 		loadRuntime();
 		const item = document.createElement( 'button' );
 		document.body.appendChild( item );
@@ -179,7 +184,7 @@ describe( 'ODD cursor runtime', () => {
 		window.__odd.cursors.bridgeTarget( item );
 
 		expect( item.style.cursor ).toBe( 'pointer' );
-		expect( window.__odd.cursors.status().lastResolved.cursor ).toContain( 'css-pointer.svg' );
+		expect( window.__odd.cursors.status().lastResolved.cursor ).toBe( 'pointer' );
 		expect( window.__odd.cursors.status().lastResolved.nativeCursor ).toBe( 'pointer' );
 	} );
 
@@ -339,16 +344,23 @@ describe( 'ODD cursor runtime', () => {
 		expect( layer ).toBeTruthy();
 		expect( layer.getAttribute( 'data-visible' ) ).toBe( 'true' );
 		expect( layer.getAttribute( 'data-role' ) ).toBe( 'pointer' );
+		expect( layer.getAttribute( 'data-recipe' ) ).toBe( 'gel-pop' );
 		expect( layer.getAttribute( 'data-mode' ) ).toBe( 'aura' );
-		expect( layer.style.getPropertyValue( '--odd-cursor-image' ) ).toBe( 'none' );
 		expect( layer.style.getPropertyValue( '--odd-cursor-x' ) ).toBe( '124px' );
+		expect( layer.style.getPropertyValue( '--odd-live-accent' ) ).toBe( '#6ee7ff' );
+		expect( layer.style.getPropertyValue( '--odd-live-spark' ) ).toBe( '#ff4f8b' );
+		expect( layer.style.getPropertyValue( '--odd-live-warm' ) ).toBe( '#f6b73c' );
+		expect( layer.style.getPropertyValue( '--odd-live-ink' ) ).toBe( '#101018' );
 		expect( icon.style.cursor ).toBe( 'pointer' );
+		expect( style.textContent ).toContain( '[data-recipe="gel-pop"]' );
 		expect( style.textContent ).toContain( 'width:28px' );
-		expect( style.textContent ).toContain( '.odd-live-cursor__shape{display:none' );
+		expect( style.textContent ).not.toMatch( /cursor\s*:\s*(none|url\()/ );
+		expect( style.textContent ).not.toContain( 'odd-live-cursor__shape' );
 		expect( style.textContent ).not.toContain( 'opacity:.22' );
 		expect( style.textContent ).toContain( 'overflow:visible' );
 		expect( style.textContent ).not.toContain( 'contain:layout style paint' );
 		expect( window.__odd.cursors.status().layer.visible ).toBe( true );
+		expect( window.__odd.cursors.status().layer.recipe ).toBe( 'gel-pop' );
 		expect( window.__odd.cursors.status().layer.coalesced ).toBe( 1 );
 		expect( window.__odd.cursors.status().layer.predicted ).toBe( 0 );
 	} );
@@ -433,7 +445,7 @@ describe( 'ODD cursor runtime', () => {
 		expect( window.__odd.cursors.status().layer.enabled ).toBe( false );
 	} );
 
-	it( 'supports replace mode by hiding native cursor output on live surfaces', () => {
+	it( 'ignores stale replace mode and keeps the native cursor visible', () => {
 		window.odd.cursorLayerMode = 'replace';
 		const shell = document.createElement( 'div' );
 		shell.className = 'desktop-mode-shell';
@@ -446,11 +458,11 @@ describe( 'ODD cursor runtime', () => {
 		icon.dispatchEvent( new window.MouseEvent( 'pointermove', { bubbles: true, composed: true, clientX: 66, clientY: 77 } ) );
 
 		const layer = document.getElementById( 'odd-live-cursor' );
-		expect( layer.getAttribute( 'data-mode' ) ).toBe( 'replace' );
-		expect( layer.style.getPropertyValue( '--odd-cursor-image' ) ).toContain( 'pointer.svg' );
-		expect( icon.style.cursor ).toBe( 'none' );
-		expect( window.__odd.cursors.status().lastResolved.cursor ).toContain( 'pointer.svg' );
-		expect( window.__odd.cursors.status().lastResolved.nativeCursor ).toBe( 'none' );
+		expect( layer.getAttribute( 'data-mode' ) ).toBe( 'aura' );
+		expect( layer.style.getPropertyValue( '--odd-cursor-image' ) ).toBe( '' );
+		expect( icon.style.cursor ).toBe( 'pointer' );
+		expect( window.__odd.cursors.status().lastResolved.cursor ).toBe( 'pointer' );
+		expect( window.__odd.cursors.status().lastResolved.nativeCursor ).toBe( 'pointer' );
 	} );
 
 	it( 'captures drag pointers and presents grab as grabbing while pressed', () => {

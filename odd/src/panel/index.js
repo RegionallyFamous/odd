@@ -76,7 +76,7 @@
 	var SECTIONS = [
 		{ id: 'wallpaper', label: __( 'Wallpapers' ), icon: '🖼', glyph: 'g-wallpaper', group: 'decorate', tint: 'var(--odd-shop-tint-wallpaper)', tagline: __( 'Living desktop weather' ) },
 		{ id: 'icons',     label: __( 'Icon Sets' ),  icon: '🧩', glyph: 'g-icons',     group: 'decorate', tint: 'var(--odd-shop-tint-icons)',     tagline: __( 'Native disguises' ) },
-		{ id: 'cursors',   label: __( 'Cursors' ),    icon: '➹', glyph: 'g-cursors',   group: 'decorate', tint: 'var(--odd-shop-tint-cursors)',   tagline: __( 'Pointers with opinions' ) },
+		{ id: 'cursors',   label: __( 'Cursors' ),    icon: '➹', glyph: 'g-cursors',   group: 'decorate', tint: 'var(--odd-shop-tint-cursors)',   tagline: __( 'Living pointer auras' ) },
 		{ id: 'widgets',   label: __( 'Widgets' ),    icon: '🧷', glyph: 'g-widgets',   group: 'more',     tint: 'var(--odd-shop-tint-widgets)',   tagline: __( 'Tiny desktop creatures' ) },
 		{ id: 'apps',      label: __( 'Apps' ),       icon: '📦', glyph: 'g-apps',      group: 'more',     tint: 'var(--odd-shop-tint-apps)',      tagline: __( 'Little tools, big portals' ), gated: 'appsEnabled' },
 		{ id: 'install',   label: __( 'Install' ),    icon: '⇪', glyph: 'g-install',   group: 'you',      tint: 'var(--odd-shop-accent)',         tagline: __( 'Feed it files' ),           gated: 'canInstall' },
@@ -5248,8 +5248,8 @@
 			var wrap = el( 'div', { class: 'odd-shop__dept odd-shop__dept--cursors' } );
 			wrap.appendChild( sectionHeader(
 				'Cursors',
-				'Give your pointer a personality. Preview instantly; Apply lets it follow you through Desktop Mode and classic wp-admin.',
-				{ eyebrow: 'ODD · Pointer Wardrobe' }
+				'Keep the native pointer, then give it a living aura. Preview instantly; Apply lets the effect follow you through Desktop Mode and classic wp-admin.',
+				{ eyebrow: 'ODD · Cursor Effects' }
 			) );
 
 			var sets = Array.isArray( state.cfg.cursorSets ) ? state.cfg.cursorSets.slice() : [];
@@ -5259,8 +5259,9 @@
 				slug: 'none',
 				label: 'Default',
 				category: 'Browser',
-				description: 'Return to the stock browser and operating-system cursors.',
+				description: 'Use the stock browser and operating-system cursor without an ODD aura.',
 				preview: '',
+				effects: {},
 				cursors: {},
 			};
 			var heroPool = state.cfg.cursorSet === 'none' ? [ defaultSet ].concat( realSets ) : realSets;
@@ -5280,7 +5281,7 @@
 				var resetIcon = el( 'span', { class: 'odd-shop__reset-icon', 'aria-hidden': 'true' } );
 				resetIcon.textContent = '↺';
 				var resetText = el( 'span', { class: 'odd-shop__reset-text' } );
-				resetText.textContent = 'Want the native pointer back on duty?';
+				resetText.textContent = 'Want the native pointer without an aura?';
 				resetLeft.appendChild( resetIcon );
 				resetLeft.appendChild( resetText );
 				var resetBtn = el( 'button', { type: 'button', class: 'odd-shop__reset-btn' } );
@@ -6211,6 +6212,7 @@
 				raw.size || '',
 				raw.icons && typeof raw.icons === 'object' ? JSON.stringify( raw.icons ) : '',
 				raw.cursors && typeof raw.cursors === 'object' ? JSON.stringify( raw.cursors ) : '',
+				raw.effects && typeof raw.effects === 'object' ? JSON.stringify( raw.effects ) : '',
 			].join( '|' );
 			if ( shopRowCache[ cacheKey ] ) {
 				diagCount( 'panel.normalise.cacheHit' );
@@ -6249,6 +6251,7 @@
 				size:          raw.size || 0,
 				icons:         raw.icons && typeof raw.icons === 'object' ? raw.icons : null,
 				cursors:       raw.cursors && typeof raw.cursors === 'object' ? raw.cursors : null,
+				effects:       raw.effects && typeof raw.effects === 'object' ? raw.effects : null,
 				preview:       raw.preview || '',
 				accent:        raw.accent || '',
 				fallbackColor: raw.fallbackColor || '',
@@ -6348,6 +6351,9 @@
 			}
 			if ( cat.cursors && typeof cat.cursors === 'object' && ! isEmptyIcons( cat.cursors ) && isEmptyIcons( ins.cursors ) ) {
 				ins.cursors = cat.cursors;
+			}
+			if ( cat.effects && typeof cat.effects === 'object' && ! isEmptyIcons( cat.effects ) && isEmptyIcons( ins.effects ) ) {
+				ins.effects = cat.effects;
 			}
 			if ( cat.description && ! ins.description ) ins.description = cat.description;
 

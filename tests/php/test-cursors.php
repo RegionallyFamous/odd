@@ -52,16 +52,14 @@ class Test_Cursors extends WP_UnitTestCase {
 					'description' => 'Fixture cursor set.',
 					'version'     => '1.0.0',
 					'preview'     => 'https://example.com/preview.svg',
-					'cursors'     => array(
-						'default' => array(
-							'url'     => 'https://example.com/default.svg',
-							'hotspot' => array( 2, 3 ),
-						),
-						'text'    => array(
-							'url'     => 'https://example.com/text.svg',
-							'hotspot' => array( 16, 16 ),
-						),
+					'effects'     => array(
+						'accent' => '#38e8ff',
+						'spark'  => '#ff4f8b',
+						'warm'   => '#f6b73c',
+						'ink'    => '#19091f',
+						'recipe' => 'signal-bloom',
 					),
+					'cursors'     => array(),
 					'source'      => 'test',
 				);
 				return $sets;
@@ -75,7 +73,8 @@ class Test_Cursors extends WP_UnitTestCase {
 		$set = oddout_cursors_get_set( 'test-cursors' );
 		$this->assertIsArray( $set );
 		$this->assertSame( 'Test Cursors', $set['label'] );
-		$this->assertArrayHasKey( 'default', $set['cursors'] );
+		$this->assertSame( '#38e8ff', $set['effects']['accent'] );
+		$this->assertSame( array(), $set['cursors'] );
 	}
 
 	public function test_active_cursor_set_is_per_user_and_validated() {
@@ -88,14 +87,16 @@ class Test_Cursors extends WP_UnitTestCase {
 		$this->assertFalse( oddout_cursors_set_active_slug( 'missing-cursors', $user_id ) );
 	}
 
-	public function test_css_builder_outputs_cursor_rules_with_hotspots() {
+	public function test_css_builder_outputs_native_cursor_rules_and_effect_tokens() {
 		$this->add_fixture_cursor_set();
 		$css = oddout_cursors_build_css( oddout_cursors_get_set( 'test-cursors' ) );
 
-		$this->assertStringContainsString( 'url("https://example.com/default.svg") 2 3, default', $css );
-		$this->assertStringContainsString( 'url("https://example.com/text.svg") 16 16, text', $css );
-		$this->assertStringContainsString( 'url("https://example.com/default.svg") 2 3, grab', $css );
-		$this->assertStringContainsString( '--odd-cursor-default:', $css );
+		$this->assertStringNotContainsString( 'url(', $css );
+		$this->assertStringContainsString( '--odd-cursor-default: default;', $css );
+		$this->assertStringContainsString( '--odd-cursor-pointer: pointer;', $css );
+		$this->assertStringContainsString( '--odd-live-cursor-accent: #38e8ff;', $css );
+		$this->assertStringContainsString( '--odd-live-cursor-spark: #ff4f8b;', $css );
+		$this->assertStringContainsString( '--odd-live-cursor-recipe: signal-bloom;', $css );
 		$this->assertStringContainsString( '[data-odd-cursor="text"]', $css );
 		$this->assertStringContainsString( 'body.desktop-mode-active [data-odd-cursor="pointer"]', $css );
 		$this->assertStringContainsString( '.desktop-mode-icon', $css );
@@ -142,19 +143,20 @@ class Test_Cursors extends WP_UnitTestCase {
 		$this->assertSame( 'test-cursors', $contract['slug'] );
 		$this->assertSame( $version, $contract['version'] );
 		$this->assertStringContainsString( 'set=test-cursors', $contract['stylesheet'] );
-		$this->assertArrayHasKey( 'default', $contract['tokens'] );
-		$this->assertStringContainsString( 'default.svg', $contract['tokens']['default'] );
+		$this->assertSame( '#38e8ff', $contract['tokens']['accent'] );
+		$this->assertSame( '#ff4f8b', $contract['tokens']['spark'] );
+		$this->assertSame( 'signal-bloom', $contract['tokens']['recipe'] );
 	}
 
-	public function test_cursor_stylesheet_version_changes_with_desktop_hover_contract() {
+	public function test_cursor_stylesheet_version_uses_living_effects_contract() {
 		$this->add_fixture_cursor_set();
 		$version       = oddout_cursors_stylesheet_version( 'test-cursors' );
 		$pre_hover_parts = array(
 			defined( 'ODDOUT_VERSION' ) ? ODDOUT_VERSION : '0',
+			'desktop-hover2',
 			'test-cursors',
 			'1.0.0',
-			'default:https://example.com/default.svg:2,3',
-			'text:https://example.com/text.svg:16,16',
+			'default:stale-cursor-url:2,3',
 		);
 		$pre_hover_digest = substr( md5( implode( '|', $pre_hover_parts ) ), 0, 16 );
 
@@ -162,26 +164,26 @@ class Test_Cursors extends WP_UnitTestCase {
 		$this->assertNotSame( $pre_hover_digest, $version );
 	}
 
-	public function test_cursor_urls_upgrade_for_playground_https_proxy() {
+	public function test_cursor_stylesheet_urls_upgrade_for_playground_https_proxy() {
 		$server = $_SERVER;
 		try {
 			unset( $_SERVER['HTTPS'], $_SERVER['HTTP_X_FORWARDED_PROTO'], $_SERVER['SERVER_PORT'] );
 			$_SERVER['HTTP_HOST'] = 'playground.wordpress.net';
 
 			$this->assertSame(
-				'https://playground.wordpress.net/scope:test/wp-content/uploads/odd/cursor-sets/default.svg',
-				oddout_cursors_url_current_scheme( 'http://playground.wordpress.net/scope:test/wp-content/uploads/odd/cursor-sets/default.svg' )
+				'https://playground.wordpress.net/scope:test/wp-json/odd/v1/cursors/active.css?set=fancy',
+				oddout_cursors_url_current_scheme( 'http://playground.wordpress.net/scope:test/wp-json/odd/v1/cursors/active.css?set=fancy' )
 			);
 			$this->assertSame(
-				'https://example.com/default.svg',
-				oddout_cursors_url_current_scheme( 'https://example.com/default.svg' )
+				'https://example.com/wp-json/odd/v1/cursors/active.css?set=fancy',
+				oddout_cursors_url_current_scheme( 'https://example.com/wp-json/odd/v1/cursors/active.css?set=fancy' )
 			);
 		} finally {
 			$_SERVER = $server;
 		}
 	}
 
-	public function test_installed_cursor_urls_use_rest_asset_endpoint_when_upload_baseurl_is_empty() {
+	public function test_installed_cursor_previews_use_rest_asset_endpoint_when_upload_baseurl_is_empty() {
 		$this->temp_upload_base = trailingslashit( sys_get_temp_dir() ) . 'odd-cursor-uploads-' . wp_generate_uuid4();
 		$set_dir                = $this->temp_upload_base . '/odd/cursor-sets/fancy';
 		wp_mkdir_p( $set_dir );
@@ -192,16 +194,17 @@ class Test_Cursors extends WP_UnitTestCase {
 					'name'    => 'Fancy Cursors',
 					'label'   => 'Fancy Cursors',
 					'version' => '1.0.0',
-					'cursors' => array(
-						'default' => array(
-							'file'    => 'default.svg',
-							'hotspot' => array( 2, 3 ),
-						),
+					'preview' => 'preview.svg',
+					'effects' => array(
+						'accent' => '#6ee7ff',
+						'spark'  => '#ff4f8b',
+						'recipe' => 'moonlight-focus',
 					),
+					'cursors' => array(),
 				)
 			)
 		);
-		file_put_contents( $set_dir . '/default.svg', '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"></svg>' );
+		file_put_contents( $set_dir . '/preview.svg', '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"></svg>' );
 
 		add_filter(
 			'upload_dir',
@@ -216,18 +219,20 @@ class Test_Cursors extends WP_UnitTestCase {
 		);
 
 		$sets = oddout_cursors_get_sets( true );
-		$url  = oddout_cursorsets_asset_url( 'fancy', 'default.svg' );
+		$url  = oddout_cursorsets_asset_url( 'fancy', 'preview.svg' );
 
 		$this->assertArrayHasKey( 'fancy', $sets );
-		$this->assertSame( realpath( $set_dir . '/default.svg' ), oddout_cursorsets_asset_path( 'fancy', 'default.svg' ) );
+		$this->assertSame( realpath( $set_dir . '/preview.svg' ), oddout_cursorsets_asset_path( 'fancy', 'preview.svg' ) );
 		$this->assertStringNotContainsString( '/uploads/odd/', $url );
-		$this->assertStringContainsString( 'file=default.svg', $url );
+		$this->assertStringContainsString( 'file=preview.svg', $url );
 		$this->assertSame(
 			$url,
-			$sets['fancy']['cursors']['default']['url']
+			$sets['fancy']['preview']
 		);
+		$this->assertSame( '#6ee7ff', $sets['fancy']['effects']['accent'] );
+		$this->assertSame( 'moonlight-focus', $sets['fancy']['effects']['recipe'] );
 		$this->assertStringContainsString(
-			'url("' . $url . '") 2 3, default',
+			'--odd-live-cursor-accent: #6ee7ff;',
 			oddout_cursors_build_css( $sets['fancy'] )
 		);
 	}

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="Moonlight Focus cursor effects preview">
+  <rect width="1024" height="1024" rx="160" fill="#0b1020"/>
+  <rect x="124" y="154" width="776" height="548" rx="48" fill="#f7f9ff" stroke="#8ab4ff" stroke-width="6" opacity=".92"/>
+  <path d="M176 232 H466 M176 304 H764 M176 366 H684" stroke="#8ab4ff" stroke-width="28" stroke-linecap="round" opacity=".18"/>
+  <circle cx="390" cy="418" r="128" fill="#8ab4ff" opacity=".08"/>
+  <circle cx="390" cy="418" r="88" fill="none" stroke="#8ab4ff" stroke-width="8"/>
+  <circle cx="390" cy="418" r="54" fill="none" stroke="#8ab4ff" stroke-width="3" opacity=".76"/>
+  <path d="M548 332 l28 -28 M578 374 h46" stroke="#d879ff" stroke-width="12" stroke-linecap="round" opacity=".7"/>
+  <circle cx="292" cy="526" r="16" fill="#8ab4ff" opacity=".36"/>
+  <circle cx="256" cy="560" r="9" fill="#8ab4ff" opacity=".24"/>
+  <g transform="translate(390 418) scale(5.4)" stroke-linejoin="round">
+    <path d="M0 0 L0 78 L22 57 L36 91 L55 83 L40 50 L70 50 Z" fill="#fff" stroke="#101010" stroke-width="4.2"/>
+  </g>
+  <text x="126" y="106" font-family="Inter, system-ui, sans-serif" font-size="68" font-weight="900" fill="#f7f9ff">Moonlight Focus</text>
+  <text x="130" y="148" font-family="Inter, system-ui, sans-serif" font-size="30" font-weight="800" fill="#8ab4ff">quiet lens behind the native cursor</text>
+</svg>

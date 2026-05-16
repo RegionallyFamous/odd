@@ -63,7 +63,7 @@ _tools/                             author-side content, never shipped to users
 │   ├── starter-pack.json           { scenes:[…], iconSets:[…], cursorSets:[…], widgets:[…], apps:[…] }
 │   ├── scenes/<slug>/              scene.js + meta.json + preview.webp + wallpaper.webp
 │   ├── icon-sets/<slug>/           manifest.json + PNG/WebP icons
-│   ├── cursor-sets/<slug>/         manifest.json + SVG cursors + preview.svg
+│   ├── cursor-sets/<slug>/         manifest.json + living-layer preview.svg
 │   ├── widgets/<slug>/             widget.js + widget.css? + manifest.json + preview.svg?
 │   └── apps/<slug>/                prebuilt bundle.wp + icon.svg + meta.json
 ├── build-catalog.py                deterministic builder → site/catalog/v1/
@@ -382,7 +382,7 @@ wp-content/
     │   └── .tmp-<slug>-<rand>/      transient staging dir (removed after extract)
     ├── scenes/<slug>/               scene.js + preview.webp + wallpaper.webp + manifest.json
     ├── icon-sets/<slug>/            manifest.json + PNG/WebP icons
-    ├── cursor-sets/<slug>/          manifest.json + SVG cursors
+    ├── cursor-sets/<slug>/          manifest.json + living-layer preview art
     └── widgets/<slug>/              widget.js + widget.css + manifest.json
 ```
 

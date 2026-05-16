@@ -35,7 +35,7 @@ Every catalog item gets a generated `card.webp` in its source folder. The catalo
 
 - **Scenes:** show the world as a destination poster without text. Keep the wallpaper subject recognizable, but frame it as a miniature desktop environment.
 - **Icon sets:** show four or five physical icon tiles in that set's theme, staged on the same dark ODD surface.
-- **Cursor sets:** show the cursor character as a glowing tool or creature, with motion hints and pointer trails.
+- **Cursor sets:** show the native cursor with a living aura, motion wake, role-state sparks, and eye-dot personality. Do not imply the pack replaces the system cursor image.
 - **Widgets:** show the widget as a tactile desktop object with one exaggerated feature.
 - **Apps:** show the app's job as an object-based metaphor, not a screenshot.
 

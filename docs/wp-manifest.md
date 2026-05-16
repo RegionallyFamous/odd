@@ -151,30 +151,32 @@ Covered in full by [Building a Cursor Set](building-a-cursor-set.md).
 {
     "type":      "cursor-set",
     "slug":      "oddlings",
-    "name":      "Oddlings",
+    "name":      "Oddlings Cursor Effects",
     "version":   "1.0.0",
     "category": "ODD Defaults",
     "accent":    "#38e8ff",
     "preview":   "preview.svg",
-    "cursors": {
-        "default": { "file": "default.svg", "hotspot": [2, 2] },
-        "pointer": { "file": "pointer.svg", "hotspot": [9, 3] },
-        "text":    { "file": "text.svg", "hotspot": [16, 16] }
-    }
+    "effects": {
+        "accent": "#38e8ff",
+        "spark":  "#ff4f8b",
+        "warm":   "#f6b73c",
+        "ink":    "#19091f",
+        "recipe": "gel-pop"
+    },
+    "cursors": {}
 }
 ```
 
 | Field     | Required | Notes                                                                      |
 |-----------|----------|----------------------------------------------------------------------------|
 | `accent`  | no       | `#hex`. Paints the Shop tile fallback and catalog metadata.                |
-| `preview` | no       | Relative path to an SVG preview tile.                                      |
-| `cursors` | yes      | Map of supported cursor kinds to `{ file, hotspot: [x, y] }`. `default` is required. |
+| `preview` | no       | Relative path to passive SVG preview art.                                  |
+| `effects` | no       | Living-layer tokens: `accent`, `spark`, `warm`, `ink`, and optional `recipe`. |
+| `cursors` | no       | Compatibility field. Must be empty when present.                           |
 
-Cursor SVGs use passive-SVG validation: no `<script>`, `foreignObject`,
-embedded images, event attributes, external `xlink:href`/`href`,
-scriptable URL values, or control bytes outside `\t\n\r`. They apply to
-Desktop Mode, ODD app frames, and classic wp-admin chrome for the current
-user; editor iframes and the public front end keep native cursors.
+Cursor sets keep the browser cursor native and theme ODD's top-level
+living cursor layer. They must not include cursor SVG files, hotspot
+metadata, or CSS cursor-image URLs.
 
 ### Type: `scene`
 
@@ -295,7 +297,7 @@ response and as friendly copy in the Shop topbar pill.
 |------------|------------------------------------------------------------------------------------------------|
 | `app`      | `entry` matches the entry regex + file exists in the archive.                                  |
 | `icon-set` | `icons` present, all 14 semantic keys mapped, each path is a real PNG/WebP image, each image is square, 64-2048 px, and at most 768 KB. |
-| `cursor-set` | `cursors` present, `default` mapped, each path is a real SVG, each SVG passes passive-SVG validation, hotspots are integer pairs. |
+| `cursor-set` | `cursors` absent or empty, `effects` tokens are valid hex colors, preview SVGs pass passive-SVG validation. |
 | `scene`    | `entry`, `preview`, `wallpaper` all present in the archive; `fallbackColor` is a `#hex`.       |
 | `widget`   | `entry` matches the entry regex + file exists in the archive.                                  |
 

@@ -1,0 +1,20 @@
+{
+  "type": "cursor-set",
+  "slug": "paper-sparks-cursors",
+  "name": "Paper Sparks Cursor Effects",
+  "label": "Paper Sparks",
+  "category": "ODD Effects",
+  "accent": "#2f6df6",
+  "preview": "preview.svg",
+  "description": "A native cursor with risograph confetti, paper-dot wake, and pencil-pulse text energy.",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "effects": {
+    "accent": "#2f6df6",
+    "spark": "#ff6b35",
+    "warm": "#f4d35e",
+    "ink": "#172033",
+    "recipe": "paper-sparks"
+  },
+  "cursors": {}
+}

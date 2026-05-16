@@ -17,9 +17,7 @@ add_action(
 				'permission_callback' => '__return_true',
 			)
 		);
-		// Public cursor SVG endpoint. CSS cursor images load without
-		// REST nonce headers, and the callback only serves sanitized
-		// SVG files from an installed cursor set directory.
+		// Public cursor-effect asset endpoint for installed preview art.
 		register_rest_route(
 			'odd/v1',
 			'/cursors/asset/(?P<slug>[a-z0-9-]+)',
@@ -32,40 +30,55 @@ add_action(
 	}
 );
 
-function oddout_cursors_css_url_value( array $cursor, $fallback ) {
-	$url     = isset( $cursor['url'] ) ? esc_url_raw( (string) $cursor['url'] ) : '';
-	$hotspot = isset( $cursor['hotspot'] ) && is_array( $cursor['hotspot'] ) ? array_values( $cursor['hotspot'] ) : array( 0, 0 );
-	$x       = isset( $hotspot[0] ) ? (int) $hotspot[0] : 0;
-	$y       = isset( $hotspot[1] ) ? (int) $hotspot[1] : 0;
-	if ( '' === $url ) {
-		return $fallback;
+function oddout_cursors_css_cursor( $kind ) {
+	$kind = sanitize_key( (string) $kind );
+	if ( in_array( $kind, array( 'default', 'pointer', 'text', 'grab', 'grabbing', 'crosshair', 'not-allowed', 'wait', 'help', 'progress' ), true ) ) {
+		return $kind;
 	}
-	$url = oddout_cursors_url_current_scheme( $url );
-	return sprintf( 'url("%s") %d %d, %s', esc_url_raw( $url ), $x, $y, $fallback );
+	return 'default';
 }
 
-function oddout_cursors_css_cursor( array $set, $kind, $fallback ) {
-	$cursors = isset( $set['cursors'] ) && is_array( $set['cursors'] ) ? $set['cursors'] : array();
-	if ( isset( $cursors[ $kind ] ) && is_array( $cursors[ $kind ] ) ) {
-		return oddout_cursors_css_url_value( $cursors[ $kind ], $fallback );
+function oddout_cursors_effect_tokens( array $set ) {
+	$effects = isset( $set['effects'] ) && is_array( $set['effects'] ) ? $set['effects'] : array();
+	$accent  = isset( $effects['accent'] ) ? (string) $effects['accent'] : ( isset( $set['accent'] ) ? (string) $set['accent'] : '' );
+	$recipe  = isset( $effects['recipe'] ) ? sanitize_key( (string) $effects['recipe'] ) : '';
+	$recipes = function_exists( 'oddout_cursors_allowed_recipes' ) ? oddout_cursors_allowed_recipes() : array( 'signal-bloom', 'gel-pop', 'paper-sparks', 'solar-orbit', 'moonlight-focus' );
+	$out     = array(
+		'accent' => '' !== $accent ? $accent : '#42d9d2',
+		'spark'  => isset( $effects['spark'] ) ? (string) $effects['spark'] : '#ff4f8b',
+		'warm'   => isset( $effects['warm'] ) ? (string) $effects['warm'] : '#f6b73c',
+		'ink'    => isset( $effects['ink'] ) ? (string) $effects['ink'] : '#19091f',
+		'recipe' => in_array( $recipe, $recipes, true ) ? $recipe : 'default',
+	);
+	$fallbacks = array(
+		'accent' => '#42d9d2',
+		'spark'  => '#ff4f8b',
+		'warm'   => '#f6b73c',
+		'ink'    => '#19091f',
+	);
+	foreach ( $out as $key => $value ) {
+		if ( 'recipe' === $key ) {
+			continue;
+		}
+		if ( ! preg_match( '/^#[0-9A-Fa-f]{3,8}$/', $value ) ) {
+			$out[ $key ] = $fallbacks[ $key ];
+		}
 	}
-	if ( 'default' !== $kind && isset( $cursors['default'] ) && is_array( $cursors['default'] ) ) {
-		return oddout_cursors_css_url_value( $cursors['default'], $fallback );
-	}
-	return $fallback;
+	return $out;
 }
 
 function oddout_cursors_build_css( array $set ) {
-	$default      = oddout_cursors_css_cursor( $set, 'default', 'default' );
-	$pointer      = oddout_cursors_css_cursor( $set, 'pointer', 'pointer' );
-	$text         = oddout_cursors_css_cursor( $set, 'text', 'text' );
-	$grab         = oddout_cursors_css_cursor( $set, 'grab', 'grab' );
-	$grabbing     = oddout_cursors_css_cursor( $set, 'grabbing', 'grabbing' );
-	$crosshair    = oddout_cursors_css_cursor( $set, 'crosshair', 'crosshair' );
-	$not_allowed  = oddout_cursors_css_cursor( $set, 'not-allowed', 'not-allowed' );
-	$wait         = oddout_cursors_css_cursor( $set, 'wait', 'wait' );
-	$help         = oddout_cursors_css_cursor( $set, 'help', 'help' );
-	$progress     = oddout_cursors_css_cursor( $set, 'progress', 'progress' );
+	$effects      = oddout_cursors_effect_tokens( $set );
+	$default      = oddout_cursors_css_cursor( 'default' );
+	$pointer      = oddout_cursors_css_cursor( 'pointer' );
+	$text         = oddout_cursors_css_cursor( 'text' );
+	$grab         = oddout_cursors_css_cursor( 'grab' );
+	$grabbing     = oddout_cursors_css_cursor( 'grabbing' );
+	$crosshair    = oddout_cursors_css_cursor( 'crosshair' );
+	$not_allowed  = oddout_cursors_css_cursor( 'not-allowed' );
+	$wait         = oddout_cursors_css_cursor( 'wait' );
+	$help         = oddout_cursors_css_cursor( 'help' );
+	$progress     = oddout_cursors_css_cursor( 'progress' );
 	$roots        = 'html, body, #wpwrap, #wpcontent, #wpbody, #wpbody-content, .desktop-mode, .desktop-mode-shell, #desktop-mode-shell, .desktop-mode-shell__body, #desktop-mode-area, .desktop-mode-area, .desktop-mode-icons, #desktop-mode-wallpaper, .desktop-mode-wallpaper, #desktop-mode-side-dock, .desktop-mode-dock, .desktop-mode-widgets, .desktop-mode-widgets__list, #wp-desktop-shell, .wp-desktop-shell, .wp-desktop-shell__body, #wp-desktop-area, .wp-desktop-area, #wp-desktop-wallpaper, .wp-desktop-wallpaper, #wp-desktop-dock, .wp-desktop-dock, #wp-desktop-widgets, .wp-desktop-widgets, .wp-desktop-widgets__list, [data-odd-cursor-root]';
 	$windows      = '[data-window-id], [data-windowid], [data-desktop-window-id], [data-native-window-id], .desktop-mode-window, .desktop-mode-window__body, .desktop-mode-window__iframe, .desktop-window, .wp-desktop-window, .wp-desktop-window__body, .wp-desktop-window__iframe';
 	$pointers     = 'a, button, .button, .button-primary, .button-secondary, [role="button"], summary, label[for], input[type="button"], input[type="submit"], input[type="reset"], select, option, .ab-item, .components-button, .desktop-mode-icon, .desktop-mode-file-tile, .desktop-mode-dock__item, .desktop-mode-dock__button, .desktop-mode-window__btn, .desktop-mode-window__tab, .desktop-mode-window__control, .desktop-mode-widgets__card-redock, .desktop-mode-widgets__card-close, .desktop-mode-widgets__add, .wp-desktop-icon, .wp-desktop-dock__item, .wp-desktop-dock__item-primary, .wp-desktop-dock__item-new, .wp-desktop-window__btn, .wp-desktop-window__tab, .wp-desktop-window__meta-btn, .wp-desktop-window__menu-btn, .wp-desktop-window__menu-item, .wp-desktop-widgets__card-redock, .wp-desktop-widgets__card-close, .wp-desktop-widgets__add';
@@ -75,7 +88,7 @@ function oddout_cursors_build_css( array $set ) {
 	return implode(
 		"\n",
 		array(
-			'/* ODD custom cursors: ' . ( isset( $set['slug'] ) ? sanitize_key( (string) $set['slug'] ) : 'active' ) . ' */',
+			'/* ODD cursor effects: ' . ( isset( $set['slug'] ) ? sanitize_key( (string) $set['slug'] ) : 'active' ) . ' */',
 			':root {',
 			'	--odd-cursor-default: ' . $default . ';',
 			'	--odd-cursor-pointer: ' . $pointer . ';',
@@ -87,6 +100,11 @@ function oddout_cursors_build_css( array $set ) {
 			'	--odd-cursor-wait: ' . $wait . ';',
 			'	--odd-cursor-help: ' . $help . ';',
 			'	--odd-cursor-progress: ' . $progress . ';',
+			'	--odd-live-cursor-accent: ' . $effects['accent'] . ';',
+			'	--odd-live-cursor-spark: ' . $effects['spark'] . ';',
+			'	--odd-live-cursor-warm: ' . $effects['warm'] . ';',
+			'	--odd-live-cursor-ink: ' . $effects['ink'] . ';',
+			'	--odd-live-cursor-recipe: ' . $effects['recipe'] . ';',
 			'}',
 			$roots . ' { cursor: default !important; }',
 			$windows . ' { cursor: default !important; }',
