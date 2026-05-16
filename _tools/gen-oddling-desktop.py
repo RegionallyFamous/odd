@@ -1,198 +1,130 @@
 #!/usr/bin/env python3
 """
 Generate the static wallpaper and preview for the `oddling-desktop`
-scene.
+scene from its imagegen source artwork.
 
 The scene itself is authored as a Pixi tick function on top of a
-painted still-life wallpaper. This script only emits the static scene
-artwork:
+painted still image. This script normalizes the project-bound source
+image into the files shipped by the catalog:
 
     * `_tools/catalog-sources/scenes/oddling-desktop/wallpaper.webp`
-      1920x1080, painted still-life terrarium background.
+      1920x1080, WebP q82.
     * `_tools/catalog-sources/scenes/oddling-desktop/preview.webp`
-      640x360 thumbnail of the same artwork.
+      640x360, WebP q80.
+    * `_tools/catalog-sources/scenes/oddling-desktop/card.webp`
+      1024x1024, WebP q88, square Discover card art.
 
 Usage:
     python3 _tools/gen-oddling-desktop.py
-
-Idempotent. Intentionally has no arguments: this is the ODD default
-scene, so the output is fixed.
 """
 from __future__ import annotations
 
-import random
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
 HERE = Path(__file__).resolve().parent
 SOURCES = HERE / "catalog-sources"
 SCENE_DIR = SOURCES / "scenes" / "oddling-desktop"
+SOURCE_IMAGE = SCENE_DIR / "source-imagegen.png"
 
 
-def mix(
-    a: tuple[int, int, int],
-    b: tuple[int, int, int],
-    t: float,
-) -> tuple[int, int, int]:
-    return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
-
-
-def paint_wallpaper(w: int = 1920, h: int = 1080) -> Image.Image:
-    """Paint a still-life desktop terrarium backdrop.
-
-    The Pixi scene paints hero motion on top; this image only needs to
-    establish mood: dark plum horizon, CRT curvature, soft specimen
-    haze, and a handful of barely-there creature silhouettes so the
-    desktop reads as inhabited even with reduced motion on.
-    """
-    rng = random.Random(20260427)
-
-    # Base vertical gradient: ink top, bruised plum horizon, deep base.
-    top = (18, 6, 40)
-    mid = (60, 18, 92)
-    low = (8, 2, 20)
-    img = Image.new("RGB", (w, h), low)
-    px = img.load()
-    for y in range(h):
-        t = y / (h - 1)
-        if t < 0.55:
-            col = mix(top, mid, t / 0.55)
-        else:
-            col = mix(mid, low, (t - 0.55) / 0.45)
-        for x in range(w):
-            px[x, y] = col
-
-    draw = ImageDraw.Draw(img, "RGBA")
-
-    # Distant horizon CRT curve glow.
-    hr = h * 0.62
-    for i in range(220):
-        alpha = int(90 * (1 - i / 220))
-        draw.ellipse(
-            (-200 - i * 2, hr - 40 - i, w + 200 + i * 2, hr + 260 + i),
-            outline=(56, 232, 255, alpha),
-            width=2,
+def normalize_wallpaper(w: int = 1920, h: int = 1080) -> Image.Image:
+    """Crop, resize, and lightly finish the imagegen source."""
+    if not SOURCE_IMAGE.is_file():
+        raise FileNotFoundError(
+            f"Missing source image: {SOURCE_IMAGE}. Generate or copy the "
+            "imagegen backdrop there before running this script."
         )
 
-    # Soft plum haze bands.
-    for i in range(9):
-        y = int(h * (0.15 + i * 0.09))
-        draw.rectangle(
-            (0, y, w, y + 2),
-            fill=(180, 102, 255, 24),
-        )
+    with Image.open(SOURCE_IMAGE) as src:
+        img = ImageOps.fit(
+            src.convert("RGB"),
+            (w, h),
+            method=Image.Resampling.LANCZOS,
+            centering=(0.5, 0.5),
+        ).convert("RGBA")
 
-    # Distant specimen drawer silhouette.
-    drawer = (int(w * 0.08), int(h * 0.58), int(w * 0.92), int(h * 0.9))
-    draw.rounded_rectangle(
-        drawer, radius=42, fill=(22, 8, 44, 180),
-    )
-    draw.rounded_rectangle(
-        drawer, radius=42, outline=(120, 70, 200, 140), width=4,
-    )
-    # Drawer shelves.
-    for i in range(1, 4):
-        sy = drawer[1] + int((drawer[3] - drawer[1]) * i / 4)
-        draw.line(
-            (drawer[0] + 24, sy, drawer[2] - 24, sy),
-            fill=(120, 70, 200, 90),
-            width=3,
-        )
+    # Keep the desktop icon side calm even if future source art gets busier.
+    safe = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    sdraw = ImageDraw.Draw(safe)
+    for x in range(int(w * 0.42)):
+        t = 1 - x / (w * 0.42)
+        alpha = int(44 * (t**1.8))
+        sdraw.line((x, 0, x, h), fill=(6, 1, 15, alpha))
+    img = Image.alpha_composite(img, safe)
 
-    # Scattered dim file-tab card silhouettes floating in mid field.
-    for _ in range(18):
-        cx = rng.randint(80, w - 80)
-        cy = rng.randint(int(h * 0.15), int(h * 0.55))
-        ww = rng.randint(90, 180)
-        hh = int(ww * 0.62)
-        a = rng.randint(22, 62)
-        tint = rng.choice(
-            [
-                (56, 232, 255),
-                (255, 95, 168),
-                (255, 216, 74),
-                (178, 102, 255),
-            ]
-        )
-        draw.rounded_rectangle(
-            (cx - ww // 2, cy - hh // 2, cx + ww // 2, cy + hh // 2),
-            radius=14,
-            fill=tint + (a,),
-        )
+    # Slightly unify the image with ODD's CRT mood without flattening the art.
+    scan = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    scan_draw = ImageDraw.Draw(scan)
+    for y in range(0, h, 4):
+        scan_draw.line((0, y, w, y), fill=(0, 0, 0, 18))
+    img = Image.alpha_composite(img, scan)
 
-    # A few tiny oddling shapes peeking near the bottom.
-    for i, (fx, fy, col) in enumerate(
-        [
-            (0.22, 0.78, (56, 232, 255)),
-            (0.44, 0.83, (255, 95, 168)),
-            (0.66, 0.78, (184, 255, 90)),
-            (0.82, 0.85, (255, 216, 74)),
-        ]
-    ):
-        cx = int(w * fx)
-        cy = int(h * fy)
-        r = 34 + (i % 3) * 6
-        draw.ellipse(
-            (cx - r, cy - r, cx + r, cy + r),
-            fill=(20, 6, 40, 220),
-        )
-        # Two pinprick eyes.
-        draw.ellipse(
-            (cx - r // 2 - 3, cy - 4, cx - r // 2 + 5, cy + 4),
-            fill=col + (255,),
-        )
-        draw.ellipse(
-            (cx + r // 2 - 5, cy - 4, cx + r // 2 + 3, cy + 4),
-            fill=col + (255,),
-        )
-
-    # CRT scanlines, very subtle.
-    scanlayer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    sdraw = ImageDraw.Draw(scanlayer)
-    for y in range(0, h, 3):
-        sdraw.line((0, y, w, y), fill=(0, 0, 0, 18))
-    img = Image.alpha_composite(img.convert("RGBA"), scanlayer).convert(
-        "RGB"
-    )
-
-    # Vignette.
     vignette = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     vdraw = ImageDraw.Draw(vignette)
-    max_inset = min(w, h) // 2 - 4
-    for i in range(40):
-        inset = min(max_inset, i * 28)
-        if inset * 2 >= min(w, h):
+    for i in range(56):
+        inset_x = int(i * 22)
+        inset_y = int(i * 12)
+        if inset_x * 2 >= w or inset_y * 2 >= h:
             break
-        a = int(4 + i * 2.0)
+        alpha = int(3 + i * 1.7)
         vdraw.rectangle(
-            (inset, inset, w - inset, h - inset),
-            outline=(0, 0, 0, a),
+            (inset_x, inset_y, w - inset_x, h - inset_y),
+            outline=(0, 0, 0, alpha),
             width=1,
         )
-    img = Image.alpha_composite(img.convert("RGBA"), vignette).convert(
-        "RGB"
-    )
+    img = Image.alpha_composite(img, vignette)
 
-    # Final soft blur so the whole thing reads painted, not drawn.
-    img = img.filter(ImageFilter.GaussianBlur(radius=1.2))
-    return img
+    # Tiny blur hides upscale bite while preserving the imagegen painting.
+    return img.convert("RGB").filter(ImageFilter.GaussianBlur(radius=0.25))
 
 
 def write_scene_assets() -> None:
     SCENE_DIR.mkdir(parents=True, exist_ok=True)
-    wallpaper = paint_wallpaper(1920, 1080)
-    wp_path = SCENE_DIR / "wallpaper.webp"
-    wallpaper.save(wp_path, format="WEBP", quality=82, method=6)
+    wallpaper = normalize_wallpaper(1920, 1080)
+    wallpaper.save(
+        SCENE_DIR / "wallpaper.webp",
+        format="WEBP",
+        quality=82,
+        method=6,
+    )
 
-    preview = wallpaper.resize((640, 360), Image.LANCZOS)
-    pv_path = SCENE_DIR / "preview.webp"
-    preview.save(pv_path, format="WEBP", quality=80, method=6)
+    preview = wallpaper.resize((640, 360), Image.Resampling.LANCZOS)
+    preview.save(
+        SCENE_DIR / "preview.webp",
+        format="WEBP",
+        quality=80,
+        method=6,
+    )
+
+    with Image.open(SOURCE_IMAGE) as src:
+        card = ImageOps.fit(
+            src.convert("RGB"),
+            (1024, 1024),
+            method=Image.Resampling.LANCZOS,
+            centering=(0.68, 0.5),
+        ).convert("RGBA")
+    edge = Image.new("RGBA", card.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(edge)
+    for i in range(40):
+        alpha = int(2 + i * 1.8)
+        draw.rectangle(
+            (i, i, 1024 - i, 1024 - i),
+            outline=(0, 0, 0, alpha),
+            width=1,
+        )
+    card = Image.alpha_composite(card, edge).convert("RGB")
+    card.save(
+        SCENE_DIR / "card.webp",
+        format="WEBP",
+        quality=88,
+        method=6,
+    )
 
 
 def main() -> None:
     write_scene_assets()
-    # The scene.js and meta.json are hand-authored and live alongside.
 
 
 if __name__ == "__main__":

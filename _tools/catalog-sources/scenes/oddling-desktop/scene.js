@@ -1,18 +1,18 @@
 /**
  * ODD scene: Oddling Desktop — v1.0.0
  * ---------------------------------------------------------------
- * The ODD default wallpaper. A painted plum "CRT terrarium"
- * (wallpaper.webp) establishes mood. On top, Pixi paints three
- * lightweight populations:
+ * The ODD default wallpaper. An imagegen-painted plum CRT terrarium
+ * and specimen cabinet (wallpaper.webp) establishes mood. On top,
+ * Pixi paints three lightweight populations:
  *
  *   1. Specimens — little creature silhouettes that slow-float
  *      across the mid-ground. Each has two pinprick eyes that
  *      blink on a 3–9 s cadence and a soft neon halo in cyan,
  *      pink, yellow, or lime.
  *
- *   2. File-tabs — translucent rounded rectangles that drift
- *      diagonally like specimens in a petri dish. They carry the
- *      desktop iconography forward into motion.
+ *   2. File-tabs — sparse translucent rounded rectangles that drift
+ *      diagonally like specimens in a petri dish, echoing the static
+ *      glass cards without crowding the desktop.
  *
  *   3. Peek-eyes — two larger "oddling" eyes that occasionally
  *      blink into visibility at the screen edges and glance
@@ -32,12 +32,17 @@
 	'use strict';
 	window.__odd = window.__odd || {};
 	window.__odd.scenes = window.__odd.scenes || {};
-	var h = window.__odd.helpers;
+	var h = window.__odd.helpers || {};
 	var scriptUrl = document.currentScript && document.currentScript.src;
 
-	var SPECIMEN_COUNT = 18;
-	var TAB_COUNT      = 10;
+	var SPECIMEN_COUNT = 12;
+	var TAB_COUNT      = 5;
 	var PALETTE        = [ 0x38e8ff, 0xff5fa8, 0xffd84a, 0xb8ff5a, 0xb266ff ];
+
+	function rand( min, max ) {
+		if ( h.rand ) return h.rand( min, max );
+		return min + Math.random() * ( max - min );
+	}
 
 	function backdropUrl() {
 		var cfg = window.odd || {};
@@ -53,29 +58,34 @@
 
 	function spawnSpecimen( w, hh ) {
 		return {
-			x: h.rand( 0, w ),
-			y: h.rand( hh * 0.35, hh * 0.95 ),
-			vx: h.rand( -0.2, 0.2 ),
-			vy: h.rand( -0.08, 0.08 ),
-			r: h.rand( 16, 34 ),
+			x: rand( w * 0.38, w ),
+			y: rand( hh * 0.28, hh * 0.92 ),
+			vx: rand( -0.14, 0.18 ),
+			vy: rand( -0.06, 0.07 ),
+			r: rand( 10, 24 ),
 			color: pickColor(),
-			blink: h.rand( 0.4, 1 ),
-			blinkTimer: h.rand( 3, 9 ),
+			blink: rand( 0.4, 1 ),
+			blinkTimer: rand( 3, 9 ),
 			bob: Math.random() * Math.PI * 2,
-			bobSpeed: h.rand( 0.015, 0.03 ),
+			bobSpeed: rand( 0.012, 0.028 ),
+			kind: ( Math.random() * 4 ) | 0,
+			squash: rand( 0.74, 1.08 ),
+			tilt: rand( -0.18, 0.18 ),
+			depth: rand( 0.55, 1.05 ),
 		};
 	}
 
 	function spawnTab( w, hh ) {
 		return {
-			x: h.rand( -120, w ),
-			y: h.rand( hh * 0.1, hh * 0.7 ),
-			vx: h.rand( 0.15, 0.45 ),
-			vy: h.rand( -0.05, 0.05 ),
-			w: h.rand( 70, 160 ),
-			alpha: h.rand( 0.08, 0.22 ),
+			x: rand( w * 0.42, w + 120 ),
+			y: rand( hh * 0.12, hh * 0.64 ),
+			vx: rand( 0.1, 0.32 ),
+			vy: rand( -0.04, 0.04 ),
+			w: rand( 64, 130 ),
+			alpha: rand( 0.045, 0.12 ),
 			color: pickColor(),
-			tilt: h.rand( -0.08, 0.08 ),
+			tilt: rand( -0.08, 0.08 ),
+			depth: rand( 0.35, 0.9 ),
 		};
 	}
 
@@ -106,6 +116,8 @@
 					return c;
 				} )();
 			app.stage.addChild( haloLayer );
+			var haloG = new PIXI.Graphics();
+			haloLayer.addChild( haloG );
 
 			var tabLayer = new PIXI.Graphics();
 			app.stage.addChild( tabLayer );
@@ -139,13 +151,13 @@
 				active: false,
 				anchor: null,
 				phase: 0,
-				cooldown: h.rand( 6, 14 ),
+				cooldown: rand( 8, 16 ),
 				life: 0,
 			};
 
 			return {
 				backdrop: backdrop, fitBackdrop: fitBackdrop,
-				haloLayer: haloLayer,
+				haloLayer: haloLayer, haloG: haloG,
 				tabLayer: tabLayer, bodyLayer: bodyLayer,
 				eyeLayer: eyeLayer, flare: flare,
 				specimens: specimens, tabs: tabs, peek: peek,
@@ -161,8 +173,8 @@
 			// Rewrap off-screen specimens so they aren't stuck.
 			for ( var i = 0; i < state.specimens.length; i++ ) {
 				var s = state.specimens[ i ];
-				if ( s.x < -50 || s.x > w + 50 ) s.x = h.rand( 0, w );
-				if ( s.y < -50 || s.y > hh + 50 ) s.y = h.rand( hh * 0.35, hh * 0.95 );
+				if ( s.x < w * 0.3 || s.x > w + 50 ) s.x = rand( w * 0.38, w );
+				if ( s.y < -50 || s.y > hh + 50 ) s.y = rand( hh * 0.28, hh * 0.92 );
 			}
 		},
 
@@ -181,6 +193,8 @@
 				? ( env.desktop.activity.window || 0 )
 				: 0;
 			var speed = 1 + bass * 1.4 + desktopActivity * 0.22;
+			var px = env.parallax ? env.parallax.x : 0;
+			var py = env.parallax ? env.parallax.y : 0;
 
 			state.tabLayer.clear();
 			for ( var i = 0; i < state.tabs.length; i++ ) {
@@ -188,18 +202,20 @@
 				t.x += t.vx * dt * speed;
 				t.y += t.vy * dt * speed;
 				if ( t.x > w + 150 ) {
-					t.x = -150; t.y = h.rand( hh * 0.1, hh * 0.7 );
+					t.x = rand( w * 0.42, w * 0.56 ); t.y = rand( hh * 0.12, hh * 0.64 );
 					t.color = pickColor();
 				}
 				var hw = t.w / 2, hHeight = t.w * 0.62 / 2;
+				var tx = t.x + px * 14 * t.depth;
+				var ty = t.y + py * 8 * t.depth;
 				state.tabLayer
-					.roundRect( t.x - hw, t.y - hHeight, t.w, t.w * 0.62, 14 )
+					.roundRect( tx - hw, ty - hHeight, t.w, t.w * 0.62, 14 )
 					.fill( { color: t.color, alpha: Math.min( 0.32, t.alpha + desktopActivity * 0.04 ) } );
 			}
 
 			state.bodyLayer.clear();
 			state.eyeLayer.clear();
-			state.haloLayer.removeChildren();
+			state.haloG.clear();
 
 			for ( var k = 0; k < state.specimens.length; k++ ) {
 				var s = state.specimens[ k ];
@@ -220,25 +236,21 @@
 					s.blink = Math.min( 1, s.blink + dt * 0.08 );
 				}
 
-				// Body silhouette — small asymmetric blob.
 				var r = s.r;
-				state.bodyLayer
-					.ellipse( s.x, s.y + 4, r, r * 0.88 )
-					.fill( { color: 0x0a0418, alpha: 0.85 } );
+				var sx = s.x + px * 18 * s.depth;
+				var sy = s.y + py * 10 * s.depth;
+				this._drawSpecimenBody( state.bodyLayer, s, sx, sy, r );
 
-				// Halo behind body via a soft bloom sprite.
 				if ( ! perfLow ) {
-					var halo = new env.PIXI.Graphics();
-					halo
-						.circle( s.x, s.y, r * 1.6 )
-						.fill( { color: s.color, alpha: 0.08 } );
-					state.haloLayer.addChild( halo );
+					state.haloG
+						.circle( sx, sy, r * ( 1.5 + s.depth * 0.2 ) )
+						.fill( { color: s.color, alpha: 0.045 } );
 				}
 
 				// Two pinprick eyes.
-				var ey = s.y - r * 0.08;
-				var ex1 = s.x - r * 0.42;
-				var ex2 = s.x + r * 0.42;
+				var ey = sy - r * 0.08;
+				var ex1 = sx - r * 0.42;
+				var ex2 = sx + r * 0.42;
 				var lid = s.blink;
 				state.eyeLayer
 					.ellipse( ex1, ey, r * 0.18, r * 0.18 * lid )
@@ -255,17 +267,17 @@
 					peek.life  -= dt / 60;
 					var open = Math.min( 1, peek.phase / 0.7 );
 					if ( peek.life < 0.7 ) open = Math.max( 0, peek.life / 0.7 );
-					this._drawPeekEyes( state, peek.anchor, open );
+					this._drawPeekEyes( state, peek.anchor, open, px, py );
 					if ( peek.life <= 0 ) {
 						peek.active = false;
-						peek.cooldown = h.rand( 8, 18 );
+						peek.cooldown = rand( 10, 22 );
 					}
 				} else {
 					peek.cooldown -= dt / 60;
 					if ( peek.cooldown <= 0 ) {
 						peek.active = true;
 						peek.phase = 0;
-						peek.life = h.rand( 3, 5 );
+						peek.life = rand( 3, 5 );
 						peek.anchor = this._pickPeekAnchor( w, hh );
 					}
 				}
@@ -278,11 +290,39 @@
 				state.flare
 					.rect( 0, hh * 0.55, w, 8 )
 					.fill( { color: 0x38e8ff, alpha: state.flareBoost } );
-				state.flare.alpha = state.flareBoost;
+				state.flare.alpha = 1;
 			} else if ( state.flare.alpha !== 0 ) {
 				state.flare.clear();
 				state.flare.alpha = 0;
 			}
+		},
+
+		_drawSpecimenBody: function ( g, s, x, y, r ) {
+			var fill = { color: 0x090417, alpha: 0.74 };
+			if ( s.kind === 1 ) {
+				g.ellipse( x, y + 6, r * 0.88, r * 0.95 * s.squash ).fill( fill )
+					.circle( x - r * 0.54, y + r * 0.18, r * 0.28 ).fill( fill )
+					.circle( x + r * 0.48, y + r * 0.12, r * 0.22 ).fill( fill );
+				return;
+			}
+			if ( s.kind === 2 ) {
+				g.roundRect( x - r * 0.78, y - r * 0.58, r * 1.56, r * 1.22, r * 0.42 ).fill( fill )
+					.circle( x - r * 0.56, y + r * 0.36, r * 0.22 ).fill( fill )
+					.circle( x + r * 0.52, y + r * 0.34, r * 0.2 ).fill( fill );
+				return;
+			}
+			if ( s.kind === 3 ) {
+				g.ellipse( x, y + 4, r * 0.78, r * 1.03 * s.squash ).fill( fill )
+					.moveTo( x - r * 0.24, y - r * 0.74 )
+					.lineTo( x - r * 0.44, y - r * 1.05 )
+					.stroke( { color: 0x090417, width: Math.max( 2, r * 0.08 ), alpha: 0.78 } )
+					.moveTo( x + r * 0.18, y - r * 0.74 )
+					.lineTo( x + r * 0.36, y - r * 1.02 )
+					.stroke( { color: 0x090417, width: Math.max( 2, r * 0.08 ), alpha: 0.78 } );
+				return;
+			}
+			g.ellipse( x, y + 4, r, r * 0.88 * s.squash ).fill( fill )
+				.circle( x + r * 0.62, y + r * 0.32, r * 0.2 ).fill( fill );
 		},
 
 		_pickPeekAnchor: function ( w, hh ) {
@@ -295,24 +335,25 @@
 			return edges[ ( Math.random() * edges.length ) | 0 ];
 		},
 
-		_drawPeekEyes: function ( state, a, open ) {
+		_drawPeekEyes: function ( state, a, open, px, py ) {
 			if ( ! a ) return;
 			var r = 38;
 			var gap = 56;
-			var ex1 = a.x - gap * 0.5;
-			var ex2 = a.x + gap * 0.5;
+			var y = a.y + py * 7;
+			var ex1 = a.x - gap * 0.5 + px * 10;
+			var ex2 = a.x + gap * 0.5 + px * 10;
 			state.eyeLayer
-				.ellipse( ex1, a.y, r, r * open )
+				.ellipse( ex1, y, r, r * open )
 				.fill( { color: 0xfff7ea, alpha: 0.96 } )
-				.ellipse( ex2, a.y, r, r * open )
+				.ellipse( ex2, y, r, r * open )
 				.fill( { color: 0xfff7ea, alpha: 0.96 } )
-				.ellipse( ex1 + a.dir * 6, a.y, r * 0.45, r * 0.45 * open )
+				.ellipse( ex1 + a.dir * 6, y, r * 0.45, r * 0.45 * open )
 				.fill( { color: 0x38e8ff, alpha: 1 } )
-				.ellipse( ex2 + a.dir * 6, a.y, r * 0.45, r * 0.45 * open )
+				.ellipse( ex2 + a.dir * 6, y, r * 0.45, r * 0.45 * open )
 				.fill( { color: 0x38e8ff, alpha: 1 } )
-				.ellipse( ex1 + a.dir * 10, a.y, r * 0.18, r * 0.18 * open )
+				.ellipse( ex1 + a.dir * 10, y, r * 0.18, r * 0.18 * open )
 				.fill( { color: 0x140420, alpha: 1 } )
-				.ellipse( ex2 + a.dir * 10, a.y, r * 0.18, r * 0.18 * open )
+				.ellipse( ex2 + a.dir * 10, y, r * 0.18, r * 0.18 * open )
 				.fill( { color: 0x140420, alpha: 1 } );
 		},
 
@@ -335,7 +376,11 @@
 			// Park every specimen half-lidded for a calm pose.
 			for ( var k = 0; k < state.specimens.length; k++ ) {
 				state.specimens[ k ].blink = 0.55;
+				state.specimens[ k ].blinkTimer = 999;
 			}
+			env.dt = 0;
+			this.tick( state, env );
+			env.dt = saveDt;
 		},
 
 		cleanup: function ( state ) {

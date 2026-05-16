@@ -242,12 +242,14 @@
       "name": "Oddling Desktop",
       "version": "1.0.0",
       "author": "Regionally Famous",
-      "description": "A living desktop terrarium. Tiny specimens drift over a plum CRT horizon while curious eyes blink from the edges.",
+      "description": "A living CRT terrarium and specimen cabinet. Tiny desktop oddlings drift over glass drawers while curious eyes blink from the edges.",
       "franchise": "ODD Defaults",
       "tags": [
         "weird",
         "creatures",
         "terrarium",
+        "glass",
+        "specimens",
         "crt",
         "default"
       ],
@@ -255,8 +257,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-oddling-desktop.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-oddling-desktop.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-oddling-desktop.wp",
-      "sha256": "0dfa11dc1aa7761c89ad09199b213f38da08a1e30c0027ac7837cc3372fe9aa8",
-      "size": 27326
+      "sha256": "9bf16178ae688714c71bc2870869c22b79295d581442f5e902a0041167901e17",
+      "size": 163768
     },
     {
       "type": "scene",

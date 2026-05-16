@@ -6,11 +6,13 @@
     "weird",
     "creatures",
     "terrarium",
+    "glass",
+    "specimens",
     "crt",
     "default"
   ],
   "fallbackColor": "#12052a",
   "version": "1.0.0",
   "author": "Regionally Famous",
-  "description": "A living desktop terrarium. Tiny specimens drift over a plum CRT horizon while curious eyes blink from the edges."
+  "description": "A living CRT terrarium and specimen cabinet. Tiny desktop oddlings drift over glass drawers while curious eyes blink from the edges."
 }

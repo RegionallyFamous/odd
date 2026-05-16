@@ -141,6 +141,10 @@ async function buildOne( browser, scene ) {
 }
 
 function buildHtml( scene, sceneSrc ) {
+	const wallpaperPath = resolve( scene._dir, 'wallpaper.webp' );
+	const wallpaperUrl = existsSync( wallpaperPath )
+		? `data:image/webp;base64,${ readFileSync( wallpaperPath ).toString( 'base64' ) }`
+		: '';
 	return `<!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <style>html,body{margin:0;width:${ WIDTH }px;height:${ HEIGHT }px;background:${ scene.fallbackColor || '#0a0a1f' }}</style>
@@ -160,6 +164,7 @@ window.__odd = { scenes: {}, helpers: {
 	computeTod: () => ({ phase: 'day', amount: 0.5 }),
 	computeSeason: () => 'summer',
 } };
+window.odd = { sceneMap: { '${ scene.slug }': { wallpaperUrl: ${ JSON.stringify( wallpaperUrl ) } } } };
 </script>
 <script>${ sceneSrc }</script>
 <script>
