@@ -170,7 +170,6 @@ describe( 'ODD Shop', () => {
 		if ( existing ) existing.remove();
 		delete window.__odd;
 		delete window.desktopModeNativeWindows;
-		delete window.wpDesktopNativeWindows;
 		delete window.WebGLRenderingContext;
 		if ( window.wp && window.wp.desktop ) delete window.wp.desktop.widgetLayer;
 		try { window.localStorage.removeItem( 'desktop-mode-widgets' ); } catch ( e ) {}
@@ -195,9 +194,8 @@ describe( 'ODD Shop', () => {
 		document.body.classList.remove( 'desktop-mode-has-fullscreen-window' );
 	} );
 
-	it( 'registers a render callback under older and current native-window globals', () => {
+	it( 'registers a render callback under Desktop Mode native-window globals', () => {
 		expect( typeof window.desktopModeNativeWindows.odd ).toBe( 'function' );
-		expect( window.wpDesktopNativeWindows.odd ).toBe( window.desktopModeNativeWindows.odd );
 	} );
 
 	it( 'renders the department rail + shelf-grouped scene grid', () => {
@@ -371,7 +369,6 @@ describe( 'ODD Shop', () => {
 			} ),
 		};
 		delete window.desktopModeNativeWindows;
-		delete window.wpDesktopNativeWindows;
 		loadPanel();
 
 		const { host, cleanup } = mountPanel();
@@ -396,7 +393,6 @@ describe( 'ODD Shop', () => {
 		};
 		const removeSpy = vi.spyOn( document, 'removeEventListener' );
 		delete window.desktopModeNativeWindows;
-		delete window.wpDesktopNativeWindows;
 		loadPanel();
 
 		const { cleanup } = mountPanel();
@@ -419,7 +415,6 @@ describe( 'ODD Shop', () => {
 			mountSceneInto: vi.fn( () => Promise.resolve( { destroy, env: { perfTier: 'normal' } } ) ),
 		};
 		delete window.desktopModeNativeWindows;
-		delete window.wpDesktopNativeWindows;
 		loadPanel();
 
 		const { cleanup } = mountPanel();

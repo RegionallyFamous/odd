@@ -105,7 +105,6 @@ describe( 'ODD Shop · App surfaces', () => {
 		const existing = document.getElementById( 'odd-panel-styles' );
 		if ( existing ) existing.remove();
 		delete window.desktopModeNativeWindows;
-		delete window.wpDesktopNativeWindows;
 
 		const apps = [
 			{

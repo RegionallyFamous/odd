@@ -126,7 +126,6 @@ describe( 'window.__odd.api surface', () => {
 		const render = vi.fn();
 		const registerWindow = vi.fn();
 		window.desktopModeNativeWindows = { odd: render };
-		window.wpDesktopNativeWindows = { odd: render };
 		window.wp.desktop = {
 			registerWindow,
 			config: {
@@ -166,7 +165,7 @@ describe( 'window.__odd.api surface', () => {
 		} );
 		const render = vi.fn();
 		const registerWindow = vi.fn();
-		window.wpDesktopNativeWindows = { 'odd-app-timer': render };
+		window.desktopModeNativeWindows = { 'odd-app-timer': render };
 		window.wp.desktop = {
 			registerWindow,
 			config: {

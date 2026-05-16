@@ -1,9 +1,8 @@
 /**
  * ODD Shop — native-window render callback.
  * ---------------------------------------------------------------
- * Registered on the current `window.wpDesktopNativeWindows.odd`
- * callback registry and the older `window.desktopModeNativeWindows.odd`
- * registry. The shell invokes this when the window opens and
+ * Registered on Desktop Mode's `window.desktopModeNativeWindows.odd`
+ * callback registry. The shell invokes this when the window opens and
  * re-invokes it every time the user re-opens a previously-closed
  * instance. The returned function is the teardown, called on close.
  *
@@ -24,7 +23,11 @@
 	}
 
 	window.desktopModeNativeWindows = window.desktopModeNativeWindows || {};
-	window.wpDesktopNativeWindows = window.wpDesktopNativeWindows || window.desktopModeNativeWindows;
+
+	function desktopHookName( key, fallback ) {
+		var d = window.wp && window.wp.desktop;
+		return key && d && d.HOOKS && d.HOOKS[ key ] ? d.HOOKS[ key ] : fallback;
+	}
 
 	var _safeCall = ( window.__odd && window.__odd.safeCall ) || function ( fn ) { try { return fn(); } catch ( e ) {} };
 	var _events   = window.__odd && window.__odd.events;
@@ -398,6 +401,7 @@
 			storeView:     'all',
 			sortMode:      'featured',
 			shopSounds:    loadShopSoundsSetting(),
+			widgetHookNames: null,
 			// When set, the Shop scheduled a full admin reload (desktop / taskbar /
 			// script-fallback). Catalog tiles show "Applying…" for the matching slug.
 			pendingAdminReload: null,
@@ -759,14 +763,15 @@
 			if ( window.wp && window.wp.hooks && typeof window.wp.hooks.addAction === 'function' ) {
 				var ns = 'odd.panel-responsive-' + Math.random().toString( 36 ).slice( 2 );
 				[
-					'desktop-mode.window.bounds-changed',
-					'desktop-mode.window.body-resized',
-					'desktop-mode.native-window.after-render',
-					'desktop-mode.window.maximized',
-					'desktop-mode.window.unmaximized',
-					'desktop-mode.window.fullscreen-entered',
-					'desktop-mode.window.fullscreen-exited',
-				].forEach( function ( hookName ) {
+					[ 'WINDOW_BOUNDS_CHANGED', 'desktop-mode.window.bounds-changed' ],
+					[ 'WINDOW_BODY_RESIZED', 'desktop-mode.window.body-resized' ],
+					[ 'NATIVE_WINDOW_AFTER_RENDER', 'desktop-mode.native-window.after-render' ],
+					[ 'WINDOW_MAXIMIZED', 'desktop-mode.window.maximized' ],
+					[ 'WINDOW_UNMAXIMIZED', 'desktop-mode.window.unmaximized' ],
+					[ 'WINDOW_FULLSCREEN_ENTERED', 'desktop-mode.window.fullscreen-entered' ],
+					[ 'WINDOW_FULLSCREEN_EXITED', 'desktop-mode.window.fullscreen-exited' ],
+				].forEach( function ( row ) {
+					var hookName = desktopHookName( row[ 0 ], row[ 1 ] );
 					var cb = function ( payload ) {
 						if ( panelWindowId( payload ) === 'odd' ) applyState();
 					};
@@ -941,8 +946,14 @@
 			// section on every widget add/remove.
 			try {
 				if ( window.wp && window.wp.hooks ) {
-					window.wp.hooks.removeAction( 'desktop-mode.widget.added',   'odd.widgets' );
-					window.wp.hooks.removeAction( 'desktop-mode.widget.removed', 'odd.widgets' );
+					( state.widgetHookNames || [
+						desktopHookName( 'WIDGET_ADDED', 'desktop-mode.widget.added' ),
+						desktopHookName( 'WIDGET_REMOVED', 'desktop-mode.widget.removed' ),
+					] ).forEach( function ( hookName ) {
+						if ( typeof window.wp.hooks.removeAction === 'function' ) {
+							window.wp.hooks.removeAction( hookName, 'odd.widgets' );
+						}
+					} );
 				}
 			} catch ( e ) {}
 		};
@@ -6094,10 +6105,13 @@
 			state.widgetHooksInstalled = true;
 			try {
 				if ( window.wp && window.wp.hooks ) {
-					window.wp.hooks.addAction( 'desktop-mode.widget.added', 'odd.widgets', function () {
+					var widgetAddedHook = desktopHookName( 'WIDGET_ADDED', 'desktop-mode.widget.added' );
+					var widgetRemovedHook = desktopHookName( 'WIDGET_REMOVED', 'desktop-mode.widget.removed' );
+					state.widgetHookNames = [ widgetAddedHook, widgetRemovedHook ];
+					window.wp.hooks.addAction( widgetAddedHook, 'odd.widgets', function () {
 						if ( state.active === 'widgets' ) renderSection( 'widgets', { keepQuery: true } );
 					} );
-					window.wp.hooks.addAction( 'desktop-mode.widget.removed', 'odd.widgets', function () {
+					window.wp.hooks.addAction( widgetRemovedHook, 'odd.widgets', function () {
 						if ( state.active === 'widgets' ) renderSection( 'widgets', { keepQuery: true } );
 					} );
 				}
@@ -7750,7 +7764,6 @@
 		}
 	}
 	window.desktopModeNativeWindows.odd = renderOddNativeWindow;
-	window.wpDesktopNativeWindows.odd = renderOddNativeWindow;
 
 	/* --- dom helpers (unscoped) --- */
 

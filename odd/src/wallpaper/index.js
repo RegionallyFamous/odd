@@ -563,6 +563,11 @@
 		try { hooks.addAction( 'odd.pickScene', 'odd.wallpaper-bridge', routeWallpaperScenePick ); } catch ( _a ) {}
 	}
 
+	function desktopHookName( key, fallback ) {
+		var d = window.wp && window.wp.desktop;
+		return key && d && d.HOOKS && d.HOOKS[ key ] ? d.HOOKS[ key ] : fallback;
+	}
+
 	// ------------------------------------------------------------ //
 	// Wallpaper visibility toggles Pixi's ticker via
 	// `desktop-mode.wallpaper.visibility`; the host may emit that
@@ -599,7 +604,7 @@
 		if ( ! hooks || typeof hooks.addAction !== 'function' ) return;
 		wallpaperVisBridged = true;
 		try {
-			hooks.addAction( 'desktop-mode.wallpaper.visibility', 'odd.wallpaper-vis-bridge', routeWallpaperVisibility );
+			hooks.addAction( desktopHookName( 'WALLPAPER_VISIBILITY', 'desktop-mode.wallpaper.visibility' ), 'odd.wallpaper-vis-bridge', routeWallpaperVisibility );
 		} catch ( _visBridge ) {}
 	}
 
@@ -609,7 +614,7 @@
 		if ( ! hooks || typeof hooks.addAction !== 'function' ) return;
 		wallpaperTeardownBridged = true;
 		try {
-			hooks.addAction( 'desktop-mode.wallpaper.unmounting', 'odd.wallpaper-teardown-bridge', function ( payload ) {
+			hooks.addAction( desktopHookName( 'WALLPAPER_UNMOUNTING', 'desktop-mode.wallpaper.unmounting' ), 'odd.wallpaper-teardown-bridge', function ( payload ) {
 				if ( ! payload || payload.id !== 'odd' ) return;
 				var runtime = window.__odd && window.__odd.wallpaperRuntime;
 				if ( runtime && typeof runtime.teardownActive === 'function' ) {

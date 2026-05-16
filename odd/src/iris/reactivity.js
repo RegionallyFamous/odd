@@ -26,6 +26,13 @@
 		if ( ! hooks || typeof hooks.addAction !== 'function' ) return;
 		try { hooks.addAction( name, 'odd.iris-reactivity', cb ); } catch ( e ) { /* bad name */ }
 	}
+	function desktopHookName( key, fallback ) {
+		var d = window.wp && window.wp.desktop;
+		return key && d && d.HOOKS && d.HOOKS[ key ] ? d.HOOKS[ key ] : fallback;
+	}
+	function onDesktop( key, fallback, cb ) {
+		on( desktopHookName( key, fallback ), cb );
+	}
 	function emit( name, payload ) {
 		var evt = window.__odd.events;
 		if ( evt && typeof evt.emit === 'function' ) evt.emit( name, payload );
@@ -102,18 +109,18 @@
 		var c = centerOf( payload && payload.bounds );
 		if ( c ) motion( 'glance', { x: c.x, y: c.y } );
 	} );
-	on( 'desktop-mode.shell.error', function ( payload ) {
+	onDesktop( 'SHELL_ERROR', 'desktop-mode.shell.error', function ( payload ) {
 		emit( 'odd.shell-error', payload || {} );
 		throttleShellIssueLog( function () { logShellIssue( 'desktop-mode.shell.error', payload ); } );
 	} );
 	onOdd( 'odd.iframe-error', function ( payload ) {
 		throttleShellIssueLog( function () { logShellIssue( 'odd.iframe-error', payload ); } );
 	} );
-	on( 'desktop-mode.dock.item-appended', function ( payload ) {
+	onDesktop( 'DOCK_ITEM_APPENDED', 'desktop-mode.dock.item-appended', function ( payload ) {
 		var c = centerOf( payload && payload.bounds );
 		motion( 'ripple', c ? { x: c.x, y: c.y, intensity: 0.3 } : { x: 0.85, y: 0.95, intensity: 0.3, normalized: true } );
 	} );
-	on( 'desktop-mode.command.after-run', function () {
+	onDesktop( 'COMMAND_AFTER_RUN', 'desktop-mode.command.after-run', function () {
 		motion( 'glance', { nod: true } );
 	} );
 	onOdd( 'odd.visibility-changed', function ( payload ) {

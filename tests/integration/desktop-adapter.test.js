@@ -53,7 +53,7 @@ describe( 'ODD Desktop Mode adapter', () => {
 		expect( openWindow ).toHaveBeenCalledWith( 'odd', undefined );
 	} );
 
-	it( 'resolves Desktop Mode hook constants with fallbacks', () => {
+	it( 'uses Desktop Mode hook constants without registering fallback hooks', () => {
 		const seen = [];
 		window.wp.desktop = {
 			HOOKS: {
@@ -74,6 +74,23 @@ describe( 'ODD Desktop Mode adapter', () => {
 		off();
 		window.wp.hooks.doAction( 'desktop-mode.dock.item-removed', { id: 'after' } );
 
-		expect( seen ).toEqual( [ 'current', 'fallback' ] );
+		expect( seen ).toEqual( [ 'current' ] );
+	} );
+
+	it( 'uses the current hook string fallback when a host constant is absent', () => {
+		const seen = [];
+		window.wp.desktop = { HOOKS: {} };
+		const adapter = window.__odd.desktop;
+
+		adapter.addActionFor(
+			'DOCK_ITEM_APPENDED',
+			'desktop-mode.dock.item-appended',
+			( payload ) => seen.push( payload.id ),
+			'odd.test',
+		);
+
+		window.wp.hooks.doAction( 'desktop-mode.dock.item-appended', { id: 'fallback' } );
+
+		expect( seen ).toEqual( [ 'fallback' ] );
 	} );
 } );

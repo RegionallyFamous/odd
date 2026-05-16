@@ -17,7 +17,6 @@ describe( 'ODD app window host', () => {
 	beforeEach( () => {
 		document.body.innerHTML = '';
 		delete window.desktopModeNativeWindows;
-		delete window.wpDesktopNativeWindows;
 		loadFoundation( {
 			config: {
 				userApps:     { installed: [ 'demo' ], pinned: [] },
@@ -48,11 +47,10 @@ describe( 'ODD app window host', () => {
 		expect( metrics.timings.some( ( row ) => row.name === 'app.iframe.load' && row.meta.slug === 'demo' ) ).toBe( true );
 	} );
 
-	it( 'registers app callbacks on older and current native-window globals', () => {
+	it( 'registers app callbacks on Desktop Mode native-window globals', () => {
 		loadWindowHost();
 
 		expect( typeof window.desktopModeNativeWindows[ 'odd-app-demo' ] ).toBe( 'function' );
-		expect( window.wpDesktopNativeWindows[ 'odd-app-demo' ] ).toBe( window.desktopModeNativeWindows[ 'odd-app-demo' ] );
 	} );
 
 	it( 'uses the Desktop Mode window manager to dismiss fallback loading overlays', () => {

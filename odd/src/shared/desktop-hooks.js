@@ -92,6 +92,7 @@
 		}
 		if ( key && d && d.HOOKS && d.HOOKS[ key ] ) {
 			add( d.HOOKS[ key ] );
+			return out;
 		}
 		( Array.isArray( fallback ) ? fallback : [ fallback ] ).forEach( add );
 		return out;
@@ -1074,13 +1075,13 @@
 	function setupWindowDiagnostics() {
 		var map = [
 			[ 'WINDOW_OPENED', 'desktop-mode.window.opened', 'odd.window-opened' ],
-			[ '', 'desktop-mode.window.reopened', 'odd.window-reopened' ],
-			[ '', 'desktop-mode.window.content-loading', 'odd.window-content-loading' ],
-			[ '', 'desktop-mode.window.content-loaded', 'odd.window-content-loaded' ],
+			[ 'WINDOW_REOPENED', 'desktop-mode.window.reopened', 'odd.window-reopened' ],
+			[ 'WINDOW_CONTENT_LOADING', 'desktop-mode.window.content-loading', 'odd.window-content-loading' ],
+			[ 'WINDOW_CONTENT_LOADED', 'desktop-mode.window.content-loaded', 'odd.window-content-loaded' ],
 			[ 'WINDOW_CLOSING', 'desktop-mode.window.closing', 'odd.window-closing' ],
 			[ 'WINDOW_CLOSED', 'desktop-mode.window.closed', 'odd.window-closed' ],
 			[ 'WINDOW_FOCUSED', 'desktop-mode.window.focused', 'odd.window-focused' ],
-			[ '', 'desktop-mode.window.blurred', 'odd.window-blurred' ],
+			[ 'WINDOW_BLURRED', 'desktop-mode.window.blurred', 'odd.window-blurred' ],
 			[ 'WINDOW_DETACHED', 'desktop-mode.window.detached', 'odd.window-detached' ],
 			[ 'WINDOW_BOUNDS_CHANGED', 'desktop-mode.window.bounds-changed', 'odd.window-bounds-changed' ],
 			[ 'WINDOW_BODY_RESIZED', 'desktop-mode.window.body-resized', 'odd.window-body-resized' ],
@@ -1114,7 +1115,7 @@
 			} );
 		} );
 
-		addFilterFor( '', 'desktop-mode.window.loading-overlay', function ( host, ctx ) {
+		addFilterFor( 'WINDOW_LOADING_OVERLAY', 'desktop-mode.window.loading-overlay', function ( host, ctx ) {
 			var windowId = ctx && ctx.windowId;
 			if ( ! host || ! isOddWindow( windowId ) ) return host;
 			try {
@@ -1237,7 +1238,7 @@
 	}
 
 	function setupDockDiagnostics() {
-		addAction( 'desktop-mode.dock.before-render', function ( ctx ) {
+		addActionFor( 'DOCK_BEFORE_RENDER', 'desktop-mode.dock.before-render', function ( ctx ) {
 			pulseActivity( 'dock' );
 			record( 'info', 'desktop-mode.dock.before-render', {
 				dockId: ctx && ctx.dockId,
@@ -1245,13 +1246,13 @@
 				items:  ctx && Array.isArray( ctx.items ) ? ctx.items.length : 0,
 			} );
 		} );
-		addFilter( 'desktop-mode.dock.tile-class', function ( classes, ctx ) {
+		addFilterFor( 'DOCK_TILE_CLASS', 'desktop-mode.dock.tile-class', function ( classes, ctx ) {
 			if ( ctx && isOddDockItem( ctx.item ) ) {
 				return applyClass( classes, 'odd-desktop-tile' );
 			}
 			return classes;
 		} );
-		addFilter( 'desktop-mode.dock.tile-element', function ( el, ctx ) {
+		addFilterFor( 'DOCK_TILE_ELEMENT', 'desktop-mode.dock.tile-element', function ( el, ctx ) {
 			if ( el && ctx ) {
 				markCursor( el, 'pointer' );
 				if ( isOddDockItem( ctx.item ) ) {
@@ -1261,7 +1262,7 @@
 			}
 			return el;
 		} );
-		addFilter( 'desktop-mode.dock.tile-tooltip', function ( label, ctx ) {
+		addFilterFor( 'DOCK_TILE_TOOLTIP', 'desktop-mode.dock.tile-tooltip', function ( label, ctx ) {
 			if ( ctx && isOddDockItem( ctx.item ) && label && String( label ).indexOf( 'ODD' ) === -1 ) {
 				return String( label ) + ' · ODD';
 			}
@@ -1277,23 +1278,25 @@
 			record( 'info', 'desktop-mode.dock.item-appended', payload || {} );
 		} );
 		[
-			'desktop-mode.dock.tile-rendered',
-			'desktop-mode.dock.after-render',
-			'desktop-mode.dock.item-removed',
-		].forEach( function ( hookName ) {
-			addAction( hookName, function ( payload ) {
-				pulseActivity( 'dock' );
-				if ( hookName.indexOf( 'tile' ) !== -1 && payload && ! isOddDockItem( payload.item ) ) return;
-				var el = elementFromPayload( payload );
-				if ( el ) {
-					markCursor( el, 'pointer' );
-					if ( payload && payload.item ) {
-						attachOddDockTileContextMenu( el, payload );
-					} else {
-						attachExistingOddDockTile( el );
+			[ 'DOCK_TILE_RENDERED', 'desktop-mode.dock.tile-rendered' ],
+			[ 'DOCK_AFTER_RENDER', 'desktop-mode.dock.after-render' ],
+			[ 'DOCK_ITEM_REMOVED', 'desktop-mode.dock.item-removed' ],
+		].forEach( function ( row ) {
+			hookNames( row[ 0 ], row[ 1 ] ).forEach( function ( hookName ) {
+				addAction( hookName, function ( payload ) {
+					pulseActivity( 'dock' );
+					if ( hookIs( hookName, 'dock.tile-rendered' ) && payload && ! isOddDockItem( payload.item ) ) return;
+					var el = elementFromPayload( payload );
+					if ( el ) {
+						markCursor( el, 'pointer' );
+						if ( payload && payload.item ) {
+							attachOddDockTileContextMenu( el, payload );
+						} else {
+							attachExistingOddDockTile( el );
+						}
 					}
-				}
-				record( 'info', hookName, payload || {} );
+					record( 'info', hookName, payload || {} );
+				} );
 			} );
 		} );
 		scheduleOddDockTileSweep( 'setup-dock-diagnostics' );
@@ -1341,12 +1344,12 @@
 		}
 		[
 			[ 'WINDOW_OPENED', 'desktop-mode.window.opened' ],
-			[ '', 'desktop-mode.window.reopened' ],
-			[ '', 'desktop-mode.window.content-loaded' ],
+			[ 'WINDOW_REOPENED', 'desktop-mode.window.reopened' ],
+			[ 'WINDOW_CONTENT_LOADED', 'desktop-mode.window.content-loaded' ],
 			[ 'WINDOW_FOCUSED', 'desktop-mode.window.focused' ],
 			[ 'WINDOW_BODY_RESIZED', 'desktop-mode.window.body-resized' ],
 			[ 'WINDOW_BOUNDS_CHANGED', 'desktop-mode.window.bounds-changed' ],
-			[ '', 'desktop-mode.window.chrome.applied' ],
+			[ 'WINDOW_CHROME_APPLIED', 'desktop-mode.window.chrome.applied' ],
 		].forEach( function ( row ) {
 			hookNames( row[ 0 ], row[ 1 ] ).forEach( function ( hookName ) {
 				addAction( hookName, mapWindowSurface );
@@ -1515,7 +1518,7 @@
 
 	function setupDevtoolsDiagnostics() {
 		var requestDisposers = {};
-		addAction( 'desktop-mode.window.opened', function ( payload ) {
+		addActionFor( 'WINDOW_OPENED', 'desktop-mode.window.opened', function ( payload ) {
 			var windowId = payload && ( payload.windowId || payload.id );
 			var d = desktop();
 			if ( ! isOddWindow( windowId ) || ! d || ! d.devtools || typeof d.devtools.onRequest !== 'function' ) return;
@@ -1538,12 +1541,14 @@
 
 	function setupBroadSurfaceDiagnostics() {
 		[
-			'desktop-mode.window.chrome.theme-changed',
-			'desktop-mode.window.chrome.applied',
-		].forEach( function ( hookName ) {
-			addAction( hookName, function ( payload ) {
-				stampChromeTheme( payload || {} );
-				record( 'info', hookName, payload || {} );
+			[ 'WINDOW_CHROME_THEME_CHANGED', 'desktop-mode.window.chrome.theme-changed' ],
+			[ 'WINDOW_CHROME_APPLIED', 'desktop-mode.window.chrome.applied' ],
+		].forEach( function ( row ) {
+			hookNames( row[ 0 ], row[ 1 ] ).forEach( function ( hookName ) {
+				addAction( hookName, function ( payload ) {
+					stampChromeTheme( payload || {} );
+					record( 'info', hookName, payload || {} );
+				} );
 			} );
 		} );
 		addActionFor( 'DESKTOP_ICON_CLICKED', 'desktop-mode.desktop-icon.clicked', function ( payload ) {
@@ -1552,8 +1557,12 @@
 				emit( 'odd.desktop-icon-clicked', payload );
 			}
 		} );
-		addAction( 'desktop-mode.window.attention', function ( payload ) {
-			record( 'info', 'desktop-mode.window.attention', payload || {} );
+		addFilter( 'desktop-mode.window.attention', function ( mode, ctx ) {
+			record( 'info', 'desktop-mode.window.attention', {
+				mode:     mode || '',
+				windowId: ctx && ctx.windowId || '',
+			} );
+			return mode;
 		} );
 		[
 			'desktop-mode.files.type-registered',

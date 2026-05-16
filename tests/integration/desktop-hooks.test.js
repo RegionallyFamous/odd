@@ -149,6 +149,23 @@ describe( 'Desktop Mode hook bridge', () => {
 		expect( window.__odd.diagnostics.recent().some( ( row ) => row.message.includes( 'desktop-mode.iframe.error' ) ) ).toBe( true );
 	} );
 
+	it( 'does not keep fallback hook subscriptions once Desktop Mode exposes a HOOKS key', () => {
+		window.wp.desktop = {
+			ready: ( cb ) => cb(),
+			HOOKS: {
+				IFRAME_ERROR: 'desktop-mode.current.iframe.error',
+			},
+		};
+		const seen = [];
+		window.__odd.events.on( 'odd.iframe-error', ( payload ) => seen.push( payload.message ) );
+
+		loadDesktopHooks();
+		window.wp.hooks.doAction( 'desktop-mode.iframe.error', { message: 'fallback' } );
+		window.wp.hooks.doAction( 'desktop-mode.current.iframe.error', { message: 'current' } );
+
+		expect( seen ).toEqual( [ 'current' ] );
+	} );
+
 	it( 'seeds a desktopState snapshot before any Desktop Mode hooks fire', () => {
 		window.wp.desktop = { ready: ( cb ) => cb() };
 
@@ -335,6 +352,20 @@ describe( 'Desktop Mode hook bridge', () => {
 		} );
 		expect( def.match( { id: 'odd-app-demo' } ) ).toBe( true );
 		expect( def.match( { id: 'plugins' } ) ).toBe( false );
+	} );
+
+	it( 'observes the Desktop Mode window attention filter without changing the mode', () => {
+		window.wp.desktop = { ready: ( cb ) => cb() };
+		loadDesktopHooks();
+
+		const mode = window.wp.hooks.applyFilters(
+			'desktop-mode.window.attention',
+			'shake',
+			{ windowId: 'odd-app-demo' },
+		);
+
+		expect( mode ).toBe( 'shake' );
+		expect( window.__odd.diagnostics.recent().some( ( row ) => row.message.includes( 'desktop-mode.window.attention' ) ) ).toBe( true );
 	} );
 
 	it( 'decorates ODD dock tiles without replacing the tile element', () => {

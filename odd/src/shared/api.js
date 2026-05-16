@@ -176,10 +176,8 @@
 	}
 
 	function nativeRenderCallback( id ) {
-		var current = window.wpDesktopNativeWindows || {};
-		var classic = window.desktopModeNativeWindows || {};
-		if ( typeof current[ id ] === 'function' ) return current[ id ];
-		if ( typeof classic[ id ] === 'function' ) return classic[ id ];
+		var registry = window.desktopModeNativeWindows || {};
+		if ( typeof registry[ id ] === 'function' ) return registry[ id ];
 		return null;
 	}
 

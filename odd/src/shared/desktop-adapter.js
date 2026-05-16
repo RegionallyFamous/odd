@@ -79,7 +79,10 @@
 		function add( name ) {
 			if ( name && out.indexOf( name ) === -1 ) out.push( name );
 		}
-		if ( key && d && d.HOOKS && d.HOOKS[ key ] ) add( d.HOOKS[ key ] );
+		if ( key && d && d.HOOKS && d.HOOKS[ key ] ) {
+			add( d.HOOKS[ key ] );
+			return out;
+		}
 		normalizeFallbacks( fallback ).forEach( add );
 		return out;
 	}

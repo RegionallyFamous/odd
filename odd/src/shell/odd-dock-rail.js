@@ -428,18 +428,12 @@
 			return;
 		}
 		var d = window.wp && window.wp.desktop;
-		var names = [
-			d && d.HOOKS && d.HOOKS.DOCK_ITEM_APPENDED,
-			'desktop-mode.dock.item-appended',
-		];
-		names.forEach( function ( name ) {
-			if ( ! name ) {
-				return;
-			}
-			try {
-				hooks.addAction( name, OWNER + '/sync-system-icons', syncAndSkinSystemTiles );
-			} catch ( _ ) {}
-		} );
+		var name = d && d.HOOKS && d.HOOKS.DOCK_ITEM_APPENDED
+			? d.HOOKS.DOCK_ITEM_APPENDED
+			: 'desktop-mode.dock.item-appended';
+		try {
+			hooks.addAction( name, OWNER + '/sync-system-icons', syncAndSkinSystemTiles );
+		} catch ( _ ) {}
 	}
 
 	function dockKeyUrl( item ) {

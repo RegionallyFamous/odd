@@ -48,6 +48,7 @@ const FORBIDDEN = [
 	/\bpre-1\.0\b/i,
 	/type\s+is\s+optional/i,
 	/defaults?\s+to\s+"app"/i,
+	/wpDesktopNativeWindows/,
 	/oddout_catalog_merge_fallback_icon_sets/,
 	/oddout_catalog_bundle_type_count/,
 	/permission_callback['"]?\s*=>\s*['"]is_user_logged_in['"]/,
@@ -204,12 +205,19 @@ describe( 'Desktop Mode integration source contracts', () => {
 			'odd/includes/native-window.php',
 			'odd/includes/starter-pack.php',
 			'odd/includes/icons/dock-filter.php',
+			'odd/includes/enqueue.php',
 			'odd/src/apps/window-host.js',
+			'odd/src/iris/reactivity.js',
+			'odd/src/panel/index.js',
+			'odd/src/shared/api.js',
+			'odd/src/shared/desktop-adapter.js',
 			'odd/src/shared/desktop-hooks.js',
 			'odd/src/shell/odd-dock-rail.js',
+			'odd/src/wallpaper/index.js',
 		].map( readRel ).join( '\n' );
 
 		expect( sources ).not.toMatch( /wp_desktop_/ );
+		expect( sources ).not.toMatch( /wpDesktopNativeWindows/ );
 		expect( sources ).not.toMatch( /wpdm_/ );
 		expect( sources ).not.toMatch( /wp_register_desktop_/ );
 		expect( sources ).not.toMatch( /wp-desktop\./ );
@@ -221,8 +229,10 @@ describe( 'Desktop Mode integration source contracts', () => {
 		expect( sources ).not.toMatch( /desktop-mode\.shared-folder/ );
 		expect( sources ).not.toMatch( /desktop-mode\.window\.changed/ );
 		expect( sources ).not.toMatch( /desktop-mode\.arrange-menu\.opened/ );
+		expect( sources ).not.toMatch( /addAction\(\s*['"]desktop-mode\.window\.attention/ );
 		expect( sources ).toContain( 'desktop_mode_shell_config' );
 		expect( sources ).toContain( 'desktop-mode.window.opened' );
+		expect( sources ).toContain( "addFilter( 'desktop-mode.window.attention'" );
 	} );
 
 	it( 'keeps rail icon integration on Desktop Mode data contracts', () => {

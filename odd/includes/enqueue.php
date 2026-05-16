@@ -36,8 +36,7 @@
  *                     Registers the `odd` wallpaper with WP Desktop Mode.
  *   - `odd-shop-flow` Pure card-state/trust helpers used by the Shop.
  *   - `odd-panel`     ODD Shop native-window render callback,
- *                     declared on `window.wpDesktopNativeWindows.odd`
- *                     and older `window.desktopModeNativeWindows.odd`.
+ *                     declared on `window.desktopModeNativeWindows.odd`.
  *                     (1.0+: the stock Sticky Note + Magic 8-Ball
  *                     widgets ship as remote catalog bundles and
  *                     self-enqueue from uploads/odd/widgets/ when

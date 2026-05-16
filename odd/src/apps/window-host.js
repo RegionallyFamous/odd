@@ -2,15 +2,14 @@
  * ODD Apps — window host.
  * ---------------------------------------------------------------
  * Owns how an installed app's window body gets populated with a
- * sandboxed iframe. Supports two render paths, belt-and-suspenders:
+ * sandboxed iframe. Supports two render paths:
  *
  *   1. Client-side hydration (PREFERRED) — for every installed app
- *      we register both native-window callback globals
- *      (`wpDesktopNativeWindows` and older `desktopModeNativeWindows`)
- *      at boot. When WPDM opens the window, it invokes our callback
- *      directly on the body element; we build the mount div and
- *      iframe with no dependency on any server-rendered <template>.
- *      This mirrors the ODD Shop's working pattern and
+ *      we register the native-window callback on
+ *      `window.desktopModeNativeWindows` at boot. When Desktop Mode
+ *      opens the window, it invokes our callback directly on the body
+ *      element; we build the mount div and iframe with no dependency
+ *      on any server-rendered <template>. This mirrors the ODD Shop and
  *      insulates us from template-emission failure modes (closure
  *      serialization, admin_footer skipped, mid-session install).
  *
@@ -708,16 +707,17 @@
 		function add( name ) {
 			if ( name && out.indexOf( name ) === -1 ) out.push( name );
 		}
-		if ( key && d && d.HOOKS && d.HOOKS[ key ] ) add( d.HOOKS[ key ] );
+		if ( key && d && d.HOOKS && d.HOOKS[ key ] ) {
+			add( d.HOOKS[ key ] );
+			return out;
+		}
 		( fallbacks || [] ).forEach( add );
 		return out;
 	}
 
 	function bindNativeWindowRenderHooks() {
 		if ( desktopAdapter && typeof desktopAdapter.addActionFor === 'function' ) {
-			desktopAdapter.addActionFor( 'NATIVE_WINDOW_AFTER_RENDER', [
-				'desktop-mode.native-window.after-render',
-			], handleWindowShown, 'odd.apps.native-window-after-render' );
+			desktopAdapter.addActionFor( 'NATIVE_WINDOW_AFTER_RENDER', 'desktop-mode.native-window.after-render', handleWindowShown, 'odd.apps.native-window-after-render' );
 			return;
 		}
 		var h = window.wp && window.wp.hooks;
@@ -855,18 +855,14 @@
 	 *     fires `load` (so the user always sees SOMETHING).
 	 */
 	function registerWpdmCallbacks() {
-		var classicReg = window.desktopModeNativeWindows = window.desktopModeNativeWindows || {};
-		var currentReg = window.wpDesktopNativeWindows = window.wpDesktopNativeWindows || classicReg;
+		var registry = window.desktopModeNativeWindows = window.desktopModeNativeWindows || {};
 		var slugs = installedSlugs();
 		for ( var i = 0; i < slugs.length; i++ ) {
 			( function ( slug ) {
 				var id = APP_ID_PREFIX + slug;
-				var existing = typeof currentReg[ id ] === 'function'
-					? currentReg[ id ]
-					: ( typeof classicReg[ id ] === 'function' ? classicReg[ id ] : null );
+				var existing = typeof registry[ id ] === 'function' ? registry[ id ] : null;
 				if ( existing ) {
-					classicReg[ id ] = existing;
-					currentReg[ id ] = existing;
+					registry[ id ] = existing;
 					return;
 				}
 				var render = function ( body, ctx ) {
@@ -878,8 +874,7 @@
 						events.emit( events.NAMES.APP_OPENED, { slug: slug, windowId: id } );
 					}
 				};
-				classicReg[ id ] = render;
-				currentReg[ id ] = render;
+				registry[ id ] = render;
 			} )( slugs[ i ] );
 		}
 	}

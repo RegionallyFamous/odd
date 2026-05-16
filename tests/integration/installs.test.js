@@ -102,7 +102,6 @@ describe( 'ODD Shop · install flows', () => {
 		delete window.__odd;
 		delete window.desktopModeWidgets;
 		delete window.desktopModeNativeWindows;
-		delete window.wpDesktopNativeWindows;
 		try { window.sessionStorage.removeItem( 'odd.justInstalled' ); } catch ( e ) {}
 		installHooks();
 
