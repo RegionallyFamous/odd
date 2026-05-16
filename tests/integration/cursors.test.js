@@ -330,15 +330,33 @@ describe( 'ODD cursor runtime', () => {
 		icon.dispatchEvent( event );
 
 		const layer = document.getElementById( 'odd-live-cursor' );
+		const style = document.getElementById( 'odd-live-cursor-style' );
 		expect( layer ).toBeTruthy();
 		expect( layer.getAttribute( 'data-visible' ) ).toBe( 'true' );
 		expect( layer.getAttribute( 'data-role' ) ).toBe( 'pointer' );
 		expect( layer.getAttribute( 'data-mode' ) ).toBe( 'aura' );
 		expect( layer.style.getPropertyValue( '--odd-cursor-image' ) ).toContain( 'pointer.svg' );
 		expect( layer.style.getPropertyValue( '--odd-cursor-x' ) ).toBe( '130px' );
+		expect( style.textContent ).toContain( 'width:42px' );
+		expect( style.textContent ).toContain( 'opacity:.22' );
 		expect( window.__odd.cursors.status().layer.visible ).toBe( true );
 		expect( window.__odd.cursors.status().layer.coalesced ).toBe( 1 );
 		expect( window.__odd.cursors.status().layer.predicted ).toBe( 1 );
+	} );
+
+	it( 'shows the live cursor layer on ordinary resolved controls too', () => {
+		const button = document.createElement( 'button' );
+		button.textContent = 'Apply';
+		document.body.appendChild( button );
+
+		loadRuntime();
+		button.dispatchEvent( new window.MouseEvent( 'pointermove', { bubbles: true, composed: true, clientX: 90, clientY: 45 } ) );
+
+		const layer = document.getElementById( 'odd-live-cursor' );
+		expect( layer ).toBeTruthy();
+		expect( layer.getAttribute( 'data-role' ) ).toBe( 'pointer' );
+		expect( layer.getAttribute( 'data-visible' ) ).toBe( 'true' );
+		expect( button.style.cursor ).toContain( 'pointer.svg' );
 	} );
 
 	it( 'simplifies the live cursor layer over text targets', () => {
