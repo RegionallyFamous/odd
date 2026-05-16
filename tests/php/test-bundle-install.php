@@ -111,6 +111,39 @@ class Test_Bundle_Install extends ODDOUT_REST_Test_Case {
 		);
 	}
 
+	protected function make_widget_zip( $slug = 'test-widget', array $overrides = array() ) {
+		$manifest = array_merge(
+			array(
+				'type'          => 'widget',
+				'slug'          => $slug,
+				'name'          => 'Test Widget',
+				'label'         => 'Test Widget',
+				'version'       => '1.0.0',
+				'description'   => 'Widget fixture.',
+				'entry'         => 'widget.js',
+				'css'           => array( 'widget.css' ),
+				'icon'          => 'dashicons-clock',
+				'movable'       => true,
+				'resizable'     => true,
+				'minWidth'      => 240,
+				'minHeight'     => 180,
+				'maxWidth'      => 520,
+				'maxHeight'     => 420,
+				'defaultWidth'  => 280,
+				'defaultHeight' => 220,
+				'capabilities'  => array( 'read' ),
+			),
+			$overrides
+		);
+		return $this->build_bundle_zip(
+			$manifest,
+			array(
+				'widget.js'  => "(function(){window.desktopModeWidgets=window.desktopModeWidgets||{};window.desktopModeWidgets['odd/" . $slug . "']=function(){return function(){};};})();",
+				'widget.css' => '.test-widget{display:block;}',
+			)
+		);
+	}
+
 	public function test_iconset_round_trip_install_register_uninstall() {
 		$zip = $this->make_iconset_zip( 'test-set' );
 		$res = oddout_bundle_install( $zip, 'test-set.wp' );
@@ -164,6 +197,51 @@ class Test_Bundle_Install extends ODDOUT_REST_Test_Case {
 		$uninstall = oddout_bundle_uninstall( 'test-scene' );
 		$this->assertTrue( true === $uninstall || is_array( $uninstall ), is_wp_error( $uninstall ) ? $uninstall->get_error_message() : 'uninstall failed' );
 		$this->installed = array();
+	}
+
+	public function test_widget_round_trip_preserves_desktop_mode_metadata() {
+		$zip = $this->make_widget_zip( 'test-widget' );
+		$res = oddout_bundle_install( $zip, 'test-widget.wp' );
+		@unlink( $zip );
+
+		$this->assertIsArray( $res, is_wp_error( $res ) ? $res->get_error_message() : 'widget install returned non-array' );
+		$this->assertSame( 'widget', $res['type'] );
+		$this->installed[] = array(
+			'slug' => 'test-widget',
+			'type' => 'widget',
+		);
+
+		$manifest = $res['manifest'];
+		$this->assertSame( 'odd/test-widget', $manifest['id'] );
+		$this->assertSame( 520, $manifest['maxWidth'] );
+		$this->assertSame( 420, $manifest['maxHeight'] );
+		$this->assertSame( array( 'read' ), $manifest['capabilities'] );
+		$this->assertNotEmpty( oddout_bundle_style_urls_for( $manifest ) );
+
+		$index = oddout_widgets_index_load();
+		$this->assertArrayHasKey( 'test-widget', $index );
+		$this->assertSame( 520, $index['test-widget']['maxWidth'] );
+		$this->assertSame( 'dashicons-clock', $index['test-widget']['icon'] );
+	}
+
+	public function test_widget_zero_max_dimensions_remain_unbounded() {
+		$zip = $this->make_widget_zip(
+			'unbounded-widget',
+			array(
+				'maxWidth'  => 0,
+				'maxHeight' => 0,
+			)
+		);
+		$res = oddout_bundle_install( $zip, 'unbounded-widget.wp' );
+		@unlink( $zip );
+
+		$this->assertIsArray( $res, is_wp_error( $res ) ? $res->get_error_message() : 'widget install returned non-array' );
+		$this->installed[] = array(
+			'slug' => 'unbounded-widget',
+			'type' => 'widget',
+		);
+		$this->assertSame( 0, $res['manifest']['maxWidth'] );
+		$this->assertSame( 0, $res['manifest']['maxHeight'] );
 	}
 
 	public function test_global_slug_uniqueness_across_types() {

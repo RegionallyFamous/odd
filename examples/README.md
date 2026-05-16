@@ -12,7 +12,7 @@ If you're building an ODD bundle, copy the closest example to your working direc
 |-----------------------------|------------|------------------------------------------------------------------------------|
 | `example-scene/`            | `scene`    | Slow rainbow radial gradient. ~40 lines. Shows the scene IIFE shape.         |
 | `example-iconset/`          | `icon-set` | Core raster icons plus optional rail-action tiles, rendered as native-friendly images. |
-| `example-widget/`           | `widget`   | Registers a `odd/example-hello` widget via `window.__odd.api.registerWidget`.|
+| `example-widget/`           | `widget`   | Registers a `odd/example-hello` widget via `window.desktopModeWidgets`.|
 | `example-app/`              | `app`      | Minimal "it's alive" HTML app that logs once to the console and renders text.|
 
 The examples deliberately use zero external dependencies. They should still work a decade from now.

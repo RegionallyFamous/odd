@@ -222,21 +222,33 @@ Covered in full by [Building a Widget](building-a-widget.md).
     "name":        "Pomodoro",
     "version":     "1.0.0",
     "entry":       "widget.js",
-    "icon":        "icon.svg",
+    "icon":        "dashicons-clock",
     "preview":     "preview.svg",
-    "defaultSize": { "width": 220, "height": 180 }
+    "movable":     true,
+    "resizable":   true,
+    "minWidth":    220,
+    "minHeight":   160,
+    "maxWidth":    520,
+    "maxHeight":   420,
+    "defaultWidth": 260,
+    "defaultHeight": 200
 }
 ```
 
 | Field         | Required | Notes                                                               |
 |---------------|----------|---------------------------------------------------------------------|
-| `entry`       | yes      | Relative path to the JS that calls `wp.desktop.registerWidget()`.   |
-| `icon`        | no       | SVG/PNG/WebP shown on the Shop tile.                                |
+| `entry`       | yes      | Relative path to the JS that defines `window.desktopModeWidgets[id]`. |
+| `icon`        | no       | Dashicons class for Desktop Mode's native widget picker.             |
 | `preview`     | no       | Optional preview art. First-party catalog widgets prefer `preview.svg` for card art; older bundles can still rely on generated tiles. |
-| `defaultSize` | no       | `{ width, height }` in CSS px.                                      |
+| `movable` / `resizable` | no | Native Desktop Mode drag/resize affordances.                    |
+| `minWidth` / `minHeight` | no | Minimum native widget dimensions in CSS px.                    |
+| `maxWidth` / `maxHeight` | no | Optional maximum native widget dimensions in CSS px.            |
+| `defaultWidth` / `defaultHeight` | no | First floating dimensions in CSS px.                    |
+| `capabilities` | no      | Optional WordPress capabilities Desktop Mode checks before registering the widget. |
 
-Widget JavaScript is enqueued on every admin page with `desktop-mode`
-and `odd-api` as dependencies. Installing a widget triggers the
+Widget JavaScript is registered with Desktop Mode's server widget
+registry and loaded by the shell when the picker or an enabled widget
+needs it. Installing a widget triggers the
 one-time JS confirmation prompt (admins only).
 
 ---

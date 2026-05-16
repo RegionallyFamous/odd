@@ -1,14 +1,17 @@
-/* ODD widgets — scoped to .odd-widget.* to avoid styling bleed. */
+/* ODD Sticky Note — scoped to .odd-widget--sticky to avoid styling bleed. */
 
-.odd-widget {
+.odd-widget--sticky {
 	--odd-accent: #7a8190;
 	display: flex;
 	flex-direction: column;
-	gap: 6px;
-	padding: 14px 16px;
-	color: var( --wp-admin-theme-color-text, #f3f5f8 );
+	align-items: stretch;
+	justify-content: stretch;
+	padding: 12px;
+	background:
+		radial-gradient( circle at 18% 8%, rgba( 255, 248, 171, 0.18 ), transparent 34% ),
+		transparent;
+	color: #342a0e;
 	font: 400 13px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-	height: 100%;
 	box-sizing: border-box;
 	overflow: hidden;
 }
@@ -16,28 +19,25 @@
 /* Sticky Note                                                 */
 /* =========================================================== */
 
-.odd-widget--sticky {
-	padding: 12px;
-	background: transparent;
-	align-items: stretch;
-	justify-content: stretch;
-}
 .odd-sticky__paper {
 	position: relative;
 	flex: 1 1 auto;
 	display: flex;
 	flex-direction: column;
-	padding: 14px 14px 26px;
+	min-height: 0;
+	padding: 18px 18px 30px;
 	background:
-		linear-gradient( 180deg, #fff6c6 0%, #ffe89a 100% );
+		linear-gradient( 105deg, rgba( 255, 255, 255, 0.4 ) 0 10%, transparent 28% ),
+		repeating-linear-gradient( 180deg, transparent 0 27px, rgba( 123, 96, 24, 0.13 ) 28px 29px, transparent 30px ),
+		linear-gradient( 180deg, #fff7bf 0%, #ffe68f 68%, #ffd768 100% );
 	color: #342a0e;
-	border-radius: 2px;
+	border-radius: 4px 4px 10px 4px;
 	box-shadow:
-		0 1px 0 rgba( 255, 255, 255, 0.5 ) inset,
-		0 10px 22px -12px rgba( 30, 20, 0, 0.45 ),
-		0 2px 6px -2px rgba( 30, 20, 0, 0.25 );
+		0 1px 0 rgba( 255, 255, 255, 0.62 ) inset,
+		0 -18px 28px -26px rgba( 109, 73, 0, 0.48 ) inset,
+		0 18px 34px -18px rgba( 22, 16, 0, 0.58 ),
+		0 4px 10px -5px rgba( 22, 16, 0, 0.42 );
 	transform-origin: 50% 50%;
-	transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 .odd-sticky__paper::before {
 	/* Subtle paper grain. */
@@ -53,15 +53,31 @@
 	mix-blend-mode: multiply;
 	border-radius: inherit;
 }
+.odd-sticky__paper::after {
+	content: '';
+	position: absolute;
+	top: 5px;
+	left: 50%;
+	width: 64px;
+	height: 15px;
+	border-radius: 2px;
+	background:
+		linear-gradient( 90deg, rgba( 255, 255, 255, 0.48 ), rgba( 255, 255, 255, 0.2 ) ),
+		rgba( 255, 238, 164, 0.42 );
+	box-shadow: 0 1px 4px rgba( 87, 64, 10, 0.16 );
+	pointer-events: none;
+	transform: translateX( -50% ) rotate( -1deg );
+}
 .odd-sticky__peel {
 	position: absolute;
 	top: 0;
 	right: 0;
-	width: 22px;
-	height: 22px;
-	background: linear-gradient( 135deg, rgba( 255, 255, 255, 0.8 ) 0%, rgba( 255, 238, 160, 0.7 ) 55%, rgba( 180, 150, 40, 0.6 ) 100% );
+	width: 30px;
+	height: 30px;
+	background:
+		linear-gradient( 135deg, rgba( 255, 255, 255, 0.92 ) 0%, rgba( 255, 239, 155, 0.78 ) 52%, rgba( 172, 133, 30, 0.54 ) 100% );
 	clip-path: polygon( 100% 0, 0 0, 100% 100% );
-	box-shadow: -2px 2px 6px -2px rgba( 30, 20, 0, 0.45 );
+	box-shadow: -4px 5px 9px -5px rgba( 30, 20, 0, 0.5 );
 	pointer-events: none;
 }
 .odd-sticky__text {
@@ -72,10 +88,11 @@
 	outline: 0;
 	resize: none;
 	color: inherit;
-	font: 400 15px/1.35 "Bradley Hand", "Chalkboard SE", "Segoe Print", "Marker Felt", sans-serif;
-	letter-spacing: 0.005em;
-	padding: 0;
+	font: 400 15.5px/1.28 "Bradley Hand", "Chalkboard SE", "Segoe Print", "Marker Felt", sans-serif;
+	letter-spacing: 0;
+	padding: 10px 0 4px;
 	min-height: 0;
+	scrollbar-width: thin;
 }
 .odd-sticky__text::placeholder {
 	color: rgba( 52, 42, 14, 0.42 );
@@ -87,26 +104,16 @@
 }
 .odd-sticky__meta {
 	position: absolute;
-	bottom: 6px;
-	right: 12px;
-	font-size: 10.5px;
-	letter-spacing: 0.06em;
-	color: rgba( 52, 42, 14, 0.48 );
+	bottom: 8px;
+	right: 10px;
+	padding: 2px 6px;
+	border-radius: 999px;
+	background: rgba( 255, 251, 213, 0.46 );
+	box-shadow: 0 1px 0 rgba( 255, 255, 255, 0.42 ) inset;
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	color: rgba( 52, 42, 14, 0.52 );
 	pointer-events: none;
 	user-select: none;
-}
-.odd-sticky__paper { transition: none; }
-/* =========================================================== */
-/* Magic 8-Ball                                                */
-/* =========================================================== */
-
-.odd-widget--eight {
-	align-items: center;
-	justify-content: center;
-	gap: 8px;
-	padding: 14px;
-	background: transparent;
-}
-.odd-widget--eight.is-reduced .odd-eight__ball {
-	animation: none;
 }

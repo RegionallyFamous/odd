@@ -9,5 +9,14 @@
   "entry": "widget.js",
   "css": [
     "widget.css"
-  ]
+  ],
+  "icon": "dashicons-welcome-write-blog",
+  "movable": true,
+  "resizable": true,
+  "minWidth": 220,
+  "minHeight": 160,
+  "maxWidth": 460,
+  "maxHeight": 420,
+  "defaultWidth": 260,
+  "defaultHeight": 200
 }

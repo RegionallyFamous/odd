@@ -1710,8 +1710,8 @@
 		}
 
 		// Widget install flow: no reload needed. Dynamically inject
-		// the widget's entry script (which self-registers into
-		// `wp.desktop.registerWidget`), splice a panel-shaped row
+		// the widget's CSS + entry script, register the mount callback
+		// exposed on `window.desktopModeWidgets[id]`, splice a panel-shaped row
 		// into `state.cfg.installedWidgets`, re-render the Widgets
 		// department, and flash the new tile. If the script fails to
 		// load, we schedule the same deferred admin reload as other
@@ -1734,7 +1734,12 @@
 			}
 			if ( ! entryUrl ) { fallback(); return; }
 
+			loadBundleStyles( 'widget', slug, data && data.style_urls );
 			loadBundleScript( 'widget', slug, entryUrl ).then( function () {
+				if ( ! registerHotLoadedWidget( data, slug, name ) ) {
+					fallback();
+					return;
+				}
 				spliceInstalledRow( 'widget', slug, row || { id: 'odd/' + slug, slug: slug, label: name, installed: true }, data && data.manifest );
 				state.justInstalled = { type: 'widget', slug: slug, name: name, at: Date.now() };
 				playShopSound( 'success' );
@@ -1743,6 +1748,41 @@
 			} ).catch( function () {
 				fallback();
 			} );
+		}
+
+		function registerHotLoadedWidget( data, slug, name ) {
+			var manifest = data && data.manifest || {};
+			var row      = data && data.row || {};
+			var id       = row.id || manifest.id || ( 'odd/' + slug );
+			var mounts   = window.desktopModeWidgets || {};
+			var mount    = mounts[ id ];
+			if ( typeof mount !== 'function' ) {
+				return false;
+			}
+			var desk = window.wp && window.wp.desktop;
+			if ( ! desk || typeof desk.registerWidget !== 'function' ) {
+				return true;
+			}
+			try {
+				desk.registerWidget( {
+					id:            id,
+					label:         manifest.label || row.label || name || slug,
+					description:   manifest.description || row.description || '',
+					icon:          manifest.icon || 'dashicons-screenoptions',
+					movable:       manifest.movable !== false,
+					resizable:     manifest.resizable !== false,
+					minWidth:      manifest.minWidth || undefined,
+					minHeight:     manifest.minHeight || undefined,
+					maxWidth:      manifest.maxWidth || undefined,
+					maxHeight:     manifest.maxHeight || undefined,
+					defaultWidth:  manifest.defaultWidth || undefined,
+					defaultHeight: manifest.defaultHeight || undefined,
+					mount:         mount,
+				} );
+			} catch ( e ) {
+				return false;
+			}
+			return true;
 		}
 
 		/**
@@ -5111,7 +5151,7 @@
 			// desktop layer object is temporarily unavailable (e.g.
 			// during boot races after a hard reload).
 			try {
-				var raw = window.localStorage.getItem( 'desktop-mode.widgets' );
+				var raw = window.localStorage.getItem( 'desktop-mode-widgets' );
 				if ( ! raw ) return [];
 				var parsed = JSON.parse( raw );
 				return Array.isArray( parsed ) ? parsed.filter( function ( x ) { return typeof x === 'string'; } ) : [];
@@ -5140,23 +5180,16 @@
 			var layer = window.wp.desktop.widgetLayer;
 			var wid = normalizeWidgetLayerId( id );
 			try {
-				if ( shouldAdd && typeof layer.add === 'function' ) {
-					var ids = enabledWidgetIds();
-					var already = ids.some( function ( x ) {
-						if ( typeof x !== 'string' ) {
-							return false;
+				if ( shouldAdd ) {
+					if ( window.__odd && window.__odd.api && typeof window.__odd.api.mountWidget === 'function' ) {
+						window.__odd.api.mountWidget( wid, { quiet: true } );
+					} else if ( typeof layer.ensureMounted === 'function' ) {
+						if ( layer.ensureMounted( wid ) && typeof layer.mountIfEnabled === 'function' ) {
+							layer.mountIfEnabled( wid );
 						}
-						if ( x === wid || x === id ) {
-							return true;
-						}
-						return x.replace( /^odd\//, '' ) === wid.replace( /^odd\//, '' );
-					} );
-					if ( already && typeof layer.remove === 'function' ) {
-						try {
-							layer.remove( wid );
-						} catch ( ignored ) {}
+					} else if ( typeof layer.add === 'function' ) {
+						layer.add( wid );
 					}
-					layer.add( wid );
 				} else if ( ! shouldAdd && typeof layer.remove === 'function' ) {
 					layer.remove( wid );
 				}
@@ -6250,9 +6283,8 @@
 		}
 
 		// Inject a `<script>` for a widget bundle and resolve once
-		// it's finished loading — the widget.js is expected to call
-		// `wp.desktop.registerWidget` at the bottom of its IIFE, so
-		// one microtask after `onload` the bundle is discoverable.
+		// it's finished loading. Widget bundles expose their mount
+		// callback on `window.desktopModeWidgets[id]`.
 		// Rejects on script-load errors so the caller can fall back
 		// to a reload.
 		function loadBundleScript( type, slug, entryUrl ) {
@@ -6264,17 +6296,45 @@
 				var attr = 'data-odd-' + type + '-slug';
 				var existing = document.querySelector( 'script[' + attr + '="' + slug + '"]' );
 				if ( existing ) {
-					setTimeout( resolve, 0 );
+					if ( existing.getAttribute( 'data-odd-loaded' ) === '1' ) {
+						setTimeout( resolve, 0 );
+						return;
+					}
+					existing.addEventListener( 'load', function () {
+						existing.setAttribute( 'data-odd-loaded', '1' );
+						setTimeout( resolve, 16 );
+					}, { once: true } );
+					existing.addEventListener( 'error', function () { reject( new Error( type + ' script failed to load' ) ); }, { once: true } );
 					return;
 				}
 				var s = document.createElement( 'script' );
 				s.src = entryUrl;
 				s.async = true;
 				s.setAttribute( attr, slug );
-				s.onload  = function () { setTimeout( resolve, 16 ); };
+				s.onload  = function () {
+					s.setAttribute( 'data-odd-loaded', '1' );
+					setTimeout( resolve, 16 );
+				};
 				s.onerror = function () { reject( new Error( type + ' script failed to load' ) ); };
 				document.head.appendChild( s );
 			} );
+		}
+
+		function loadBundleStyles( type, slug, styleUrls ) {
+			styleUrls = Array.isArray( styleUrls ) ? styleUrls : [];
+			for ( var i = 0; i < styleUrls.length; i++ ) {
+				var href = styleUrls[ i ];
+				if ( typeof href !== 'string' || ! href ) continue;
+				var safeHref = href.replace( /["\\]/g, '\\$&' );
+				var existing = document.querySelector( 'link[data-odd-' + type + '-style-slug="' + slug + '"][href="' + safeHref + '"]' );
+				if ( existing ) continue;
+				var link = document.createElement( 'link' );
+				link.rel = 'stylesheet';
+				link.href = href;
+				link.setAttribute( 'data-odd-' + type + '-style-slug', slug );
+				link.setAttribute( 'data-odd-widget-style-url', href );
+				document.head.appendChild( link );
+			}
 		}
 
 		function savePrefs( body, onDone ) {

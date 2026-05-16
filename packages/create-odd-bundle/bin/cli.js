@@ -213,6 +213,13 @@ function buildManifest( { type, slug, name, author, description } ) {
 	} else if ( type === 'widget' ) {
 		m.entry = 'widget.js';
 		m.css = [ 'widget.css' ];
+		m.icon = 'dashicons-screenoptions';
+		m.movable = true;
+		m.resizable = true;
+		m.minWidth = 220;
+		m.minHeight = 140;
+		m.defaultWidth = 280;
+		m.defaultHeight = 180;
 	} else if ( type === 'app' ) {
 		m.window = { width: 640, height: 480, minWidth: 320, minHeight: 240 };
 	}

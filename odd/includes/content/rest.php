@@ -75,18 +75,20 @@ function oddout_bundle_rest_upload( WP_REST_Request $req ) {
 	}
 
 	$out = array(
-		'installed' => true,
-		'slug'      => $result['slug'],
-		'type'      => $result['type'],
-		'manifest'  => $result['manifest'],
+		'installed'  => true,
+		'slug'       => $result['slug'],
+		'type'       => $result['type'],
+		'manifest'   => $result['manifest'],
 		// Shop hot-register payload. `entry_url` is the widget or
 		// scene bundle's JS URL (null for every other type), and
+		// `style_urls` carries widget CSS for same-page installs.
 		// `row` is a panel-shaped record the client splices into
 		// `state.cfg.installedWidgets` / `scenes` / `iconSets` /
 		// `apps` so the unified grid can re-render with the new
 		// tile without a page reload.
-		'entry_url' => oddout_bundle_entry_url_for( $result['manifest'] ),
-		'row'       => oddout_bundle_panel_row_for( $result['manifest'] ),
+		'entry_url'  => oddout_bundle_entry_url_for( $result['manifest'] ),
+		'style_urls' => oddout_bundle_style_urls_for( $result['manifest'] ),
+		'row'        => oddout_bundle_panel_row_for( $result['manifest'] ),
 	);
 	if ( 'app' === $result['type'] && function_exists( 'oddout_apps_serve_url_for_rest_payload' ) ) {
 		$serve = oddout_apps_serve_url_for_rest_payload( $result['slug'] );

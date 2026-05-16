@@ -163,7 +163,7 @@ describe( 'ODD Shop', () => {
 		delete window.desktopModeNativeWindows;
 		delete window.WebGLRenderingContext;
 		if ( window.wp && window.wp.desktop ) delete window.wp.desktop.widgetLayer;
-		try { window.localStorage.removeItem( 'desktop-mode.widgets' ); } catch ( e ) {}
+		try { window.localStorage.removeItem( 'desktop-mode-widgets' ); } catch ( e ) {}
 		seedConfig();
 		installHooks();
 

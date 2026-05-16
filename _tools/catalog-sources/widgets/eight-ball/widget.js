@@ -7,16 +7,6 @@
 		return ( wpI18nW && typeof wpI18nW.__ === 'function' ) ? wpI18nW.__( s, 'odd' ) : s;
 	}
 
-	function ready( cb ) {
-		if ( window.wp && window.wp.desktop && typeof window.wp.desktop.ready === 'function' ) {
-			window.wp.desktop.ready( cb );
-		} else if ( document.readyState === 'loading' ) {
-			document.addEventListener( 'DOMContentLoaded', cb, { once: true } );
-		} else {
-			cb();
-		}
-	}
-
 	function el( tag, attrs, children ) {
 		var n = document.createElement( tag );
 		if ( attrs ) {
@@ -207,20 +197,6 @@
 			};
 		}
 
-	ready( function () {
-		if ( ! window.wp || ! window.wp.desktop || typeof window.wp.desktop.registerWidget !== 'function' ) return;
-		window.wp.desktop.registerWidget( {
-			id:            'odd/eight-ball',
-			label:         __( 'ODD · Magic 8-Ball' ),
-			description:   __( 'A WordPress-flavored magic 8-ball. Click to shake.' ),
-			icon:          'dashicons-editor-help',
-			movable:       true,
-			resizable:     true,
-			minWidth:      200,
-			minHeight:     220,
-			defaultWidth:  240,
-			defaultHeight: 260,
-			mount:         safeMount( mountEightBall, 'widget.eight-ball' ),
-		} );
-	} );
+	window.desktopModeWidgets = window.desktopModeWidgets || {};
+	window.desktopModeWidgets[ 'odd/eight-ball' ] = safeMount( mountEightBall, 'widget.eight-ball' );
 } )();

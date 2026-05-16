@@ -96,6 +96,11 @@ describe( 'ODD Shop · install flows', () => {
 		document.body.innerHTML = '';
 		const existing = document.getElementById( 'odd-panel-styles' );
 		if ( existing ) existing.remove();
+		document.head.querySelectorAll( 'script[data-odd-scene-slug],script[data-odd-widget-slug],link[data-odd-scene-style-slug],link[data-odd-widget-style-slug],link[data-odd-widget-style-url]' )
+			.forEach( ( node ) => node.remove() );
+		delete window.wp;
+		delete window.__odd;
+		delete window.desktopModeWidgets;
 		delete window.desktopModeNativeWindows;
 		try { window.sessionStorage.removeItem( 'odd.justInstalled' ); } catch ( e ) {}
 		installHooks();
@@ -279,6 +284,7 @@ describe( 'ODD Shop · install flows', () => {
 				type:      'widget',
 				manifest:  { slug: 'clock', label: 'Clock' },
 				entry_url: '/wp-content/uploads/odd/widgets/clock/widget.js',
+				style_urls: [ '/wp-content/uploads/odd/widgets/clock/widget.css' ],
 				row:       { id: 'odd/clock', slug: 'clock', label: 'Clock', installed: true },
 			} ),
 		} ) );
@@ -299,7 +305,13 @@ describe( 'ODD Shop · install flows', () => {
 		const scr = document.head.querySelector( 'script[data-odd-widget-slug="clock"]' );
 		expect( scr, 'widget entry <script> must be injected' ).toBeTruthy();
 		expect( scr.getAttribute( 'src' ) ).toBe( '/wp-content/uploads/odd/widgets/clock/widget.js' );
+		const link = document.head.querySelector( 'link[data-odd-widget-style-slug="clock"]' );
+		expect( link, 'widget CSS must be injected for same-page install' ).toBeTruthy();
+		expect( link.getAttribute( 'href' ) ).toBe( '/wp-content/uploads/odd/widgets/clock/widget.css' );
+		expect( link.getAttribute( 'data-odd-widget-style-url' ) ).toBe( '/wp-content/uploads/odd/widgets/clock/widget.css' );
 
+		window.desktopModeWidgets = window.desktopModeWidgets || {};
+		window.desktopModeWidgets[ 'odd/clock' ] = vi.fn();
 		scr.onload();
 		await new Promise( ( r ) => setTimeout( r, 30 ) );
 
@@ -307,6 +319,59 @@ describe( 'ODD Shop · install flows', () => {
 		expect( installedTile, 'hot-registered widget must appear in the grid' ).toBeTruthy();
 		expect( reloadSpy ).not.toHaveBeenCalled();
 		// No reload → no breadcrumb.
+		expect( window.sessionStorage.getItem( 'odd.justInstalled' ) ).toBeNull();
+	} );
+
+	it( 'widget hot-register waits for an existing in-flight script tag', async () => {
+		seed( {
+			bundleCatalog: {
+				scene: [],
+				iconSet: [],
+				cursorSet: [],
+				widget: [ { slug: 'clock', label: 'Clock', installed: false } ],
+			},
+		} );
+
+		globalThis.fetch = vi.fn( () => Promise.resolve( {
+			ok:   true,
+			json: () => Promise.resolve( {
+				installed: true,
+				slug:      'clock',
+				type:      'widget',
+				manifest:  { slug: 'clock', label: 'Clock' },
+				entry_url: '/wp-content/uploads/odd/widgets/clock/widget.js',
+				style_urls: [ '/wp-content/uploads/odd/widgets/clock/widget.css' ],
+				row:       { id: 'odd/clock', slug: 'clock', label: 'Clock', installed: true },
+			} ),
+		} ) );
+
+		const inflight = document.createElement( 'script' );
+		inflight.src = '/wp-content/uploads/odd/widgets/clock/widget.js';
+		inflight.setAttribute( 'data-odd-widget-slug', 'clock' );
+		document.head.appendChild( inflight );
+
+		loadPanel();
+		const { host } = mount();
+
+		rail( host, 'Widgets' ).dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+		host.querySelector( '[data-odd-shop-card][data-catalog-slug="clock"] .odd-shop__card-btn' )
+			.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+
+		await flush();
+		await new Promise( ( r ) => setTimeout( r, 20 ) );
+
+		expect( host.querySelector( '[data-odd-shop-card][data-catalog-slug="clock"] .odd-shop__card-btn' ).textContent.trim() ).toBe( 'Installing…' );
+		expect( reloadSpy ).not.toHaveBeenCalled();
+
+		window.desktopModeWidgets = window.desktopModeWidgets || {};
+		window.desktopModeWidgets[ 'odd/clock' ] = vi.fn();
+		inflight.dispatchEvent( new Event( 'load' ) );
+		await new Promise( ( r ) => setTimeout( r, 30 ) );
+
+		const installedTile = host.querySelector( '[data-odd-shop-card][data-widget-id="odd/clock"]' );
+		expect( installedTile, 'existing script load must complete hot-register' ).toBeTruthy();
+		expect( inflight.getAttribute( 'data-odd-loaded' ) ).toBe( '1' );
+		expect( reloadSpy ).not.toHaveBeenCalled();
 		expect( window.sessionStorage.getItem( 'odd.justInstalled' ) ).toBeNull();
 	} );
 

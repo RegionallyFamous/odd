@@ -797,6 +797,20 @@ def build_widget(slug: str, src_dir: Path) -> dict:
         "entry": "widget.js",
         "css": css_rel,
     }
+    for key in (
+        "icon",
+        "movable",
+        "resizable",
+        "minWidth",
+        "minHeight",
+        "maxWidth",
+        "maxHeight",
+        "defaultWidth",
+        "defaultHeight",
+        "capabilities",
+    ):
+        if key in meta:
+            manifest[key] = meta[key]
     files["manifest.json"] = json.dumps(manifest, indent=2).encode() + b"\n"
     files["widget.js"] = widget_js
     for rel in css_rel:
