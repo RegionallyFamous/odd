@@ -54,6 +54,7 @@ describe( 'ODD Desktop Mode palette', () => {
 			mountWidget: vi.fn(),
 			openApp: vi.fn(),
 			openOsSettings: vi.fn(),
+			tidyWidgets: vi.fn(),
 			resetDecorations: vi.fn(),
 		};
 		window.__odd.api = api;
@@ -79,6 +80,21 @@ describe( 'ODD Desktop Mode palette', () => {
 		expect( typeof paletteDef.open ).toBe( 'function' );
 		expect( typeof paletteDef.close ).toBe( 'function' );
 		expect( typeof paletteDef.isOpen ).toBe( 'function' );
+	} );
+
+	it( 'registers host-native ODD commands for common actions', () => {
+		loadCommands();
+
+		expect( window.wp.desktop.registerCommand.mock.calls.map( ( call ) => call[ 0 ].slug ) ).toEqual( [
+			'odd',
+			'odd-icons',
+			'shuffle',
+			'odd-panel',
+			'odd-tidy-widgets',
+			'odd-reset-decorations',
+			'odd-settings',
+			'odd-diagnostics',
+		] );
 	} );
 
 	it( 'opens, filters, and runs scene actions', () => {

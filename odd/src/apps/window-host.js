@@ -74,7 +74,14 @@
 	if ( ! window.__odd || ! window.__odd.events ) return;
 
 	var events = window.__odd.events;
+	var desktopAdapter = window.__odd.desktop || null;
 	var APP_ID_PREFIX = 'odd-app-';
+
+	function desktop() {
+		return desktopAdapter && typeof desktopAdapter.host === 'function'
+			? desktopAdapter.host()
+			: ( window.wp && window.wp.desktop ) || null;
+	}
 
 	function diagnostics() {
 		return window.__odd && window.__odd.diagnostics;
@@ -144,6 +151,17 @@
 		var map = cfg().appServeUrls;
 		if ( ! map || typeof map !== 'object' ) return '';
 		return typeof map[ slug ] === 'string' ? map[ slug ] : '';
+	}
+	function appLabel( slug ) {
+		var apps = cfg().apps;
+		if ( Array.isArray( apps ) ) {
+			for ( var i = 0; i < apps.length; i++ ) {
+				if ( apps[ i ] && apps[ i ].slug === slug ) {
+					return apps[ i ].name || apps[ i ].label || slug;
+				}
+			}
+		}
+		return slug || 'ODD App';
 	}
 	function installedSlugs() {
 		var ua = cfg().userApps;
@@ -217,7 +235,7 @@
 		if ( ctx && ctx.window && typeof ctx.window === 'object' ) return ctx.window;
 		if ( ctx && typeof ctx.markContentLoading === 'function' ) return ctx;
 		var id = windowIdFromPayload( ctx );
-		var d = window.wp && window.wp.desktop;
+		var d = desktop();
 		var win = id && d && d.windowManager && typeof d.windowManager.getById === 'function'
 			? d.windowManager.getById( id )
 			: null;
@@ -348,7 +366,7 @@
 			var body = appWindowBodyWithin( el );
 			return body || el;
 		}
-		var d = window.wp && window.wp.desktop;
+		var d = desktop();
 		var instance = d && d.windowManager && typeof d.windowManager.getById === 'function'
 			? d.windowManager.getById( id )
 			: null;
@@ -441,6 +459,7 @@
 		var stopLoadTimer = diagTime( 'app.iframe.load', { slug: slugForMetric } );
 		var frame = document.createElement( 'iframe' );
 		frame.className = 'odd-app-frame';
+		frame.title = appLabel( slugForMetric );
 		frame.src = src;
 		frame.setAttribute( 'data-odd-cursor-root', 'true' );
 		frame.setAttribute( 'sandbox', 'allow-scripts allow-forms allow-popups allow-same-origin allow-downloads' );
@@ -681,8 +700,11 @@
 	}
 
 	function hostHookNames( key, fallbacks ) {
+		if ( desktopAdapter && typeof desktopAdapter.hookNames === 'function' ) {
+			return desktopAdapter.hookNames( key, fallbacks );
+		}
 		var out = [];
-		var d = window.wp && window.wp.desktop;
+		var d = desktop();
 		function add( name ) {
 			if ( name && out.indexOf( name ) === -1 ) out.push( name );
 		}
@@ -692,6 +714,13 @@
 	}
 
 	function bindNativeWindowRenderHooks() {
+		if ( desktopAdapter && typeof desktopAdapter.addActionFor === 'function' ) {
+			desktopAdapter.addActionFor( 'NATIVE_WINDOW_AFTER_RENDER', [
+				'desktop-mode.native-window.after-render',
+				'wp-desktop.native-window.after-render',
+			], handleWindowShown, 'odd.apps.native-window-after-render' );
+			return;
+		}
 		var h = window.wp && window.wp.hooks;
 		if ( ! h || typeof h.addAction !== 'function' ) return;
 		hostHookNames( 'NATIVE_WINDOW_AFTER_RENDER', [
@@ -861,11 +890,14 @@
 	// before DOMContentLoaded still finds its callback.
 	registerWpdmCallbacks();
 
-	if ( window.wp && window.wp.hooks && typeof window.wp.hooks.addAction === 'function' ) {
-		window.wp.hooks.addAction( 'odd.cursorSet', 'odd.apps.cursors', function ( slug, href ) {
-			cfg().cursorStylesheet = ( slug === 'none' || slug === '' ) ? '' : ( href || cursorStylesheetUrl() );
-			injectCursorStylesheetIntoOpenFrames( cfg().cursorStylesheet );
-		} );
+	var onCursorSet = function ( slug, href ) {
+		cfg().cursorStylesheet = ( slug === 'none' || slug === '' ) ? '' : ( href || cursorStylesheetUrl() );
+		injectCursorStylesheetIntoOpenFrames( cfg().cursorStylesheet );
+	};
+	if ( desktopAdapter && typeof desktopAdapter.addAction === 'function' ) {
+		desktopAdapter.addAction( 'odd.cursorSet', onCursorSet, 'odd.apps.cursors' );
+	} else if ( window.wp && window.wp.hooks && typeof window.wp.hooks.addAction === 'function' ) {
+		window.wp.hooks.addAction( 'odd.cursorSet', 'odd.apps.cursors', onCursorSet );
 	}
 
 	// Re-register after page load in case `window.odd` was

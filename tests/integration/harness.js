@@ -23,6 +23,7 @@ const MODULE_ORDER = [
 	'safecall.js',
 	'debug.js',
 	'diagnostics.js',
+	'desktop-adapter.js',
 ];
 
 function execInWindow( src, filename ) {

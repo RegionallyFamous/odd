@@ -15,13 +15,18 @@
 	var NS = 'odd.desktop-hooks';
 	var INSTALLED = [];
 	var ODD_WINDOW_PREFIX = 'odd-app-';
+	var adapter = window.__odd.desktop || null;
 
 	function hooks() {
-		return ( window.wp && window.wp.hooks ) || null;
+		return adapter && typeof adapter.hooks === 'function'
+			? adapter.hooks()
+			: ( window.wp && window.wp.hooks ) || null;
 	}
 
 	function desktop() {
-		return ( window.wp && window.wp.desktop ) || null;
+		return adapter && typeof adapter.host === 'function'
+			? adapter.host()
+			: ( window.wp && window.wp.desktop ) || null;
 	}
 
 	function diagnostics() {
@@ -47,6 +52,10 @@
 	}
 
 	function addAction( name, cb ) {
+		if ( adapter && typeof adapter.addAction === 'function' ) {
+			INSTALLED.push( adapter.addAction( name, cb, NS ) );
+			return;
+		}
 		var h = hooks();
 		if ( ! h || typeof h.addAction !== 'function' ) return;
 		try {
@@ -58,6 +67,10 @@
 	}
 
 	function addFilter( name, cb ) {
+		if ( adapter && typeof adapter.addFilter === 'function' ) {
+			INSTALLED.push( adapter.addFilter( name, cb, NS ) );
+			return;
+		}
 		var h = hooks();
 		if ( ! h || typeof h.addFilter !== 'function' ) return;
 		try {
@@ -69,15 +82,19 @@
 	}
 
 	function hookNames( key, fallback ) {
+		if ( adapter && typeof adapter.hookNames === 'function' ) {
+			return adapter.hookNames( key, fallback );
+		}
 		var out = [];
 		var d = desktop();
-		if ( key && d && d.HOOKS && d.HOOKS[ key ] ) {
-			out.push( d.HOOKS[ key ] );
+		function add( name ) {
+			if ( name && out.indexOf( name ) === -1 ) out.push( name );
 		}
-		if ( fallback ) out.push( fallback );
-		return out.filter( function ( name, index ) {
-			return name && out.indexOf( name ) === index;
-		} );
+		if ( key && d && d.HOOKS && d.HOOKS[ key ] ) {
+			add( d.HOOKS[ key ] );
+		}
+		( Array.isArray( fallback ) ? fallback : [ fallback ] ).forEach( add );
+		return out;
 	}
 
 	function addActionFor( key, fallback, cb ) {
@@ -103,6 +120,10 @@
 	}
 
 	function addDomEvent( name, cb ) {
+		if ( adapter && typeof adapter.addDomEvent === 'function' ) {
+			INSTALLED.push( adapter.addDomEvent( name, cb ) );
+			return;
+		}
 		if ( typeof document === 'undefined' || typeof document.addEventListener !== 'function' ) return;
 		document.addEventListener( name, cb );
 		INSTALLED.push( function () {
@@ -111,6 +132,10 @@
 	}
 
 	function addActivity( channel, cb ) {
+		if ( adapter && typeof adapter.addActivity === 'function' ) {
+			INSTALLED.push( adapter.addActivity( channel, cb ) );
+			return;
+		}
 		var d = desktop();
 		if ( ! d || ! d.activity || typeof d.activity.subscribe !== 'function' ) return;
 		try {
@@ -163,6 +188,57 @@
 	var warnedShopFullscreen = false;
 	var SHOP_TOP_Y = 16;
 	var SHOP_TOP_MAX_Y = 24;
+	var ODD_ACTIONS = [
+		{
+			id: 'oddout-open-shop',
+			label: 'Open ODD Shop',
+			description: 'Open or focus the ODD Shop window.',
+			icon: 'dashicons-cart',
+			method: 'openPanel',
+			command: 'odd-panel',
+			fallbackOpen: true,
+		},
+		{
+			id: 'oddout-shuffle-wallpaper',
+			label: 'Shuffle wallpaper',
+			description: 'Jump to a random installed ODD scene.',
+			icon: 'dashicons-controls-forward',
+			method: 'shuffle',
+			command: 'shuffle',
+		},
+		{
+			id: 'oddout-tidy-widgets',
+			label: 'Tidy widgets',
+			description: 'Gather installed ODD widgets back into Desktop Mode.',
+			icon: 'dashicons-align-wide',
+			method: 'tidyWidgets',
+			command: 'odd-tidy-widgets',
+		},
+		{
+			id: 'oddout-reset-decorations',
+			label: 'Reset decorations',
+			description: 'Reset active ODD icon and cursor decorations.',
+			icon: 'dashicons-image-rotate',
+			method: 'resetDecorations',
+			command: 'odd-reset-decorations',
+		},
+		{
+			id: 'oddout-open-settings',
+			label: 'Open ODD settings',
+			description: 'Open Desktop Mode settings with the ODD tab available.',
+			icon: 'dashicons-admin-settings',
+			method: 'openOsSettings',
+			command: 'odd-settings',
+		},
+		{
+			id: 'oddout-copy-diagnostics',
+			label: 'Copy diagnostics',
+			description: 'Copy local ODD and Desktop Mode diagnostics.',
+			icon: 'dashicons-clipboard',
+			method: 'copyDiagnostics',
+			command: 'odd-diagnostics',
+		},
+	];
 	window.__odd.desktopState = desktopState;
 
 	function stateNow() {
@@ -560,6 +636,10 @@
 	}
 
 	function ready( cb ) {
+		if ( adapter && typeof adapter.ready === 'function' ) {
+			adapter.ready( cb );
+			return;
+		}
 		var d = desktop();
 		if ( d && typeof d.ready === 'function' ) {
 			d.ready( cb );
@@ -611,6 +691,36 @@
 	function isOddCommand( slug ) {
 		slug = String( slug || '' );
 		return slug === 'shuffle' || slug.indexOf( 'odd' ) === 0;
+	}
+
+	function cloneAction( action ) {
+		var out = {};
+		Object.keys( action || {} ).forEach( function ( key ) {
+			out[ key ] = action[ key ];
+		} );
+		return out;
+	}
+
+	function oddActions() {
+		return ODD_ACTIONS.map( cloneAction );
+	}
+
+	function oddActionById( id ) {
+		id = String( id || '' );
+		for ( var i = 0; i < ODD_ACTIONS.length; i++ ) {
+			if ( ODD_ACTIONS[ i ].id === id ) return ODD_ACTIONS[ i ];
+		}
+		return null;
+	}
+
+	function canRunOddAction( action ) {
+		if ( ! action ) return false;
+		if ( action.method === 'copyDiagnostics' ) {
+			var diag = diagnostics();
+			return !! ( diag && typeof diag.copy === 'function' );
+		}
+		var api = window.__odd && window.__odd.api;
+		return !! ( api && typeof api[ action.method ] === 'function' );
 	}
 
 	function windowIdFromWindow( win ) {
@@ -980,13 +1090,15 @@
 		} );
 		function openCommandItemsFilter( items ) {
 			items = Array.isArray( items ) ? items : [];
-			var api = window.__odd && window.__odd.api;
-			items.push( {
-				id:          'odd',
-				label:       'ODD Shop',
-				description: 'Open the ODD Shop.',
-				icon:        'dashicons-cart',
-				open:        function () { if ( api && typeof api.openPanel === 'function' ) api.openPanel(); },
+			ODD_ACTIONS.forEach( function ( action ) {
+				items.push( {
+					id:          action.id === 'oddout-open-shop' ? 'odd' : action.id,
+					label:       action.label,
+					description: action.description || '',
+					icon:        action.icon || 'dashicons-star-filled',
+					command:     action.command || '',
+					open:        function () { runOddSurfaceAction( action.id, 'desktop-mode.open-command.items' ); },
+				} );
 			} );
 			var apps = cfg().apps;
 			if ( Array.isArray( apps ) ) {
@@ -1003,8 +1115,13 @@
 								currentApi.openApp( app.slug );
 								return;
 							}
-							if ( window.wp && window.wp.desktop && typeof window.wp.desktop.openWindow === 'function' ) {
-								window.wp.desktop.openWindow( 'odd-app-' + app.slug );
+							if ( adapter && typeof adapter.openWindow === 'function' ) {
+								adapter.openWindow( 'odd-app-' + app.slug );
+								return;
+							}
+							var d = desktop();
+							if ( d && typeof d.openWindow === 'function' ) {
+								d.openWindow( 'odd-app-' + app.slug );
 							}
 						},
 					} );
@@ -1073,23 +1190,25 @@
 
 	function setupTitlebarButton() {
 		ready( function () {
+			var def = {
+				id:        'odd/copy-diagnostics',
+				label:     'Copy ODD diagnostics',
+				icon:      'dashicons-clipboard',
+				placement: 'right',
+				order:     80,
+				owner:     'odd-desktop-hooks',
+				match:     function ( win ) { return isOddWindow( windowIdFromWindow( win ) ); },
+				onClick:   function () {
+					runOddSurfaceAction( 'oddout-copy-diagnostics', 'desktop-mode.titlebar-button' );
+				},
+			};
+			if ( adapter && typeof adapter.registerTitleBarButton === 'function' ) {
+				adapter.registerTitleBarButton( def );
+				return;
+			}
 			var d = desktop();
 			if ( ! d || typeof d.registerTitleBarButton !== 'function' ) return;
-			try {
-				d.registerTitleBarButton( {
-					id:        'odd/copy-diagnostics',
-					label:     'Copy ODD diagnostics',
-					icon:      'dashicons-clipboard',
-					placement: 'right',
-					order:     80,
-					owner:     'odd-desktop-hooks',
-					match:     function ( win ) { return isOddWindow( windowIdFromWindow( win ) ); },
-					onClick:   function () {
-						var diag = diagnostics();
-						if ( diag && typeof diag.copy === 'function' ) diag.copy();
-					},
-				} );
-			} catch ( _ ) {}
+			try { d.registerTitleBarButton( def ); } catch ( _ ) {}
 		} );
 	}
 
@@ -1208,29 +1327,24 @@
 			if ( ! icon || icon.id !== 'odd' ) {
 				return items;
 			}
-			var api = window.__odd && window.__odd.api || {};
 			var actions = [];
 			var next = Array.isArray( items ) ? items.slice() : [];
-			function actionItem( id, label, method, fallbackOpen ) {
-				var enabled = api && typeof api[ method ] === 'function';
+			ODD_ACTIONS.forEach( function ( action ) {
 				actions.push( {
-					id:       id,
-					label:    label,
-					disabled: ! enabled && ! fallbackOpen,
+					id:       action.id,
+					label:    action.label,
+					icon:     action.icon,
+					disabled: ! canRunOddAction( action ) && ! action.fallbackOpen,
 					onSelect: function ( ctx ) {
-						if ( runOddSurfaceAction( id, 'desktop-mode.desktop-icon.menu' ) ) {
+						if ( runOddSurfaceAction( action.id, 'desktop-mode.desktop-icon.menu' ) ) {
 							return;
 						}
-						if ( fallbackOpen && ctx && typeof ctx.open === 'function' ) {
+						if ( action.fallbackOpen && ctx && typeof ctx.open === 'function' ) {
 							ctx.open();
 						}
 					},
 				} );
-			}
-			actionItem( 'oddout-open-shop', 'Open ODD Shop', 'openPanel', true );
-			actionItem( 'oddout-shuffle-wallpaper', 'Shuffle wallpaper', 'shuffle', false );
-			actionItem( 'oddout-tidy-widgets', 'Tidy widgets', 'tidyWidgets', false );
-			actionItem( 'oddout-reset-decorations', 'Reset decorations', 'resetDecorations', false );
+			} );
 			return actions.concat( next );
 		} );
 		addActionFor( 'DESKTOP_ICON_MENU_OPENED', 'desktop-mode.desktop-icon.menu.opened', function ( payload ) {
@@ -1243,20 +1357,22 @@
 	function runOddSurfaceAction( id, source ) {
 		id = String( id || '' );
 		source = source || 'odd.surface-action';
+		var action = oddActionById( id );
+		if ( action && action.method === 'copyDiagnostics' ) {
+			var diag = diagnostics();
+			var copied = !! ( diag && typeof diag.copy === 'function' );
+			if ( copied ) diag.copy();
+			record( copied ? 'info' : 'warning', source, { id: id, handled: copied } );
+			return copied;
+		}
 		var api = window.__odd && window.__odd.api;
 		if ( ! api ) {
 			record( 'warning', source, { id: id, ready: false } );
 			return false;
 		}
 		var handled = true;
-		if ( id === 'oddout-shuffle-wallpaper' && typeof api.shuffle === 'function' ) {
-			api.shuffle();
-		} else if ( id === 'oddout-tidy-widgets' && typeof api.tidyWidgets === 'function' ) {
-			api.tidyWidgets();
-		} else if ( id === 'oddout-open-shop' && typeof api.openPanel === 'function' ) {
-			api.openPanel();
-		} else if ( id === 'oddout-reset-decorations' && typeof api.resetDecorations === 'function' ) {
-			api.resetDecorations();
+		if ( action && action.method && typeof api[ action.method ] === 'function' ) {
+			api[ action.method ]();
 		} else {
 			handled = false;
 		}
@@ -1264,17 +1380,90 @@
 		return handled;
 	}
 
+	function escHtml( value ) {
+		return String( value == null ? '' : value )
+			.replace( /&/g, '&amp;' )
+			.replace( /</g, '&lt;' )
+			.replace( />/g, '&gt;' )
+			.replace( /"/g, '&quot;' );
+	}
+
+	function shortHash( value ) {
+		value = String( value || '' );
+		return value.length > 14 ? value.slice( 0, 14 ) + '...' : value;
+	}
+
+	function formatSeconds( value ) {
+		var n = parseInt( value, 10 );
+		if ( ! isFinite( n ) || n < 0 ) return 'unknown';
+		if ( n < 60 ) return n + 's';
+		if ( n < 3600 ) return Math.round( n / 60 ) + 'm';
+		if ( n < 86400 ) return Math.round( n / 3600 ) + 'h';
+		return Math.round( n / 86400 ) + 'd';
+	}
+
+	function catalogMeta() {
+		var system = cfg().systemHealth || {};
+		return system.catalog || {};
+	}
+
+	function bundleCounts() {
+		var bundleCatalog = cfg().bundleCatalog || {};
+		var total = 0;
+		Object.keys( bundleCatalog ).forEach( function ( key ) {
+			if ( Array.isArray( bundleCatalog[ key ] ) ) total += bundleCatalog[ key ].length;
+		} );
+		var meta = catalogMeta();
+		return {
+			raw: meta.raw_bundle_count != null ? meta.raw_bundle_count : ( meta.bundle_count != null ? meta.bundle_count : total ),
+			effective: meta.effective_bundle_count != null ? meta.effective_bundle_count : ( meta.bundle_count != null ? meta.bundle_count : total ),
+		};
+	}
+
+	function adapterCapabilityList() {
+		var caps = adapter && typeof adapter.capabilities === 'function' ? adapter.capabilities() : {};
+		return Object.keys( caps ).filter( function ( key ) {
+			return !! caps[ key ];
+		} ).sort();
+	}
+
+	function renderSummaryRows( rows ) {
+		return rows.map( function ( row ) {
+			return '<div class="odd-settings-row"><dt>' + escHtml( row[ 0 ] ) + '</dt><dd>' + escHtml( row[ 1 ] ) + '</dd></div>';
+		} ).join( '' );
+	}
+
 	function renderSettingsTab( body ) {
 		if ( ! body ) return;
 		var d = diagnostics();
 		var recent = d && typeof d.recent === 'function' ? d.recent().slice( -5 ).reverse() : [];
+		var meta = catalogMeta();
+		var counts = bundleCounts();
+		var caps = adapterCapabilityList();
+		var summaryRows = [
+			[ 'Version', cfg().version || 'unknown' ],
+			[ 'Scene', cfg().scene || cfg().wallpaper || 'default' ],
+			[ 'Icon set', cfg().iconSet || 'Desktop Mode default' ],
+			[ 'Cursor set', cfg().cursorSet || 'default' ],
+			[ 'Catalog source', meta.source || 'unknown' ],
+			[ 'Signature', meta.signature_status || 'unknown' ],
+			[ 'Registry hash', shortHash( meta.registry_sha256 || meta.hash || '' ) || 'unknown' ],
+			[ 'Stale age', formatSeconds( meta.stale_age ) ],
+			[ 'Bundle rows', String( counts.raw ) + ' raw / ' + String( counts.effective ) + ' effective' ],
+			[ 'Rollback', meta.rollback_available ? 'available' : 'not available' ],
+			[ 'Desktop Mode', caps.length ? caps.join( ', ' ) : 'not detected' ],
+		];
 		body.innerHTML = [
 			'<wpd-section heading="ODD" description="Shop, catalog, and diagnostics." stack>',
-			'<wpd-stack gap="8">',
-			'<wpd-button data-odd-settings-open-shop>Open ODD Shop</wpd-button>',
-			'<wpd-button data-odd-settings-copy>Copy diagnostics</wpd-button>',
+			'<wpd-stack gap="10">',
+			'<wpd-button data-odd-settings-action="oddout-open-shop">Open ODD Shop</wpd-button>',
+			'<wpd-button data-odd-settings-action="oddout-shuffle-wallpaper">Shuffle wallpaper</wpd-button>',
+			'<wpd-button data-odd-settings-action="oddout-tidy-widgets">Tidy widgets</wpd-button>',
+			'<wpd-button data-odd-settings-action="oddout-reset-decorations">Reset decorations</wpd-button>',
+			'<wpd-button data-odd-settings-action="oddout-copy-diagnostics">Copy diagnostics</wpd-button>',
 			'</wpd-stack>',
 			'<wpd-section heading="Current state" stack>',
+			'<dl data-odd-settings-summary>' + renderSummaryRows( summaryRows ) + '</dl>',
 			'<wpd-code block data-odd-settings-health></wpd-code>',
 			'</wpd-section>',
 			'<wpd-section heading="Recent diagnostics" stack>',
@@ -1285,16 +1474,15 @@
 
 		var health = body.querySelector( '[data-odd-settings-health]' );
 		if ( health ) {
-			var cfg = window.odd || {};
-			var system = cfg.systemHealth || {};
 			health.textContent = JSON.stringify( {
-				version: cfg.version || '',
-				scene: cfg.scene || cfg.wallpaper || '',
-				iconSet: cfg.iconSet || '',
-				cursorSet: cfg.cursorSet || '',
-				catalog: system.catalog || {},
-				content: system.content || {},
-				desktopMode: system.desktopMode || {},
+				version: cfg().version || '',
+				scene: cfg().scene || cfg().wallpaper || '',
+				iconSet: cfg().iconSet || '',
+				cursorSet: cfg().cursorSet || '',
+				catalog: meta,
+				content: ( cfg().systemHealth || {} ).content || {},
+				desktopMode: ( cfg().systemHealth || {} ).desktopMode || {},
+				adapter: adapter && typeof adapter.snapshot === 'function' ? adapter.snapshot() : null,
 			}, null, 2 );
 		}
 
@@ -1307,41 +1495,304 @@
 				: 'No diagnostics recorded yet.';
 		}
 
-		var open = body.querySelector( '[data-odd-settings-open-shop]' );
-		if ( open ) {
-			open.addEventListener( 'click', function () {
-				var api = window.__odd && window.__odd.api;
-				if ( api && typeof api.openPanel === 'function' ) api.openPanel();
-			} );
-		}
-		var copy = body.querySelector( '[data-odd-settings-copy]' );
-		if ( copy ) {
-			copy.addEventListener( 'click', function () {
-				if ( d && typeof d.copy === 'function' ) d.copy();
+		var buttons = body.querySelectorAll( '[data-odd-settings-action]' );
+		for ( var i = 0; i < buttons.length; i++ ) {
+			buttons[ i ].addEventListener( 'click', function ( ev ) {
+				runOddSurfaceAction( ev.currentTarget.getAttribute( 'data-odd-settings-action' ), 'desktop-mode.settings-tab' );
 			} );
 		}
 	}
 
 	function setupSettingsTab() {
-		var d = desktop();
-		if ( ! d || typeof d.registerSettingsTab !== 'function' ) return;
-		function register() {
+		ready( function () {
+			var def = {
+				id:         'odd',
+				label:      'ODD',
+				capability: 'manage_options',
+				order:      50,
+				owner:      'odd-desktop-hooks',
+				render:     renderSettingsTab,
+			};
+			if ( adapter && typeof adapter.registerSettingsTab === 'function' ) {
+				adapter.registerSettingsTab( def );
+				return;
+			}
+			var d = desktop();
+			if ( ! d || typeof d.registerSettingsTab !== 'function' ) return;
 			try {
-				d.registerSettingsTab( {
-					id:         'odd',
-					label:      'ODD',
-					capability: 'manage_options',
-					order:      50,
-					owner:      'odd-desktop-hooks',
-					render:     renderSettingsTab,
-				} );
+				d.registerSettingsTab( def );
 			} catch ( _ ) {}
+		} );
+	}
+
+	function setupNamespaceRegistration() {
+		ready( function () {
+			var namespaceApi = {
+				version: cfg().version || '',
+				api: function () {
+					return window.__odd && window.__odd.api || null;
+				},
+				capabilities: function () {
+					return adapter && typeof adapter.capabilities === 'function' ? adapter.capabilities() : {};
+				},
+				actions: oddActions,
+				runAction: function ( id ) {
+					return runOddSurfaceAction( id, 'wp.desktop.odd.runAction' );
+				},
+				openShop: function () {
+					return runOddSurfaceAction( 'oddout-open-shop', 'wp.desktop.odd.openShop' );
+				},
+				shuffle: function () {
+					return runOddSurfaceAction( 'oddout-shuffle-wallpaper', 'wp.desktop.odd.shuffle' );
+				},
+				openSettings: function () {
+					return runOddSurfaceAction( 'oddout-open-settings', 'wp.desktop.odd.openSettings' );
+				},
+				copyDiagnostics: function () {
+					return runOddSurfaceAction( 'oddout-copy-diagnostics', 'wp.desktop.odd.copyDiagnostics' );
+				},
+				diagnostics: function () {
+					var diag = diagnostics();
+					return diag && typeof diag.snapshot === 'function' ? diag.snapshot() : null;
+				},
+			};
+			window.__odd.desktopNamespace = namespaceApi;
+			if ( adapter && typeof adapter.registerNamespace === 'function' && adapter.registerNamespace( 'odd', namespaceApi ) ) {
+				return;
+			}
+			var d = desktop();
+			if ( d && typeof d.registerNamespace === 'function' ) {
+				try { d.registerNamespace( 'odd', namespaceApi ); } catch ( _ ) {}
+			}
+		} );
+	}
+
+	function setupModuleRegistration() {
+		ready( function () {
+			var root = cfg().pluginUrl ? String( cfg().pluginUrl ).replace( /\/$/, '' ) : '';
+			if ( ! root ) return;
+			[
+				{
+					id: 'odd-desktop-adapter',
+					url: root + '/src/shared/desktop-adapter.js',
+					isReady: function () { return !! ( window.__odd && window.__odd.desktop ); },
+				},
+				{
+					id: 'odd-api',
+					url: root + '/src/shared/api.js',
+					isReady: function () { return !! ( window.__odd && window.__odd.api ); },
+				},
+				{
+					id: 'odd',
+					url: root + '/src/shared/desktop-hooks.js',
+					isReady: function () { return !! ( window.__odd && window.__odd.desktopHooks ); },
+				},
+			].forEach( function ( def ) {
+				if ( adapter && typeof adapter.registerModule === 'function' && adapter.registerModule( def ) ) {
+					return;
+				}
+				var d = desktop();
+				if ( d && typeof d.registerModule === 'function' ) {
+					try { d.registerModule( def ); } catch ( _ ) {}
+				}
+			} );
+		} );
+	}
+
+	function desktopFileName( file ) {
+		if ( ! file || typeof file !== 'object' ) return '';
+		return String( file.name || file.title || file.filename || file.path || file.ref || file.id || '' );
+	}
+
+	function desktopFileType( file ) {
+		if ( ! file || typeof file !== 'object' ) return '';
+		return String( file.type || file.kind || file.fileType || '' );
+	}
+
+	function isOddDesktopFile( file ) {
+		if ( ! file || typeof file !== 'object' ) return false;
+		var type = desktopFileType( file );
+		if ( type === 'odd-bundle' || type === 'odd-catalog' || type === 'odd-workspace' ) return true;
+		if ( file.odd || file.isOdd || file.source === 'odd' ) return true;
+		if ( file.meta && ( file.meta.odd || file.meta.source === 'odd' ) ) return true;
+		if ( file.metadata && ( file.metadata.odd || file.metadata.source === 'odd' ) ) return true;
+		var name = desktopFileName( file ).toLowerCase();
+		return /\.wp$/.test( name ) || /\.odd(?:\.json)?$/.test( name ) || /odd-catalog\.json$/.test( name );
+	}
+
+	function openOddDesktopFile( file, ctx ) {
+		var payload = {
+			file: file || {},
+			ctx: ctx || {},
+			openedAt: stateNow(),
+		};
+		window.__odd.pendingDesktopFile = payload;
+		record( 'info', 'odd.desktop-file.opened', {
+			type: desktopFileType( file ),
+			name: desktopFileName( file ),
+		} );
+		emit( 'odd.desktop-file-opened', payload );
+		if ( runOddSurfaceAction( 'oddout-open-shop', 'odd.desktop-file.open' ) ) {
+			return true;
 		}
-		if ( typeof d.ready === 'function' ) {
-			d.ready( register );
-		} else {
-			register();
+		if ( adapter && typeof adapter.openWindow === 'function' && adapter.openWindow( 'odd' ) ) {
+			return true;
 		}
+		var d = desktop();
+		if ( d && typeof d.openWindow === 'function' ) {
+			try { d.openWindow( 'odd' ); return true; } catch ( _ ) {}
+		}
+		return false;
+	}
+
+	function menuItemFromAction( action, source ) {
+		return {
+			id: action.id,
+			label: action.label,
+			icon: action.icon,
+			disabled: ! canRunOddAction( action ) && ! action.fallbackOpen,
+			onClick: function () {
+				runOddSurfaceAction( action.id, source );
+			},
+			onSelect: function () {
+				runOddSurfaceAction( action.id, source );
+			},
+		};
+	}
+
+	function setupFileIntegration() {
+		ready( function () {
+			[
+				{ type: 'odd-bundle', label: 'ODD Bundle', sort: 60 },
+				{ type: 'odd-catalog', label: 'ODD Catalog', sort: 61 },
+				{ type: 'odd-workspace', label: 'ODD Workspace', sort: 62 },
+			].forEach( function ( def ) {
+				if ( adapter && typeof adapter.registerFileType === 'function' && adapter.registerFileType( def ) ) {
+					return;
+				}
+				var d = desktop();
+				if ( d && d.files && typeof d.files.registerType === 'function' ) {
+					try { d.files.registerType( def ); } catch ( _ ) {}
+				}
+			} );
+			var opener = {
+				id: 'odd/open-file',
+				label: 'Open in ODD',
+				types: [ 'odd-bundle', 'odd-catalog', 'odd-workspace' ],
+				isDefault: true,
+				sort: 20,
+				handler: {
+					kind: 'js',
+					open: openOddDesktopFile,
+				},
+			};
+			if ( adapter && typeof adapter.registerFileOpener === 'function' && adapter.registerFileOpener( opener ) ) {
+				return;
+			}
+			var d = desktop();
+			if ( d && d.files && typeof d.files.registerOpener === 'function' ) {
+				try { d.files.registerOpener( opener ); } catch ( _ ) {}
+			}
+		} );
+
+		function tileMenuFilter( items, placement ) {
+			var file = placement && ( placement.file || placement.item || placement.placement || placement );
+			if ( ! isOddDesktopFile( file ) ) return items;
+			var next = Array.isArray( items ) ? items.slice() : [];
+			next.unshift( {
+				id: 'oddout-open-file',
+				label: 'Open in ODD',
+				icon: 'dashicons-cart',
+				onClick: function ( ctx ) { openOddDesktopFile( file, ctx || placement || {} ); },
+				onSelect: function ( ctx ) { openOddDesktopFile( file, ctx || placement || {} ); },
+			} );
+			return next;
+		}
+		addFilter( 'desktop-mode.files.tile-menu', tileMenuFilter );
+		addFilter( 'wp-desktop.files.tile-menu', tileMenuFilter );
+
+		function wallpaperMenuFilter( items ) {
+			var next = Array.isArray( items ) ? items.slice() : [];
+			ODD_ACTIONS.forEach( function ( action ) {
+				if ( action.id === 'oddout-copy-diagnostics' ) return;
+				next.push( menuItemFromAction( action, 'desktop-mode.wallpaper-context-menu' ) );
+			} );
+			return next;
+		}
+		addFilter( 'desktop-mode.wallpaper-context-menu', wallpaperMenuFilter );
+		addFilter( 'wp-desktop.wallpaper-context-menu', wallpaperMenuFilter );
+	}
+
+	function setupAppWindowLifecycleEnhancements() {
+		var appWindows = window.__odd.appWindows || {
+			bySlug: {},
+			focusedSlug: '',
+			count: 0,
+			updatedAt: 0,
+		};
+		window.__odd.appWindows = appWindows;
+		function slugFromPayload( payload ) {
+			if ( payload && payload.slug ) return String( payload.slug );
+			var id = windowIdFromPayload( payload || {} );
+			return id.indexOf( ODD_WINDOW_PREFIX ) === 0 ? id.slice( ODD_WINDOW_PREFIX.length ) : '';
+		}
+		function countAppWindows() {
+			appWindows.count = Object.keys( appWindows.bySlug ).length;
+		}
+		function snapshotAppWindows() {
+			return {
+				bySlug: cloneAction( appWindows.bySlug ),
+				focusedSlug: appWindows.focusedSlug,
+				count: appWindows.count,
+				updatedAt: appWindows.updatedAt,
+			};
+		}
+		function updateAppWindow( reason, payload ) {
+			var slug = slugFromPayload( payload );
+			if ( ! slug ) return;
+			var id = payload && ( payload.windowId || payload.id ) || ODD_WINDOW_PREFIX + slug;
+			if ( reason === 'closed' ) {
+				delete appWindows.bySlug[ slug ];
+				if ( appWindows.focusedSlug === slug ) appWindows.focusedSlug = '';
+			} else {
+				var row = appWindows.bySlug[ slug ] || {
+					slug: slug,
+					windowId: id,
+					openedAt: stateNow(),
+				};
+				row.windowId = id;
+				row.focused = reason === 'focused' || reason === 'opened' || reason === 'reopened';
+				row.state = payload && payload.state || row.state || 'open';
+				row.updatedAt = stateNow();
+				appWindows.bySlug[ slug ] = row;
+				if ( row.focused ) appWindows.focusedSlug = slug;
+			}
+			countAppWindows();
+			appWindows.updatedAt = stateNow();
+			record( 'info', 'odd.app-window-state-changed', {
+				reason: reason,
+				slug: slug,
+				count: appWindows.count,
+			} );
+			emit( 'odd.app-window-state-changed', {
+				reason: reason,
+				slug: slug,
+				windowId: id,
+				state: snapshotAppWindows(),
+			} );
+		}
+		addAction( 'odd.app-opened', function ( payload ) { updateAppWindow( 'opened', payload || {} ); } );
+		addAction( 'odd.app-focused', function ( payload ) { updateAppWindow( 'focused', payload || {} ); } );
+		addAction( 'odd.app-closed', function ( payload ) { updateAppWindow( 'closed', payload || {} ); } );
+		addActionFor( 'WINDOW_OPENED', 'desktop-mode.window.opened', function ( payload ) {
+			if ( isOddWindow( windowIdFromPayload( payload ) ) ) updateAppWindow( 'opened', payload || {} );
+		} );
+		addActionFor( 'WINDOW_FOCUSED', 'desktop-mode.window.focused', function ( payload ) {
+			if ( isOddWindow( windowIdFromPayload( payload ) ) ) updateAppWindow( 'focused', payload || {} );
+		} );
+		addActionFor( 'WINDOW_CLOSED', 'desktop-mode.window.closed', function ( payload ) {
+			if ( isOddWindow( windowIdFromPayload( payload ) ) ) updateAppWindow( 'closed', payload || {} );
+		} );
 	}
 
 	function setupCrossSurfaceOddLinks() {
@@ -1387,6 +1838,10 @@
 	setupLayoutDiagnostics();
 	setupActivityDiagnostics();
 	setupSettingsTab();
+	setupNamespaceRegistration();
+	setupModuleRegistration();
+	setupFileIntegration();
+	setupAppWindowLifecycleEnhancements();
 	setupArrangeActions();
 	setupDesktopIconMenuActions();
 	setupTitlebarButton();
@@ -1394,6 +1849,9 @@
 	setupBroadSurfaceDiagnostics();
 
 	window.__odd.desktopHooks = {
+		actions: oddActions,
+		runAction: runOddSurfaceAction,
+		openDesktopFile: openOddDesktopFile,
 		renderSettingsTab: renderSettingsTab,
 		uninstall: function () {
 			Object.keys( activityTimers ).forEach( function ( key ) {

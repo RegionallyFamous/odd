@@ -46,6 +46,7 @@
  *     odd.iframe-error        { message, err }
  *     odd.visibility-changed  { state: 'hidden' | 'visible' }
  *     odd.desktop-state-changed { revision, document, wallpaper, windows, surfaces, activity }
+ *     odd.desktop-file-opened { file, ctx, openedAt }
  *
  *   Apps (v0.16.0+):
  *     odd.app-installed       { slug, manifest }
@@ -55,6 +56,7 @@
  *     odd.app-opened          { slug, windowId }
  *     odd.app-closed          { slug, windowId }
  *     odd.app-focused         { slug, windowId }
+ *     odd.app-window-state-changed { reason, slug, windowId, state }
  *
  *   Errors:
  *     odd.error               { source, err, severity, message, stack }
@@ -101,6 +103,7 @@
 		IFRAME_ERROR:         'odd.iframe-error',
 		VISIBILITY_CHANGED:   'odd.visibility-changed',
 		DESKTOP_STATE_CHANGED: 'odd.desktop-state-changed',
+		DESKTOP_FILE_OPENED:  'odd.desktop-file-opened',
 		APP_INSTALLED:        'odd.app-installed',
 		APP_UNINSTALLED:      'odd.app-uninstalled',
 		APP_ENABLED:          'odd.app-enabled',
@@ -108,6 +111,7 @@
 		APP_OPENED:           'odd.app-opened',
 		APP_CLOSED:           'odd.app-closed',
 		APP_FOCUSED:          'odd.app-focused',
+		APP_WINDOW_STATE_CHANGED: 'odd.app-window-state-changed',
 		ERROR:                'odd.error',
 	};
 

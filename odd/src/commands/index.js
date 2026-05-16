@@ -1,7 +1,7 @@
 /**
  * ODD — slash-command integration for WP Desktop Mode's palette
  * ---------------------------------------------------------------
- * Registers four slash commands on the ⌘K palette:
+ * Registers ODD slash commands on the host-native command surface:
  *
  *   /odd [scene]        swap to a scene (autocomplete from the
  *                       registered catalog; no-arg = random).
@@ -10,16 +10,29 @@
  *   /shuffle            pick a random non-current scene.
  *   /odd-panel          open the ODD Shop native window.
  *
- * All four route through window.__odd.api so they share the live
+ * All commands route through window.__odd.api so they share the live
  * swap + REST persistence path with the widgets and the panel.
  */
 ( function () {
 	'use strict';
 	if ( typeof window === 'undefined' ) return;
 
+	var desktopAdapter = window.__odd && window.__odd.desktop || null;
+
+	function desktop() {
+		return desktopAdapter && typeof desktopAdapter.host === 'function'
+			? desktopAdapter.host()
+			: ( window.wp && window.wp.desktop ) || null;
+	}
+
 	function ready( cb ) {
-		if ( window.wp && window.wp.desktop && typeof window.wp.desktop.ready === 'function' ) {
-			window.wp.desktop.ready( cb );
+		if ( desktopAdapter && typeof desktopAdapter.ready === 'function' ) {
+			desktopAdapter.ready( cb );
+			return;
+		}
+		var d = desktop();
+		if ( d && typeof d.ready === 'function' ) {
+			d.ready( cb );
 		} else if ( document.readyState === 'loading' ) {
 			document.addEventListener( 'DOMContentLoaded', cb, { once: true } );
 		} else {
@@ -163,6 +176,33 @@
 			return;
 		}
 		return 'ODD Shop is unavailable — WP Desktop Mode may not be ready yet.';
+	}
+
+	function run_tidyWidgets() {
+		var a = api();
+		if ( ! a || typeof a.tidyWidgets !== 'function' ) return 'ODD widgets are not ready yet.';
+		return a.tidyWidgets() ? 'Gathered ODD widgets.' : 'No installed ODD widgets to gather yet.';
+	}
+
+	function run_resetDecorations() {
+		var a = api();
+		if ( ! a || typeof a.resetDecorations !== 'function' ) return 'ODD decorations are not ready yet.';
+		return a.resetDecorations() ? 'Reset ODD decorations.' : 'ODD decorations were already reset.';
+	}
+
+	function run_settings() {
+		var a = api();
+		if ( ! a || typeof a.openOsSettings !== 'function' ) return 'Desktop Mode settings are not ready yet.';
+		return a.openOsSettings() ? undefined : 'Desktop Mode settings are unavailable.';
+	}
+
+	function run_diagnostics() {
+		var d = window.__odd && window.__odd.diagnostics;
+		if ( d && typeof d.copy === 'function' ) {
+			d.copy();
+			return 'Copied ODD diagnostics.';
+		}
+		return 'ODD diagnostics are not ready yet.';
 	}
 
 	var palette = {
@@ -383,22 +423,40 @@
 	}
 
 	function registerOddPalette() {
-		var d = window.wp && window.wp.desktop;
-		if ( ! d || typeof d.registerPalette !== 'function' ) return;
 		if ( palette.unregister ) return;
-		palette.unregister = d.registerPalette( {
+		var def = {
 			id: 'odd',
 			label: 'ODD',
 			open: openPalette,
 			close: closePalette,
 			isOpen: function () { return !! palette.open; },
-		} );
+		};
+		if ( desktopAdapter && typeof desktopAdapter.registerPalette === 'function' ) {
+			palette.unregister = desktopAdapter.registerPalette( def );
+			return;
+		}
+		var d = desktop();
+		if ( ! d || typeof d.registerPalette !== 'function' ) return;
+		palette.unregister = d.registerPalette( def );
+	}
+
+	function registerCommand( def ) {
+		if ( desktopAdapter && typeof desktopAdapter.registerCommand === 'function' ) {
+			return desktopAdapter.registerCommand( def );
+		}
+		var d = desktop();
+		if ( ! d || typeof d.registerCommand !== 'function' ) return false;
+		d.registerCommand( def );
+		return true;
 	}
 
 	ready( function () {
-		if ( ! window.wp || ! window.wp.desktop || typeof window.wp.desktop.registerCommand !== 'function' ) return;
+		if ( ! ( desktopAdapter && desktopAdapter.capabilities && desktopAdapter.capabilities().commands ) ) {
+			var d = desktop();
+			if ( ! d || typeof d.registerCommand !== 'function' ) return;
+		}
 
-		window.wp.desktop.registerCommand( {
+		registerCommand( {
 			slug:        'odd',
 			label:       'ODD: pick a scene',
 			description: 'Swap the live PixiJS wallpaper scene.',
@@ -409,7 +467,7 @@
 			run:         safeRun( run_odd, 'command.odd' ),
 		} );
 
-		window.wp.desktop.registerCommand( {
+		registerCommand( {
 			slug:        'odd-icons',
 			label:       'ODD: pick an icon set',
 			description: 'Swap the Desktop Mode icon set.',
@@ -420,7 +478,7 @@
 			run:         safeRun( run_oddIcons, 'command.odd-icons' ),
 		} );
 
-		window.wp.desktop.registerCommand( {
+		registerCommand( {
 			slug:        'shuffle',
 			label:       'ODD: shuffle scene',
 			description: 'Jump to a random scene right now.',
@@ -429,13 +487,49 @@
 			run:         safeRun( run_shuffle, 'command.shuffle' ),
 		} );
 
-		window.wp.desktop.registerCommand( {
+		registerCommand( {
 			slug:        'odd-panel',
 			label:       'ODD: open Shop',
 			description: 'Open (or focus) the ODD Shop window.',
 			icon:        'dashicons-cart',
 			owner:       'odd-commands',
 			run:         safeRun( run_panel, 'command.odd-panel' ),
+		} );
+
+		registerCommand( {
+			slug:        'odd-tidy-widgets',
+			label:       'ODD: tidy widgets',
+			description: 'Gather floating ODD widgets back into the Desktop Mode widget rail.',
+			icon:        'dashicons-align-wide',
+			owner:       'odd-commands',
+			run:         safeRun( run_tidyWidgets, 'command.odd-tidy-widgets' ),
+		} );
+
+		registerCommand( {
+			slug:        'odd-reset-decorations',
+			label:       'ODD: reset decorations',
+			description: 'Reset active ODD icon and cursor decorations.',
+			icon:        'dashicons-image-rotate',
+			owner:       'odd-commands',
+			run:         safeRun( run_resetDecorations, 'command.odd-reset-decorations' ),
+		} );
+
+		registerCommand( {
+			slug:        'odd-settings',
+			label:       'ODD: open Desktop Mode settings',
+			description: 'Open Desktop Mode settings with the ODD tab available.',
+			icon:        'dashicons-admin-settings',
+			owner:       'odd-commands',
+			run:         safeRun( run_settings, 'command.odd-settings' ),
+		} );
+
+		registerCommand( {
+			slug:        'odd-diagnostics',
+			label:       'ODD: copy diagnostics',
+			description: 'Copy local ODD and Desktop Mode integration diagnostics.',
+			icon:        'dashicons-clipboard',
+			owner:       'odd-commands',
+			run:         safeRun( run_diagnostics, 'command.odd-diagnostics' ),
 		} );
 
 		registerOddPalette();

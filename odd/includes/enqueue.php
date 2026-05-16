@@ -13,6 +13,8 @@
  *   - `odd-lifecycle`  window.__odd.lifecycle — explicit boot phases
  *   - `odd-safecall`   window.__odd.safeCall — error boundary helper
  *   - `odd-debug`      window.__odd.debug — inspector (self-gates)
+ *   - `odd-desktop-adapter` window.__odd.desktop — WP Desktop Mode
+ *                     capability and registration boundary.
  *
  * Apps: `?odd-apps-debug=1` on wp-admin traces `[ODD apps]` iframe
  * hydration in the console without enabling full odd-debug store mode.
@@ -31,15 +33,15 @@
  *   - `odd`           wallpaper engine boot (Pixi + scene registrar).
  *                     Registers the `odd` wallpaper with WP Desktop Mode.
  *   - `odd-shop-flow` Pure card-state/trust helpers used by the Shop.
-	 *   - `odd-panel`     ODD Shop native-window render callback,
-	 *                     declared on `window.wpDesktopNativeWindows.odd`
-	 *                     and older `window.desktopModeNativeWindows.odd`.
+ *   - `odd-panel`     ODD Shop native-window render callback,
+ *                     declared on `window.wpDesktopNativeWindows.odd`
+ *                     and older `window.desktopModeNativeWindows.odd`.
  *                     (1.0+: the stock Sticky Note + Magic 8-Ball
  *                     widgets ship as remote catalog bundles and
  *                     self-enqueue from uploads/odd/widgets/ when
  *                     installed — the plugin emits no stock widgets.)
- *   - `odd-commands`  registers slash commands (/odd, /odd-icons,
- *                     /shuffle, /odd-panel) via registerCommand().
+ *   - `odd-commands`  registers ODD host commands and the ODD palette
+ *                     via registerCommand() / registerPalette().
  *
  * All handles load only when WP Desktop Mode is active.
  */
@@ -114,6 +116,13 @@ add_action(
 			$asset_version( 'src/shared/diagnostics.js' ),
 			true
 		);
+		wp_enqueue_script(
+			'odd-desktop-adapter',
+			ODDOUT_URL . '/src/shared/desktop-adapter.js',
+			array( 'desktop-mode', 'wp-hooks', 'odd-events', 'odd-diagnostics' ),
+			$asset_version( 'src/shared/desktop-adapter.js' ),
+			true
+		);
 
 		// Feature surfaces. `odd-api` depends on every foundation
 		// module so downstream scripts can assume the full stack is
@@ -128,6 +137,7 @@ add_action(
 			'odd-safecall',
 			'odd-debug',
 			'odd-diagnostics',
+			'odd-desktop-adapter',
 		);
 
 		wp_enqueue_script(

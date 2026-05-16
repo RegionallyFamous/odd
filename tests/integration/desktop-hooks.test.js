@@ -47,6 +47,92 @@ describe( 'Desktop Mode hook bridge', () => {
 		expect( typeof registerSettingsTab.mock.calls[ 0 ][ 0 ].render ).toBe( 'function' );
 	} );
 
+	it( 'renders ODD status and actions inside the Desktop Mode settings tab', () => {
+		const registerSettingsTab = vi.fn();
+		const shuffle = vi.fn();
+		const copy = vi.fn();
+		window.wp.desktop = {
+			ready: ( cb ) => cb(),
+			registerSettingsTab,
+		};
+		window.__odd.api = {
+			openPanel: vi.fn( () => true ),
+			shuffle,
+			tidyWidgets: vi.fn( () => true ),
+			resetDecorations: vi.fn( () => true ),
+		};
+		window.__odd.diagnostics.copy = copy;
+
+		loadDesktopHooks();
+		const body = document.createElement( 'div' );
+		registerSettingsTab.mock.calls[ 0 ][ 0 ].render( body );
+
+		expect( body.textContent ).toContain( 'Catalog source' );
+		expect( body.textContent ).toContain( 'Signature' );
+		expect( body.textContent ).toContain( 'Bundle rows' );
+
+		body.querySelector( '[data-odd-settings-action="oddout-shuffle-wallpaper"]' )
+			.dispatchEvent( new MouseEvent( 'click', { bubbles: true } ) );
+		body.querySelector( '[data-odd-settings-action="oddout-copy-diagnostics"]' )
+			.dispatchEvent( new MouseEvent( 'click', { bubbles: true } ) );
+
+		expect( shuffle ).toHaveBeenCalledTimes( 1 );
+		expect( copy ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'registers the ODD namespace, modules, and file openers with Desktop Mode', () => {
+		const registerNamespace = vi.fn();
+		const registerModule = vi.fn();
+		const registerType = vi.fn();
+		const registerOpener = vi.fn();
+		const openPanel = vi.fn( () => true );
+		window.wp.desktop = {
+			ready: ( cb ) => cb(),
+			registerNamespace,
+			registerModule,
+			files: {
+				registerType,
+				registerOpener,
+			},
+		};
+		window.__odd.api = {
+			openPanel,
+			shuffle: vi.fn( () => true ),
+			openOsSettings: vi.fn( () => true ),
+		};
+
+		loadDesktopHooks();
+
+		expect( registerNamespace ).toHaveBeenCalledWith( 'odd', expect.objectContaining( {
+			actions: expect.any( Function ),
+			runAction: expect.any( Function ),
+			openShop: expect.any( Function ),
+		} ) );
+		const namespace = registerNamespace.mock.calls[ 0 ][ 1 ];
+		expect( namespace.actions().map( ( action ) => action.id ) ).toContain( 'oddout-open-shop' );
+		expect( namespace.openShop() ).toBe( true );
+		expect( openPanel ).toHaveBeenCalledTimes( 1 );
+
+		expect( registerModule.mock.calls.map( ( call ) => call[ 0 ].id ) ).toEqual( expect.arrayContaining( [
+			'odd-desktop-adapter',
+			'odd-api',
+			'odd',
+		] ) );
+		expect( registerType.mock.calls.map( ( call ) => call[ 0 ].type ) ).toEqual( [
+			'odd-bundle',
+			'odd-catalog',
+			'odd-workspace',
+		] );
+		expect( registerOpener ).toHaveBeenCalledWith( expect.objectContaining( {
+			id: 'odd/open-file',
+			types: [ 'odd-bundle', 'odd-catalog', 'odd-workspace' ],
+		} ) );
+
+		const opener = registerOpener.mock.calls[ 0 ][ 0 ];
+		expect( opener.handler.open( { type: 'odd-bundle', name: 'test.wp' }, { source: 'test' } ) ).toBe( true );
+		expect( window.__odd.pendingDesktopFile.file.name ).toBe( 'test.wp' );
+	} );
+
 	it( 'records iframe failures and mirrors them to the ODD event bus', () => {
 		window.wp.desktop = { ready: ( cb ) => cb() };
 		const seen = [];
@@ -460,6 +546,8 @@ describe( 'Desktop Mode hook bridge', () => {
 			'oddout-shuffle-wallpaper',
 			'oddout-tidy-widgets',
 			'oddout-reset-decorations',
+			'oddout-open-settings',
+			'oddout-copy-diagnostics',
 			'open',
 		] );
 		expect( window.__odd.api.shuffle ).toHaveBeenCalledTimes( 1 );
@@ -615,7 +703,68 @@ describe( 'Desktop Mode hook bridge', () => {
 		expect( items.map( ( item ) => item.id ) ).toEqual( expect.arrayContaining( [ 'odd', 'odd-app-timer' ] ) );
 
 		items.find( ( item ) => item.id === 'odd-app-timer' ).open();
-		expect( openWindow ).toHaveBeenCalledWith( 'odd-app-timer' );
+		expect( openWindow ).toHaveBeenCalledWith( 'odd-app-timer', undefined );
+	} );
+
+	it( 'adds ODD file and wallpaper context menu integrations', () => {
+		const openPanel = vi.fn( () => true );
+		const shuffle = vi.fn( () => true );
+		window.wp.desktop = { ready: ( cb ) => cb() };
+		window.__odd.api = {
+			openPanel,
+			shuffle,
+			tidyWidgets: vi.fn( () => true ),
+			resetDecorations: vi.fn( () => true ),
+			openOsSettings: vi.fn( () => true ),
+		};
+		loadDesktopHooks();
+
+		const fileItems = window.wp.hooks.applyFilters(
+			'desktop-mode.files.tile-menu',
+			[ { id: 'rename', label: 'Rename' } ],
+			{ file: { type: 'odd-bundle', name: 'sparkles.wp' } },
+		);
+		expect( fileItems.map( ( item ) => item.id ) ).toEqual( [ 'oddout-open-file', 'rename' ] );
+		fileItems[ 0 ].onSelect();
+		expect( window.__odd.pendingDesktopFile.file.name ).toBe( 'sparkles.wp' );
+		expect( openPanel ).toHaveBeenCalledTimes( 1 );
+
+		const wallpaperItems = window.wp.hooks.applyFilters( 'desktop-mode.wallpaper-context-menu', [] );
+		expect( wallpaperItems.map( ( item ) => item.id ) ).toEqual( expect.arrayContaining( [
+			'oddout-open-shop',
+			'oddout-shuffle-wallpaper',
+			'oddout-open-settings',
+		] ) );
+		wallpaperItems.find( ( item ) => item.id === 'oddout-shuffle-wallpaper' ).onSelect();
+		expect( shuffle ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'tracks ODD app window lifecycle as local state', () => {
+		window.wp.desktop = { ready: ( cb ) => cb() };
+		const changes = [];
+		loadDesktopHooks();
+		window.__odd.events.on( 'odd.app-window-state-changed', ( payload ) => changes.push( payload ) );
+
+		window.wp.hooks.doAction( 'desktop-mode.window.opened', {
+			windowId: 'odd-app-timer',
+			state: 'normal',
+		} );
+		window.wp.hooks.doAction( 'desktop-mode.window.focused', {
+			windowId: 'odd-app-timer',
+			state: 'normal',
+		} );
+
+		expect( window.__odd.appWindows.count ).toBe( 1 );
+		expect( window.__odd.appWindows.focusedSlug ).toBe( 'timer' );
+		expect( window.__odd.appWindows.bySlug.timer ).toMatchObject( {
+			slug: 'timer',
+			windowId: 'odd-app-timer',
+			focused: true,
+		} );
+
+		window.wp.hooks.doAction( 'desktop-mode.window.closed', { windowId: 'odd-app-timer' } );
+		expect( window.__odd.appWindows.count ).toBe( 0 );
+		expect( changes.map( ( payload ) => payload.reason ) ).toEqual( [ 'opened', 'focused', 'closed' ] );
 	} );
 
 	it( 'records command lifecycle diagnostics for ODD commands', () => {

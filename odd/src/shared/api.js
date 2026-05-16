@@ -64,8 +64,19 @@
 	var registries = window.__odd.registries || null;
 	var lifecycle  = window.__odd.lifecycle  || null;
 	var safeCall   = window.__odd.safeCall   || function ( fn ) { try { return fn(); } catch ( e ) {} };
+	var desktopAdapter = window.__odd.desktop || null;
 
 	function cfg() { return window.odd || {}; }
+	function desktop() {
+		return desktopAdapter && typeof desktopAdapter.host === 'function'
+			? desktopAdapter.host()
+			: ( window.wp && window.wp.desktop ) || null;
+	}
+	function hookBus() {
+		return desktopAdapter && typeof desktopAdapter.hooks === 'function'
+			? desktopAdapter.hooks()
+			: ( window.wp && window.wp.hooks ) || null;
+	}
 
 	function scenes() {
 		if ( registries ) {
@@ -151,7 +162,7 @@
 	}
 
 	function nativeRegistryEntry( id ) {
-		var d = window.wp && window.wp.desktop;
+		var d = desktop();
 		var list = d && d.config && d.config.nativeWindows;
 		if ( ! Array.isArray( list ) ) return null;
 		for ( var i = 0; i < list.length; i++ ) {
@@ -173,7 +184,7 @@
 	}
 
 	function openNativeWindow( id, fallback ) {
-		var d = window.wp && window.wp.desktop;
+		var d = desktop();
 		if ( ! d || ! id ) return false;
 		fallback = fallback || {};
 		return !! safeCall( function () {
@@ -183,7 +194,7 @@
 			var entryMinHeight = typeof entry.minHeight === 'number' ? entry.minHeight : entry.min_height;
 			var fallbackAutofocus = typeof fallback.autofocus !== 'undefined' ? fallback.autofocus : false;
 			if ( typeof d.registerWindow === 'function' && render ) {
-				d.registerWindow( {
+				var def = {
 					id: id,
 					title: entry.title || fallback.title || id,
 					icon: entry.icon || fallback.icon || 'dashicons-admin-generic',
@@ -195,11 +206,20 @@
 					y: numberOr( entry.y, numberOr( fallback.y, undefined ) ),
 					autofocus: typeof entry.autofocus !== 'undefined' ? entry.autofocus : fallbackAutofocus,
 					render: render,
-				} );
+				};
+				if ( desktopAdapter && typeof desktopAdapter.registerWindow === 'function' ) {
+					desktopAdapter.registerWindow( def );
+				} else {
+					d.registerWindow( def );
+				}
 				return true;
 			}
 			if ( typeof d.openWindow === 'function' ) {
-				d.openWindow( id );
+				if ( desktopAdapter && typeof desktopAdapter.openWindow === 'function' ) {
+					desktopAdapter.openWindow( id );
+				} else {
+					d.openWindow( id );
+				}
 				return true;
 			}
 			return false;
@@ -207,9 +227,14 @@
 	}
 
 	function doAction( hook, payload ) {
+		if ( desktopAdapter && typeof desktopAdapter.doAction === 'function' ) {
+			desktopAdapter.doAction( hook, payload );
+			return;
+		}
 		try {
-			if ( window.wp && window.wp.hooks && typeof window.wp.hooks.doAction === 'function' ) {
-				window.wp.hooks.doAction( hook, payload );
+			var h = hookBus();
+			if ( h && typeof h.doAction === 'function' ) {
+				h.doAction( hook, payload );
 			}
 		} catch ( e ) {}
 	}
@@ -219,21 +244,30 @@
 	}
 
 	function addAction( hook, namespace, cb ) {
-		if ( ! ( window.wp && window.wp.hooks && typeof window.wp.hooks.addAction === 'function' ) ) {
+		if ( desktopAdapter && typeof desktopAdapter.addAction === 'function' ) {
+			return desktopAdapter.addAction( hook, cb, namespace );
+		}
+		var h = hookBus();
+		if ( ! ( h && typeof h.addAction === 'function' ) ) {
 			return function () {};
 		}
-		try { window.wp.hooks.addAction( hook, namespace, cb ); } catch ( e ) {}
+		try { h.addAction( hook, namespace, cb ); } catch ( e ) {}
 		return function () {
-			try { window.wp.hooks.removeAction( hook, namespace ); } catch ( e ) {}
+			try { h.removeAction( hook, namespace ); } catch ( e ) {}
 		};
 	}
 
-	function toast( message, opts ) {
-		opts = opts || {};
-		if ( ! ( window.wp && window.wp.desktop && typeof window.wp.desktop.showToast === 'function' ) ) return;
-		safeCall( function () {
-			window.wp.desktop.showToast( {
-				message: String( message || '' ),
+		function toast( message, opts ) {
+			opts = opts || {};
+			if ( desktopAdapter && typeof desktopAdapter.showToast === 'function' ) {
+				desktopAdapter.showToast( message, opts );
+				return;
+			}
+			var d = desktop();
+			if ( ! ( d && typeof d.showToast === 'function' ) ) return;
+			safeCall( function () {
+				d.showToast( {
+					message: String( message || '' ),
 				duration: typeof opts.duration === 'number' ? opts.duration : 2400,
 				source: opts.source || 'odd',
 				meta: opts.meta || { tone: opts.tone || TOAST_TONE },
@@ -243,7 +277,10 @@
 	}
 
 	function openOsSettings() {
-		var d = window.wp && window.wp.desktop;
+		if ( desktopAdapter && typeof desktopAdapter.openOsSettings === 'function' ) {
+			return desktopAdapter.openOsSettings();
+		}
+		var d = desktop();
 		if ( ! d ) return false;
 		return !! safeCall( function () {
 			if ( typeof d.openOsSettings === 'function' ) {
@@ -262,7 +299,7 @@
 	}
 
 	function showAttention( windowId, opts ) {
-		var d = window.wp && window.wp.desktop;
+		var d = desktop();
 		if ( ! d || ! windowId ) return false;
 		return !! safeCall( function () {
 			var win = d.windowManager && typeof d.windowManager.getById === 'function'
@@ -285,7 +322,7 @@
 	}
 
 	function setBadge( itemId, count ) {
-		var d = window.wp && window.wp.desktop;
+		var d = desktop();
 		if ( ! d || ! itemId ) return false;
 		return !! safeCall( function () {
 			var rails = [ d.dock, d.sideDock, d.icons ];
@@ -299,10 +336,13 @@
 	}
 
 	function diagnosticsSnapshot( windowId ) {
-		var d = window.wp && window.wp.desktop;
+		var d = desktop();
 		if ( ! d ) return {};
 		return safeCall( function () {
 			var out = {};
+			if ( desktopAdapter && typeof desktopAdapter.snapshot === 'function' ) {
+				out.adapter = desktopAdapter.snapshot();
+			}
 			if ( windowId && typeof d.getWindowConfig === 'function' ) {
 				out.windowConfig = d.getWindowConfig( windowId );
 			}
@@ -375,7 +415,7 @@
 						|| Object.prototype.hasOwnProperty.call( patchObj, 'scene' );
 					var prefsOk    = data && typeof data === 'object' && typeof data.code !== 'string';
 					if ( hostOdd && prefsOk && typeof data.wallpaper === 'string' ) {
-						var desk = window.wp && window.wp.desktop;
+						var desk = desktop();
 						if ( desk && typeof desk.updateOsSettings === 'function' ) {
 							try {
 								desk.updateOsSettings( { wallpaper: 'odd' } );
@@ -490,19 +530,23 @@
 	}
 
 	function mountWidget( id, opts ) {
-		var d = window.wp && window.wp.desktop;
+		var d = desktop();
 		if ( ! d || ! id ) return false;
 		return !! safeCall( function () {
-			var layer = d.widgetLayer;
-			var ok = false;
-			if ( layer && typeof layer.ensureMounted === 'function' ) {
-				ok = !! layer.ensureMounted( id );
-				if ( ok && typeof layer.mountIfEnabled === 'function' ) {
-					layer.mountIfEnabled( id );
+			var ok = desktopAdapter && typeof desktopAdapter.mountWidget === 'function'
+				? desktopAdapter.mountWidget( id )
+				: false;
+			if ( ! ok ) {
+				var layer = d.widgetLayer;
+				if ( layer && typeof layer.ensureMounted === 'function' ) {
+					ok = !! layer.ensureMounted( id );
+					if ( ok && typeof layer.mountIfEnabled === 'function' ) {
+						layer.mountIfEnabled( id );
+					}
+				} else if ( layer && typeof layer.add === 'function' ) {
+					layer.add( id );
+					ok = true;
 				}
-			} else if ( layer && typeof layer.add === 'function' ) {
-				layer.add( id );
-				ok = true;
 			}
 			if ( ok && ! ( opts && opts.quiet ) ) {
 				toast( 'Added widget to the desktop.', { duration: 1800 } );
@@ -512,7 +556,7 @@
 	}
 
 	function widgetRedockApi() {
-		var d = window.wp && window.wp.desktop;
+		var d = desktop();
 		if ( ! d ) return null;
 		if ( d.widgets && typeof d.widgets.redock === 'function' ) {
 			return { owner: d.widgets, fn: d.widgets.redock };
@@ -533,9 +577,11 @@
 		var count = 0;
 		widgets.forEach( function ( widget ) {
 			if ( ! widget || ! widget.id ) return;
-			var result = safeCall( function () {
-				return api.fn.call( api.owner, widget.id );
-			}, 'api.redockWidget' );
+			var result = desktopAdapter && typeof desktopAdapter.redockWidget === 'function'
+				? desktopAdapter.redockWidget( widget.id )
+				: safeCall( function () {
+					return api.fn.call( api.owner, widget.id );
+				}, 'api.redockWidget' );
 			if ( result !== false ) count++;
 		} );
 		return count;
@@ -638,9 +684,11 @@
 	}
 
 	function requestMaximize( d ) {
-		var win = d && d.windowManager && typeof d.windowManager.getById === 'function'
-			? d.windowManager.getById( 'odd' )
-			: null;
+		var win = desktopAdapter && typeof desktopAdapter.getWindow === 'function'
+			? desktopAdapter.getWindow( 'odd' )
+			: ( d && d.windowManager && typeof d.windowManager.getById === 'function'
+				? d.windowManager.getById( 'odd' )
+				: null );
 		if ( win && typeof win.toggleFullscreen === 'function' && win.state !== 'fullscreen' ) {
 			win.toggleFullscreen();
 			return 'fullscreen';
@@ -649,7 +697,7 @@
 	}
 
 	function openPanel() {
-		var d = window.wp && window.wp.desktop;
+		var d = desktop();
 		if ( ! d ) return false;
 		// Server-registered native windows must open through the host
 		// registry so Desktop Mode hydrates the template and script.
