@@ -764,8 +764,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-odd-default-icons.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-odd-default-icons.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-odd-default-icons.wp",
-      "sha256": "06ec6a16172fd52296728e67d0e5dc7118fe8f5a82c7c0e5297603653bfaecdf",
-      "size": 229737,
+      "sha256": "6f9100e139140aab3949fe1f4a1bf43b09201e641555c91b1265deab07631095",
+      "size": 732758,
       "funLayer": {
         "recipe": "chroma-halo",
         "accent": "#38e8ff",

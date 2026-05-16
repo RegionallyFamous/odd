@@ -152,6 +152,9 @@ any of the following fail:
 - Image is square.
 - Dimensions are between 64x64 and 2048x2048 px.
 - File size is 768 KB or smaller.
+- The visible alpha footprint fills at least 80% of one canvas axis, measured
+  after ignoring near-transparent pixels, so icons cannot ship tiny inside a
+  large transparent square.
 - Path stays inside the archive and does not contain path traversal.
 
 ODD stores the image paths and turns them into normal upload URLs. Desktop
@@ -167,6 +170,9 @@ rewrite, or ODD-owned renderer in between.
 - Keep silhouette weight, lighting, and perspective consistent across the
   set. Desktop Mode lays every icon into the same native surfaces, so
   mismatched density is easy to spot.
+- Normalize transparent padding before export. As a quick local check, the
+  visible glyph should span roughly 80-90% of the square canvas on its longest
+  axis without clipping shadows or glow.
 - Avoid baking in UI chrome from the host desktop. The icon file should be
   the icon, not a replacement dock/taskbar tile.
 

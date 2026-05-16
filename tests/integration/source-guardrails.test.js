@@ -125,6 +125,17 @@ describe( 'v1 source guardrails', () => {
 		expect( new Set( recipes ).size ).toBe( rows.length );
 	} );
 
+	it( 'keeps catalog validation guarding visible icon footprint', () => {
+		const builder = readRel( '_tools/build-catalog.py' );
+		const validator = readRel( 'odd/bin/validate-catalog' );
+
+		for ( const source of [ builder, validator ] ) {
+			expect( source ).toContain( 'ICON_VISIBLE_MIN_FILL' );
+			expect( source ).toContain( 'visible glyph fill' );
+			expect( source ).toContain( 'normalize transparent padding' );
+		}
+	} );
+
 	it( 'keeps first-party icon sets on the shared glyph-mask source pipeline', () => {
 		const glyphDir = resolve( ROOT, '_tools/icon-glyphs/base' );
 		const glyphManifest = JSON.parse( readRel( '_tools/icon-glyphs/manifest.json' ) );

@@ -84,6 +84,8 @@ ICON_IMAGE_SIZE_BUDGET = 768 * 1024
 ICON_IMAGE_MIN_DIM = 64
 ICON_IMAGE_MAX_DIM = 2048
 ICON_IMAGE_EXTENSIONS = {"png": "PNG", "webp": "WEBP"}
+ICON_VISIBLE_ALPHA_THRESHOLD = 32
+ICON_VISIBLE_MIN_FILL = 0.80
 ASSET_REL_PATH = re.compile(r"^[a-zA-Z0-9._-]+(/[a-zA-Z0-9._-]+)*$")
 BUNDLE_FORBIDDEN_EXTENSIONS = {
     "php", "phtml", "phar", "php3", "php4", "php5", "php7",
@@ -329,6 +331,18 @@ def _validate_icon_asset_rel(slug: str, rel: str) -> None:
         raise SystemExit(f"icon-set {slug}: source-only icon asset path {rel!r}")
 
 
+def _visible_alpha_fill_ratio(image: Image.Image) -> float | None:
+    mask = image.getchannel("A").point(
+        lambda value: 255 if value >= ICON_VISIBLE_ALPHA_THRESHOLD else 0
+    )
+    bbox = mask.getbbox()
+    if bbox is None:
+        return None
+    width = bbox[2] - bbox[0]
+    height = bbox[3] - bbox[1]
+    return max(width, height) / max(image.size)
+
+
 def _validate_icon_raster(slug: str, rel: str, data: bytes, *, square: bool) -> None:
     label = f"icon-set {slug}: {rel}"
     ext = Path(rel).suffix.lower().lstrip(".")
@@ -345,6 +359,7 @@ def _validate_icon_raster(slug: str, rel: str, data: bytes, *, square: bool) -> 
         with Image.open(io.BytesIO(data)) as img:
             fmt = img.format
             width, height = img.size
+            rgba = img.convert("RGBA") if square else None
     except Exception as exc:
         raise SystemExit(f"{label}: invalid image data: {exc}") from exc
     if fmt != expected:
@@ -360,6 +375,15 @@ def _validate_icon_raster(slug: str, rel: str, data: bytes, *, square: bool) -> 
         raise SystemExit(
             f"{label}: image dimensions must be {ICON_IMAGE_MIN_DIM}-{ICON_IMAGE_MAX_DIM}px, got {width}x{height}px"
         )
+    if square and rgba is not None:
+        visible_fill = _visible_alpha_fill_ratio(rgba)
+        if visible_fill is None:
+            raise SystemExit(f"{label}: icon has no visible alpha footprint")
+        if visible_fill < ICON_VISIBLE_MIN_FILL:
+            raise SystemExit(
+                f"{label}: visible glyph fill {visible_fill:.3f} below "
+                f"{ICON_VISIBLE_MIN_FILL:.2f}; normalize transparent padding"
+            )
 
 
 def _validate_widget_preview_svg(slug: str, rel: str, data: bytes) -> None:
@@ -838,7 +862,8 @@ def build_iconset(slug: str, src_dir: Path) -> dict:
     if fun_layer:
         manifest["funLayer"] = fun_layer
     files["manifest.json"] = json.dumps(manifest, indent=2).encode() + b"\n"
-    asset_rels = set(meta["icons"].values())
+    icon_rels = set(meta["icons"].values())
+    asset_rels = set(icon_rels)
     if manifest["preview"]:
         asset_rels.add(manifest["preview"])
     for rel in sorted(asset_rels):
@@ -847,10 +872,10 @@ def build_iconset(slug: str, src_dir: Path) -> dict:
         if not asset_path.is_file():
             raise SystemExit(f"icon-set {slug}: missing {rel}")
         data = asset_path.read_bytes()
-        if rel == manifest["preview"]:
-            _validate_icon_preview(slug, rel, data)
-        else:
+        if rel in icon_rels:
             _validate_icon_image(slug, rel, data)
+        elif rel == manifest["preview"]:
+            _validate_icon_preview(slug, rel, data)
         files[rel] = data
 
     bundle = OUT_BUNDLES / f"iconset-{slug}.wp"

@@ -270,7 +270,7 @@ def material(recipe: str, accent_hex: str, secondary_hex: str, spark_hex: str) -
         for y in range(SIZE):
             t = y / (SIZE - 1)
             draw.line((0, y, SIZE, y), fill=(*mix(secondary, accent, t), 255))
-    draw_recipe(draw, recipe, accent, secondary, spark)
+        draw_recipe(draw, recipe, accent, secondary, spark)
     return img.filter(ImageFilter.GaussianBlur(0.25))
 
 
