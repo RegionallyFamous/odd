@@ -1992,14 +1992,15 @@ function oddout_bundle_rest_install_from_catalog( WP_REST_Request $req ) {
 	}
 
 	$out = array(
-		'installed' => true,
-		'slug'      => $install['slug'],
-		'type'      => $install['type'],
-		'manifest'  => $install['manifest'],
+		'installed'  => true,
+		'slug'       => $install['slug'],
+		'type'       => $install['type'],
+		'manifest'   => $install['manifest'],
 		// Shop hot-register payload. See the matching upload
 		// endpoint in includes/content/rest.php for the rationale.
-		'entry_url' => oddout_bundle_entry_url_for( $install['manifest'] ),
-		'row'       => oddout_bundle_panel_row_for( $install['manifest'] ),
+		'entry_url'  => oddout_bundle_entry_url_for( $install['manifest'] ),
+		'style_urls' => oddout_bundle_style_urls_for( $install['manifest'] ),
+		'row'        => oddout_bundle_panel_row_for( $install['manifest'] ),
 	);
 	if ( 'app' === $install['type'] && function_exists( 'oddout_apps_serve_url_for_rest_payload' ) ) {
 		$serve = oddout_apps_serve_url_for_rest_payload( $install['slug'] );

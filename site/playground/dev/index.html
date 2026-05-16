@@ -24,8 +24,7 @@
 				done = true;
 				window.clearTimeout( timer );
 				var blueprint = blueprintBase + '?oddbp=' + encodeURIComponent( key );
-				var target = 'https://playground.wordpress.net/?site-slug=' + encodeURIComponent( 'odd-' + key )
-					+ '&blueprint-url=' + encodeURIComponent( blueprint );
+				var target = 'https://playground.wordpress.net/?blueprint-url=' + encodeURIComponent( blueprint );
 				window.location.replace( target );
 			}
 			var timer = window.setTimeout( function () {
@@ -57,7 +56,7 @@
 		} )();
 	</script>
 	<noscript>
-			<meta http-equiv="refresh" content="0; url=https://playground.wordpress.net/?site-slug=odd-dev-noscript-dm-0.8.5&amp;blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-noscript-dm-0.8.5">
+			<meta http-equiv="refresh" content="0; url=https://playground.wordpress.net/?blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-noscript-dm-0.8.5">
 	</noscript>
 </head>
 <body>
@@ -67,7 +66,7 @@
 			<h1>Opening ODD <code>main</code> with pinned WP Desktop Mode 0.8.5.</h1>
 			<p class="lede">Ephemeral — may break. The launcher checks the newest <code>main</code> commit before opening Playground.</p>
 			<div class="actions">
-				<a class="button primary" href="https://playground.wordpress.net/?site-slug=odd-dev-manual-dm-0.8.5&amp;blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-manual-dm-0.8.5">Open Playground</a>
+				<a class="button primary" href="https://playground.wordpress.net/?blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-manual-dm-0.8.5">Open Playground</a>
 				<a class="button" href="/playground/">Stable demo</a>
 				<a class="button" href="/">Back to ODD</a>
 			</div>

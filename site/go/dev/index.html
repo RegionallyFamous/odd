@@ -21,8 +21,7 @@
 				done = true;
 				window.clearTimeout( timer );
 				var blueprint = blueprintBase + '?oddbp=' + encodeURIComponent( key );
-				var target = 'https://playground.wordpress.net/?site-slug=' + encodeURIComponent( 'odd-' + key )
-					+ '&blueprint-url=' + encodeURIComponent( blueprint );
+				var target = 'https://playground.wordpress.net/?blueprint-url=' + encodeURIComponent( blueprint );
 				window.location.replace( target );
 			}
 			var timer = window.setTimeout( function () {
@@ -54,11 +53,11 @@
 		} )();
 	</script>
 	<noscript>
-			<meta http-equiv="refresh" content="0; url=https://playground.wordpress.net/?site-slug=odd-dev-noscript-dm-0.8.5&amp;blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-noscript-dm-0.8.5">
+			<meta http-equiv="refresh" content="0; url=https://playground.wordpress.net/?blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-noscript-dm-0.8.5">
 	</noscript>
 </head>
 <body style="font-family: system-ui, sans-serif; padding: 2rem; background: #0c0f18; color: #e8ecf4;">
 		<p>Finding the newest ODD commit before opening Playground…</p>
-		<p><a style="color: #b8a0ff;" href="https://playground.wordpress.net/?site-slug=odd-dev-manual-dm-0.8.5&amp;blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-manual-dm-0.8.5">Continue without commit lookup →</a></p>
+		<p><a style="color: #b8a0ff;" href="https://playground.wordpress.net/?blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-manual-dm-0.8.5">Continue without commit lookup →</a></p>
 </body>
 </html>

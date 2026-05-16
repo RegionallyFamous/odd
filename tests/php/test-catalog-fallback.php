@@ -33,6 +33,44 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		);
 	}
 
+	private function build_widget_catalog_zip( $slug ) {
+		$path = tempnam( sys_get_temp_dir(), 'odd_catalog_widget_' ) . '.wp';
+		$zip  = new ZipArchive();
+		$this->assertTrue(
+			true === $zip->open( $path, ZipArchive::CREATE | ZipArchive::OVERWRITE ),
+			'Failed to open catalog widget fixture zip for writing.'
+		);
+		$zip->addFromString(
+			'manifest.json',
+			wp_json_encode(
+				array(
+					'type'          => 'widget',
+					'slug'          => $slug,
+					'name'          => 'Catalog Style Widget',
+					'label'         => 'Catalog Style Widget',
+					'version'       => '1.0.0',
+					'description'   => 'Widget fixture with CSS.',
+					'entry'         => 'widget.js',
+					'css'           => array( 'widget.css' ),
+					'icon'          => 'dashicons-screenoptions',
+					'movable'       => true,
+					'resizable'     => true,
+					'minWidth'      => 220,
+					'minHeight'     => 160,
+					'defaultWidth'  => 260,
+					'defaultHeight' => 200,
+				)
+			)
+		);
+		$zip->addFromString(
+			'widget.js',
+			"(function(){window.desktopModeWidgets=window.desktopModeWidgets||{};window.desktopModeWidgets['odd/" . $slug . "']=function(){return function(){};};})();"
+		);
+		$zip->addFromString( 'widget.css', '.catalog-style-widget{display:block;}' );
+		$zip->close();
+		return $path;
+	}
+
 	public function tear_down() {
 		delete_transient( ODDOUT_CATALOG_TRANSIENT );
 		delete_option( ODDOUT_CATALOG_STALE_OPTION );
@@ -334,6 +372,85 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		$response = $wp_rest_server->dispatch( $request );
 
 		$this->assertSame( 400, $response->get_status() );
+	}
+
+	public function test_catalog_widget_install_rest_returns_style_urls_for_hot_loading() {
+		$slug         = 'catalog-style-widget';
+		$zip_path     = $this->build_widget_catalog_zip( $slug );
+		$zip_bytes    = file_get_contents( $zip_path );
+		$download_url = 'https://odd.regionallyfamous.com/catalog/v1/bundles/widget-' . $slug . '.wp';
+		$registry     = array(
+			'version' => 1,
+			'bundles' => array(
+				$this->catalog_row(
+					$slug,
+					array(
+						'name'         => 'Catalog Style Widget',
+						'download_url' => $download_url,
+						'sha256'       => hash_file( 'sha256', $zip_path ),
+						'size'         => filesize( $zip_path ),
+					)
+				),
+			),
+		);
+		$this->assertIsString( $zip_bytes );
+
+		add_filter(
+			'pre_http_request',
+			static function ( $preempt, $args, $url ) use ( $registry, $download_url, $zip_bytes ) {
+				if ( ODDOUT_CATALOG_URL === $url ) {
+					return array(
+						'headers'  => array(),
+						'body'     => wp_json_encode( $registry ),
+						'response' => array(
+							'code'    => 200,
+							'message' => 'OK',
+						),
+					);
+				}
+				if ( $download_url === $url ) {
+					if ( ! empty( $args['filename'] ) ) {
+						file_put_contents( $args['filename'], $zip_bytes );
+					}
+					return array(
+						'headers'  => array(),
+						'body'     => '',
+						'response' => array(
+							'code'    => 200,
+							'message' => 'OK',
+						),
+					);
+				}
+				return $preempt;
+			},
+			10,
+			3
+		);
+
+		$user = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user );
+
+		global $wp_rest_server;
+		$wp_rest_server = new WP_REST_Server();
+		do_action( 'rest_api_init' );
+
+		try {
+			$request = new WP_REST_Request( 'POST', '/odd/v1/bundles/install-from-catalog' );
+			$request->set_param( 'slug', $slug );
+			$response = $wp_rest_server->dispatch( $request );
+			$data     = $response->get_data();
+
+			$this->assertSame( 200, $response->get_status(), is_array( $data ) && isset( $data['message'] ) ? $data['message'] : 'Catalog install failed.' );
+			$this->assertSame( 'widget', $data['type'] );
+			$this->assertNotEmpty( $data['entry_url'] );
+			$this->assertStringContainsString( '/widgets/' . $slug . '/widget.js', $data['entry_url'] );
+			$this->assertArrayHasKey( 'style_urls', $data );
+			$this->assertCount( 1, $data['style_urls'] );
+			$this->assertStringContainsString( '/widgets/' . $slug . '/widget.css', $data['style_urls'][0] );
+		} finally {
+			oddout_bundle_uninstall( $slug );
+			wp_delete_file( $zip_path );
+		}
 	}
 
 	public function test_catalog_normalise_preserves_card_url_for_shop_art() {

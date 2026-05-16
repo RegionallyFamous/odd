@@ -62,6 +62,9 @@ Checks (all emit bullets; any failure → exit code 1):
      `ODDOUT_DESKTOP_MODE_PLAYGROUND_VERSION` (targetFolderName desktop-mode);
      ODD from `git:directory` **branch** `main` on
      `RegionallyFamous/odd` with `path` `odd`.
+ 11. Hosted Playground launchers must not pass `site-slug`; that asks
+     Playground for a named site and logs "The requested site was not found"
+     before it creates the temporary site we wanted anyway.
 """
 from __future__ import annotations
 
@@ -78,6 +81,8 @@ BLUEPRINT = REPO_ROOT / "blueprint.json"
 BLUEPRINT_DEV = REPO_ROOT / "blueprint-dev.json"
 SITE_BLUEPRINT = REPO_ROOT / "site" / "playground" / "blueprint.json"
 SITE_BLUEPRINT_DEV = REPO_ROOT / "site" / "playground" / "blueprint-dev.json"
+SITE_PLAYGROUND_DEV_LAUNCHER = REPO_ROOT / "site" / "playground" / "dev" / "index.html"
+SITE_GO_DEV_LAUNCHER = REPO_ROOT / "site" / "go" / "dev" / "index.html"
 PLUGIN_MAIN = REPO_ROOT / "odd" / "odd.php"
 
 
@@ -150,6 +155,25 @@ def odd_php_constants() -> tuple[str, str, str, str]:
 def version_tuple(version: str) -> tuple[int, ...]:
     """Turn a dotted version into comparable integer parts."""
     return tuple(int(part) for part in version.split("."))
+
+
+def validate_playground_launcher(path: Path) -> list[str]:
+    """Keep hosted Playground launcher URLs ephemeral and cache-busted."""
+    rel = path.relative_to(REPO_ROOT)
+    if not path.is_file():
+        return [f"{rel} not found — Playground launcher gate cannot run."]
+    text = path.read_text(encoding="utf-8")
+    problems: list[str] = []
+    if "site-slug" in text or "siteSlug" in text:
+        problems.append(
+            f"{rel}: do not pass site-slug/siteSlug to Playground launch URLs; "
+            "it requests a named site and logs a site-not-found warning"
+        )
+    if "blueprint-url=" not in text:
+        problems.append(f"{rel}: launcher must pass blueprint-url to Playground")
+    if "oddbp=" not in text:
+        problems.append(f"{rel}: launcher must cache-bust blueprint-url with oddbp")
+    return problems
 
 
 def validate_preferred_versions(data: dict, path: Path, requires_php: str) -> list[str]:
@@ -475,6 +499,9 @@ def main() -> int:
         file_problems, step_count = validate_dev_file(path, dm_pin, requires_php)
         problems.extend(file_problems)
         total_steps += step_count
+
+    for path in (SITE_PLAYGROUND_DEV_LAUNCHER, SITE_GO_DEV_LAUNCHER):
+        problems.extend(validate_playground_launcher(path))
 
     if problems:
         fail(problems)
