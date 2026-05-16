@@ -11,6 +11,58 @@
 	--odd-icon-fx-violet: rgba(149, 86, 255, 0.52);
 }
 
+@keyframes odd-icon-outline-drift {
+	0% {
+		filter:
+			drop-shadow(-0.8px 0.2px 0 rgba(58, 238, 255, 0.5))
+			drop-shadow(0.8px -0.1px 0 rgba(255, 68, 181, 0.42))
+			drop-shadow(0 0 7px rgba(149, 86, 255, 0.16));
+	}
+
+	34% {
+		filter:
+			drop-shadow(-0.2px -0.8px 0 rgba(58, 238, 255, 0.48))
+			drop-shadow(0.9px 0.4px 0 rgba(255, 68, 181, 0.38))
+			drop-shadow(0 0 8px rgba(58, 238, 255, 0.14));
+	}
+
+	68% {
+		filter:
+			drop-shadow(-0.9px 0.1px 0 rgba(149, 86, 255, 0.38))
+			drop-shadow(0.2px 0.8px 0 rgba(255, 68, 181, 0.42))
+			drop-shadow(0 0 7px rgba(58, 238, 255, 0.18));
+	}
+
+	100% {
+		filter:
+			drop-shadow(-0.6px 0.5px 0 rgba(58, 238, 255, 0.5))
+			drop-shadow(0.7px -0.5px 0 rgba(255, 68, 181, 0.4))
+			drop-shadow(0 0 8px rgba(149, 86, 255, 0.18));
+	}
+}
+
+@keyframes odd-icon-outline-spark {
+	0% {
+		filter:
+			drop-shadow(-1.2px 0 0 var(--odd-icon-fx-cyan))
+			drop-shadow(0.8px 0.7px 0 var(--odd-icon-fx-pink))
+			drop-shadow(0 0 8px rgba(58, 238, 255, 0.3))
+			drop-shadow(0 0 14px rgba(149, 86, 255, 0.2))
+			saturate(1.12)
+			contrast(1.05);
+	}
+
+	100% {
+		filter:
+			drop-shadow(-0.2px -1px 0 var(--odd-icon-fx-cyan))
+			drop-shadow(1.2px 0.2px 0 var(--odd-icon-fx-pink))
+			drop-shadow(0 0 11px rgba(255, 68, 181, 0.28))
+			drop-shadow(0 0 18px rgba(58, 238, 255, 0.2))
+			saturate(1.18)
+			contrast(1.06);
+	}
+}
+
 body.desktop-mode-active .desktop-mode-dock__item img.desktop-mode-dock__item-img[src*="/assets/icons/"],
 body.desktop-mode-active .desktop-mode-dock__item img.desktop-mode-dock__item-img[src*="/odd/icon-sets/"],
 body.desktop-mode-active .desktop-mode-dock__item img.desktop-mode-dock__item-img[src*="/uploads/odd/icon-sets/"],
@@ -30,9 +82,11 @@ body.desktop-mode-active .wp-desktop-icon img[src*="/uploads/odd/icon-sets/"],
 .odd-dock-rail-mount__tile img[src*="/uploads/odd/icon-sets/"],
 .odd-panel .odd-shop__card-quartet > img,
 .odd-panel .odd-iconset-mini img {
+	animation: odd-icon-outline-drift 5.8s ease-in-out infinite alternate;
 	transform-origin: center;
 	backface-visibility: hidden;
 	transition: filter 150ms ease, transform 150ms ease, opacity 150ms ease;
+	will-change: filter;
 }
 
 body.desktop-mode-active .desktop-mode-dock__item-primary.odd-system-icon-skinned,
@@ -50,10 +104,6 @@ body.desktop-mode-active .wp-desktop-dock__item img.wp-desktop-dock__item-img[da
 	max-inline-size: 100%;
 	max-block-size: 100%;
 	object-fit: contain;
-	filter:
-		drop-shadow(-0.7px 0 0 rgba(58, 238, 255, 0.44))
-		drop-shadow(0.7px 0 0 rgba(255, 68, 181, 0.38))
-		drop-shadow(0 0 7px rgba(149, 86, 255, 0.18));
 }
 
 body.desktop-mode-active .desktop-mode-dock__item:hover img.desktop-mode-dock__item-img[src*="/assets/icons/"],
@@ -94,13 +144,8 @@ body.desktop-mode-active .wp-desktop-icon:focus-within img[src*="/uploads/odd/ic
 .odd-panel .odd-shop__card:focus-within .odd-shop__card-quartet > img,
 .odd-panel .odd-catalog-row:hover .odd-iconset-mini img,
 .odd-panel .odd-catalog-row:focus-within .odd-iconset-mini img {
-	filter:
-		drop-shadow(-1px 0 0 var(--odd-icon-fx-cyan))
-		drop-shadow(1px 0 0 var(--odd-icon-fx-pink))
-		drop-shadow(0 0 8px rgba(58, 238, 255, 0.28))
-		drop-shadow(0 0 14px rgba(149, 86, 255, 0.18))
-		saturate(1.12)
-		contrast(1.05);
+	animation-duration: 900ms;
+	animation-name: odd-icon-outline-spark;
 	transform: translate3d(0, -1px, 0) scale(1.045);
 }
 
@@ -134,7 +179,9 @@ body.desktop-mode-active .wp-desktop-icon:focus-within img[src*="/uploads/odd/ic
 	.odd-dock-rail-mount__tile img,
 	.odd-panel .odd-shop__card-quartet > img,
 	.odd-panel .odd-iconset-mini img {
+		animation: none !important;
 		transition: filter 1ms linear;
 		transform: none !important;
+		will-change: auto;
 	}
 }

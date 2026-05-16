@@ -1,0 +1,113 @@
+{
+  "name": "ODD Canonical Icon Glyphs",
+  "version": "1.0.0",
+  "size": 512,
+  "source": "odd-default-icons",
+  "requiredKeys": [
+    "dashboard",
+    "posts",
+    "pages",
+    "media",
+    "comments",
+    "appearance",
+    "plugins",
+    "users",
+    "tools",
+    "settings",
+    "profile",
+    "links",
+    "recycle-bin",
+    "fallback",
+    "os-settings",
+    "import",
+    "classic-admin"
+  ],
+  "contract": "shared-mask-plus-material-layer",
+  "glyphs": {
+    "dashboard": {
+      "mask": "base/dashboard.png",
+      "dashicon": "dashicons-dashboard",
+      "codepoint": "f226"
+    },
+    "posts": {
+      "mask": "base/posts.png",
+      "dashicon": "dashicons-admin-post",
+      "codepoint": "f109"
+    },
+    "pages": {
+      "mask": "base/pages.png",
+      "dashicon": "dashicons-admin-page",
+      "codepoint": "f105"
+    },
+    "media": {
+      "mask": "base/media.png",
+      "dashicon": "dashicons-admin-media",
+      "codepoint": "f104"
+    },
+    "comments": {
+      "mask": "base/comments.png",
+      "dashicon": "dashicons-admin-comments",
+      "codepoint": "f101"
+    },
+    "appearance": {
+      "mask": "base/appearance.png",
+      "dashicon": "dashicons-admin-appearance",
+      "codepoint": "f100"
+    },
+    "plugins": {
+      "mask": "base/plugins.png",
+      "dashicon": "dashicons-buddicons-replies",
+      "codepoint": "f451"
+    },
+    "users": {
+      "mask": "base/users.png",
+      "dashicon": "dashicons-admin-users",
+      "codepoint": "f110"
+    },
+    "tools": {
+      "mask": "base/tools.png",
+      "dashicon": "dashicons-admin-tools",
+      "codepoint": "f107"
+    },
+    "settings": {
+      "mask": "base/settings.png",
+      "dashicon": "dashicons-admin-settings",
+      "codepoint": "f108"
+    },
+    "profile": {
+      "mask": "base/profile.png",
+      "dashicon": "dashicons-businessman",
+      "codepoint": "f338"
+    },
+    "links": {
+      "mask": "base/links.png",
+      "dashicon": "dashicons-admin-links",
+      "codepoint": "f103"
+    },
+    "recycle-bin": {
+      "mask": "base/recycle-bin.png",
+      "dashicon": "dashicons-trash",
+      "codepoint": "f182"
+    },
+    "fallback": {
+      "mask": "base/fallback.png",
+      "dashicon": "dashicons-admin-generic",
+      "codepoint": "f111"
+    },
+    "os-settings": {
+      "mask": "base/os-settings.png",
+      "dashicon": "dashicons-desktop",
+      "codepoint": "f472"
+    },
+    "import": {
+      "mask": "base/import.png",
+      "dashicon": "dashicons-download",
+      "codepoint": "f316"
+    },
+    "classic-admin": {
+      "mask": "base/classic-admin.png",
+      "dashicon": "dashicons-arrow-left-alt",
+      "codepoint": "f340"
+    }
+  }
+}

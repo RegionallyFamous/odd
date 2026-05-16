@@ -132,7 +132,7 @@ Covered in full by [Building an Icon Set](building-an-icon-set.md).
 |-------------|----------|--------------------------------------------------------------------------|
 | `category` | no       | Optional grouping label for Shop shelves and catalog tooling. |
 | `accent`    | yes      | `#hex`. Paints the Shop tile, quilt gradient, and catalog metadata.      |
-| `funLayer`  | no       | Icon-set card layer tokens: `recipe`, `accent`, `secondary`, and `spark`. |
+| `funLayer`  | no       | Icon-set source/material tokens: `recipe`, `accent`, `secondary`, and `spark`. First-party sets use this with `_tools/icon-glyphs/` to vary material while preserving shared glyph masks. |
 | `preview`   | no       | Relative path to a hero PNG/WebP. Falls back to `icons.dashboard`.       |
 | `icons`     | yes      | Map of all 17 semantic icon keys to relative PNG/WebP paths. |
 
@@ -143,6 +143,11 @@ image URLs to Desktop Mode's own dock, taskbar, desktop, and file-layer
 icon payloads. ODD does not recolor these images or render a replacement rail.
 Each icon image must be square, 64-2048 px, 768 KB or smaller, and match
 its declared extension.
+
+For first-party catalog sources, `funLayer` is also the material recipe for
+`_tools/compose-icon-set.py`. The compositor combines those tokens with the
+canonical masks in `_tools/icon-glyphs/base/`, producing ordinary PNG/WebP
+files for the final `.wp` bundle.
 
 ### Type: `cursor-set`
 

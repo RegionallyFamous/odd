@@ -107,7 +107,7 @@
 		},
 		"funLayer": {
 			"type": "object",
-			"description": "Icon-set manifests only. Shop-card personality layer applied around the unchanged raster glyphs.",
+			"description": "Icon-set manifests only. First-party source/material layer tokens applied around shared canonical raster glyph masks.",
 			"properties": {
 				"recipe": { "type": "string", "pattern": "^[a-z0-9-]+$" },
 				"accent": { "type": "string", "pattern": "^#[0-9A-Fa-f]{3,8}$" },

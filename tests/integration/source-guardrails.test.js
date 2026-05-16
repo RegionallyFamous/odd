@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -123,6 +123,51 @@ describe( 'v1 source guardrails', () => {
 
 		expect( missing ).toEqual( [] );
 		expect( new Set( recipes ).size ).toBe( rows.length );
+	} );
+
+	it( 'keeps first-party icon sets on the shared glyph-mask source pipeline', () => {
+		const glyphDir = resolve( ROOT, '_tools/icon-glyphs/base' );
+		const glyphManifest = JSON.parse( readRel( '_tools/icon-glyphs/manifest.json' ) );
+		const sourceMap = JSON.parse( readRel( '_tools/catalog-sources/icon-sets/odd-default-icons/source-glyph-map.json' ) );
+		const compose = readRel( '_tools/compose-icon-set.py' );
+		const catalog = readRel( '_tools/build-catalog.py' );
+		const iconDoc = readRel( 'docs/building-an-icon-set.md' );
+		const expectedKeys = [
+			'dashboard',
+			'posts',
+			'pages',
+			'media',
+			'comments',
+			'appearance',
+			'plugins',
+			'users',
+			'tools',
+			'settings',
+			'profile',
+			'links',
+			'recycle-bin',
+			'fallback',
+			'os-settings',
+			'import',
+			'classic-admin',
+		];
+
+		expect( glyphManifest.contract ).toBe( 'shared-mask-plus-material-layer' );
+		expect( glyphManifest.requiredKeys ).toEqual( expectedKeys );
+		expect( Object.keys( glyphManifest.glyphs ) ).toEqual( expectedKeys );
+		expect( Object.keys( sourceMap.icons ) ).toEqual( expectedKeys );
+		expect( Object.keys( sourceMap.codepoints ) ).toEqual( expectedKeys );
+		for ( const key of expectedKeys ) {
+			expect( existsSync( resolve( glyphDir, `${ key }.png` ) ) ).toBe( true );
+			expect( compose ).toContain( `"${ key }"` );
+		}
+		expect( compose ).toContain( 'def compose_icon(' );
+		expect( compose ).toContain( 'def render_set(' );
+		expect( compose ).toContain( 'manifest.funLayer' );
+		expect( catalog ).toContain( 'def _validate_icon_asset_rel(' );
+		expect( catalog ).toContain( 'source-only icon asset path' );
+		expect( iconDoc ).toContain( '_tools/compose-icon-set.py --all' );
+		expect( iconDoc ).toContain( 'shared semantic glyph base plus a' );
 	} );
 } );
 

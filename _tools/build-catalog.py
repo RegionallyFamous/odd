@@ -318,6 +318,17 @@ def _validate_icon_preview(slug: str, rel: str, data: bytes) -> None:
     _validate_icon_raster(slug, rel, data, square=False)
 
 
+def _validate_icon_asset_rel(slug: str, rel: str) -> None:
+    """Keep icon-set bundles on declared in-set raster assets only."""
+    if not isinstance(rel, str) or not rel.strip():
+        raise SystemExit(f"icon-set {slug}: icon asset path must be a non-empty string")
+    if Path(rel).is_absolute() or not ASSET_REL_PATH.fullmatch(rel):
+        raise SystemExit(f"icon-set {slug}: invalid icon asset path {rel!r}")
+    first = rel.split("/", 1)[0]
+    if first in {".", "..", "_tools"}:
+        raise SystemExit(f"icon-set {slug}: source-only icon asset path {rel!r}")
+
+
 def _validate_icon_raster(slug: str, rel: str, data: bytes, *, square: bool) -> None:
     label = f"icon-set {slug}: {rel}"
     ext = Path(rel).suffix.lower().lstrip(".")
@@ -831,6 +842,7 @@ def build_iconset(slug: str, src_dir: Path) -> dict:
     if manifest["preview"]:
         asset_rels.add(manifest["preview"])
     for rel in sorted(asset_rels):
+        _validate_icon_asset_rel(slug, rel)
         asset_path = src_dir / rel
         if not asset_path.is_file():
             raise SystemExit(f"icon-set {slug}: missing {rel}")

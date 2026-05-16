@@ -170,9 +170,22 @@ rewrite, or ODD-owned renderer in between.
 - Avoid baking in UI chrome from the host desktop. The icon file should be
   the icon, not a replacement dock/taskbar tile.
 
-First-party catalog sets start from Image Gen contact sheets and are sliced
-into transparent raster exports. Third-party sets do not have to copy that
-treatment, but all files in the manifest `icons` map must be PNG or WebP.
+First-party catalog sets are composed from a shared semantic glyph base plus a
+per-set material layer:
+
+- `_tools/icon-glyphs/base/*.png` stores the canonical 17 glyph masks.
+- `manifest.funLayer` stores the set's material recipe and color tokens.
+- `_tools/compose-icon-set.py --all` rebuilds the final PNG/WebP icons.
+
+This keeps Dashboard, Posts, Pages, Media, and every other semantic key in the
+same recognizable silhouette across sets. The weirdness belongs in the
+material layer, glow, texture, shadow, and Shop card presentation, not in a new
+glyph shape for each set. The public `.wp` bundle still contains plain static
+PNG/WebP files only; the glyph masks and compositor are source tooling.
+
+Third-party sets do not have to use ODD's compositor, but they should follow
+the same principle: preserve clear Desktop Mode / WordPress metaphors and vary
+material, color, and atmosphere around them.
 
 ## Shop card layer
 
@@ -219,6 +232,29 @@ the `dashboard` icon stands in. A preview image usually works best as:
    Click **Preview** on the tile, then **Apply & reload** to commit.
    ODD saves the preference and lets Desktop Mode rebuild every native
    icon surface from its own server-side payload.
+
+## First-party rebuild workflow
+
+Use Image Gen for style exploration, material studies, and preview/card art,
+but keep the final catalog icons on the shared glyph-mask pipeline:
+
+```bash
+python3 _tools/compose-icon-set.py --extract-base --all
+python3 _tools/gen-shop-card-art.py icon-sets
+python3 _tools/build-catalog.py
+ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog
+```
+
+To rebuild one set while designing:
+
+```bash
+python3 _tools/compose-icon-set.py --set monoline
+python3 _tools/gen-shop-card-art.py icon-sets
+```
+
+If a glyph itself needs to change, update `odd-default-icons`, refresh
+`_tools/icon-glyphs/manifest.json` with `--extract-base`, and rebuild every
+first-party set so the semantic silhouettes stay aligned.
 
 ## Debugging
 

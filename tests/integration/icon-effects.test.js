@@ -28,7 +28,8 @@ describe( 'ODD icon effects', () => {
 		expect( css ).toContain( 'padding: 0;' );
 		expect( css ).toContain( 'inline-size: calc(100% - 8px);' );
 		expect( css ).toContain( 'block-size: calc(100% - 8px);' );
-		expect( css ).toContain( 'drop-shadow(-0.7px 0 0 rgba(58, 238, 255, 0.44))' );
+		expect( css ).toContain( '@keyframes odd-icon-outline-drift' );
+		expect( css ).toContain( 'animation: odd-icon-outline-drift 5.8s ease-in-out infinite alternate;' );
 		expect( css ).toContain( '.odd-dock-rail-mount__tile:hover img[src*="/assets/icons/"]' );
 		expect( css ).toContain( '.odd-panel .odd-shop__card:hover .odd-shop__card-quartet > img' );
 		expect( css ).toContain( '.odd-panel .odd-shop__card--icon-set .odd-shop__card-art::after' );
@@ -37,10 +38,13 @@ describe( 'ODD icon effects', () => {
 	it( 'keeps the hover treatment motion-safe and image-readable', () => {
 		const css = readFileSync( EFFECTS_CSS, 'utf8' );
 
-		expect( css ).toContain( 'drop-shadow(-1px 0 0 var(--odd-icon-fx-cyan))' );
-		expect( css ).toContain( 'drop-shadow(1px 0 0 var(--odd-icon-fx-pink))' );
+		expect( css ).toContain( '@keyframes odd-icon-outline-spark' );
+		expect( css ).toContain( 'animation-name: odd-icon-outline-spark;' );
+		expect( css ).toContain( 'drop-shadow(-1.2px 0 0 var(--odd-icon-fx-cyan))' );
+		expect( css ).toContain( 'drop-shadow(1.2px 0.2px 0 var(--odd-icon-fx-pink))' );
 		expect( css ).toContain( 'transform: translate3d(0, -1px, 0) scale(1.045);' );
 		expect( css ).toContain( '@media (prefers-reduced-motion: reduce)' );
+		expect( css ).toContain( 'animation: none !important;' );
 		expect( css ).toContain( 'transform: none !important;' );
 		expect( css ).not.toContain( 'clip-path:' );
 	} );
