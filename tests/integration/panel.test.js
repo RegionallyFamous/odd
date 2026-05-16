@@ -794,6 +794,61 @@ describe( 'ODD Shop', () => {
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );
 
+	it( 'refreshing the catalog rehydrates the open Shop shelves', async () => {
+		window.odd.bundleCatalog = {
+			scene: [
+				{ type: 'scene', slug: 'old-clouds', name: 'Old Clouds', category: 'Archive', installed: false },
+			],
+			iconSet: [],
+			cursorSet: [],
+			widget: [],
+			app: [],
+		};
+		fetchMock.mockImplementation( ( url ) => {
+			if ( String( url ).endsWith( '/bundles/refresh' ) ) {
+				return Promise.resolve( {
+					ok: true,
+					json: () => Promise.resolve( {
+						refreshed: true,
+						count: 1,
+						meta: {
+							source: 'remote',
+							bundle_count: 1,
+							raw_bundle_count: 1,
+							effective_bundle_count: 1,
+							signature_status: 'valid',
+							registry_sha256: 'feedface12345678',
+							registry_bytes: 4096,
+						},
+						bundles: [
+							{ type: 'scene', slug: 'fresh-clouds', name: 'Fresh Clouds', category: 'Skies', installed: false },
+						],
+					} ),
+				} );
+			}
+			return Promise.resolve( {
+				ok: true,
+				json: () => Promise.resolve( { wallpaper: 'aurora' } ),
+			} );
+		} );
+
+		const { host, cleanup } = mountPanel();
+		expect( host.querySelector( '[data-odd-shop-card][data-catalog-slug="old-clouds"]' ) ).toBeTruthy();
+
+		const refresh = Array.from( host.querySelectorAll( '.odd-shop__catalog-notice button' ) )
+			.find( ( b ) => b.textContent.trim() === 'Refresh catalog' );
+		expect( refresh ).toBeTruthy();
+		refresh.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+
+		await vi.waitFor( () => {
+			expect( host.querySelector( '[data-odd-shop-card][data-catalog-slug="fresh-clouds"]' ) ).toBeTruthy();
+		} );
+		expect( host.querySelector( '[data-odd-shop-card][data-catalog-slug="old-clouds"]' ) ).toBeNull();
+		expect( window.odd.bundleCatalog.scene.map( ( row ) => row.slug ) ).toEqual( [ 'fresh-clouds' ] );
+
+		if ( typeof cleanup === 'function' ) cleanup();
+	} );
+
 	it( 'Widgets department renders unified widget cards with the Add/Active state machine', () => {
 		const calls = installWidgetLayer();
 		const { host, cleanup } = mountPanel();

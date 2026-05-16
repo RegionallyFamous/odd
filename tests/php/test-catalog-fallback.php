@@ -468,6 +468,45 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'meta', $data );
 	}
 
+	public function test_catalog_refresh_rest_returns_rehydration_rows() {
+		$raw = array(
+			'version' => 1,
+			'bundles' => array(
+				$this->catalog_row( 'fresh-widget' ),
+			),
+		);
+		add_filter(
+			'pre_http_request',
+			static function () use ( $raw ) {
+				return array(
+					'headers'  => array(),
+					'body'     => wp_json_encode( $raw ),
+					'response' => array(
+						'code'    => 200,
+						'message' => 'OK',
+					),
+				);
+			}
+		);
+
+		$user = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user );
+
+		global $wp_rest_server;
+		$wp_rest_server = new WP_REST_Server();
+		do_action( 'rest_api_init' );
+
+		$request  = new WP_REST_Request( 'POST', '/odd/v1/bundles/refresh' );
+		$response = $wp_rest_server->dispatch( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertTrue( $data['refreshed'] );
+		$this->assertSame( 1, $data['count'] );
+		$this->assertSame( 'fresh-widget', $data['bundles'][0]['slug'] );
+		$this->assertSame( 'remote', $data['meta']['source'] );
+	}
+
 	public function test_remote_catalog_rejects_insecure_registry_url() {
 		$result = oddout_catalog_fetch_remote( 'http://example.com/catalog/v1/registry.json' );
 		$this->assertWPError( $result );

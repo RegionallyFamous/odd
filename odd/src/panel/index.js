@@ -4037,6 +4037,33 @@
 			return base.replace( /\/catalog\/?$/, suffix );
 		}
 
+		function catalogKeyForType( type ) {
+			return type === 'icon-set' ? 'iconSet'
+				: ( type === 'cursor-set' ? 'cursorSet' : type );
+		}
+
+		function replaceBundleCatalogRows( rows ) {
+			if ( ! Array.isArray( rows ) ) return false;
+			var next = {
+				scene: [],
+				iconSet: [],
+				cursorSet: [],
+				widget: [],
+				app: [],
+			};
+			rows.forEach( function ( row ) {
+				if ( ! row || ! row.type ) return;
+				var key = catalogKeyForType( row.type );
+				if ( ! Object.prototype.hasOwnProperty.call( next, key ) ) return;
+				next[ key ].push( row );
+			} );
+			state.cfg.bundleCatalog = next;
+			if ( window.odd ) {
+				window.odd.bundleCatalog = clone( next );
+			}
+			return true;
+		}
+
 		function refreshCatalog( button, onDone ) {
 			if ( button ) {
 				button.disabled = true;
@@ -4052,6 +4079,9 @@
 				if ( res && res.meta ) {
 					state.cfg.systemHealth = state.cfg.systemHealth || {};
 					state.cfg.systemHealth.catalog = res.meta;
+				}
+				if ( res && Array.isArray( res.bundles ) ) {
+					replaceBundleCatalogRows( res.bundles );
 				}
 				toast( __( 'Catalog refreshed.' ) );
 				if ( typeof onDone === 'function' ) onDone( res );
@@ -6527,7 +6557,7 @@
 
 		function catalogRowsFor( type ) {
 			var catalog = ( state.cfg && state.cfg.bundleCatalog ) || {};
-			var key = ( type === 'icon-set' ) ? 'iconSet' : ( type === 'cursor-set' ? 'cursorSet' : type );
+			var key = catalogKeyForType( type );
 			var src = Array.isArray( catalog[ key ] ) ? catalog[ key ] : [];
 			var out = [];
 			for ( var i = 0; i < src.length; i++ ) {

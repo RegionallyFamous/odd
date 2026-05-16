@@ -1787,13 +1787,12 @@ add_action(
 					if ( is_wp_error( $rl ) ) {
 						return $rl;
 					}
-					$registry = oddout_catalog_refresh();
+					oddout_catalog_refresh();
+					$response              = oddout_bundle_catalog_response();
+					$response['refreshed'] = true;
+					$response['count']     = isset( $response['bundles'] ) ? count( $response['bundles'] ) : 0;
 					return rest_ensure_response(
-						array(
-							'refreshed' => true,
-							'count'     => isset( $registry['bundles'] ) ? count( $registry['bundles'] ) : 0,
-							'meta'      => oddout_catalog_meta(),
-						)
+						$response
 					);
 				},
 				'permission_callback' => function () {
@@ -1855,8 +1854,8 @@ add_action(
 	5
 );
 
-function oddout_bundle_rest_catalog( WP_REST_Request $req ) {
-	$type     = sanitize_text_field( (string) $req->get_param( 'type' ) );
+function oddout_bundle_catalog_rows_for_response( $type = '' ) {
+	$type     = sanitize_text_field( (string) $type );
 	$versions = oddout_bundle_catalog_installed_versions();
 	$rows     = array();
 	foreach ( oddout_bundle_catalog() as $entry ) {
@@ -1872,10 +1871,19 @@ function oddout_bundle_rest_catalog( WP_REST_Request $req ) {
 			&& oddout_bundle_catalog_is_newer( $entry['version'], $installed_version );
 		$rows[]                     = oddout_bundle_catalog_row_for_response( $entry );
 	}
-	$response = array( 'bundles' => $rows );
+	return $rows;
+}
+
+function oddout_bundle_catalog_response( $type = '' ) {
+	$response = array( 'bundles' => oddout_bundle_catalog_rows_for_response( $type ) );
 	if ( current_user_can( 'manage_options' ) ) {
 		$response['meta'] = oddout_catalog_meta();
 	}
+	return $response;
+}
+
+function oddout_bundle_rest_catalog( WP_REST_Request $req ) {
+	$response = oddout_bundle_catalog_response( $req->get_param( 'type' ) );
 	return rest_ensure_response( $response );
 }
 
