@@ -3299,7 +3299,7 @@
 					type: 'icon-set',
 					label: 'Icon Sets',
 					tint: '#00a693',
-					desc: 'PNG and WebP image feeds for native Desktop Mode icon surfaces.',
+					desc: 'PNG and WebP image feeds for Desktop Mode desktop shortcuts.',
 					glyph: '<rect x="3" y="3" width="6" height="6" rx="1.4"/><rect x="11" y="3" width="6" height="6" rx="1.4"/><rect x="3" y="11" width="6" height="6" rx="1.4"/><rect x="11" y="11" width="6" height="6" rx="1.4"/>',
 				},
 				{
@@ -5476,7 +5476,7 @@
 			var wrap = el( 'div', { class: 'odd-shop__dept odd-shop__dept--icons' } );
 			wrap.appendChild( sectionHeader(
 				'Icon Sets',
-				'Dress Desktop Mode icon surfaces in a new costume. Apply once and the native dock, taskbar, and shortcuts update together.',
+				'Dress Desktop Mode desktop shortcuts in a new costume while the rail and taskbar stay native.',
 				{ eyebrow: 'ODD · Icon Couture' }
 			) );
 			appendCatalogNotice( wrap, 'icon-set' );
@@ -6706,8 +6706,8 @@
 					];
 				case 'icon-set':
 					return [
-						'Updates Desktop Mode icons through the native icon system.',
-						'Keeps dock, desktop shortcuts, taskbar, and file surfaces aligned.',
+						'Updates desktop shortcut icons through the native Desktop Mode icon registry.',
+						'Leaves the rail, dock, taskbar, and system actions on default Desktop Mode icons.',
 						'Applies as one coherent set instead of patching individual DOM nodes.',
 					];
 				case 'cursor-set':
@@ -7148,12 +7148,6 @@
 				} );
 
 			wrap.appendChild( card );
-
-			if ( row.installed && ! isActive && ( row.type === 'scene' || row.type === 'icon-set' || row.type === 'cursor-set' ) ) {
-				var hint = el( 'div', { class: 'odd-shop__card-hint' } );
-				hint.textContent = row.type === 'icon-set' ? 'Apply updates icons together' : 'Apply to activate';
-				wrap.appendChild( hint );
-			}
 
 			var quick = el( 'button', {
 				type: 'button',

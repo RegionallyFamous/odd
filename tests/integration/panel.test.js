@@ -257,6 +257,9 @@ describe( 'ODD Shop', () => {
 		expect( storebar ).toBeTruthy();
 		expect( storebar.textContent ).toContain( '3 wallpapers' );
 		expect( storebar.textContent ).toContain( '3 installed' );
+		const css = readFileSync( resolve( __dirname, '../../odd/src/panel/styles.css' ), 'utf8' );
+		expect( css ).toContain( '.odd-panel.odd-shop .odd-shop__storebar{position:relative;display:grid;grid-template-columns:minmax(0,1fr);align-items:stretch;gap:10px;box-sizing:border-box;width:100%;max-width:none;' );
+		expect( css ).toContain( '.odd-panel.odd-shop .odd-shop__store-views{display:flex;align-items:center;width:100%;max-width:none;' );
 
 		const available = host.querySelector( '[data-odd-store-view="available"]' );
 		available.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );

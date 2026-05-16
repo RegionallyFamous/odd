@@ -347,7 +347,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( card.querySelector( '.odd-shop__card-state' )?.textContent.trim() ).toBe( 'Ready' );
 		expect( card.querySelector( '.odd-shop__card-trust' ) ).toBeNull();
 		expect( card.querySelector( '#odd-shop-card-terrazzo-trust' )?.textContent.trim() ).toBe( 'Runs locally' );
-		expect( card.querySelector( '.odd-shop__card-hint' )?.textContent ).toBe( 'Apply to activate' );
+		expect( card.querySelector( '.odd-shop__card-hint' ) ).toBeNull();
 	} );
 
 	it( 'scene Apply posts prefs directly without staging controls', async () => {
@@ -654,16 +654,36 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( hiddenTrust?.textContent.trim() ).toBe( 'Static images' );
 	} );
 
+	it( 'icon department renders catalog cards without the costume hero or stock reset strip', () => {
+		seed( {
+			iconSet:  'filament',
+			iconSets: [
+				{ slug: 'filament', label: 'Filament', category: 'Filament', accent: '#ff7a3c', icons: { dashboard: '', fallback: '' } },
+			],
+		} );
+		loadPanel();
+		const { host } = mount();
+		goToDepartment( host, 'Icon Sets' );
+
+		expect( host.querySelector( '.odd-shop__hero--icons' ) ).toBeNull();
+		expect( host.querySelector( '.odd-shop__reset-row' ) ).toBeNull();
+		expect( host.textContent ).not.toContain( 'Current costume' );
+		expect( host.textContent ).not.toContain( 'Featured costume' );
+		expect( host.textContent ).not.toContain( 'Wearing it' );
+		expect( host.textContent ).not.toContain( 'Missing the stock WordPress icon wardrobe?' );
+		expect( host.textContent ).not.toContain( 'Reset to default' );
+		expect( host.querySelector( '[data-odd-shop-card][data-set-slug="filament"]' ) ).toBeTruthy();
+	} );
+
 	it( 'installed icon set card prefers live quartet art over catalog splash art', () => {
 		seed( {
 			iconSet:   '',
 			iconSets:  [
 				{
-					slug: 'odd-default-icons',
-					label: 'ODD Default',
-					card_url: 'https://example.test/catalog-card.webp',
-					funLayer: { recipe: 'chroma-halo', accent: '#38e8ff', secondary: '#ff44b5', spark: '#9556ff' },
-					icons: {
+						slug: 'odd-default-icons',
+						label: 'ODD Default',
+						card_url: 'https://example.test/catalog-card.webp',
+						icons: {
 						dashboard: 'https://example.test/dashboard.webp',
 						posts:     'https://example.test/posts.webp',
 						pages:     'https://example.test/pages.webp',
@@ -675,11 +695,10 @@ describe( 'ODD Shop · unified card state machine', () => {
 				scene: [],
 				iconSet: [
 					{
-						slug: 'odd-default-icons',
-						label: 'ODD Default',
-						card_url: 'https://example.test/catalog-card.webp',
-						funLayer: { recipe: 'chroma-halo', accent: '#38e8ff', secondary: '#ff44b5', spark: '#9556ff' },
-						installed: true,
+							slug: 'odd-default-icons',
+							label: 'ODD Default',
+							card_url: 'https://example.test/catalog-card.webp',
+							installed: true,
 					},
 				],
 				cursorSet: [],
@@ -692,12 +711,11 @@ describe( 'ODD Shop · unified card state machine', () => {
 		goToDepartment( host, 'Icon Sets' );
 
 		const card = host.querySelector( '[data-odd-shop-card][data-set-slug="odd-default-icons"]' );
-		expect( card, 'icon-set tile must render' ).toBeTruthy();
-		const art = card.querySelector( '.odd-shop__card-art--icon-set' );
-		expect( art.getAttribute( 'data-odd-fun-layer' ) ).toBe( 'chroma-halo' );
-		expect( art.querySelector( '.odd-shop__icon-fun-layer' ) ).toBeTruthy();
-		expect( art.getAttribute( 'style' ) ).toContain( '--odd-icon-card-accent: #38e8ff' );
-		expect( art.classList.contains( 'odd-shop__card-art--quartet' ) ).toBe( true );
+			expect( card, 'icon-set tile must render' ).toBeTruthy();
+			const art = card.querySelector( '.odd-shop__card-art--icon-set' );
+			expect( art.hasAttribute( 'data-odd-fun-layer' ) ).toBe( false );
+			expect( art.querySelector( '.odd-shop__icon-fun-layer' ) ).toBeNull();
+			expect( art.classList.contains( 'odd-shop__card-art--quartet' ) ).toBe( true );
 		const quartetIcons = Array.from( card.querySelectorAll( '.odd-shop__card-quartet img' ) );
 		expect( quartetIcons ).toHaveLength( 4 );
 		expect( quartetIcons.map( ( img ) => img.getAttribute( 'src' ) ) ).toEqual( [
@@ -713,21 +731,13 @@ describe( 'ODD Shop · unified card state machine', () => {
 		const css = readFileSync( PANEL_CSS, 'utf8' );
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card--app \.odd-shop__card-art > img:not\(\.odd-shop__card-art-fill\)\{[^}]*padding:10%[^}]*object-fit:contain/ );
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card--app \.odd-shop__card-art > img\.odd-shop__card-art-fill\{[^}]*padding:0[^}]*object-fit:cover/ );
-		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__card\.odd-card\.odd-shop__tile \.odd-shop__card-art\{[^}]*border-radius:22\.5%/ );
-		expect( css ).toMatch( /\.odd-panel \.odd-shop__card--icon-set \.odd-shop__card-art > img\.odd-shop__card-art-fill\{[^}]*padding:0[^}]*object-fit:cover/ );
-		expect( css ).toContain( '.odd-panel .odd-shop__card-art[data-odd-fun-layer]' );
-		expect( css ).toContain( '.odd-panel .odd-shop__icon-fun-layer' );
-		expect( css ).toContain( '@keyframes odd-icon-card-drift' );
-		expect( css ).toContain( '@keyframes odd-icon-card-spark-pop' );
-		expect( css ).toContain( '@keyframes odd-icon-card-jitter' );
-		expect( css ).toContain( '--odd-icon-layer-motion:odd-icon-card-drift' );
-		expect( css ).toContain( 'animation-name:var(--odd-icon-layer-motion)' );
-		expect( css ).toContain( '.odd-panel .odd-shop__icon-fun-layer::before,.odd-panel .odd-shop__icon-fun-layer::after' );
-		expect( css ).toContain( '[data-odd-fun-layer="blueprint-grid"]' );
-		expect( css ).toContain( '[data-odd-fun-layer="stitch-cross"]' );
-		expect( css ).toContain( '[data-odd-fun-layer="misprint-dot"]{--odd-icon-layer-motion:odd-icon-card-jitter' );
-		expect( css ).toContain( '[data-odd-fun-layer="blink-ring"]{--odd-icon-layer-motion:odd-icon-card-blink' );
-		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-art--quartet\{[^}]*padding:clamp\(10px,8%,18px\)[^}]*overflow:visible/ );
+			expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__card\.odd-card\.odd-shop__tile \.odd-shop__card-art\{[^}]*border-radius:22\.5%/ );
+			expect( css ).toMatch( /\.odd-panel \.odd-shop__card--icon-set \.odd-shop__card-art > img\.odd-shop__card-art-fill\{[^}]*padding:0[^}]*object-fit:cover/ );
+			expect( css ).not.toContain( 'data-odd-fun-layer' );
+			expect( css ).not.toContain( 'odd-shop__icon-fun-layer' );
+			expect( css ).not.toContain( 'odd-icon-card-jitter' );
+			expect( css ).not.toContain( '--odd-icon-layer-motion' );
+			expect( css ).toMatch( /\.odd-panel \.odd-shop__card-art--quartet\{[^}]*padding:clamp\(10px,8%,18px\)[^}]*overflow:visible/ );
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-art--quartet \.odd-shop__card-quartet\{[^}]*width:100%[^}]*gap:clamp\(8px,8%,14px\)/ );
 		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__shelf\{[^}]*content-visibility:auto/ );
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-wrap\{[^}]*content-visibility:auto/ );
