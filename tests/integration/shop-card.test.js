@@ -179,15 +179,17 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( card.getAttribute( 'data-odd-card-state' ) ).toBe( 'available' );
 		expect( card.getAttribute( 'data-odd-card-action' ) ).toBe( 'install' );
 		expect( card.getAttribute( 'data-odd-trust' ) ).toBe( 'local-code' );
-		expect( card.querySelector( '.odd-shop__card-trust' )?.textContent.trim() ).toBe( 'Runs locally' );
+		expect( card.querySelector( '.odd-shop__card-trust' ) ).toBeNull();
 		expect( card.querySelector( '.odd-shop__card-state' ) ).toBeNull();
 		const body = card.querySelector( '.odd-shop__card' );
-		const hiddenStatus = card.querySelector( '.odd-sr-only' );
-		const trust = card.querySelector( '.odd-shop__card-trust' );
+		const hiddenStatus = card.querySelector( '#odd-shop-card-gusts-status' );
+		const hiddenTrust = card.querySelector( '#odd-shop-card-gusts-trust' );
 		expect( hiddenStatus?.id ).toBe( 'odd-shop-card-gusts-status' );
 		expect( hiddenStatus?.textContent.trim() ).toBe( 'Available' );
+		expect( hiddenTrust?.classList.contains( 'odd-sr-only' ) ).toBe( true );
+		expect( hiddenTrust?.textContent.trim() ).toBe( 'Runs locally' );
 		expect( body.getAttribute( 'aria-describedby' ) ).toContain( hiddenStatus.id );
-		expect( body.getAttribute( 'aria-describedby' ) ).toContain( trust.id );
+		expect( body.getAttribute( 'aria-describedby' ) ).toContain( hiddenTrust.id );
 		expect( btn.getAttribute( 'aria-describedby' ) ).toContain( hiddenStatus.id );
 		expect( btn.getAttribute( 'aria-label' ) ).toBe( 'Install Gusts - Available' );
 		expect( btn.getAttribute( 'aria-pressed' ) ).toBeNull();
@@ -311,7 +313,8 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( card.getAttribute( 'data-odd-card-action' ) ).toBe( 'apply' );
 		expect( card.getAttribute( 'data-odd-trust' ) ).toBe( 'local-code' );
 		expect( card.querySelector( '.odd-shop__card-state' )?.textContent.trim() ).toBe( 'Ready to apply' );
-		expect( card.querySelector( '.odd-shop__card-trust' )?.textContent.trim() ).toBe( 'Runs locally' );
+		expect( card.querySelector( '.odd-shop__card-trust' ) ).toBeNull();
+		expect( card.querySelector( '#odd-shop-card-terrazzo-trust' )?.textContent.trim() ).toBe( 'Runs locally' );
 		expect( card.querySelector( '.odd-shop__card-hint' )?.textContent ).toBe( 'Click card to preview' );
 	} );
 

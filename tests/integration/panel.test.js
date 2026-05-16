@@ -236,6 +236,9 @@ describe( 'ODD Shop', () => {
 		expect( host.querySelector( '.odd-shop__rail-scroll' ) ).toBeNull();
 		expect( host.querySelector( '.odd-shop__rail-fade' ) ).toBeNull();
 		expect( items.length ).toBeGreaterThan( 2 );
+		expect( items[ 0 ].getAttribute( 'title' ) ).toBe( 'Wallpapers - Living desktop weather' );
+		expect( items[ 0 ].getAttribute( 'aria-label' ) ).toBe( 'Wallpapers - Living desktop weather' );
+		expect( document.body.querySelector( '.odd-shop__rail-tooltip-popover' ) ).toBeTruthy();
 
 		items[ 0 ].focus();
 		items[ 0 ].dispatchEvent( new KeyboardEvent( 'keydown', { key: 'ArrowDown', bubbles: true, cancelable: true } ) );

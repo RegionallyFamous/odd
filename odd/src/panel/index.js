@@ -326,6 +326,34 @@
 			'data-odd-sidebar': '1',
 			class: 'odd-shop__rail',
 		} );
+		var railTooltip = el( 'div', {
+			class: 'odd-shop__rail-tooltip-popover',
+			role: 'tooltip',
+			'aria-hidden': 'true',
+		} );
+		document.body.appendChild( railTooltip );
+		cleanupFns.push( function () {
+			if ( railTooltip && railTooltip.parentNode ) railTooltip.parentNode.removeChild( railTooltip );
+		} );
+		function sectionTooltipText( section ) {
+			return section.label + ( section.tagline ? ' - ' + section.tagline : '' );
+		}
+		function showRailTooltip( btn, section, labelWrap ) {
+			if ( labelWrap && window.getComputedStyle && window.getComputedStyle( labelWrap ).display !== 'none' ) {
+				return;
+			}
+			var rect = btn.getBoundingClientRect ? btn.getBoundingClientRect() : null;
+			if ( ! rect ) return;
+			railTooltip.textContent = sectionTooltipText( section );
+			railTooltip.style.left = Math.round( rect.right + 10 ) + 'px';
+			railTooltip.style.top = Math.round( rect.top + ( rect.height / 2 ) ) + 'px';
+			railTooltip.setAttribute( 'aria-hidden', 'false' );
+			railTooltip.classList.add( 'is-visible' );
+		}
+		function hideRailTooltip() {
+			railTooltip.classList.remove( 'is-visible' );
+			railTooltip.setAttribute( 'aria-hidden', 'true' );
+		}
 		var railGroups = {
 			decorate: { label: __( 'Decorate' ), node: null },
 			more:     { label: __( 'Do more' ),  node: null },
@@ -820,6 +848,8 @@
 				type: 'button',
 				'data-section': section.id,
 				'data-testid': 'odd-shop-nav-' + section.id,
+				'aria-label': sectionTooltipText( section ),
+				title: sectionTooltipText( section ),
 			} );
 			btn.className = 'odd-panel__nav odd-shop__rail-item';
 			btn.style.setProperty( '--odd-shop-active-tint', section.tint || 'var(--odd-shop-accent)' );
@@ -840,7 +870,16 @@
 			}
 			btn.appendChild( glyph );
 			btn.appendChild( labelWrap );
+			btn.addEventListener( 'mouseenter', function () {
+				showRailTooltip( btn, section, labelWrap );
+			} );
+			btn.addEventListener( 'mouseleave', hideRailTooltip );
+			btn.addEventListener( 'focus', function () {
+				showRailTooltip( btn, section, labelWrap );
+			} );
+			btn.addEventListener( 'blur', hideRailTooltip );
 			btn.addEventListener( 'click', function () {
+				hideRailTooltip();
 				if ( state.active !== section.id ) playShopSound( 'nav' );
 				renderSection( section.id );
 			} );
@@ -7442,7 +7481,11 @@
 			sub.textContent = subtitleText;
 			var stateLine = el( 'div', { class: 'odd-shop__card-state odd-shop__card-state--' + cardState.id, id: statusId } );
 			stateLine.textContent = cardState.statusLabel;
-			var trustLine = el( 'div', { class: 'odd-shop__card-trust odd-shop__card-trust--' + trust.id, id: trustId } );
+			var showTrustLine = trust.id !== 'local-code';
+			var trustLine = el( showTrustLine ? 'div' : 'span', {
+				class: showTrustLine ? 'odd-shop__card-trust odd-shop__card-trust--' + trust.id : 'odd-sr-only',
+				id: trustId,
+			} );
 			trustLine.textContent = trust.label;
 			meta.appendChild( title );
 			meta.appendChild( sub );
