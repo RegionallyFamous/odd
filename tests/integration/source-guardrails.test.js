@@ -112,18 +112,9 @@ describe( 'v1 source guardrails', () => {
 	it( 'keeps icon-set manifests raster-only with no runtime fun layer contract', () => {
 		const dir = resolve( ROOT, '_tools/catalog-sources/icon-sets' );
 		const expectedKeys = [
-			'dashboard',
-			'posts',
-			'pages',
-			'media',
-			'comments',
-			'appearance',
-			'plugins',
-			'users',
-			'tools',
-			'settings',
-			'profile',
-			'links',
+			'odd',
+			'my-wordpress',
+			'content-graph',
 			'recycle-bin',
 			'fallback',
 		];
@@ -164,34 +155,25 @@ describe( 'v1 source guardrails', () => {
 		const iconDoc = readRel( 'docs/building-an-icon-set.md' );
 		const iconSetDir = resolve( ROOT, '_tools/catalog-sources/icon-sets' );
 		const expectedKeys = [
-			'dashboard',
-			'posts',
-			'pages',
-			'media',
-			'comments',
-			'appearance',
-			'plugins',
-			'users',
-			'tools',
-			'settings',
-			'profile',
-			'links',
+			'odd',
+			'my-wordpress',
+			'content-graph',
 			'recycle-bin',
 			'fallback',
 		];
 
-		expect( glyphManifest.contract ).toBe( 'default-dashicon-raster-source' );
+		expect( glyphManifest.contract ).toBe( 'desktop-default-raster-source' );
 		expect( glyphManifest.requiredKeys ).toEqual( expectedKeys );
 		expect( Object.keys( glyphManifest.glyphs ) ).toEqual( expectedKeys );
 		expect( Object.keys( sourceMap.icons ) ).toEqual( expectedKeys );
-		expect( Object.keys( sourceMap.codepoints ) ).toEqual( expectedKeys );
+		expect( sourceMap.contract ).toBe( 'desktop-default-raster-source' );
 		for ( const key of expectedKeys ) {
 			expect( existsSync( resolve( glyphDir, `${ key }.png` ) ) ).toBe( true );
 			expect( compose ).toContain( `"${ key }"` );
 		}
-		expect( compose ).toContain( 'DASHICONS_FONT' );
-		expect( compose ).toContain( 'def render_dashicon_mask(' );
-		expect( compose ).toContain( 'def compose_default_icon(' );
+		expect( compose ).toContain( 'def draw_my_wordpress_mask(' );
+		expect( compose ).toContain( 'def draw_content_graph_mask(' );
+		expect( compose ).toContain( 'def compose_icon(' );
 		expect( compose ).toContain( 'def render_set(' );
 		expect( compose ).toContain( 'kept source rasters for' );
 		expect( compose ).not.toContain( 'copied default rasters into' );
@@ -210,6 +192,10 @@ describe( 'v1 source guardrails', () => {
 					.digest( 'hex' ),
 			] )
 		);
+		for ( const key of expectedKeys ) {
+			const bytes = readFileSync( join( iconSetDir, 'odd-default-icons', defaultManifest.icons[ key ] ) );
+			expect( bytes.includes( Buffer.from( 'ANMF' ) ), `${ key } should be an animated WebP` ).toBe( true );
+		}
 
 		for ( const entry of readdirSync( iconSetDir, { withFileTypes: true } ) ) {
 			if ( ! entry.isDirectory() ) continue;

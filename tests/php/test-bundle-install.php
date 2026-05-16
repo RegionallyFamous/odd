@@ -45,18 +45,9 @@ class Test_Bundle_Install extends ODDOUT_REST_Test_Case {
 	 */
 	protected function make_iconset_zip( $slug = 'test-set', array $overrides = array() ) {
 		$keys  = array(
-			'dashboard',
-			'posts',
-			'pages',
-			'media',
-			'comments',
-			'appearance',
-			'plugins',
-			'users',
-			'tools',
-			'settings',
-			'profile',
-			'links',
+			'odd',
+			'my-wordpress',
+			'content-graph',
 			'recycle-bin',
 			'fallback',
 		);
@@ -95,7 +86,7 @@ class Test_Bundle_Install extends ODDOUT_REST_Test_Case {
 				'name'          => 'Test Scene',
 				'label'         => 'Test Scene',
 				'version'       => '1.0.0',
-				'category'     => 'Test',
+				'category'      => 'Test',
 				'tags'          => array( 'test' ),
 				'fallbackColor' => '#112233',
 				'added'         => '2025-01-01',
@@ -163,7 +154,7 @@ class Test_Bundle_Install extends ODDOUT_REST_Test_Case {
 			$this->assertMatchesRegularExpression( '/\.(png|webp)$/', $url, "Icon {$key} must resolve to a raster asset." );
 			$this->assertStringNotContainsString( '.svg', $url, "Icon {$key} must not resolve to SVG." );
 		}
-		$this->assertStringContainsString( '/icons/dashboard.png', $set['icons']['dashboard'] );
+		$this->assertStringContainsString( '/icons/my-wordpress.png', $set['icons']['my-wordpress'] );
 		$this->assertStringContainsString( '/icons/fallback.png', $set['icons']['fallback'] );
 
 		$uninstall = oddout_bundle_uninstall( 'test-set' );
@@ -318,18 +309,9 @@ class Test_Bundle_Install extends ODDOUT_REST_Test_Case {
 
 	public function test_iconset_rejects_svg_icons() {
 		$keys  = array(
-			'dashboard',
-			'posts',
-			'pages',
-			'media',
-			'comments',
-			'appearance',
-			'plugins',
-			'users',
-			'tools',
-			'settings',
-			'profile',
-			'links',
+			'odd',
+			'my-wordpress',
+			'content-graph',
 			'recycle-bin',
 			'fallback',
 		);
@@ -349,7 +331,7 @@ class Test_Bundle_Install extends ODDOUT_REST_Test_Case {
 				'icons'   => $icons,
 			),
 			array(
-				'icons/dashboard.svg' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64"/></svg>',
+				'icons/my-wordpress.svg' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64"/></svg>',
 			)
 		);
 		$res = oddout_bundle_install( $zip, 'svg-icons.wp' );
@@ -364,7 +346,7 @@ class Test_Bundle_Install extends ODDOUT_REST_Test_Case {
 			'bad-raster',
 			array(
 				'files' => array(
-					'icons/dashboard.png' => 'not a png',
+					'icons/my-wordpress.png' => 'not a png',
 				),
 			)
 		);
@@ -380,7 +362,7 @@ class Test_Bundle_Install extends ODDOUT_REST_Test_Case {
 			'oversized-raster',
 			array(
 				'files' => array(
-					'icons/dashboard.png' => random_bytes( 768 * 1024 + 1 ),
+					'icons/my-wordpress.png' => random_bytes( 768 * 1024 + 1 ),
 				),
 			)
 		);

@@ -377,14 +377,17 @@ def render_iconset_card(src_dir: Path) -> Image.Image:
     accent = clean_hex(meta.get("accent") or CYAN, CYAN)
     base = plate(accent, PINK, GOLD)
     icons = meta.get("icons") or {}
+    preview_keys = [key for key in ("odd", "my-wordpress", "content-graph", "recycle-bin", "fallback") if key in icons]
+    preview_keys.extend([key for key in icons.keys() if key not in preview_keys])
     placements = [
-        ("dashboard", 72, 72, 392, -3),
-        ("posts", 560, 72, 392, 3),
-        ("pages", 72, 560, 392, 3),
-        ("media", 560, 560, 392, -3),
+        (preview_keys[0] if len(preview_keys) > 0 else "fallback", 340, 314, 344, 0),
+        (preview_keys[1] if len(preview_keys) > 1 else "fallback", 82, 106, 282, -4),
+        (preview_keys[2] if len(preview_keys) > 2 else "fallback", 660, 106, 282, 4),
+        (preview_keys[3] if len(preview_keys) > 3 else "fallback", 92, 638, 282, 3),
+        (preview_keys[4] if len(preview_keys) > 4 else "fallback", 650, 638, 282, -3),
     ]
     for key, x, y, size, rot in placements:
-        rel = icons.get(key) or icons.get("fallback") or icons.get("dashboard")
+        rel = icons.get(key) or icons.get("fallback") or next(iter(icons.values()), "")
         if not rel:
             continue
         with Image.open(src_dir / rel) as src:

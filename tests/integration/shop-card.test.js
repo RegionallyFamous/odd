@@ -636,7 +636,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 		seed( {
 			iconSet:   '',
 			iconSets:  [
-				{ slug: 'filament', label: 'Filament', category: 'Filament', accent: '#ff7a3c', icons: { dashboard: '', fallback: '' } },
+				{ slug: 'filament', label: 'Filament', category: 'Filament', accent: '#ff7a3c', icons: { odd: '', 'my-wordpress': '', fallback: '' } },
 			],
 		} );
 		loadPanel();
@@ -658,7 +658,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 		seed( {
 			iconSet:  'filament',
 			iconSets: [
-				{ slug: 'filament', label: 'Filament', category: 'Filament', accent: '#ff7a3c', icons: { dashboard: '', fallback: '' } },
+				{ slug: 'filament', label: 'Filament', category: 'Filament', accent: '#ff7a3c', icons: { odd: '', 'my-wordpress': '', fallback: '' } },
 			],
 		} );
 		loadPanel();
@@ -675,7 +675,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( host.querySelector( '[data-odd-shop-card][data-set-slug="filament"]' ) ).toBeTruthy();
 	} );
 
-	it( 'installed icon set card prefers live quartet art over catalog splash art', () => {
+	it( 'installed icon set card prefers live five-icon art over catalog splash art', () => {
 		seed( {
 			iconSet:   '',
 			iconSets:  [
@@ -684,10 +684,11 @@ describe( 'ODD Shop · unified card state machine', () => {
 						label: 'ODD Default',
 						card_url: 'https://example.test/catalog-card.webp',
 						icons: {
-						dashboard: 'https://example.test/dashboard.webp',
-						posts:     'https://example.test/posts.webp',
-						pages:     'https://example.test/pages.webp',
-						media:     'https://example.test/media.webp',
+						odd:             'https://example.test/odd.webp',
+						'my-wordpress':  'https://example.test/my-wordpress.webp',
+						'content-graph': 'https://example.test/content-graph.webp',
+						'recycle-bin':   'https://example.test/recycle-bin.webp',
+						fallback:        'https://example.test/fallback.webp',
 					},
 				},
 			],
@@ -715,19 +716,20 @@ describe( 'ODD Shop · unified card state machine', () => {
 			const art = card.querySelector( '.odd-shop__card-art--icon-set' );
 			expect( art.hasAttribute( 'data-odd-fun-layer' ) ).toBe( false );
 			expect( art.querySelector( '.odd-shop__icon-fun-layer' ) ).toBeNull();
-			expect( art.classList.contains( 'odd-shop__card-art--quartet' ) ).toBe( true );
-		const quartetIcons = Array.from( card.querySelectorAll( '.odd-shop__card-quartet img' ) );
-		expect( quartetIcons ).toHaveLength( 4 );
-		expect( quartetIcons.map( ( img ) => img.getAttribute( 'src' ) ) ).toEqual( [
-			'https://example.test/dashboard.webp',
-			'https://example.test/posts.webp',
-			'https://example.test/pages.webp',
-			'https://example.test/media.webp',
+			expect( art.classList.contains( 'odd-shop__card-art--icon-grid' ) ).toBe( true );
+		const gridIcons = Array.from( card.querySelectorAll( '.odd-shop__card-icon-grid img' ) );
+		expect( gridIcons ).toHaveLength( 5 );
+		expect( gridIcons.map( ( img ) => img.getAttribute( 'src' ) ) ).toEqual( [
+			'https://example.test/odd.webp',
+			'https://example.test/my-wordpress.webp',
+			'https://example.test/content-graph.webp',
+			'https://example.test/recycle-bin.webp',
+			'https://example.test/fallback.webp',
 		] );
 		expect( card.querySelector( 'img[src="https://example.test/catalog-card.webp"]' ) ).toBeNull();
 	} );
 
-	it( 'icon set card art CSS gives live quartets breathing room instead of cover-cropping', () => {
+	it( 'icon set card art CSS gives live five-icon grids breathing room instead of cover-cropping', () => {
 		const css = readFileSync( PANEL_CSS, 'utf8' );
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card--app \.odd-shop__card-art > img:not\(\.odd-shop__card-art-fill\)\{[^}]*padding:10%[^}]*object-fit:contain/ );
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card--app \.odd-shop__card-art > img\.odd-shop__card-art-fill\{[^}]*padding:0[^}]*object-fit:cover/ );
@@ -739,8 +741,9 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( css ).not.toContain( 'odd-shop__icon-fun-layer' );
 		expect( css ).not.toContain( 'odd-icon-card-jitter' );
 		expect( css ).not.toContain( '--odd-icon-layer-motion' );
-		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-art--quartet\{[^}]*padding:clamp\(10px,8%,18px\)[^}]*overflow:visible/ );
-		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-art--quartet \.odd-shop__card-quartet\{[^}]*width:100%[^}]*gap:clamp\(8px,8%,14px\)/ );
+		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-art--icon-grid\{[^}]*padding:clamp\(10px,8%,18px\)[^}]*overflow:visible/ );
+		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-art--icon-grid \.odd-shop__card-icon-grid\{[^}]*width:100%[^}]*height:100%/ );
+		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-icon-grid > img:nth-child\(5\)\{[^}]*right:1%[^}]*bottom:2%/ );
 		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__shelf\{[^}]*content-visibility:auto/ );
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-wrap\{[^}]*content-visibility:auto/ );
 	} );

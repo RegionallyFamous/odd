@@ -53,7 +53,7 @@ alongside:
 | `version`     | yes      | non-empty string                            | Semver recommended. Drives the `ver` query on every enqueued asset.    |
 | `author`      | no       | string                                      | Shown on the detail sheet.                                             |
 | `description` | no       | string                                      | One or two sentences. Shown on the tile + the detail sheet.            |
-| `icon`        | no       | relative path or absolute URL               | Fallbacks: apps use a cog, icon sets use the dashboard icon, scenes use their preview, widgets use a generic glyph. |
+| `icon`        | no       | relative path or absolute URL               | Fallbacks: apps use a cog, icon sets use the first declared icon, scenes use their preview, widgets use a generic glyph. |
 
 ### Global slug uniqueness
 
@@ -110,18 +110,9 @@ Covered in full by [Building an Icon Set](building-an-icon-set.md).
     "accent":    "#7cc0ff",
     "preview":   "preview.webp",
     "icons": {
-        "dashboard":  "icons/dashboard.webp",
-        "posts":      "icons/posts.webp",
-        "pages":      "icons/pages.webp",
-        "media":      "icons/media.webp",
-        "comments":   "icons/comments.webp",
-        "appearance": "icons/appearance.webp",
-        "plugins":    "icons/plugins.webp",
-        "users":      "icons/users.webp",
-        "tools":      "icons/tools.webp",
-        "settings":   "icons/settings.webp",
-        "profile":    "icons/profile.webp",
-        "links":      "icons/links.webp",
+        "odd":           "icons/odd.webp",
+        "my-wordpress":  "icons/my-wordpress.webp",
+        "content-graph": "icons/content-graph.webp",
         "recycle-bin": "icons/recycle-bin.webp",
         "fallback":   "icons/fallback.webp"
     }
@@ -132,8 +123,8 @@ Covered in full by [Building an Icon Set](building-an-icon-set.md).
 |-------------|----------|--------------------------------------------------------------------------|
 | `category` | no       | Optional grouping label for Shop shelves and catalog tooling. |
 | `accent`    | yes      | `#hex`. Paints the Shop tile, quilt gradient, and catalog metadata.      |
-| `preview`   | no       | Relative path to a hero PNG/WebP. Falls back to `icons.dashboard`.       |
-| `icons`     | yes      | Map of all 14 desktop shortcut icon keys to relative PNG/WebP paths. |
+| `preview`   | no       | Relative path to a hero PNG/WebP. Falls back to the first declared icon. |
+| `icons`     | yes      | Map of the visible Desktop Mode desktop shortcut icon keys to relative PNG/WebP paths. |
 
 Icon sets are native Desktop Mode raster image URL feeds. ODD validates
 each declared icon as a PNG or WebP image, stores the set under
@@ -142,7 +133,8 @@ image URLs to Desktop Mode's own desktop and file-layer image payloads for
 desktop shortcuts and file shortcut previews. ODD leaves the rail, dock,
 taskbar, and Desktop Mode system actions on host-default icons.
 Each icon image must be square, 64-2048 px, 768 KB or smaller, and match
-its declared extension.
+its declared extension. Animated WebP is allowed for desktop icon keys when the
+first frame remains readable and the loop is calm.
 
 ### Type: `cursor-set`
 
@@ -309,7 +301,7 @@ response and as friendly copy in the Shop topbar pill.
 | Type       | Extra checks                                                                                   |
 |------------|------------------------------------------------------------------------------------------------|
 | `app`      | `entry` matches the entry regex + file exists in the archive.                                  |
-| `icon-set` | `icons` present, all 14 semantic keys mapped, each path is a real PNG/WebP image, each image is square, 64-2048 px, and at most 768 KB. |
+| `icon-set` | `icons` present, all required desktop shortcut keys mapped, each path is a real PNG/WebP image, each image is square, 64-2048 px, and at most 768 KB. |
 | `cursor-set` | `cursors` absent or empty, `effects` tokens are valid hex colors, preview SVGs pass passive-SVG validation. |
 | `scene`    | `entry`, `preview`, `wallpaper` all present in the archive; `fallbackColor` is a `#hex`.       |
 | `widget`   | `entry` matches the entry regex + file exists in the archive.                                  |

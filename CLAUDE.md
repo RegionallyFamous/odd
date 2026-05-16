@@ -209,7 +209,7 @@ All new scenes / icon sets / widgets / apps land in `_tools/catalog-sources/` an
 Icon-set authoring now treats each set as a finished catalog bundle:
 
 1. Create `_tools/catalog-sources/icon-sets/<slug>/`.
-2. Add `manifest.json` with `{ slug, label, category, accent (#hex), description?, preview?, icons: { dashboard, posts, pages, media, comments, appearance, plugins, users, tools, settings, profile, links, fallback } }`.
+2. Add `manifest.json` with `{ slug, label, category, accent (#hex), description?, preview?, icons: { odd, my-wordpress, content-graph, recycle-bin, fallback } }`.
 3. Add the final icon asset files named in `manifest.icons`, dropped next to the manifest.
 4. `odd/bin/validate-catalog` checks the bundle before publish.
 

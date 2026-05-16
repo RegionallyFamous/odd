@@ -56,24 +56,14 @@ function oddout_iconset_bundle_has( $slug ) {
 }
 
 /**
- * Required icon keys. Mirrors the keys the native Desktop Mode icon filters look up in
- * {@see oddout_icons_slug_to_key()} — leaving any of these out means the
- * set can't fully re-skin the WP Desktop shortcuts.
+ * Required icon keys. Mirrors the visible Desktop Mode desktop shortcuts that
+ * ODD themes through {@see oddout_icons_slug_to_key()}.
  */
 function oddout_iconsets_required_keys() {
 	return array(
-		'dashboard',
-		'posts',
-		'pages',
-		'media',
-		'comments',
-		'appearance',
-		'plugins',
-		'users',
-		'tools',
-		'settings',
-		'profile',
-		'links',
+		'odd',
+		'my-wordpress',
+		'content-graph',
 		'recycle-bin',
 		'fallback',
 	);

@@ -3,64 +3,45 @@
  * ODD icons — native Desktop Mode icon feeds.
  *
  * Icon sets theme Desktop Mode desktop shortcuts through Desktop Mode's
- * own server-side data filters. ODD leaves the rail, dock, taskbar, and
- * Desktop Mode system tiles on the host's default icons.
+ * own server-side data filters. ODD leaves the rail, dock, and Desktop Mode
+ * system tiles on the host's default icons, while the ODD Shop launcher itself
+ * follows the active set's `odd` key.
  *
- * Why slug-based: desktop shortcut entries ship keyed by their admin menu
- * file and sets declare icons under those same keys in `manifest.json#icons`,
- * so the mapping is a single hash lookup with no per-set PHP.
+ * Why slug-based: Desktop Mode's default desktop shortcut entries ship with
+ * stable ids/window ids. Sets declare icons under those same friendly keys in
+ * `manifest.json#icons`, so the mapping is a single hash lookup with no
+ * per-set PHP.
  */
 
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Canonical menu-slug → icon-set-key normalization. Lets sets use
- * short, friendly keys (`posts`, `pages`, `media`) instead of the
- * raw `edit.php` / `upload.php` / `edit.php?post_type=page` strings.
+ * Canonical Desktop Mode id/window/title → icon-set-key normalization.
  */
 function oddout_icons_slug_to_key( $slug ) {
 	$slug = (string) $slug;
 	$map  = array(
-		'index.php'                => 'dashboard',
-		'edit.php'                 => 'posts',
-		'edit.php?post_type=page'  => 'pages',
-		'upload.php'               => 'media',
-		'edit-comments.php'        => 'comments',
-		'themes.php'               => 'appearance',
-		'plugins.php'              => 'plugins',
-		'users.php'                => 'users',
-		'tools.php'                => 'tools',
-		'options-general.php'      => 'settings',
-		'profile.php'              => 'profile',
-		'link-manager.php'         => 'links',
-		'desktop-mode-recycle-bin' => 'recycle-bin',
-		'dashboard'                => 'dashboard',
-		'posts'                    => 'posts',
-		'pages'                    => 'pages',
-		'media'                    => 'media',
-		'comments'                 => 'comments',
-		'appearance'               => 'appearance',
-		'plugins'                  => 'plugins',
-		'users'                    => 'users',
-		'tools'                    => 'tools',
-		'settings'                 => 'settings',
-		'profile'                  => 'profile',
-		'links'                    => 'links',
-		'recycle-bin'              => 'recycle-bin',
+		'odd'                        => 'odd',
+		'desktop-mode-my-wordpress'  => 'my-wordpress',
+		'my-wordpress'               => 'my-wordpress',
+		'desktop-mode-content-graph' => 'content-graph',
+		'content-graph'              => 'content-graph',
+		'desktop-mode-recycle-bin'   => 'recycle-bin',
+		'recycle-bin'                => 'recycle-bin',
+		'fallback'                   => 'fallback',
 	);
 	if ( isset( $map[ $slug ] ) ) {
 		return $map[ $slug ];
-	}
-	// Heuristic: any `edit.php?post_type=X` falls under 'posts' unless
-	// the set ships an override for the CPT explicitly.
-	if ( 0 === strpos( $slug, 'edit.php?post_type=' ) ) {
-		return 'posts';
 	}
 	return '';
 }
 
 function oddout_icons_entry_to_key( $entry_id, $window = '', $title = '', $icon = '' ) {
-	foreach ( array( $window, $entry_id, $icon ) as $candidate ) {
+	$candidates = array( $window, $entry_id, $icon );
+	if ( '' !== (string) $title ) {
+		$candidates[] = sanitize_title( (string) $title );
+	}
+	foreach ( $candidates as $candidate ) {
 		$key = oddout_icons_slug_to_key( (string) $candidate );
 		if ( '' !== $key ) {
 			return $key;
@@ -137,9 +118,10 @@ function oddout_icons_filter_desktop_icons_registry( $registry ) {
 		if ( ! is_array( $entry ) ) {
 			continue;
 		}
-		// Skip ODD-owned native launchers — keep their app-specific art.
+		// Skip ODD app launchers — keep their app-specific art. The ODD Shop
+		// launcher itself is an icon-set key so active sets can recolor it.
 		$entry_id = isset( $entry['id'] ) ? (string) $entry['id'] : (string) $id;
-		if ( 'odd' === $entry_id || 0 === strpos( $entry_id, 'odd-app-' ) ) {
+		if ( 0 === strpos( $entry_id, 'odd-app-' ) ) {
 			continue;
 		}
 		$window = isset( $entry['window'] ) ? (string) $entry['window'] : '';
@@ -157,6 +139,9 @@ function oddout_icons_filter_desktop_icons_registry( $registry ) {
 			// icon id as a last-ditch key.
 			$key = sanitize_key( $entry_id );
 		}
+		if ( 'odd' === $key && empty( $set['icons']['odd'] ) ) {
+			continue;
+		}
 		$url = oddout_icons_icon_url_for_key( $set, $key );
 		if ( '' !== $url ) {
 			$registry[ $id ]['icon'] = $url;
@@ -165,6 +150,40 @@ function oddout_icons_filter_desktop_icons_registry( $registry ) {
 	return $registry;
 }
 add_filter( 'desktop_mode_icons', 'oddout_icons_filter_desktop_icons_registry', 20 );
+
+function oddout_icons_entry_is_odd_shop_window( array $entry ) {
+	$id      = isset( $entry['id'] ) ? sanitize_key( (string) $entry['id'] ) : '';
+	$base_id = isset( $entry['baseId'] ) ? sanitize_key( (string) $entry['baseId'] ) : '';
+	$window  = isset( $entry['window'] ) ? sanitize_key( (string) $entry['window'] ) : '';
+	$url     = isset( $entry['url'] ) ? (string) $entry['url'] : '';
+	return 'odd' === $id || 'odd' === $base_id || 'odd' === $window || '#odd' === $url;
+}
+
+function oddout_icons_filter_odd_native_window_icon( $config ) {
+	if ( ! is_array( $config ) || empty( $config['nativeWindows'] ) || ! is_array( $config['nativeWindows'] ) ) {
+		return $config;
+	}
+
+	$set = oddout_icons_active_set_for_native_surfaces();
+	if ( ! $set ) {
+		return $config;
+	}
+
+	$url = oddout_icons_icon_url_for_key( $set, 'odd' );
+	if ( '' === $url ) {
+		return $config;
+	}
+
+	foreach ( $config['nativeWindows'] as $i => $entry ) {
+		if ( ! is_array( $entry ) || ! oddout_icons_entry_is_odd_shop_window( $entry ) ) {
+			continue;
+		}
+		$config['nativeWindows'][ $i ]['icon'] = $url;
+	}
+
+	return $config;
+}
+add_filter( 'desktop_mode_shell_config', 'oddout_icons_filter_odd_native_window_icon', 25 );
 
 /**
  * Re-run {@see desktop_mode_icons} against a single static-registry entry so

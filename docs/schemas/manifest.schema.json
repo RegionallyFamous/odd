@@ -197,9 +197,7 @@
 				"properties": {
 					"icons": {
 						"required": [
-							"dashboard", "posts", "pages", "media", "comments",
-							"appearance", "plugins", "users", "tools", "settings",
-							"profile", "links", "recycle-bin", "fallback"
+							"odd", "my-wordpress", "content-graph", "recycle-bin", "fallback"
 						]
 					}
 				}

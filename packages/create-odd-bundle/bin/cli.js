@@ -52,7 +52,7 @@ Usage:
 
 Types:
   scene     Animated wallpaper (.js entry + preview.webp + wallpaper.webp)
-  iconset   Dock / desktop icons (14 PNG/WebP images)
+  iconset   Desktop icons (5 PNG/WebP images)
   widget    Desktop widget (.js + .css)
   app       HTML/JS app that opens in a native window
 
@@ -207,7 +207,7 @@ function buildManifest( { type, slug, name, author, description } ) {
 	} else if ( type === 'icon-set' ) {
 		m.accent = '#6a5cff';
 		m.icons = {};
-		for ( const k of [ 'dashboard','posts','pages','media','comments','appearance','plugins','users','tools','settings','profile','links','recycle-bin','fallback','os-settings','import','classic-admin' ] ) {
+		for ( const k of [ 'odd', 'my-wordpress', 'content-graph', 'recycle-bin', 'fallback' ] ) {
 			m.icons[ k ] = `${ k }.webp`;
 		}
 	} else if ( type === 'widget' ) {

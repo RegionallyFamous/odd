@@ -6061,9 +6061,9 @@
 		// When both lists name the same slug, the installed row wins
 		// (enabled state, version from disk, REST snapshot) — but catalog
 		// carries the storefront artwork URLs (`icon_url`, scene previews,
-		// icon-set quartets). Those MUST layer in when the thin installed
+		// icon-set grids). Those MUST layer in when the thin installed
 		// row lacks them — otherwise widgets lose their thumbnails, apps lose
-		// catalogue icons, and icon-set quartet data never appears.
+		// catalogue icons, and icon-set grid data never appears.
 		// Preserve a stable shelf order: installed alphabetical, then
 		// not-installed alphabetical. Active state is rendered in-place
 		// so applying a row never makes the target jump to the front.
@@ -6498,8 +6498,7 @@
 		// Artwork region of the tile. Shape changes by type:
 		//
 		//  - scene    → full-bleed preview.webp
-		//  - icon-set → 2×2 quartet of the canonical dashboard/posts/
-		//               pages/media icons on the shared dark Shop
+		//  - icon-set → five canonical desktop shortcut icons on the shared dark Shop
 		//               surface, so sets compare by glyph language
 		//               instead of competing background colours
 		//  - cursor-set → full-bleed preview tile, falling back to a glyph plate
@@ -6539,20 +6538,20 @@
 
 			if ( row.type === 'icon-set' ) {
 				if ( row.icons ) {
-					var quartet = el( 'div', { class: 'odd-shop__card-quartet' } );
-					var keys = [ 'dashboard', 'posts', 'pages', 'media' ].filter( function ( k ) { return row.icons[ k ]; } );
-					if ( ! keys.length ) keys = Object.keys( row.icons ).slice( 0, 4 );
-					keys.slice( 0, 4 ).forEach( function ( k ) {
-						quartet.appendChild( artImg( row.icons[ k ] ) );
+					var iconGrid = el( 'div', { class: 'odd-shop__card-icon-grid' } );
+					var keys = [ 'odd', 'my-wordpress', 'content-graph', 'recycle-bin', 'fallback' ].filter( function ( k ) { return row.icons[ k ]; } );
+					if ( ! keys.length ) keys = Object.keys( row.icons ).slice( 0, 5 );
+					keys.slice( 0, 5 ).forEach( function ( k ) {
+						iconGrid.appendChild( artImg( row.icons[ k ] ) );
 					} );
-					if ( quartet.children.length ) {
-						art.classList.add( 'odd-shop__card-art--quartet' );
-						art.appendChild( quartet );
+					if ( iconGrid.children.length ) {
+						art.classList.add( 'odd-shop__card-art--icon-grid' );
+						art.appendChild( iconGrid );
 						return art;
 					}
 				}
 				// Catalog icon-set rows ship generated card art, while installed
-				// rows with real icon maps return above as a live quartet.
+				// rows with real icon maps return above as a live icon grid.
 				var iconSetUrl = row.cardUrl || row.iconUrl || row.preview;
 				if ( iconSetUrl ) {
 					art.appendChild( artImg( iconSetUrl, 'odd-shop__card-art-fill' ) );

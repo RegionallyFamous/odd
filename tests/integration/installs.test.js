@@ -450,7 +450,7 @@ describe( 'ODD Shop · install flows', () => {
 		} ) );
 		seed( {
 			iconSets: [
-				{ slug: 'filament', label: 'Filament', category: 'Filament', accent: '#ff7a3c', icons: { dashboard: '', fallback: '' } },
+				{ slug: 'filament', label: 'Filament', category: 'Filament', accent: '#ff7a3c', icons: { odd: '', 'my-wordpress': '', fallback: '' } },
 			],
 		} );
 		loadPanel();

@@ -44,13 +44,14 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 	}
 
 	public function test_menu_slug_to_key_mapping() {
-		$this->assertSame( 'dashboard', oddout_icons_slug_to_key( 'index.php' ) );
-		$this->assertSame( 'posts', oddout_icons_slug_to_key( 'edit.php' ) );
-		$this->assertSame( 'pages', oddout_icons_slug_to_key( 'edit.php?post_type=page' ) );
-		$this->assertSame( 'media', oddout_icons_slug_to_key( 'upload.php' ) );
-		$this->assertSame( 'settings', oddout_icons_slug_to_key( 'options-general.php' ) );
+		$this->assertSame( 'odd', oddout_icons_slug_to_key( 'odd' ) );
+		$this->assertSame( 'my-wordpress', oddout_icons_slug_to_key( 'desktop-mode-my-wordpress' ) );
+		$this->assertSame( 'my-wordpress', oddout_icons_slug_to_key( 'my-wordpress' ) );
+		$this->assertSame( 'content-graph', oddout_icons_slug_to_key( 'desktop-mode-content-graph' ) );
+		$this->assertSame( 'content-graph', oddout_icons_slug_to_key( 'content-graph' ) );
 		$this->assertSame( 'recycle-bin', oddout_icons_slug_to_key( 'desktop-mode-recycle-bin' ) );
-		$this->assertSame( 'posts', oddout_icons_slug_to_key( 'edit.php?post_type=book' ), 'CPT edit screen routes to posts key.' );
+		$this->assertSame( 'fallback', oddout_icons_slug_to_key( 'fallback' ) );
+		$this->assertSame( '', oddout_icons_slug_to_key( 'edit.php?post_type=book' ), 'Admin menu slugs are no longer icon-set keys.' );
 		$this->assertSame( '', oddout_icons_slug_to_key( 'something-else' ) );
 		$this->assertSame( '', oddout_icons_slug_to_key( '' ) );
 	}
@@ -90,27 +91,28 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 		$this->assertSame( 'original.png', $item_after['icon'], 'No active set = icon unchanged.' );
 	}
 
-	public function test_desktop_icons_filter_skips_odd_control_panel() {
+	public function test_desktop_icons_filter_themes_odd_control_panel() {
 		$set_slug = $this->pick_set_with_fallback();
 		oddout_icons_set_active_slug( $set_slug );
 
 		$registry_before = array(
-			'odd'   => array(
+			'odd'          => array(
 				'id'     => 'odd',
 				'icon'   => 'odd-gear.png',
 				'window' => '',
 			),
-			'posts' => array(
-				'id'     => 'posts',
-				'icon'   => 'original-posts.png',
-				'window' => 'edit.php',
+			'my-wordpress' => array(
+				'id'     => 'desktop-mode-my-wordpress',
+				'title'  => 'My WordPress',
+				'icon'   => 'original-my-wordpress.png',
+				'window' => 'desktop-mode-my-wordpress',
 			),
 		);
 		$registry_after  = apply_filters( 'desktop_mode_icons', $registry_before );
 
-		$this->assertSame( 'odd-gear.png', $registry_after['odd']['icon'], 'ODD Shop icon must be preserved.' );
-		$this->assertNotSame( 'original-posts.png', $registry_after['posts']['icon'], 'Regular desktop icon gets re-themed.' );
-		$this->assertStringEndsWith( '/posts.webp', $registry_after['posts']['icon'] );
+		$this->assertStringEndsWith( '/odd.webp', $registry_after['odd']['icon'], 'ODD Shop desktop icon is part of the active set.' );
+		$this->assertNotSame( 'original-my-wordpress.png', $registry_after['my-wordpress']['icon'], 'Desktop Mode shortcut gets re-themed.' );
+		$this->assertStringEndsWith( '/my-wordpress.webp', $registry_after['my-wordpress']['icon'] );
 	}
 
 	public function test_desktop_icons_filter_uses_recycle_bin_icon_dm07_ids() {
@@ -172,17 +174,18 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 				'icon'   => 'board-icon.png',
 				'window' => 'odd-app-board',
 			),
-			'posts'         => array(
-				'id'     => 'posts',
-				'icon'   => 'original-posts.png',
-				'window' => 'edit.php',
+			'content-graph' => array(
+				'id'     => 'desktop-mode-content-graph',
+				'title'  => 'Content Graph',
+				'icon'   => 'original-content-graph.png',
+				'window' => 'desktop-mode-content-graph',
 			),
 		);
 		$registry_after  = apply_filters( 'desktop_mode_icons', $registry_before );
 
 		$this->assertSame( 'board-icon.png', $registry_after['odd-app-board']['icon'], 'App desktop icon must stay app-specific.' );
-		$this->assertNotSame( 'original-posts.png', $registry_after['posts']['icon'], 'Regular desktop icon still gets re-themed.' );
-		$this->assertStringEndsWith( '/posts.webp', $registry_after['posts']['icon'] );
+		$this->assertNotSame( 'original-content-graph.png', $registry_after['content-graph']['icon'], 'Desktop Mode shortcut still gets re-themed.' );
+		$this->assertStringEndsWith( '/content-graph.webp', $registry_after['content-graph']['icon'] );
 	}
 
 	public function test_desktop_icons_filter_handles_empty_registry() {
@@ -223,7 +226,7 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 		$this->assertSame( 'dashicons-admin-generic', $config_after['nativeWindows'][1]['icon'] );
 	}
 
-	public function test_shell_config_leaves_system_and_native_window_icons_on_defaults() {
+	public function test_shell_config_themes_odd_native_window_icon_only() {
 		$set_slug = $this->pick_set_with_fallback();
 		oddout_icons_set_active_slug( $set_slug );
 
@@ -280,7 +283,7 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 		$this->assertSame( 'dashicons-exit', $config_after['systemTiles'][3]['icon'] );
 		$this->assertSame( 'dashicons-admin-post', $config_after['nativeWindows'][0]['icon'] );
 		$this->assertSame( 'dashicons-admin-plugins', $config_after['nativeWindows'][1]['icon'] );
-		$this->assertSame( 'odd-eye.svg', $config_after['nativeWindows'][2]['icon'] );
+		$this->assertStringEndsWith( '/odd.webp', $config_after['nativeWindows'][2]['icon'] );
 	}
 
 	public function test_shortcut_overlay_rewrites_recycle_bin_icon_like_registry_snapshot() {

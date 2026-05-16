@@ -67,9 +67,7 @@ FIXED_DATE = (2025, 1, 1, 0, 0, 0)
 CATALOG_BASE = "https://odd.regionallyfamous.com/catalog/v1"
 SCHEMA_URL = f"{CATALOG_BASE}/registry.schema.json"
 FIRST_PARTY_ICON_KEYS = {
-    "dashboard", "posts", "pages", "media", "comments",
-    "appearance", "plugins", "users", "tools", "settings",
-    "profile", "links", "recycle-bin", "fallback",
+    "odd", "my-wordpress", "content-graph", "recycle-bin", "fallback",
 }
 REQUIRES_KEYS = {"odd", "desktopMode", "api"}
 SEMVER_RE = re.compile(
@@ -599,14 +597,16 @@ def iconset_tile(
     glow = glow.filter(ImageFilter.GaussianBlur(70))
     img.alpha_composite(glow)
 
+    preview_keys = [key for key in ("odd", "my-wordpress", "content-graph", "recycle-bin") if key in icons]
+    preview_keys.extend([key for key in icons.keys() if key not in preview_keys])
     placements = [
-        ("dashboard", 72, 72, 392, -3),
-        ("posts", 560, 72, 392, 3),
-        ("pages", 72, 560, 392, 3),
-        ("media", 560, 560, 392, -3),
+        (preview_keys[0] if len(preview_keys) > 0 else "fallback", 72, 72, 392, -3),
+        (preview_keys[1] if len(preview_keys) > 1 else "fallback", 560, 72, 392, 3),
+        (preview_keys[2] if len(preview_keys) > 2 else "fallback", 72, 560, 392, 3),
+        (preview_keys[3] if len(preview_keys) > 3 else "fallback", 560, 560, 392, -3),
     ]
     for key, x, y, size, rot in placements:
-        rel = icons.get(key) or icons.get("dashboard") or next(iter(icons.values()))
+        rel = icons.get(key) or icons.get("fallback") or next(iter(icons.values()))
         with Image.open(src_dir / rel) as icon:
             icon = icon.convert("RGBA")
             icon.thumbnail((size, size), Image.Resampling.LANCZOS)
@@ -719,7 +719,7 @@ def build_iconset(slug: str, src_dir: Path) -> dict:
         "description": meta.get("description", ""),
         "category": meta.get("category", "Community"),
         "accent": meta.get("accent", "#888"),
-        "preview": meta.get("preview", "dashboard.webp"),
+        "preview": meta.get("preview", next(iter(meta["icons"].values()))),
         "icons": meta["icons"],
     }
     files["manifest.json"] = json.dumps(manifest, indent=2).encode() + b"\n"

@@ -21,31 +21,22 @@ the first-party icon sets one at a time.
 
 ## Glyph Notes
 
-- dashboard: one chunky speedometer arc with one fat needle.
-- posts: one bold pencil over one simple sheet shape.
-- pages: two stacked rounded sheets with one thick fold.
-- media: big camera body with one lens circle and one music-note block.
-- comments: one speech bubble with a heavy tail, no text marks.
-- appearance: one fat brush shape with a single paint drop.
-- plugins: one readable bug/plug silhouette, not tiny legs/details.
-- users/profile: simple bust silhouettes, no facial details.
-- tools: one oversized wrench.
-- settings: three thick sliders with oversized knobs.
-- links: two oversized chain links.
+- odd: animated ODD eye launcher, recolored to the set palette.
+- my-wordpress: one chunky desktop dashboard gauge with a fat needle.
+- content-graph: connected content nodes with thick graph lines.
 - recycle-bin: simple open bin, no small recycling mark.
 - fallback: chunky four-point spark or abstract ODD mark.
 
 ## Contact Sheet Prompt
 
 Create a production contact sheet for an ODD Desktop Mode raster icon set
-called Chunky Signal: 14 standalone unboxed square desktop shortcut icons in a clean grid,
+called Chunky Signal: 5 standalone desktop shortcut icons in a clean grid,
 transparent background, big bold readable silhouettes, thick dark ink outlines,
 thick inner lines, off-white fills, electric cyan shadow, tiny hot-pink offset
 accent used sparingly, flat raster sticker finish, slight uneven hand-cut edge,
 soft outside glow, centered full-canvas subjects using 84-88% visible alpha
 footprint with safe transparent padding and no clipping. Subjects in order:
-dashboard, posts, pages, media, comments, appearance, plugins, users, tools,
-settings, profile, links, recycle bin, fallback. No rail icons, system action
-icons, boxes, backplates, app-window frames, labels, text, letters, numbers,
-tiny details, thin strokes, dense texture, watermarks, signatures,
+odd, my-wordpress, content-graph, recycle bin, fallback. No rail icons, system
+action icons, boxes, backplates, app-window frames, labels, text, letters,
+numbers, tiny details, thin strokes, dense texture, watermarks, signatures,
 screenshots, or desktop frames.

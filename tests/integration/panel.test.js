@@ -55,7 +55,7 @@ function seedConfig() {
 		theme: 'auto',
 		chaosMode: false,
 		sets: [
-			{ slug: 'filament', label: 'Filament', category: 'Filament', accent: '#ff7a3c', icons: { dashboard: '', fallback: '' } },
+			{ slug: 'filament', label: 'Filament', category: 'Filament', accent: '#ff7a3c', icons: { odd: '', 'my-wordpress': '', fallback: '' } },
 		],
 		iconSet:     '',
 		favorites:   [],
@@ -319,7 +319,8 @@ describe( 'ODD Shop', () => {
 				category: 'ODD Defaults',
 				accent: '#ff7a3c',
 				icons: {
-					posts: 'https://example.test/icons/posts.webp',
+					odd: 'https://example.test/icons/odd.webp',
+					'my-wordpress': 'https://example.test/icons/my-wordpress.webp',
 					fallback: 'https://example.test/icons/fallback.webp',
 				},
 			},
@@ -576,6 +577,11 @@ describe( 'ODD Shop', () => {
 		// Guard against it sneaking back in via a casual edit.
 		expect( host.querySelector( '[data-odd-install-pill]' ) ).toBeFalsy();
 		expect( host.querySelector( '[data-odd-install-input]' ) ).toBeFalsy();
+		const css = readFileSync( resolve( __dirname, '../../odd/src/panel/styles.css' ), 'utf8' );
+		expect( css ).toContain( '.odd-panel.odd-shop .odd-shop__topbar{grid-column:1/-1;display:grid;grid-template-columns:72px minmax(0,1fr)' );
+		expect( css ).toContain( '.odd-panel.odd-shop .odd-shop__command{grid-area:command;justify-self:stretch;width:100%;max-width:min(100%,1280px)' );
+		expect( css ).toContain( '.odd-panel.odd-shop .odd-shop__search-tools{display:flex;align-items:center;justify-content:flex-start;gap:4px;min-width:0;overflow-x:auto;padding:3px;border-radius:23px' );
+		expect( css ).toContain( '.odd-panel.odd-shop .odd-shop__brand-text{display:none;' );
 
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );

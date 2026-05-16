@@ -464,14 +464,14 @@
       "name": "ODD Default",
       "version": "1.0.0",
       "author": "Regionally Famous",
-      "description": "The default ODD raster icon set: exact Desktop Mode / WordPress Dashicon silhouettes rendered as transparent raster icons, with the glyph body left intact and the oddness coming from outside-only chromatic aura and card lighting.",
+      "description": "The default ODD raster icon set for Desktop Mode's visible desktop shortcuts: animated logo-style tiles with the current ODD eye palette, thick rims, and matching motion.",
       "category": "ODD Defaults",
       "accent": "#38e8ff",
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-odd-default-icons.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-odd-default-icons.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-odd-default-icons.wp",
-      "sha256": "8cb0a7c47fdaf25f2b33c06ff09ea0a4f1aab1258d8029ef0957485536013a03",
-      "size": 448915
+      "sha256": "b95fb6992f4b5ad0155cde589a2092f0c527287f66be27edb7b17d9f9ae2b32b",
+      "size": 739447
     },
     {
       "type": "cursor-set",

@@ -9,10 +9,11 @@ and ODD validates the manifest, verifies each image, copies the set into
 `wp-content/uploads/odd/icon-sets/`, and makes it selectable from the Icon
 Sets department - no WordPress plugin, no custom PHP.
 
-ODD does not replace Desktop Mode's rail, dock, taskbar, or renderer
-implementations. It saves the user's selected set and gives Desktop Mode
-themed image URLs only for desktop shortcut surfaces. The rail, dock,
-taskbar, and Desktop Mode system actions stay on host-default icons.
+ODD does not replace Desktop Mode's rail, dock, or renderer implementations.
+It saves the user's selected set and gives Desktop Mode themed image URLs for
+desktop shortcuts, file shortcut previews, and the ODD Shop native-window
+launcher. The rail, dock, and Desktop Mode system actions stay on host-default
+icons.
 
 Icon sets ship **no JavaScript**, so they install without a consent
 prompt.
@@ -26,27 +27,18 @@ my-icons.wp
 ├── manifest.json
 ├── preview.webp           ← optional - 480x270 hero shown on the Shop card
 └── icons/
-    ├── dashboard.webp
-    ├── posts.webp
-    ├── pages.webp
-    ├── media.webp
-    ├── comments.webp
-    ├── appearance.webp
-    ├── plugins.webp
-    ├── users.webp
-    ├── tools.webp
-    ├── settings.webp
-    ├── profile.webp
-    ├── links.webp
+    ├── odd.webp
+    ├── my-wordpress.webp
+    ├── content-graph.webp
     ├── recycle-bin.webp
     └── fallback.webp
 ```
 
 Paths inside `icons/` can be anything — the manifest maps the
-required semantic keys to paths of your choosing. ODD requires all
-14 keys used by Desktop Mode desktop shortcuts, file shortcut previews,
-and the desktop Recycle Bin. Compact rail/system action icons are not
-part of ODD icon sets.
+required semantic keys to paths of your choosing. ODD requires the visible
+Desktop Mode desktop shortcut keys: ODD, My WordPress, Content Graph, Recycle
+Bin, plus a generic fallback. Compact rail/system action icons are not part of
+ODD icon sets.
 
 Icon files must be PNG or WebP images. Use PNG when you need crisp
 transparency; use WebP when the art is painted, textured, or otherwise
@@ -66,18 +58,9 @@ benefits from better compression.
     "description": "Warm hand-drawn icons with a coffee-stained palette.",
     "preview":     "preview.webp",
     "icons": {
-        "dashboard":  "icons/dashboard.webp",
-        "posts":      "icons/posts.webp",
-        "pages":      "icons/pages.webp",
-        "media":      "icons/media.webp",
-        "comments":   "icons/comments.webp",
-        "appearance": "icons/appearance.webp",
-        "plugins":    "icons/plugins.webp",
-        "users":      "icons/users.webp",
-        "tools":      "icons/tools.webp",
-        "settings":   "icons/settings.webp",
-        "profile":    "icons/profile.webp",
-        "links":      "icons/links.webp",
+        "odd":           "icons/odd.webp",
+        "my-wordpress":  "icons/my-wordpress.webp",
+        "content-graph": "icons/content-graph.webp",
         "recycle-bin": "icons/recycle-bin.webp",
         "fallback":   "icons/fallback.webp"
     }
@@ -94,30 +77,22 @@ benefits from better compression.
 | `category`   | no       | Optional grouping label for Shop shelves and catalog tooling. |
 | `accent`      | yes      | `#hex` used for Shop accents and catalog previews.|
 | `description` | no       | Longer copy shown on the detail sheet.                                     |
-| `preview`     | no       | Relative path to a PNG/WebP hero (falls back to the `dashboard` icon).|
-| `icons`       | yes      | Map of all 14 required desktop shortcut keys to relative PNG/WebP paths. |
+| `preview`     | no       | Relative path to a PNG/WebP hero (falls back to the first declared icon).|
+| `icons`       | yes      | Map of all required visible desktop shortcut keys to relative PNG/WebP paths. |
 
 ### Why these keys?
 
-The native Desktop Mode icon filters map every WordPress menu slug to
-stable logical keys via `oddout_icons_slug_to_key()`:
+The native Desktop Mode icon filters map Desktop Mode's visible desktop
+shortcut ids, window ids, and titles to stable logical keys via
+`oddout_icons_slug_to_key()`:
 
 | Key           | Required | Maps to                                   |
 |---------------|----------|-------------------------------------------|
-| `dashboard`   | yes      | Dashboard, Home                           |
-| `posts`       | yes      | Posts, `edit.php`                         |
-| `pages`       | yes      | Pages, `edit.php?post_type=page`          |
-| `media`       | yes      | Media, Uploads                            |
-| `comments`    | yes      | Comments, `edit-comments.php`             |
-| `appearance`  | yes      | Themes, Customize, Widgets, Menus         |
-| `plugins`     | yes      | Plugins, `plugins.php`                    |
-| `users`       | yes      | Users, Profile (when listing other users) |
-| `tools`       | yes      | Tools, Import / Export, Code editor       |
-| `settings`    | yes      | Settings, Options                         |
-| `fallback`    | yes      | Anything unmapped                         |
-| `profile`     | yes      | Your own profile tile                     |
-| `links`       | yes      | WordPress Links menu, any URL-browsing tool |
+| `odd` | yes | ODD Shop launcher (`odd`), usually animated and recolored per set |
+| `my-wordpress` | yes     | My WordPress (`desktop-mode-my-wordpress`) |
+| `content-graph` | yes   | Content Graph (`desktop-mode-content-graph`) |
 | `recycle-bin` | yes      | WP Desktop Mode Recycle Bin (`desktop-mode-recycle-bin`) |
+| `fallback`    | yes      | Anything unmapped                         |
 
 If the active set can't provide one of the logical keys, ODD reaches
 for the set's own `fallback`, then for whatever WP Desktop Mode served
@@ -134,6 +109,9 @@ any of the following fail:
 - Image is square.
 - Dimensions are between 64x64 and 2048x2048 px.
 - File size is 768 KB or smaller.
+- Animated WebP is allowed for desktop icon keys; keep motion subtle, looping,
+  and readable from the first frame. First-party defaults animate every icon so
+  the set feels like one matching ODD logo family.
 - The visible alpha footprint fills at least 80% of one canvas axis, measured
   after ignoring near-transparent pixels, so icons cannot ship tiny inside a
   large transparent square.
@@ -148,7 +126,8 @@ rewrite, or ODD-owned renderer in between.
 - Author source art at 512x512 or 1024x1024, then export the smallest
   PNG/WebP that still looks sharp at Desktop Mode sizes.
 - Preserve transparency around standalone glyphs unless the icon's tile
-  shape is part of the artwork.
+  shape is part of the artwork. The current ODD default deliberately uses the
+  ODD logo's rounded gradient tile as the shared icon body.
 - Keep silhouette weight, lighting, and perspective consistent across the
   set. Desktop Mode lays every icon into the same native surfaces, so
   mismatched density is easy to spot.
@@ -162,20 +141,21 @@ First-party catalog sets are source-owned raster icon packs. Each pack should
 ship its own finished icon files; pack identity belongs in the raster art
 itself, not in an extra runtime effect layer:
 
-- `odd-default-icons` stores the normal Dashicon-based baseline.
-- Every other first-party set may have distinct raster art for the same
+- `odd-default-icons` stores the custom ODD baseline for the visible
+  Desktop Mode desktop shortcuts.
+- Every other first-party set may have distinct raster art for those same
   desktop shortcut keys.
 - `_tools/compose-icon-set.py --all` refreshes the default set and validates
   that non-default source rasters exist without overwriting them.
 
-`odd-default-icons` is special: its masks are rendered from the Dashicons font
-and `source-glyph-map.json` before ODD glow/rim effects are applied. Do not
+`odd-default-icons` is special: its masks are generated from
+`_tools/compose-icon-set.py`, then ODD glow/rim effects are applied. Do not
 scale up an already rendered default WebP to fix size; if that WebP was cropped
 or padded incorrectly, scaling only makes the damage larger.
 
-This keeps Dashboard, Posts, Pages, Media, and every other semantic key
-recognizable while still letting each pack have its own material, silhouette
-language, and color system. The public `.wp` bundle contains plain static
+This keeps ODD, My WordPress, Content Graph, Recycle Bin, and the fallback
+glyph recognizable while still letting each pack have its own material,
+silhouette language, and color system. The public `.wp` bundle contains plain
 PNG/WebP files only.
 
 Third-party sets do not have to use ODD's compositor, but they should follow
@@ -185,8 +165,9 @@ material, color, and atmosphere around them.
 ## Shop Card Art
 
 The icon files stay unboxed and untouched at runtime. Shop cards should preview
-the actual raster language directly, usually as a 2x2 quartet of dashboard,
-posts, pages, and media icons on the shared dark ODD card surface.
+the actual raster language directly, usually as a five-icon grid of ODD,
+My WordPress, Content Graph, Recycle Bin, and fallback icons on the shared dark
+ODD card surface.
 - Use `accent`, `secondary`, and `spark` to echo the set's material, not to
   repaint the icons.
 - Regenerate first-party source cards with:
@@ -198,7 +179,7 @@ posts, pages, and media icons on the shared dark ODD card surface.
 ## preview.webp (optional)
 
 If present, the Shop card uses it for the hero thumbnail — otherwise
-the `dashboard` icon stands in. A preview image usually works best as:
+the first declared icon stands in. A preview image usually works best as:
 
 - PNG or WebP, 480x270 (16:9).
 - A composition of 6–9 icons from the set, not the whole alphabet.
@@ -227,9 +208,9 @@ the `dashboard` icon stands in. A preview image usually works best as:
 ## First-party rebuild workflow
 
 Use Image Gen for style exploration and complete source-owned raster packs.
-The default set is generated from Desktop Mode / Dashicons masks; every other
-first-party set should ship its own final PNG/WebP files rather than borrowing
-default glyph exports or runtime effects.
+The default set is generated from ODD's desktop shortcut masks; every
+other first-party set should ship its own final PNG/WebP files rather than
+borrowing default glyph exports or runtime effects.
 
 ```bash
 python3 _tools/compose-icon-set.py --all
