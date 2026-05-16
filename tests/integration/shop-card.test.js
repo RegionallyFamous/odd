@@ -11,7 +11,7 @@
  *   updateAvailable? → "Update"
  *   requiresReload?  → "Reload now" (escape hatch; pending reload → "Applying…")
  *   active?          → "Active" (disabled)
- *   type=scene/icon  → "Preview"
+ *   type=scene/icon/cursor → "Apply" (card body still previews)
  *   type=widget      → "Add"
  *   type=app         → "Open"
  *
@@ -190,7 +190,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( cards[ 0 ].querySelector( '.odd-shop__card-btn' ).textContent.trim() ).toBe( 'Install' );
 	} );
 
-	it( 'installed inactive scene renders a Preview button', () => {
+	it( 'installed inactive scene renders an Apply button', () => {
 		seed( {
 			wallpaper: 'gusts',
 			scene:     'gusts',
@@ -205,8 +205,46 @@ describe( 'ODD Shop · unified card state machine', () => {
 		const card = host.querySelector( '[data-odd-shop-card][data-scene-slug="terrazzo"]' );
 		expect( card, 'installed inactive scene must render a unified tile' ).toBeTruthy();
 		const btn = card.querySelector( '.odd-shop__card-btn' );
-		expect( btn.textContent.trim() ).toBe( 'Preview' );
+		expect( btn.textContent.trim() ).toBe( 'Apply' );
 		expect( btn.disabled ).toBe( false );
+	} );
+
+	it( 'scene Apply posts prefs directly while card body still previews', async () => {
+		const picked = [];
+		window.wp.hooks.addAction( 'odd.pickScene', 'test', ( slug ) => picked.push( slug ) );
+		globalThis.fetch = vi.fn( () => Promise.resolve( {
+			ok:   true,
+			json: () => Promise.resolve( { wallpaper: 'terrazzo' } ),
+		} ) );
+		seed( {
+			wallpaper: 'gusts',
+			scene:     'gusts',
+			scenes: [
+				{ slug: 'gusts',   label: 'Gusts',   franchise: 'Atmosphere', fallbackColor: '#333' },
+				{ slug: 'terrazzo', label: 'Terrazzo', franchise: 'Forms',    fallbackColor: '#444' },
+			],
+		} );
+		loadPanel();
+		const { host } = mount();
+
+		const card = host.querySelector( '[data-odd-shop-card][data-scene-slug="terrazzo"]' );
+		const button = card.querySelector( '.odd-shop__card-btn' );
+		card.querySelector( '.odd-shop__card' )
+			.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+		expect( host.querySelector( '[data-odd-preview-bar]' ) ).toBeTruthy();
+
+		button.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+		await Promise.resolve();
+		await Promise.resolve();
+
+		expect( picked ).toContain( 'terrazzo' );
+		expect( globalThis.fetch ).toHaveBeenCalledWith(
+			'/wp-json/odd/v1/prefs',
+			expect.objectContaining( {
+				method: 'POST',
+				body:   JSON.stringify( { wallpaper: 'terrazzo' } ),
+			} )
+		);
 	} );
 
 	it( 'active scene renders a disabled Active button', () => {
@@ -323,7 +361,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( host.querySelector( '.odd-apps-empty' ) ).toBeNull();
 	} );
 
-	it( 'installed inactive icon set renders a Preview button', () => {
+	it( 'installed inactive icon set renders an Apply button', () => {
 		seed( {
 			iconSet:   '',
 			iconSets:  [
@@ -337,7 +375,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 		const card = host.querySelector( '[data-odd-shop-card][data-set-slug="filament"]' );
 		expect( card, 'icon-set tile must render' ).toBeTruthy();
 		const btn = card.querySelector( '.odd-shop__card-btn' );
-		expect( btn.textContent.trim() ).toBe( 'Preview' );
+		expect( btn.textContent.trim() ).toBe( 'Apply' );
 	} );
 
 	it( 'catalog-only icon set appears as the canonical Install card', () => {
@@ -375,6 +413,22 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( cards.length ).toBe( 1 );
 		expect( cards[ 0 ].querySelector( '.odd-shop__card-btn' ).textContent.trim() ).toBe( 'Install' );
 		expect( host.querySelector( '.odd-shop__hero-btn' ) ).toBeNull();
+	} );
+
+	it( 'installed inactive cursor set renders an Apply button', () => {
+		seed( {
+			cursorSet: '',
+			cursorSets: [
+				{ slug: 'oddlings-cursors', label: 'Oddlings Cursors', franchise: 'ODD Originals', cursors: { default: { url: '/cursor.svg', hotspot: [ 1, 1 ] } } },
+			],
+		} );
+		loadPanel();
+		const { host } = mount();
+		goToDepartment( host, 'Cursors' );
+
+		const card = host.querySelector( '[data-odd-shop-card][data-cursor-set-slug="oddlings-cursors"]' );
+		expect( card, 'cursor-set tile must render' ).toBeTruthy();
+		expect( card.querySelector( '.odd-shop__card-btn' ).textContent.trim() ).toBe( 'Apply' );
 	} );
 
 	it( 'installed widget renders an Add button that calls widgetLayer.add', () => {

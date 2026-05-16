@@ -192,7 +192,7 @@ describe( 'ODD Shop · install flows', () => {
 
 		const installedTile = host.querySelector( '[data-odd-shop-card][data-set-slug="filament"]' );
 		expect( installedTile, 'installed icon set must appear in the grid' ).toBeTruthy();
-		expect( installedTile.querySelector( '.odd-shop__card-btn' ).textContent.trim() ).toBe( 'Preview' );
+		expect( installedTile.querySelector( '.odd-shop__card-btn' ).textContent.trim() ).toBe( 'Apply' );
 		expect( reloadSpy ).not.toHaveBeenCalled();
 		expect( window.sessionStorage.getItem( 'odd.justInstalled' ) ).toBeNull();
 	} );
@@ -245,7 +245,7 @@ describe( 'ODD Shop · install flows', () => {
 
 		const installedTile = host.querySelector( '[data-odd-shop-card][data-cursor-set-slug="oddlings-cursors"]' );
 		expect( installedTile, 'installed cursor set must appear in the grid' ).toBeTruthy();
-		expect( installedTile.querySelector( '.odd-shop__card-btn' ).textContent.trim() ).toBe( 'Preview' );
+		expect( installedTile.querySelector( '.odd-shop__card-btn' ).textContent.trim() ).toBe( 'Apply' );
 		expect( window.odd.cursorSets.find( ( row ) => row.slug === 'oddlings-cursors' )?.cursors?.pointer?.url ).toBe( '/cursor-pointer.svg' );
 
 		installedTile.querySelector( '.odd-shop__card-btn' )

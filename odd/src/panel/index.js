@@ -4453,7 +4453,11 @@
 				card.classList.add( 'is-previewing' );
 				wrap.classList.add( 'is-previewing' );
 				var btn = wrap.querySelector( '.odd-shop__card-btn' );
-				if ( btn ) btn.textContent = 'Previewing';
+				if ( btn ) {
+					btn.textContent = 'Apply';
+					btn.disabled = false;
+					btn.classList.remove( 'is-disabled' );
+				}
 			}
 			if ( active && ! state.preview ) {
 				var art = wrap.querySelector( '.odd-shop__card-art' );
@@ -4568,6 +4572,11 @@
 				c.classList.remove( 'is-active', 'is-previewing' );
 				if ( previewSlug && slug === previewSlug ) c.classList.add( 'is-previewing' );
 				else if ( ! previewSlug && slug === currentSlug ) c.classList.add( 'is-active' );
+				var cardWrap = c.closest ? c.closest( '.odd-shop__card-wrap' ) : null;
+				if ( cardWrap ) {
+					cardWrap.classList.toggle( 'is-active', !! ( ! previewSlug && slug === currentSlug ) );
+					cardWrap.classList.toggle( 'is-previewing', !! ( previewSlug && slug === previewSlug ) );
+				}
 
 				// Keep the inline pill label in sync so the shelf
 				// cards mirror the hero state without a full re-render.
@@ -4575,7 +4584,23 @@
 				if ( pill ) {
 					if ( previewSlug && slug === previewSlug ) pill.textContent = 'Previewing';
 					else if ( ! previewSlug && slug === currentSlug ) pill.textContent = 'Open';
-					else pill.textContent = 'Preview';
+					else pill.textContent = 'Apply';
+				}
+				var actionBtn = cardWrap ? cardWrap.querySelector( '.odd-shop__card-btn' ) : null;
+				if ( actionBtn ) {
+					if ( previewSlug && slug === previewSlug ) {
+						actionBtn.textContent = 'Apply';
+						actionBtn.disabled = false;
+						actionBtn.classList.remove( 'is-disabled' );
+					} else if ( ! previewSlug && slug === currentSlug ) {
+						actionBtn.textContent = 'Active';
+						actionBtn.disabled = true;
+						actionBtn.classList.add( 'is-disabled' );
+					} else {
+						actionBtn.textContent = 'Apply';
+						actionBtn.disabled = false;
+						actionBtn.classList.remove( 'is-disabled' );
+					}
 				}
 				// Sync the favorite star's on-state so flipping a
 				// favorite on one tile updates that tile without a
@@ -4629,6 +4654,17 @@
 				redecorateSceneGrid();
 				renderPreviewBar();
 			} );
+		}
+
+		function applyScene( slug ) {
+			if ( state.posting ) return;
+			state.preview = {
+				kind: 'wallpaper',
+				slug: slug,
+				originalSlug: state.cfg.wallpaper || state.cfg.scene,
+			};
+			pickSceneLive( slug );
+			confirmScenePreview();
 		}
 
 		function cancelPreview() {
@@ -4892,7 +4928,7 @@
 					wrap.classList.add( 'is-previewing' );
 					if ( inner ) inner.classList.add( 'is-previewing' );
 					var btn = wrap.querySelector( '.odd-shop__card-btn' );
-					if ( btn ) { btn.textContent = 'Previewing'; btn.disabled = true; }
+					if ( btn ) { btn.textContent = 'Apply'; btn.disabled = false; btn.classList.remove( 'is-disabled' ); }
 				}
 			}
 			return wrap;
@@ -5050,7 +5086,7 @@
 					wrap.classList.add( 'is-previewing' );
 					if ( inner ) inner.classList.add( 'is-previewing' );
 					var btn = wrap.querySelector( '.odd-shop__card-btn' );
-					if ( btn ) { btn.textContent = 'Previewing'; btn.disabled = true; }
+					if ( btn ) { btn.textContent = 'Apply'; btn.disabled = false; btn.classList.remove( 'is-disabled' ); }
 				}
 			}
 			return wrap;
@@ -5131,15 +5167,15 @@
 				var btn = ( wrap && wrap.querySelector( '.odd-shop__card-btn' ) ) || row.querySelector( '.odd-shop__card-btn' );
 				if ( btn ) {
 					if ( isPreviewing ) {
-						btn.textContent = 'Previewing';
-						btn.disabled = true;
-						btn.classList.add( 'is-disabled' );
+						btn.textContent = 'Apply';
+						btn.disabled = false;
+						btn.classList.remove( 'is-disabled' );
 					} else if ( isActive && ! previewSlug ) {
 						btn.textContent = 'Active';
 						btn.disabled = true;
 						btn.classList.add( 'is-disabled' );
 					} else {
-						btn.textContent = 'Preview';
+						btn.textContent = 'Apply';
 						btn.disabled = false;
 						btn.classList.remove( 'is-disabled' );
 					}
@@ -5174,6 +5210,17 @@
 				redecorateCursorGrid();
 				renderPreviewBar();
 			} );
+		}
+
+		function applyCursorSet( slug ) {
+			if ( state.posting ) return;
+			state.preview = {
+				kind: 'cursorSet',
+				slug: slug,
+				originalSlug: state.cfg.cursorSet || '',
+			};
+			setActiveCursorLink( slug );
+			confirmCursorPreview();
 		}
 
 		function previewIconSet( slug ) {
@@ -5223,15 +5270,15 @@
 					|| row.querySelector( '.odd-apps-btn' );
 				if ( btn ) {
 					if ( isPreviewing ) {
-						btn.textContent = 'Previewing';
-						btn.disabled = true;
-						btn.classList.add( 'is-disabled' );
+						btn.textContent = 'Apply';
+						btn.disabled = false;
+						btn.classList.remove( 'is-disabled' );
 					} else if ( isActive && ! previewSlug ) {
 						btn.textContent = 'Active';
 						btn.disabled = true;
 						btn.classList.add( 'is-disabled' );
 					} else {
-						btn.textContent = 'Preview';
+						btn.textContent = 'Apply';
 						btn.disabled = false;
 						btn.classList.remove( 'is-disabled' );
 					}
@@ -5266,6 +5313,16 @@
 					name:    iconLabel,
 				} );
 			} );
+		}
+
+		function applyIconSet( slug ) {
+			if ( state.posting ) return;
+			state.preview = {
+				kind: 'iconSet',
+				slug: slug,
+				originalSlug: state.cfg.iconSet || '',
+			};
+			confirmIconPreview();
 		}
 
 		/* --- Widgets section ---------------------------------------
@@ -6079,7 +6136,7 @@
 				case 'scene':
 				case 'icon-set':
 				case 'cursor-set':
-					return { label: 'Preview', kind: 'preview', disabled: false };
+					return { label: 'Apply', kind: 'apply', disabled: false };
 				case 'widget':
 					return { label: 'Add', kind: 'add', disabled: false };
 				case 'app':
@@ -6127,6 +6184,12 @@
 					if ( row.type === 'scene' )    { previewScene( row.slug );    break; }
 					if ( row.type === 'icon-set' ) { previewIconSet( row.slug );  break; }
 					if ( row.type === 'cursor-set' ) { previewCursorSet( row.slug ); break; }
+					break;
+				case 'apply':
+					if ( btn ) { btn.disabled = true; btn.textContent = 'Applying…'; }
+					if ( row.type === 'scene' ) { applyScene( row.slug ); break; }
+					if ( row.type === 'icon-set' ) { applyIconSet( row.slug ); break; }
+					if ( row.type === 'cursor-set' ) { applyCursorSet( row.slug ); break; }
 					break;
 				case 'add':
 					playShopSound( 'success' );
@@ -6296,6 +6359,15 @@
 			secondary.textContent = 'Done';
 			secondary.addEventListener( 'click', closeProductSheet );
 			actions.appendChild( primary );
+			if ( action.kind === 'apply' ) {
+				var preview = el( 'button', { type: 'button', class: 'odd-shop__detail-secondary' } );
+				preview.textContent = 'Preview first';
+				preview.addEventListener( 'click', function () {
+					dispatchShopAction( normalised, 'preview', preview );
+					closeProductSheet();
+				} );
+				actions.appendChild( preview );
+			}
 			actions.appendChild( secondary );
 			bodyWrap.appendChild( actions );
 
@@ -6527,15 +6599,18 @@
 				dispatchShopAction( row, kind, btn );
 			} );
 
-			// Whole-card click mirrors the button for installed rows
-			// (so clicking anywhere on a scene tile starts preview)
-			// but is a no-op for catalog rows — those require an
-			// explicit Install click so misplaced hover-clicks don't
-			// trigger a network download.
+			// Whole-card click auditions installed decor, while the pill
+			// performs the durable primary action. Catalog rows still
+			// require an explicit Install click so misplaced hover-clicks
+			// don't trigger a network download.
 			card.addEventListener( 'click', function ( e ) {
 				if ( e.target && e.target.closest && e.target.closest( '.odd-shop__card-btn' ) ) return;
 				if ( ! row.installed ) return;
 				if ( action.disabled ) return;
+				if ( row.type === 'scene' || row.type === 'icon-set' || row.type === 'cursor-set' ) {
+					dispatchShopAction( row, 'preview', btn );
+					return;
+				}
 				dispatchShopAction( row, kind, btn );
 			} );
 

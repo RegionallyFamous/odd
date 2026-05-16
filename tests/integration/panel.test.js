@@ -311,8 +311,7 @@ describe( 'ODD Shop', () => {
 
 		const card = host.querySelector( '[data-odd-shop-card][data-set-slug="filament"]' );
 		expect( card ).toBeTruthy();
-		const preview = card.closest( '.odd-shop__card-wrap' ).querySelector( '.odd-shop__card-btn' );
-		preview.click();
+		card.querySelector( '.odd-shop__card' ).click();
 
 		expect( document.querySelector( '.desktop-mode-dock__item-img' ).getAttribute( 'src' ) ).toBe( 'dock-native.png' );
 		expect( document.querySelector( '.desktop-mode-icon[data-icon-id="posts"] img' ).getAttribute( 'src' ) ).toBe( 'posts-native.png' );
