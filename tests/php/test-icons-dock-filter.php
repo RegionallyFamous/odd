@@ -50,6 +50,10 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 		$this->assertSame( 'media', oddout_icons_slug_to_key( 'upload.php' ) );
 		$this->assertSame( 'settings', oddout_icons_slug_to_key( 'options-general.php' ) );
 		$this->assertSame( 'recycle-bin', oddout_icons_slug_to_key( 'desktop-mode-recycle-bin' ) );
+		$this->assertSame( 'os-settings', oddout_icons_slug_to_key( 'desktop-mode-os-settings' ) );
+		$this->assertSame( 'import', oddout_icons_slug_to_key( 'desktop-mode-pwa-install' ) );
+		$this->assertSame( 'plugins', oddout_icons_slug_to_key( 'desktop-mode-bug-report' ) );
+		$this->assertSame( 'classic-admin', oddout_icons_slug_to_key( 'desktop-mode-exit' ) );
 		$this->assertSame( 'posts', oddout_icons_slug_to_key( 'edit.php?post_type=book' ), 'CPT edit screen routes to posts key.' );
 		$this->assertSame( '', oddout_icons_slug_to_key( 'something-else' ) );
 		$this->assertSame( '', oddout_icons_slug_to_key( '' ) );
@@ -253,6 +257,66 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 
 		$this->assertSame( 'themed-code.png', $config_after['nativeWindows'][0]['icon'] );
 		$this->assertSame( 'dashicons-admin-generic', $config_after['nativeWindows'][1]['icon'] );
+	}
+
+	public function test_shell_config_rewrites_system_and_native_window_icons() {
+		$set_slug = $this->pick_set_with_fallback();
+		oddout_icons_set_active_slug( $set_slug );
+
+		$config_before = array(
+			'systemTiles'   => array(
+				array(
+					'id'    => 'desktop-mode-os-settings',
+					'title' => 'OS Settings',
+					'icon'  => 'dashicons-desktop',
+				),
+				array(
+					'id'    => 'desktop-mode-pwa-install',
+					'title' => 'Install My WordPress Website as an app',
+					'icon'  => 'dashicons-download',
+				),
+				array(
+					'id'    => 'desktop-mode-bug-report',
+					'title' => 'Report a bug',
+					'icon'  => 'dashicons-buddicons-replies',
+				),
+				array(
+					'id'    => 'desktop-mode-exit',
+					'title' => 'Exit Desktop Mode',
+					'icon'  => 'dashicons-exit',
+				),
+			),
+			'nativeWindows' => array(
+				array(
+					'id'        => 'desktop-mode-posts',
+					'title'     => 'Posts',
+					'icon'      => 'dashicons-admin-post',
+					'placement' => 'none',
+				),
+				array(
+					'id'        => 'desktop-mode-plugins',
+					'title'     => 'Plugins',
+					'icon'      => 'dashicons-admin-plugins',
+					'placement' => 'none',
+				),
+				array(
+					'id'        => 'odd',
+					'title'     => 'ODD Shop',
+					'icon'      => 'odd-eye.svg',
+					'placement' => 'dock',
+				),
+			),
+		);
+
+		$config_after = apply_filters( 'desktop_mode_shell_config', $config_before );
+
+		$this->assertStringEndsWith( '/os-settings.webp', $config_after['systemTiles'][0]['icon'] );
+		$this->assertStringEndsWith( '/import.webp', $config_after['systemTiles'][1]['icon'] );
+		$this->assertStringEndsWith( '/plugins.webp', $config_after['systemTiles'][2]['icon'] );
+		$this->assertStringEndsWith( '/classic-admin.webp', $config_after['systemTiles'][3]['icon'] );
+		$this->assertStringEndsWith( '/posts.webp', $config_after['nativeWindows'][0]['icon'] );
+		$this->assertStringEndsWith( '/plugins.webp', $config_after['nativeWindows'][1]['icon'] );
+		$this->assertSame( 'odd-eye.svg', $config_after['nativeWindows'][2]['icon'] );
 	}
 
 	public function test_shortcut_overlay_rewrites_recycle_bin_icon_like_registry_snapshot() {

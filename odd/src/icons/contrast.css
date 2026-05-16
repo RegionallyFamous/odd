@@ -58,3 +58,15 @@ body.desktop-mode-active .desktop-mode-dock__item img.desktop-mode-dock__item-im
 	max-height: 100%;
 	object-fit: contain;
 }
+
+body.desktop-mode-active .desktop-mode-dock__item-primary > img.desktop-mode-dock__item-img[src*="/odd/icon-sets/"],
+body.desktop-mode-active .desktop-mode-dock__item-primary > img.desktop-mode-dock__item-img[data-odd-skinned-system-icon],
+body.desktop-mode-active .wp-desktop-dock__item-primary > img.wp-desktop-dock__item-img[src*="/odd/icon-sets/"],
+body.desktop-mode-active .wp-desktop-dock__item-primary > img.wp-desktop-dock__item-img[data-odd-skinned-system-icon] {
+	width: 100%;
+	height: 100%;
+	max-width: none;
+	max-height: none;
+	object-fit: contain;
+	opacity: 1;
+}

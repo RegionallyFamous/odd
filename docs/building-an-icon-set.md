@@ -48,9 +48,10 @@ Paths inside `icons/` can be anything — the manifest maps the
 required semantic keys to paths of your choosing. ODD requires all
 17 keys so Desktop Mode's dock, desktop, taskbar, file shortcut,
 Recycle Bin, and compact rail action surfaces can all resolve through
-one complete native feed. The compact rail actions are `os-settings`,
-`import`, `plugins`, and `classic-admin`; `plugins` is also a core
-WordPress menu key.
+one complete native feed. The compact rail/system actions map OS
+Settings to `os-settings`, PWA install/import to `import`, Report a bug
+to the bug-like `plugins` glyph, and Exit Desktop Mode to
+`classic-admin`; `plugins` is also a core WordPress menu key.
 
 Icon files must be PNG or WebP images. Use PNG when you need crisp
 transparency; use WebP when the art is painted, textured, or otherwise
@@ -117,7 +118,7 @@ stable logical keys via `oddout_icons_slug_to_key()`:
 | `media`       | yes      | Media, Uploads                            |
 | `comments`    | yes      | Comments, `edit-comments.php`             |
 | `appearance`  | yes      | Themes, Customize, Widgets, Menus         |
-| `plugins`     | yes      | Plugins, `plugins.php`                    |
+| `plugins`     | yes      | Plugins, `plugins.php`; Report a bug system tile |
 | `users`       | yes      | Users, Profile (when listing other users) |
 | `tools`       | yes      | Tools, Import / Export, Code editor       |
 | `settings`    | yes      | Settings, Options                         |
@@ -126,7 +127,7 @@ stable logical keys via `oddout_icons_slug_to_key()`:
 | `links`       | yes      | Legacy Links, any URL-browsing tool       |
 | `recycle-bin` | yes      | WP Desktop Mode Recycle Bin (`desktop-mode-recycle-bin`) |
 | `os-settings` | yes      | Desktop Mode OS Settings system tile      |
-| `import`      | yes      | Import/download-style rail action         |
+| `import`      | yes      | Import/PWA install/download-style rail action |
 | `classic-admin` | yes    | Exit/classic-admin rail action            |
 
 If the active set can't provide one of the logical keys, ODD reaches
