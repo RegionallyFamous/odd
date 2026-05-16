@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -34,6 +34,12 @@ describe( 'ODD cursor runtime', () => {
 		document.body.className = '';
 		document.documentElement.style.removeProperty( '--odd-cursor-default' );
 		document.documentElement.style.removeProperty( '--odd-cursor-pointer' );
+		document.documentElement.className = '';
+		Object.defineProperty( window, 'matchMedia', {
+			value:        undefined,
+			writable:     true,
+			configurable: true,
+		} );
 		delete document.__oddCursorBridge;
 		window.__odd = { debug: {} };
 		window.odd = {
@@ -307,5 +313,118 @@ describe( 'ODD cursor runtime', () => {
 
 		expect( close.style.cursor ).toContain( 'pointer.svg' );
 		expect( window.__odd.cursors.status().shadowRoots ).toBeGreaterThanOrEqual( 1 );
+	} );
+
+	it( 'creates a live cursor aura on Desktop surfaces using the active cursor artwork', () => {
+		const shell = document.createElement( 'div' );
+		shell.className = 'desktop-mode-shell';
+		const icon = document.createElement( 'button' );
+		icon.className = 'desktop-mode-icon';
+		shell.appendChild( icon );
+		document.body.appendChild( shell );
+
+		loadRuntime();
+		const event = new window.MouseEvent( 'pointermove', { bubbles: true, composed: true, clientX: 123, clientY: 234 } );
+		event.getCoalescedEvents = () => [ { clientX: 124, clientY: 235 } ];
+		event.getPredictedEvents = () => [ { clientX: 130, clientY: 240 } ];
+		icon.dispatchEvent( event );
+
+		const layer = document.getElementById( 'odd-live-cursor' );
+		expect( layer ).toBeTruthy();
+		expect( layer.getAttribute( 'data-visible' ) ).toBe( 'true' );
+		expect( layer.getAttribute( 'data-role' ) ).toBe( 'pointer' );
+		expect( layer.getAttribute( 'data-mode' ) ).toBe( 'aura' );
+		expect( layer.style.getPropertyValue( '--odd-cursor-image' ) ).toContain( 'pointer.svg' );
+		expect( layer.style.getPropertyValue( '--odd-cursor-x' ) ).toBe( '130px' );
+		expect( window.__odd.cursors.status().layer.visible ).toBe( true );
+		expect( window.__odd.cursors.status().layer.coalesced ).toBe( 1 );
+		expect( window.__odd.cursors.status().layer.predicted ).toBe( 1 );
+	} );
+
+	it( 'simplifies the live cursor layer over text targets', () => {
+		const shell = document.createElement( 'div' );
+		shell.className = 'desktop-mode-shell';
+		const input = document.createElement( 'input' );
+		input.type = 'text';
+		shell.appendChild( input );
+		document.body.appendChild( shell );
+
+		loadRuntime();
+		input.dispatchEvent( new window.MouseEvent( 'pointermove', { bubbles: true, composed: true, clientX: 20, clientY: 30 } ) );
+
+		const layer = document.getElementById( 'odd-live-cursor' );
+		expect( layer.getAttribute( 'data-role' ) ).toBe( 'text' );
+		expect( layer.getAttribute( 'data-soft' ) ).toBe( 'true' );
+	} );
+
+	it( 'respects reduced motion by leaving the live cursor layer inactive', () => {
+		window.matchMedia = ( query ) => ( {
+			matches: query.includes( 'prefers-reduced-motion' ),
+			media: query,
+			addEventListener: () => {},
+			removeEventListener: () => {},
+		} );
+		const shell = document.createElement( 'div' );
+		shell.className = 'desktop-mode-shell';
+		const icon = document.createElement( 'button' );
+		icon.className = 'desktop-mode-icon';
+		shell.appendChild( icon );
+		document.body.appendChild( shell );
+
+		loadRuntime();
+		icon.dispatchEvent( new window.MouseEvent( 'pointermove', { bubbles: true, composed: true, clientX: 44, clientY: 55 } ) );
+
+		expect( document.getElementById( 'odd-live-cursor' ) ).toBeNull();
+		expect( window.__odd.cursors.status().layer.enabled ).toBe( false );
+	} );
+
+	it( 'supports replace mode by hiding native cursor output on live surfaces', () => {
+		window.odd.cursorLayerMode = 'replace';
+		const shell = document.createElement( 'div' );
+		shell.className = 'desktop-mode-shell';
+		const icon = document.createElement( 'button' );
+		icon.className = 'desktop-mode-icon';
+		shell.appendChild( icon );
+		document.body.appendChild( shell );
+
+		loadRuntime();
+		icon.dispatchEvent( new window.MouseEvent( 'pointermove', { bubbles: true, composed: true, clientX: 66, clientY: 77 } ) );
+
+		const layer = document.getElementById( 'odd-live-cursor' );
+		expect( layer.getAttribute( 'data-mode' ) ).toBe( 'replace' );
+		expect( icon.style.cursor ).toBe( 'none' );
+		expect( window.__odd.cursors.status().lastResolved.cursor ).toContain( 'pointer.svg' );
+		expect( window.__odd.cursors.status().lastResolved.nativeCursor ).toBe( 'none' );
+	} );
+
+	it( 'captures drag pointers and presents grab as grabbing while pressed', () => {
+		const shell = document.createElement( 'div' );
+		shell.className = 'desktop-mode-shell';
+		const titlebar = document.createElement( 'div' );
+		titlebar.setAttribute( 'data-drag', 'true' );
+		titlebar.setPointerCapture = vi.fn();
+		shell.appendChild( titlebar );
+		document.body.appendChild( shell );
+
+		loadRuntime();
+		const event = new window.MouseEvent( 'pointerdown', { bubbles: true, composed: true, clientX: 88, clientY: 99 } );
+		Object.defineProperty( event, 'pointerId', { value: 7 } );
+		Object.defineProperty( event, 'pointerType', { value: 'mouse' } );
+		Object.defineProperty( event, 'pressure', { value: 0.7 } );
+		Object.defineProperty( event, 'tiltX', { value: 12 } );
+		Object.defineProperty( event, 'tiltY', { value: -6 } );
+		Object.defineProperty( event, 'twist', { value: 30 } );
+		Object.defineProperty( event, 'width', { value: 9 } );
+		Object.defineProperty( event, 'height', { value: 5 } );
+		titlebar.dispatchEvent( event );
+
+		const layer = document.getElementById( 'odd-live-cursor' );
+		expect( titlebar.setPointerCapture ).toHaveBeenCalledWith( 7 );
+		expect( layer.getAttribute( 'data-role' ) ).toBe( 'grabbing' );
+		expect( layer.getAttribute( 'data-pressed' ) ).toBe( 'true' );
+		expect( window.__odd.cursors.status().layer.pressure ).toBe( 0.7 );
+		expect( window.__odd.cursors.status().layer.tiltX ).toBe( 12 );
+		expect( window.__odd.cursors.status().layer.twist ).toBe( 30 );
+		expect( window.__odd.cursors.status().layer.contact ).toBe( 9 );
 	} );
 } );
