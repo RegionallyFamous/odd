@@ -181,10 +181,21 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( card.getAttribute( 'data-odd-trust' ) ).toBe( 'local-code' );
 		expect( card.querySelector( '.odd-shop__card-trust' )?.textContent.trim() ).toBe( 'Runs locally' );
 		expect( card.querySelector( '.odd-shop__card-state' ) ).toBeNull();
+		const body = card.querySelector( '.odd-shop__card' );
+		const hiddenStatus = card.querySelector( '.odd-sr-only' );
+		const trust = card.querySelector( '.odd-shop__card-trust' );
+		expect( hiddenStatus?.id ).toBe( 'odd-shop-card-gusts-status' );
+		expect( hiddenStatus?.textContent.trim() ).toBe( 'Available' );
+		expect( body.getAttribute( 'aria-describedby' ) ).toContain( hiddenStatus.id );
+		expect( body.getAttribute( 'aria-describedby' ) ).toContain( trust.id );
+		expect( btn.getAttribute( 'aria-describedby' ) ).toContain( hiddenStatus.id );
+		expect( btn.getAttribute( 'aria-label' ) ).toBe( 'Install Gusts - Available' );
+		expect( btn.getAttribute( 'aria-pressed' ) ).toBeNull();
 		expect( card.querySelector( '.odd-shop__card-badge' ) ).toBeNull();
 		expect( card.querySelector( '.odd-shop__card-actions' ) ).toBeTruthy();
 		expect( card.querySelector( '.odd-shop__card-actions .odd-shop__card-btn' ) ).toBe( btn );
 		expect( card.querySelector( '.odd-shop__card-actions .odd-shop__quick-look' )?.textContent.trim() ).toBe( 'Details' );
+		expect( card.querySelector( '.odd-shop__card-actions .odd-shop__quick-look' )?.getAttribute( 'aria-label' ) ).toBe( 'View details for Gusts' );
 	} );
 
 	it( 'catalog install enters an inline installing state immediately', async () => {
@@ -358,6 +369,8 @@ describe( 'ODD Shop · unified card state machine', () => {
 		const btn  = card.querySelector( '.odd-shop__card-btn' );
 		expect( btn.textContent.trim() ).toBe( 'Active' );
 		expect( btn.disabled ).toBe( true );
+		expect( btn.getAttribute( 'aria-disabled' ) ).toBe( 'true' );
+		expect( btn.getAttribute( 'aria-pressed' ) ).toBeNull();
 		expect( card.classList.contains( 'is-active' ) ).toBe( true );
 		expect( card.getAttribute( 'data-odd-card-state' ) ).toBe( 'active' );
 		expect( card.querySelector( '.odd-shop__card-state' )?.textContent.trim() ).toBe( 'Active' );
@@ -378,6 +391,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 		const btn  = card.querySelector( '.odd-shop__card-btn' );
 		expect( btn.textContent.trim() ).toBe( 'Incompatible' );
 		expect( btn.disabled ).toBe( true );
+		expect( btn.getAttribute( 'aria-disabled' ) ).toBe( 'true' );
 		expect( card.getAttribute( 'data-odd-card-state' ) ).toBe( 'incompatible' );
 		expect( card.querySelector( '.odd-shop__card-state' )?.textContent.trim() ).toBe( 'Incompatible' );
 	} );
@@ -604,6 +618,18 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-art--quartet \.odd-shop__card-quartet\{[^}]*width:100%[^}]*gap:clamp\(8px,8%,14px\)/ );
 		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__shelf\{[^}]*content-visibility:auto/ );
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-wrap\{[^}]*content-visibility:auto/ );
+	} );
+
+	it( 'shop card CSS keeps catalog text and keyboard affordances accessible', () => {
+		const css = readFileSync( PANEL_CSS, 'utf8' );
+		expect( css ).toContain( '--odd-shop-focus-ring:#005fcc' );
+		expect( css ).toContain( '--odd-shop-muted-strong:#3f3f46' );
+		expect( css ).toContain( '.odd-panel .odd-sr-only' );
+		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-state\{[^}]*font:800 11px\/1\.25[^}]*color:#333336/ );
+		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-trust\{[^}]*padding:4px 8px[^}]*border:1px solid rgba\(60,60,67,\.14\)[^}]*font:800 11px\/1\.1/ );
+		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-btn--active,\.odd-panel \.odd-shop__card-btn\.is-disabled\{[^}]*color:#3f3f46/ );
+		expect( css ).toContain( '.odd-panel .odd-shop__card-fav:focus-visible' );
+		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__card-btn:focus-visible,[^{}]*\.odd-panel\.odd-shop \.odd-shop__card-fav:focus-visible\{[^}]*outline:3px solid var\(--odd-shop-focus-ring\)/ );
 	} );
 
 	it( 'catalog-only icon set appears as the canonical Install card', () => {

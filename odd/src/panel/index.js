@@ -5142,17 +5142,24 @@
 				}
 				var actionBtn = cardWrap ? cardWrap.querySelector( '.odd-shop__card-btn' ) : null;
 				if ( actionBtn ) {
+					var cardName = ( c.querySelector( '.odd-shop__card-title' ) || {} ).textContent || slug;
 					if ( previewSlug && slug === previewSlug ) {
 						actionBtn.textContent = 'Apply';
 						actionBtn.disabled = false;
+						actionBtn.removeAttribute( 'aria-disabled' );
+						actionBtn.setAttribute( 'aria-label', 'Apply ' + cardName + ' - Ready to apply' );
 						actionBtn.classList.remove( 'is-disabled' );
 					} else if ( ! previewSlug && slug === currentSlug ) {
 						actionBtn.textContent = 'Active';
 						actionBtn.disabled = true;
+						actionBtn.setAttribute( 'aria-disabled', 'true' );
+						actionBtn.setAttribute( 'aria-label', 'Active ' + cardName + ' - Active' );
 						actionBtn.classList.add( 'is-disabled' );
 					} else {
 						actionBtn.textContent = 'Apply';
 						actionBtn.disabled = false;
+						actionBtn.removeAttribute( 'aria-disabled' );
+						actionBtn.setAttribute( 'aria-label', 'Apply ' + cardName + ' - Ready to apply' );
 						actionBtn.classList.remove( 'is-disabled' );
 					}
 				}
@@ -5165,9 +5172,10 @@
 				var star = ( tileWrap || c ).querySelector( '.odd-shop__fav' );
 				if ( star ) {
 					var favOn = isFavorite( slug );
+					var starName = ( c.querySelector( '.odd-shop__card-title' ) || {} ).textContent || slug;
 					star.classList.toggle( 'is-on', favOn );
 					star.setAttribute( 'aria-pressed', favOn ? 'true' : 'false' );
-					star.setAttribute( 'aria-label', favOn ? 'Remove from favorites' : 'Add to favorites' );
+					star.setAttribute( 'aria-label', favOn ? 'Remove ' + starName + ' from favorites' : 'Add ' + starName + ' to favorites' );
 					star.setAttribute( 'title', favOn ? 'Unfavorite' : 'Favorite' );
 				}
 
@@ -7323,6 +7331,14 @@
 			var kind     = action.kind;
 			var installing = !! action.progress;
 			var trust = trustProfileFor( row );
+			var a11yBase = 'odd-shop-card-' + ( String( row.slug || row.name || 'item' ).toLowerCase().replace( /[^a-z0-9_-]+/g, '-' ).replace( /^-+|-+$/g, '' ) || 'item' );
+			var subtitleText = row.subtitle || '';
+			var subId = subtitleText ? a11yBase + '-subtitle' : '';
+			var statusId = a11yBase + '-status';
+			var trustId = a11yBase + '-trust';
+			var describedBy = [];
+			if ( subId ) describedBy.push( subId );
+			describedBy.push( statusId, trustId );
 
 			var wrap = el( 'div', {
 				class: 'odd-shop__card-wrap'
@@ -7353,6 +7369,7 @@
 					+ ( row.installed ? ' is-installed' : ' is-catalog' )
 					+ ( isActive ? ' is-active' : '' ),
 				'aria-label': row.name + ' - ' + cardState.statusLabel,
+				'aria-describedby': describedBy.join( ' ' ),
 				'data-slug': row.slug,
 				'data-odd-cursor': 'pointer',
 			} );
@@ -7378,6 +7395,7 @@
 				var primaryBadge = stateBadges[ 0 ];
 				var statusBadge = el( 'span', {
 					class: 'odd-shop__card-badge odd-shop__card-badge--' + primaryBadge.mod,
+					'aria-hidden': 'true',
 				} );
 				statusBadge.textContent = primaryBadge.label;
 				card.appendChild( statusBadge );
@@ -7387,15 +7405,20 @@
 			var title = el( 'div', { class: 'odd-shop__card-title odd-shop__tile-title' } );
 			title.textContent = row.name;
 			var sub = el( 'div', { class: 'odd-shop__card-sub odd-shop__tile-sub' } );
-			sub.textContent = row.subtitle || '';
-			var stateLine = el( 'div', { class: 'odd-shop__card-state odd-shop__card-state--' + cardState.id } );
+			if ( subId ) sub.id = subId;
+			sub.textContent = subtitleText;
+			var stateLine = el( 'div', { class: 'odd-shop__card-state odd-shop__card-state--' + cardState.id, id: statusId } );
 			stateLine.textContent = cardState.statusLabel;
-			var trustLine = el( 'div', { class: 'odd-shop__card-trust odd-shop__card-trust--' + trust.id } );
+			var trustLine = el( 'div', { class: 'odd-shop__card-trust odd-shop__card-trust--' + trust.id, id: trustId } );
 			trustLine.textContent = trust.label;
 			meta.appendChild( title );
 			meta.appendChild( sub );
 			if ( cardState.id !== 'available' ) {
 				meta.appendChild( stateLine );
+			} else {
+				var hiddenState = el( 'span', { class: 'odd-sr-only', id: statusId } );
+				hiddenState.textContent = cardState.statusLabel;
+				meta.appendChild( hiddenState );
 			}
 			meta.appendChild( trustLine );
 			card.appendChild( meta );
@@ -7405,8 +7428,8 @@
 				class: 'odd-shop__card-btn odd-shop__tile-btn odd-shop__card-btn--' + kind
 					+ ( action.disabled ? ' is-disabled' : ' odd-shop__tile-btn--primary' )
 					+ ( kind === 'install' ? ' odd-shop__card-btn--install' : '' ),
-				'aria-pressed': isActive ? 'true' : 'false',
-				'aria-label': action.label + ' ' + row.name,
+				'aria-label': action.label + ' ' + row.name + ' - ' + cardState.statusLabel,
+				'aria-describedby': describedBy.join( ' ' ),
 				'data-odd-cursor': action.disabled ? 'not-allowed' : 'pointer',
 			} );
 			if ( action.progress ) {
@@ -7421,7 +7444,10 @@
 			if ( row.incompatibilityReason ) {
 				btn.title = row.incompatibilityReason;
 			}
-			if ( action.disabled ) btn.disabled = true;
+			if ( action.disabled ) {
+				btn.disabled = true;
+				btn.setAttribute( 'aria-disabled', 'true' );
+			}
 			btn.addEventListener( 'click', function ( e ) {
 				e.stopPropagation();
 				if ( btn.disabled ) return;
@@ -7454,7 +7480,7 @@
 			var quick = el( 'button', {
 				type: 'button',
 				class: 'odd-shop__quick-look',
-				'aria-label': 'Quick look ' + row.name,
+				'aria-label': 'View details for ' + row.name,
 				'data-odd-cursor': 'pointer',
 			} );
 			quick.textContent = 'Details';
@@ -7477,7 +7503,7 @@
 					class: 'odd-shop__card-fav odd-shop__fav' + ( fav ? ' is-on' : '' ),
 					role: 'button',
 					tabindex: '0',
-					'aria-label': fav ? 'Remove from favorites' : 'Add to favorites',
+					'aria-label': fav ? 'Remove ' + row.name + ' from favorites' : 'Add ' + row.name + ' to favorites',
 					'aria-pressed': fav ? 'true' : 'false',
 					'data-odd-cursor': 'pointer',
 				} );
