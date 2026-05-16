@@ -178,7 +178,13 @@ function oddout_cursorset_bundle_validate( $tmp_path, $filename, ZipArchive $zip
 	if ( isset( $manifest['effects'] ) && ! is_array( $manifest['effects'] ) ) {
 		return new WP_Error( 'invalid_effects', __( 'Cursor effect tokens must be an object.', 'odd-outlandish-desktop-decorator' ) );
 	}
-	$allowed_effects = array( 'accent' => true, 'spark' => true, 'warm' => true, 'ink' => true, 'recipe' => true );
+	$allowed_effects = array(
+		'accent' => true,
+		'spark'  => true,
+		'warm'   => true,
+		'ink'    => true,
+		'recipe' => true,
+	);
 	$allowed_recipes = function_exists( 'oddout_cursors_allowed_recipes' ) ? oddout_cursors_allowed_recipes() : array( 'signal-bloom', 'gel-pop', 'paper-sparks', 'solar-orbit', 'moonlight-focus' );
 	foreach ( isset( $manifest['effects'] ) && is_array( $manifest['effects'] ) ? $manifest['effects'] : array() as $key => $value ) {
 		if ( empty( $allowed_effects[ (string) $key ] ) ) {

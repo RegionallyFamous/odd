@@ -48,10 +48,10 @@ function oddout_cursors_allowed_recipes() {
 }
 
 function oddout_cursors_clean_effects( array $data ) {
-	$effects = isset( $data['effects'] ) && is_array( $data['effects'] ) ? $data['effects'] : array();
-	$accent  = isset( $effects['accent'] ) ? (string) $effects['accent'] : ( isset( $data['accent'] ) ? (string) $data['accent'] : '' );
-	$recipe  = isset( $effects['recipe'] ) ? sanitize_key( (string) $effects['recipe'] ) : '';
-	$out     = array(
+	$effects   = isset( $data['effects'] ) && is_array( $data['effects'] ) ? $data['effects'] : array();
+	$accent    = isset( $effects['accent'] ) ? (string) $effects['accent'] : ( isset( $data['accent'] ) ? (string) $data['accent'] : '' );
+	$recipe    = isset( $effects['recipe'] ) ? sanitize_key( (string) $effects['recipe'] ) : '';
+	$out       = array(
 		'accent' => '' !== $accent ? $accent : '#42d9d2',
 		'spark'  => isset( $effects['spark'] ) ? (string) $effects['spark'] : '#ff4f8b',
 		'warm'   => isset( $effects['warm'] ) ? (string) $effects['warm'] : '#f6b73c',
@@ -140,7 +140,7 @@ function oddout_cursors_get_sets( $reset = false ) {
 		$base_url = $entry['base_url'];
 		$source   = isset( $entry['source'] ) ? (string) $entry['source'] : '';
 		$effects  = oddout_cursors_clean_effects( $data );
-		$preview = '';
+		$preview  = '';
 		if ( ! empty( $data['preview'] ) ) {
 			$preview_abs = oddout_cursors_resolve_set_path( $base_dir, (string) $data['preview'] );
 			if ( '' !== $preview_abs && is_readable( $preview_abs ) ) {

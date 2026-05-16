@@ -33,7 +33,7 @@ add_action(
 			'type'              => 'array',
 			'required'          => false,
 			'validate_callback' => static function ( $value ) {
-				return is_array( $value ) && count( $value ) <= 100;
+				return is_array( $value ) && count( $value ) <= 500;
 			},
 		);
 		$object_arg    = array(
