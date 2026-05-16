@@ -139,6 +139,16 @@
 			"minimum": 1,
 			"description": "Widget manifests only. Minimum native widget height."
 		},
+		"maxWidth": {
+			"type": "integer",
+			"minimum": 1,
+			"description": "Widget manifests only. Optional maximum native widget width."
+		},
+		"maxHeight": {
+			"type": "integer",
+			"minimum": 1,
+			"description": "Widget manifests only. Optional maximum native widget height."
+		},
 		"defaultWidth": {
 			"type": "integer",
 			"minimum": 1,
@@ -148,6 +158,15 @@
 			"type": "integer",
 			"minimum": 1,
 			"description": "Widget manifests only. First-mount native widget height."
+		},
+		"capabilities": {
+			"type": "array",
+			"description": "Widget manifests only. Optional WordPress capabilities required by Desktop Mode before the widget is registered.",
+			"items": {
+				"type": "string",
+				"pattern": "^[a-z0-9_]+$"
+			},
+			"uniqueItems": true
 		},
 		"window": {
 			"type": "object",

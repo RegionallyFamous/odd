@@ -475,16 +475,15 @@ add_action(
 			// Installed widget bundles (type: widget). Panel reads
 			// these to merge user-installed widgets into the catalog
 			// on the Widgets department. Empty when no widgets have
-			// been installed — the built-in sticky + eight-ball live
-			// entirely client-side.
+			// been installed.
 			'installedWidgets'  => function_exists( 'oddout_widgets_index_load' ) ? array_values(
 				array_map(
 					function ( $row ) {
 						return array(
-							'id'          => 'odd/' . $row['slug'],
+							'id'          => isset( $row['id'] ) ? $row['id'] : 'odd/' . $row['slug'],
 							'slug'        => $row['slug'],
 							'label'       => isset( $row['label'] ) ? $row['label'] : $row['slug'],
-							'description' => isset( $row['name'] ) ? $row['name'] : '',
+							'description' => isset( $row['description'] ) ? $row['description'] : ( isset( $row['name'] ) ? $row['name'] : '' ),
 							'category'    => isset( $row['category'] ) ? $row['category'] : 'Community',
 							'installed'   => true,
 						);

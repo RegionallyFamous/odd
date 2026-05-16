@@ -6,7 +6,14 @@
 	"label": "Hello",
 	"version": "1.0.0",
 	"author": "ODD Examples",
-	"description": "Minimal widget that renders a greeting — the reference implementation of registerWidget.",
+	"description": "Minimal widget that renders a greeting using Desktop Mode's server widget registry.",
 	"entry": "widget.js",
-	"css": ["widget.css"]
+	"css": ["widget.css"],
+	"icon": "dashicons-screenoptions",
+	"movable": true,
+	"resizable": true,
+	"minWidth": 220,
+	"minHeight": 140,
+	"defaultWidth": 280,
+	"defaultHeight": 180
 }

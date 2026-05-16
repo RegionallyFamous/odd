@@ -952,8 +952,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/widget-eight-ball.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/widget-eight-ball.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/widget-eight-ball.wp",
-      "sha256": "0d81ce7820884289bc1afdced5df2bf6f8abb06c7bb1e4e44e2a10bab9b60d2f",
-      "size": 107387
+      "sha256": "72933a5f52f7c77ee29580a4e67c5e336365a101ae81e5b13f7318be7bce9562",
+      "size": 107223
     },
     {
       "type": "widget",
@@ -966,8 +966,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/widget-spotify.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/widget-spotify.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/widget-spotify.wp",
-      "sha256": "d32b234f087fab7c909a8f0166b8da1988caf160d027959a450c35c0af543f17",
-      "size": 5503
+      "sha256": "a51471a55bb683c7810134b70036a9d2ff32461532c2e8951102820580503be7",
+      "size": 5576
     },
     {
       "type": "widget",
@@ -980,7 +980,7 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/widget-sticky.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/widget-sticky.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/widget-sticky.wp",
-      "sha256": "5ba203435a652ad37f8cac459da73676ee786f88fb7fcca0449e3542de37f9b6",
+      "sha256": "8fa0cadbe53e1e1286cf51ee45b21efd0afb5a188c979c7b00da472dabb95912",
       "size": 3383
     },
     {

@@ -1,14 +1,15 @@
 /**
- * widgets.test.js — smoke-test the two stock ODD widget bundles.
+ * widgets.test.js — smoke-test the stock ODD widget bundles.
  *
  * Widgets ship as separate catalog bundles under
  * `_tools/catalog-sources/widgets/sticky/` and `.../eight-ball/`.
- * Each bundle self-registers through `wp.desktop.registerWidget`;
- * this test loads both bundle sources, captures the registration
- * calls, then mounts each widget against a detached DOM container
- * and exercises the minimum interactions:
+ * Each bundle exposes `window.desktopModeWidgets[id]`; metadata lives
+ * in manifest.json and PHP hands it to Desktop Mode. This test loads
+ * the bundle sources, asserts they do not self-register, then mounts
+ * each widget against a detached DOM container and exercises the
+ * minimum interactions:
  *
- *   - Sticky: typing saves to localStorage after the debounce window.
+ *   - Sticky: typing saves through Desktop Mode ctx.storage after the debounce window.
  *   - Eight-ball: clicking adds `.is-shaking`, swaps the answer,
  *     and every decorative child has computed `pointer-events: none`.
  *
@@ -31,21 +32,28 @@ const EIGHTBALL_CSS = resolve( WIDGETS_ROOT, 'eight-ball/widget.css' );
 const EIGHTBALL_ASSET = resolve( WIDGETS_ROOT, 'eight-ball/assets/oracle-texture.webp' );
 const EIGHTBALL_BUNDLE = resolve( __dirname, '../../site/catalog/v1/bundles/widget-eight-ball.wp' );
 const SPOTIFY_JS    = resolve( WIDGETS_ROOT, 'spotify/widget.js' );
+const WIDGET_MANIFESTS = [
+	resolve( WIDGETS_ROOT, 'sticky/manifest.json' ),
+	resolve( WIDGETS_ROOT, 'eight-ball/manifest.json' ),
+	resolve( WIDGETS_ROOT, 'spotify/manifest.json' ),
+];
 
 function installWpDesktop() {
-	const calls = [];
+	const registerWidget = vi.fn( () => {
+		throw new Error( 'Widget bundles must expose window.desktopModeWidgets[id], not call wp.desktop.registerWidget().' );
+	} );
 	window.wp = window.wp || {};
 	window.wp.desktop = {
-		registerWidget: ( def ) => { calls.push( def ); },
+		registerWidget,
 		ready: ( cb ) => cb(),
 	};
-	return calls;
+	return registerWidget;
 }
 
 /**
  * Vitest's jsdom build ships without a complete Storage implementation.
- * Install a small in-memory shim before each test so the widgets can
- * read/write localStorage without blowing up.
+ * Install a small in-memory shim before each test so unexpected localStorage
+ * writes are observable and do not leak between tests.
  */
 function clearStorage() {
 	const store = new Map();
@@ -62,6 +70,23 @@ function clearStorage() {
 		configurable: true,
 		writable: true,
 	} );
+}
+
+function createCtxStorage( initial = {} ) {
+	const values = new Map( Object.entries( initial ) );
+	return {
+		values,
+		storage: {
+			get:    ( key ) => values.has( key ) ? values.get( key ) : null,
+			set:    ( key, value ) => { values.set( key, value ); },
+			remove: ( key ) => { values.delete( key ); },
+			clear:  () => { values.clear(); },
+		},
+	};
+}
+
+function widgetMount( id ) {
+	return window.desktopModeWidgets && window.desktopModeWidgets[ id ];
 }
 
 function injectWidgetStyles() {
@@ -85,12 +110,12 @@ function loadWidgets() {
 }
 
 describe( 'widgets registration', () => {
-	let captured;
+	let registerWidget;
 
 	beforeEach( () => {
 		document.body.innerHTML = '';
 		clearStorage();
-		captured = installWpDesktop();
+		registerWidget = installWpDesktop();
 		loadWidgets();
 	} );
 
@@ -100,41 +125,46 @@ describe( 'widgets registration', () => {
 		vi.useRealTimers();
 	} );
 
-	it( 'registers three widgets with required fields', () => {
-		expect( captured.length ).toBe( 3 );
-		for ( const def of captured ) {
-			expect( def.id ).toMatch( /^odd\// );
-			expect( typeof def.label ).toBe( 'string' );
-			expect( typeof def.icon ).toBe( 'string' );
-			expect( typeof def.mount ).toBe( 'function' );
-			expect( def.minWidth ).toBeGreaterThan( 0 );
-			expect( def.minHeight ).toBeGreaterThan( 0 );
-			expect( def.defaultWidth ).toBeGreaterThanOrEqual( def.minWidth );
-			expect( def.defaultHeight ).toBeGreaterThanOrEqual( def.minHeight );
-		}
-		const ids = captured.map( ( d ) => d.id ).sort();
+	it( 'exports mount callbacks and keeps metadata in manifests', () => {
+		expect( registerWidget ).not.toHaveBeenCalled();
+
+		const ids = Object.keys( window.desktopModeWidgets || {} ).sort();
 		expect( ids ).toEqual( [ 'odd/eight-ball', 'odd/spotify', 'odd/sticky' ] );
+		for ( const id of ids ) {
+			expect( typeof window.desktopModeWidgets[ id ] ).toBe( 'function' );
+		}
+
+		for ( const file of WIDGET_MANIFESTS ) {
+			const manifest = JSON.parse( readFileSync( file, 'utf8' ) );
+			expect( manifest.id ).toMatch( /^odd\// );
+			expect( manifest.entry ).toBe( 'widget.js' );
+			expect( typeof manifest.label ).toBe( 'string' );
+			expect( typeof manifest.icon ).toBe( 'string' );
+			expect( manifest.minWidth ).toBeGreaterThan( 0 );
+			expect( manifest.minHeight ).toBeGreaterThan( 0 );
+			expect( manifest.defaultWidth ).toBeGreaterThanOrEqual( manifest.minWidth );
+			expect( manifest.defaultHeight ).toBeGreaterThanOrEqual( manifest.minHeight );
+		}
 	} );
 } );
 
 describe( 'sticky widget', () => {
-	let captured;
-
 	beforeEach( () => {
 		document.body.innerHTML = '';
 		clearStorage();
-		captured = installWpDesktop();
+		installWpDesktop();
 		loadWidgets();
 	} );
 
 	it( 'mounts, auto-saves text after the debounce window, and cleans up', () => {
 		vi.useFakeTimers();
 
-		const def = captured.find( ( d ) => d.id === 'odd/sticky' );
+		const mount = widgetMount( 'odd/sticky' );
 		const container = document.createElement( 'div' );
 		document.body.appendChild( container );
+		const { storage, values } = createCtxStorage();
 
-		const cleanup = def.mount( container, {} );
+		const cleanup = mount( container, { storage } );
 
 		expect( container.querySelector( '.odd-sticky__paper' ) ).toBeTruthy();
 		const ta = container.querySelector( 'textarea.odd-sticky__text' );
@@ -144,32 +174,32 @@ describe( 'sticky widget', () => {
 		ta.dispatchEvent( new Event( 'input' ) );
 
 		vi.advanceTimersByTime( 500 );
-		expect( window.localStorage.getItem( 'odd:sticky' ) ).toBe( 'hello sticky' );
+		expect( values.get( 'text' ) ).toBe( 'hello sticky' );
+		expect( window.localStorage.getItem( 'odd:sticky' ) ).toBeNull();
 
 		expect( typeof cleanup ).toBe( 'function' );
 		expect( () => cleanup() ).not.toThrow();
 	} );
 
-	it( 'restores prior content from localStorage on mount', () => {
-		window.localStorage.setItem( 'odd:sticky', 'from before' );
+	it( 'restores prior content from Desktop Mode ctx.storage on mount', () => {
+		window.localStorage.setItem( 'odd:sticky', 'ignored value' );
 
-		const def = captured.find( ( d ) => d.id === 'odd/sticky' );
+		const mount = widgetMount( 'odd/sticky' );
 		const container = document.createElement( 'div' );
-		const cleanup = def.mount( container, {} );
+		const { storage } = createCtxStorage( { text: 'from storage' } );
+		const cleanup = mount( container, { storage } );
 
 		const ta = container.querySelector( 'textarea.odd-sticky__text' );
-		expect( ta.value ).toBe( 'from before' );
+		expect( ta.value ).toBe( 'from storage' );
 		cleanup();
 	} );
 } );
 
 describe( 'eight-ball widget', () => {
-	let captured;
-
 	beforeEach( () => {
 		document.body.innerHTML = '';
 		clearStorage();
-		captured = installWpDesktop();
+		installWpDesktop();
 		injectWidgetStyles();
 		loadWidgets();
 	} );
@@ -177,11 +207,11 @@ describe( 'eight-ball widget', () => {
 	it( 'mounts, reacts to clicks, cycles the answer, and cleans up', () => {
 		vi.useFakeTimers();
 
-		const def = captured.find( ( d ) => d.id === 'odd/eight-ball' );
+		const mount = widgetMount( 'odd/eight-ball' );
 		const container = document.createElement( 'div' );
 		document.body.appendChild( container );
 
-		const cleanup = def.mount( container, {} );
+		const cleanup = mount( container, {} );
 
 		const stage  = container.querySelector( '.odd-eight__stage' );
 		const ball   = container.querySelector( '.odd-eight__ball' );
@@ -205,10 +235,10 @@ describe( 'eight-ball widget', () => {
 	} );
 
 	it( 'pointer-events: none on every decorative child (regression guard)', () => {
-		const def = captured.find( ( d ) => d.id === 'odd/eight-ball' );
+		const mount = widgetMount( 'odd/eight-ball' );
 		const container = document.createElement( 'div' );
 		document.body.appendChild( container );
-		def.mount( container, {} );
+		mount( container, {} );
 
 		const decorative = [
 			'.odd-eight__shine',
@@ -248,13 +278,26 @@ describe( 'eight-ball widget', () => {
 	} );
 } );
 
-describe( 'spotify widget', () => {
-	let captured;
+describe( 'widget stylesheet scoping', () => {
+	it( 'keeps first-party widget CSS from styling sibling widgets', () => {
+		const stickyCss = readFileSync( STICKY_CSS, 'utf8' );
+		const eightCss = readFileSync( EIGHTBALL_CSS, 'utf8' );
 
+		expect( stickyCss ).toContain( '.odd-widget--sticky' );
+		expect( stickyCss ).not.toMatch( /(^|\n)\.odd-widget\s*\{/ );
+		expect( stickyCss ).not.toContain( 'odd-widget--eight' );
+		expect( stickyCss ).not.toContain( 'odd-eight__' );
+		expect( eightCss ).toContain( '.odd-widget--eight' );
+		expect( eightCss ).not.toContain( 'odd-widget--sticky' );
+		expect( eightCss ).not.toContain( 'odd-sticky__' );
+	} );
+} );
+
+describe( 'spotify widget', () => {
 	beforeEach( () => {
 		document.body.innerHTML = '';
 		clearStorage();
-		captured = installWpDesktop();
+		installWpDesktop();
 		loadWidgets();
 	} );
 
@@ -317,16 +360,13 @@ describe( 'spotify widget', () => {
 	} );
 
 	it( 'starts with a default playlist, allows Change + submit to swap embed', () => {
-		const def = captured.find( ( d ) => d.id === 'odd/spotify' );
-		expect( def ).toBeTruthy();
+		const mount = widgetMount( 'odd/spotify' );
+		expect( mount ).toBeTruthy();
 		const container = document.createElement( 'div' );
 		document.body.appendChild( container );
 
-		const persisted = [];
-		const cleanup = def.mount( container, {
-			persist: ( v ) => { persisted.push( v ); },
-			restore: () => null,
-		} );
+		const { storage, values } = createCtxStorage();
+		const cleanup = mount( container, { storage } );
 
 		let iframe = container.querySelector( 'iframe.odd-spotify__iframe' );
 		expect( iframe ).toBeTruthy();
@@ -336,8 +376,7 @@ describe( 'spotify widget', () => {
 		expect( iframe.getAttribute( 'loading' ) ).toBe( 'lazy' );
 		expect( iframe.getAttribute( 'referrerpolicy' ) ).toBe( 'strict-origin-when-cross-origin' );
 
-		expect( persisted.length ).toBe( 1 );
-		expect( persisted[ 0 ] ).toMatchObject( {
+		expect( values.get( 'embed' ) ).toMatchObject( {
 			type:        'playlist',
 			id:          '37i9dQZEVXbLp5XoPON0wI',
 			originalUrl: 'https://open.spotify.com/playlist/37i9dQZEVXbLp5XoPON0wI',
@@ -351,6 +390,9 @@ describe( 'spotify widget', () => {
 		const form  = container.querySelector( 'form.odd-spotify__row' );
 		expect( input ).toBeTruthy();
 		expect( form ).toBeTruthy();
+		const submit = form.querySelector( '.odd-spotify__btn--primary' );
+		expect( submit.textContent ).toBe( 'Embed' );
+		expect( window.getComputedStyle( submit ).minWidth ).toBe( '72px' );
 
 		input.value = 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M';
 		form.dispatchEvent( new Event( 'submit', { bubbles: true, cancelable: true } ) );
@@ -360,8 +402,7 @@ describe( 'spotify widget', () => {
 		expect( iframe.getAttribute( 'src' ) )
 			.toBe( 'https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M?utm_source=odd' );
 
-		expect( persisted.length ).toBe( 2 );
-		expect( persisted[ 1 ] ).toMatchObject( {
+		expect( values.get( 'embed' ) ).toMatchObject( {
 			type:        'playlist',
 			id:          '37i9dQZF1DXcBWIGoYBM5M',
 			originalUrl: 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M',
@@ -371,10 +412,11 @@ describe( 'spotify widget', () => {
 	} );
 
 	it( 'surfaces an error and stays in setup state when input is invalid', () => {
-		const def = captured.find( ( d ) => d.id === 'odd/spotify' );
+		const mount = widgetMount( 'odd/spotify' );
 		const container = document.createElement( 'div' );
 		document.body.appendChild( container );
-		def.mount( container, { persist: () => {}, restore: () => null } );
+		const { storage } = createCtxStorage();
+		mount( container, { storage } );
 
 		const change = container.querySelector( '.odd-spotify__btn[aria-label="Change Spotify embed"]' );
 		expect( change ).toBeTruthy();
@@ -391,20 +433,19 @@ describe( 'spotify widget', () => {
 	} );
 
 	it( 'restores persisted state on re-mount and Clear wipes it back to setup', () => {
-		const def = captured.find( ( d ) => d.id === 'odd/spotify' );
+		const mount = widgetMount( 'odd/spotify' );
 		const container = document.createElement( 'div' );
 		document.body.appendChild( container );
 
-		let stored = {
-			type:        'track',
-			id:          '4iV5W9uYEdYUVa79Axb7Rh',
-			originalUrl: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
-			updatedAt:   1,
-		};
-		def.mount( container, {
-			persist: ( v ) => { stored = v; },
-			restore: () => stored,
+		const { storage, values } = createCtxStorage( {
+			embed: {
+				type:        'track',
+				id:          '4iV5W9uYEdYUVa79Axb7Rh',
+				originalUrl: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
+				updatedAt:   1,
+			},
 		} );
+		mount( container, { storage } );
 
 		const iframe = container.querySelector( 'iframe.odd-spotify__iframe' );
 		expect( iframe ).toBeTruthy();
@@ -415,8 +456,33 @@ describe( 'spotify widget', () => {
 		expect( clear ).toBeTruthy();
 		clear.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
 
-		expect( stored ).toBeNull();
+		expect( values.has( 'embed' ) ).toBe( false );
 		expect( container.querySelector( 'iframe.odd-spotify__iframe' ) ).toBeNull();
 		expect( container.querySelector( 'input.odd-spotify__input' ) ).toBeTruthy();
+	} );
+
+	it( 'uses Desktop Mode ctx.storage when available', () => {
+		const mount = widgetMount( 'odd/spotify' );
+		const container = document.createElement( 'div' );
+		document.body.appendChild( container );
+
+		const { storage, values } = createCtxStorage();
+
+		mount( container, { storage } );
+		expect( values.get( 'embed' ) ).toMatchObject( {
+			type: 'playlist',
+			id:   '37i9dQZEVXbLp5XoPON0wI',
+		} );
+
+		values.set( 'embed', {
+			type:        'track',
+			id:          '4iV5W9uYEdYUVa79Axb7Rh',
+			originalUrl: 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh',
+		} );
+		container.innerHTML = '';
+		mount( container, { storage } );
+		const iframe = container.querySelector( 'iframe.odd-spotify__iframe' );
+		expect( iframe.getAttribute( 'src' ) )
+			.toBe( 'https://open.spotify.com/embed/track/4iV5W9uYEdYUVa79Axb7Rh?utm_source=odd' );
 	} );
 } );

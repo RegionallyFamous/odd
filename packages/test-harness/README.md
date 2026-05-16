@@ -31,7 +31,7 @@ describe( 'example-rainbow scene', () => {
 ## What you get
 
 - `mountScene({ slug, source })` — evaluates your scene IIFE, returns the scene module after asserting it registered with `setup()` and `tick()`.
-- `mountWidget({ id, source })` — same contract for widgets that call `window.__odd.api.registerWidget()`.
+- `mountWidget({ id, source })` — same contract for widgets that define `window.desktopModeWidgets[id]`.
 - `makeEnv({ tier, width, height })` — builds a scene env with a Pixi v8 stub. `tier` is `'high' | 'normal' | 'low'`, matching the runtime perf tiers.
 - `createPixiStub()` — the Pixi v8 stub directly, for when you want to test a helper outside a scene.
 - `reset()` — drops `window.__odd`, handy in `afterEach`.

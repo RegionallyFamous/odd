@@ -9,5 +9,14 @@
   "entry": "widget.js",
   "css": [
     "widget.css"
-  ]
+  ],
+  "icon": "dashicons-editor-help",
+  "movable": true,
+  "resizable": true,
+  "minWidth": 200,
+  "minHeight": 220,
+  "maxWidth": 360,
+  "maxHeight": 420,
+  "defaultWidth": 240,
+  "defaultHeight": 260
 }

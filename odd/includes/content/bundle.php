@@ -198,6 +198,24 @@ function oddout_bundle_entry_url_for( array $manifest ) {
 }
 
 /**
+ * Build companion stylesheet URLs for freshly-installed bundles that
+ * need immediate in-page hydration. Currently widget-only.
+ *
+ * @param array $manifest Normalised manifest from `oddout_bundle_install()`.
+ * @return string[]
+ */
+function oddout_bundle_style_urls_for( array $manifest ) {
+	if ( empty( $manifest['type'] ) || 'widget' !== (string) $manifest['type'] || empty( $manifest['slug'] ) ) {
+		return array();
+	}
+	if ( ! function_exists( 'oddout_widget_stylesheet_urls_for' ) ) {
+		return array();
+	}
+	$slug = sanitize_key( (string) $manifest['slug'] );
+	return oddout_widget_stylesheet_urls_for( $slug, $manifest );
+}
+
+/**
  * Build the panel-shaped row a freshly-installed bundle contributes to
  * the Shop's state.cfg.{scenes|iconSets|installedWidgets|apps} list.
  *
@@ -278,10 +296,10 @@ function oddout_bundle_panel_row_for( array $manifest ) {
 
 		case 'widget':
 			return array(
-				'id'          => 'odd/' . $slug,
+				'id'          => isset( $manifest['id'] ) ? (string) $manifest['id'] : 'odd/' . $slug,
 				'slug'        => $slug,
 				'label'       => isset( $manifest['label'] ) ? (string) $manifest['label'] : $slug,
-				'description' => isset( $manifest['name'] ) ? (string) $manifest['name'] : ( isset( $manifest['description'] ) ? (string) $manifest['description'] : '' ),
+				'description' => isset( $manifest['description'] ) ? (string) $manifest['description'] : ( isset( $manifest['name'] ) ? (string) $manifest['name'] : '' ),
 				'category'    => isset( $manifest['category'] ) ? (string) $manifest['category'] : 'Community',
 				'installed'   => true,
 			);

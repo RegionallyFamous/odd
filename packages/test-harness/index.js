@@ -14,9 +14,8 @@
  * The harness does NOT boot the full ODD plugin — for that, use
  * Playwright against install-smoke's local WP. What it DOES do:
  *
- *   - Install minimal stubs on `window.__odd` (helpers, scenes,
- *     widgets registries) so scene/widget IIFEs can register without
- *     throwing.
+ *   - Install minimal stubs on `window.__odd` (helpers and scene
+ *     registries) so scene/widget IIFEs can run without throwing.
  *   - Evaluate the scene/widget source in the jsdom global scope via
  *     `new Function()` (the same pattern ODD's own vitest harness uses).
  *   - Provide a Pixi v8 stub that accepts any method call and returns
@@ -34,7 +33,10 @@ import { createPixiStub } from './pixi-stub.js';
 function installHelpers( win ) {
 	win.__odd = win.__odd || {};
 	win.__odd.scenes = win.__odd.scenes || {};
-	win.__odd.widgets = win.__odd.widgets || {};
+	win.desktopModeWidgets = win.desktopModeWidgets || {};
+	win.wp = win.wp || {};
+	win.wp.desktop = win.wp.desktop || {};
+	win.wp.desktop.ready = win.wp.desktop.ready || function ready( cb ) { cb(); };
 	win.__odd.helpers = Object.assign( {
 		rand:    ( a, b ) => ( a + b ) / 2,
 		irand:   ( a, b ) => Math.floor( ( a + b ) / 2 ),
@@ -47,9 +49,6 @@ function installHelpers( win ) {
 		computeTod:      () => ( { phase: 'day', amount: 0.5 } ),
 		computeSeason:   () => 'summer',
 	}, win.__odd.helpers || {} );
-	win.__odd.api = win.__odd.api || {
-		registerWidget( w ) { win.__odd.widgets[ w.id ] = w; return w; },
-	};
 	return win.__odd;
 }
 
@@ -109,14 +108,11 @@ export async function mountWidget( { id, source, filename } ) {
 	if ( typeof window === 'undefined' ) throw new Error( 'jsdom required' );
 	installHelpers( window );
 	evalInWindow( source, filename || `widget:${ id }.js`, window );
-	const reg = window.__odd.widgets[ id ];
-	if ( ! reg ) {
-		throw new Error( `widget '${ id }' did not register on window.__odd.widgets` );
+	const mount = window.desktopModeWidgets && window.desktopModeWidgets[ id ];
+	if ( typeof mount !== 'function' ) {
+		throw new Error( `widget '${ id }' did not define window.desktopModeWidgets['${ id }']` );
 	}
-	if ( typeof reg.mount !== 'function' ) {
-		throw new Error( `widget '${ id }' must expose mount()` );
-	}
-	return reg;
+	return { id, mount };
 }
 
 export function reset() {

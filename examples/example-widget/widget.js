@@ -2,24 +2,20 @@
  * ODD example widget — says hello.
  *
  * Reference implementation of a widget bundle. The host loads
- * widget.js + widget.css, then your IIFE calls registerWidget() with
- * a mount callback that populates a DOM node in the desktop.
+ * widget.js + widget.css, then Desktop Mode reads the mount callback
+ * from window.desktopModeWidgets[id].
  */
 ( function () {
 	'use strict';
-	var api = window.__odd && window.__odd.api;
-	if ( ! api || typeof api.registerWidget !== 'function' ) {
-		return;
+
+	function mount( root ) {
+		var h = document.createElement( 'div' );
+		h.className = 'odd-example-hello';
+		h.textContent = 'Hello from example-hello.';
+		root.appendChild( h );
+		return function unmount() { root.removeChild( h ); };
 	}
-	api.registerWidget( {
-		id:    'odd/example-hello',
-		label: 'Hello',
-		mount: function ( root ) {
-			var h = document.createElement( 'div' );
-			h.className = 'odd-example-hello';
-			h.textContent = 'Hello from example-hello 👋';
-			root.appendChild( h );
-			return function unmount() { root.removeChild( h ); };
-		},
-	} );
+
+	window.desktopModeWidgets = window.desktopModeWidgets || {};
+	window.desktopModeWidgets[ 'odd/example-hello' ] = mount;
 } )();

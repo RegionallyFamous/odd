@@ -6,18 +6,18 @@
  * bundle is:
  *
  *   manifest.json          slug / name / version / type / entry
- *   widget.js              self-registers via wp.desktop.registerWidget
+ *   widget.js              exposes window.desktopModeWidgets[ id ]
  *   widget.css             (optional) companion stylesheet; enqueue list in manifest `"css"`
  *   assets/*               (optional) static files referenced by widget.css / widget.js
  *   preview.webp           (optional) 640×360, shown on Shop cards
  *
  * Installed widgets live at `uploads/odd/widgets/<slug>/`. Each
- * `widget.js` is enqueued on `admin_enqueue_scripts` so it runs
- * after `desktop-mode` initialises, which is enough for
- * `wp.desktop.registerWidget()` to hook the widget into the desktop
- * right column. Declared `"css"` files are linked on the same hook so
- * widget markup can be styled — previously only `.js` was loaded and
- * catalog widgets that ship `widget.css` rendered unstyled.
+ * `widget.js` is registered as the script handle passed to
+ * `desktop_mode_register_widget()`. Desktop Mode loads that handle,
+ * reads `window.desktopModeWidgets[ id ]`, and owns widget registry,
+ * persistence, dragging, resizing, max/min dimensions, and mount
+ * lifecycle hooks. Declared `"css"` files are linked on the shell page
+ * and returned to the Shop upload response for hot-loaded installs.
  *
  * Security posture mirrors scenes: widget JS runs in the admin frame
  * with full privileges, so installation requires `manage_options`
@@ -126,8 +126,35 @@ function oddout_widget_bundle_validate( $tmp_path, $filename, ZipArchive $zip, a
 		$css_paths[] = $css_rel;
 	}
 
+	$min_width      = isset( $manifest['minWidth'] ) ? max( 120, min( 720, (int) $manifest['minWidth'] ) ) : 180;
+	$min_height     = isset( $manifest['minHeight'] ) ? max( 80, min( 720, (int) $manifest['minHeight'] ) ) : 120;
+	$max_width      = isset( $manifest['maxWidth'] ) && (int) $manifest['maxWidth'] > 0 ? max( $min_width, min( 1440, (int) $manifest['maxWidth'] ) ) : 0;
+	$max_height     = isset( $manifest['maxHeight'] ) && (int) $manifest['maxHeight'] > 0 ? max( $min_height, min( 1440, (int) $manifest['maxHeight'] ) ) : 0;
+	$default_width  = isset( $manifest['defaultWidth'] ) ? max( 120, min( 960, (int) $manifest['defaultWidth'] ) ) : 280;
+	$default_height = isset( $manifest['defaultHeight'] ) ? max( 80, min( 960, (int) $manifest['defaultHeight'] ) ) : 180;
+	$default_width  = max( $min_width, $default_width );
+	$default_height = max( $min_height, $default_height );
+	if ( $max_width > 0 ) {
+		$default_width = min( $default_width, $max_width );
+	}
+	if ( $max_height > 0 ) {
+		$default_height = min( $default_height, $max_height );
+	}
+
+	$capabilities = array();
+	if ( isset( $manifest['capabilities'] ) ) {
+		$raw_caps = is_array( $manifest['capabilities'] ) ? $manifest['capabilities'] : array( $manifest['capabilities'] );
+		foreach ( $raw_caps as $cap ) {
+			$cap = sanitize_key( (string) $cap );
+			if ( '' !== $cap && ! in_array( $cap, $capabilities, true ) ) {
+				$capabilities[] = $cap;
+			}
+		}
+	}
+
 	return array(
 		'slug'          => $header['slug'],
+		'id'            => 'odd/' . $header['slug'],
 		'name'          => $header['name'],
 		'label'         => isset( $manifest['label'] ) ? sanitize_text_field( (string) $manifest['label'] ) : $header['name'],
 		'version'       => $header['version'],
@@ -143,10 +170,13 @@ function oddout_widget_bundle_validate( $tmp_path, $filename, ZipArchive $zip, a
 			: 'dashicons-screenoptions',
 		'movable'       => array_key_exists( 'movable', $manifest ) ? (bool) $manifest['movable'] : true,
 		'resizable'     => array_key_exists( 'resizable', $manifest ) ? (bool) $manifest['resizable'] : true,
-		'minWidth'      => isset( $manifest['minWidth'] ) ? max( 120, min( 720, (int) $manifest['minWidth'] ) ) : 180,
-		'minHeight'     => isset( $manifest['minHeight'] ) ? max( 80, min( 720, (int) $manifest['minHeight'] ) ) : 120,
-		'defaultWidth'  => isset( $manifest['defaultWidth'] ) ? max( 120, min( 960, (int) $manifest['defaultWidth'] ) ) : 280,
-		'defaultHeight' => isset( $manifest['defaultHeight'] ) ? max( 80, min( 960, (int) $manifest['defaultHeight'] ) ) : 180,
+		'minWidth'      => $min_width,
+		'minHeight'     => $min_height,
+		'maxWidth'      => $max_width,
+		'maxHeight'     => $max_height,
+		'defaultWidth'  => $default_width,
+		'defaultHeight' => $default_height,
+		'capabilities'  => $capabilities,
 	);
 }
 
@@ -170,6 +200,7 @@ function oddout_widget_bundle_install( $tmp_path, array $manifest ) {
 	$css_for_index  = isset( $manifest['css'] ) && is_array( $manifest['css'] ) ? $manifest['css'] : array();
 	$index[ $slug ] = array(
 		'slug'          => $slug,
+		'id'            => isset( $manifest['id'] ) ? $manifest['id'] : 'odd/' . $slug,
 		'name'          => $manifest['name'],
 		'label'         => $manifest['label'],
 		'version'       => $manifest['version'],
@@ -183,8 +214,11 @@ function oddout_widget_bundle_install( $tmp_path, array $manifest ) {
 		'resizable'     => isset( $manifest['resizable'] ) ? (bool) $manifest['resizable'] : true,
 		'minWidth'      => isset( $manifest['minWidth'] ) ? (int) $manifest['minWidth'] : 180,
 		'minHeight'     => isset( $manifest['minHeight'] ) ? (int) $manifest['minHeight'] : 120,
+		'maxWidth'      => isset( $manifest['maxWidth'] ) ? (int) $manifest['maxWidth'] : 0,
+		'maxHeight'     => isset( $manifest['maxHeight'] ) ? (int) $manifest['maxHeight'] : 0,
 		'defaultWidth'  => isset( $manifest['defaultWidth'] ) ? (int) $manifest['defaultWidth'] : 280,
 		'defaultHeight' => isset( $manifest['defaultHeight'] ) ? (int) $manifest['defaultHeight'] : 180,
+		'capabilities'  => isset( $manifest['capabilities'] ) && is_array( $manifest['capabilities'] ) ? $manifest['capabilities'] : array(),
 		'installed'     => time(),
 	);
 	oddout_widgets_index_save( $index );
@@ -214,11 +248,9 @@ function oddout_widget_bundle_uninstall( $slug ) {
 }
 
 /**
- * Declared widget.css paths for an installed slug.
- *
- * Prefers the index row (new installs). Falls back to manifest.json on
- * disk so upgrades that added stylesheet enqueue still work for rows
- * written before `css` was persisted.
+ * Declared widget.css paths for an installed slug. Bundles must declare
+ * CSS in the manifest so Desktop Mode's lazy script path can receive a
+ * matching stylesheet URL.
  *
  * @param string $slug Sanitized slug.
  * @param array  $row  Index row.
@@ -231,26 +263,6 @@ function oddout_widget_stylesheet_paths_for( $slug, array $row ) {
 	}
 
 	$paths = isset( $row['css'] ) && is_array( $row['css'] ) ? $row['css'] : array();
-
-	if ( empty( $paths ) ) {
-		$dir           = oddout_widgets_dir_for( $slug );
-		$manifest_path = $dir . 'manifest.json';
-		if ( $dir && is_readable( $manifest_path ) ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local manifest beside oddout_widgets_dir_for().
-			$raw = file_get_contents( $manifest_path );
-			if ( is_string( $raw ) ) {
-				$manifest = json_decode( $raw, true );
-				if ( is_array( $manifest ) && ! empty( $manifest['css'] ) ) {
-					if ( is_string( $manifest['css'] ) ) {
-						$paths = array( $manifest['css'] );
-					} elseif ( is_array( $manifest['css'] ) ) {
-						$paths = $manifest['css'];
-					}
-				}
-			}
-		}
-	}
-
 	$dir   = oddout_widgets_dir_for( $slug );
 	$out   = array();
 	$paths = is_array( $paths ) ? $paths : array();
@@ -273,13 +285,46 @@ function oddout_widget_script_handle( $slug ) {
 	return '' === $slug ? '' : 'odd-widget-' . $slug;
 }
 
+function oddout_widget_url_for_relative( $slug, $rel ) {
+	$base = oddout_widgets_url_for( $slug );
+	if ( '' === $base ) {
+		return '';
+	}
+	return function_exists( 'oddout_content_url_for_relative' )
+		? oddout_content_url_for_relative( $base, $rel )
+		: $base . rawurlencode( (string) $rel );
+}
+
+function oddout_widget_stylesheet_urls_for( $slug, array $row ) {
+	$out = array();
+	foreach ( oddout_widget_stylesheet_paths_for( $slug, $row ) as $rel ) {
+		$url = oddout_widget_url_for_relative( $slug, $rel );
+		if ( '' !== $url ) {
+			$out[] = $url;
+		}
+	}
+	return $out;
+}
+
+function oddout_widget_stylesheet_loader_script( $slug, array $row ) {
+	$urls = oddout_widget_stylesheet_urls_for( $slug, $row );
+	if ( empty( $urls ) ) {
+		return '';
+	}
+	$json = wp_json_encode( array_values( $urls ) );
+	if ( ! is_string( $json ) || '' === $json ) {
+		return '';
+	}
+	return '(function(){var urls=' . $json . ';var attr="data-odd-widget-style-url";function has(href){var links=document.querySelectorAll("link[rel~=\\"stylesheet\\"]");for(var i=0;i<links.length;i++){if(links[i].getAttribute(attr)===href||links[i].href===href)return true;}return false;}for(var j=0;j<urls.length;j++){var href=urls[j];if(typeof href!=="string"||!href||has(href))continue;var link=document.createElement("link");link.rel="stylesheet";link.href=href;link.setAttribute(attr,href);document.head.appendChild(link);}})();';
+}
+
 function oddout_widget_row_int( array $row, $key, $fallback, $min, $max ) {
 	$value = isset( $row[ $key ] ) ? (int) $row[ $key ] : (int) $fallback;
 	return max( (int) $min, min( (int) $max, $value ) );
 }
 
 function oddout_widget_register_script_handle( $slug, array $row ) {
-	static $bridged_handles = array();
+	static $decorated_handles = array();
 
 	$slug = sanitize_key( (string) $slug );
 	if ( '' === $slug ) {
@@ -293,14 +338,17 @@ function oddout_widget_register_script_handle( $slug, array $row ) {
 	$ver    = isset( $row['version'] ) ? (string) $row['version'] : ODDOUT_VERSION;
 	wp_register_script(
 		$handle,
-		oddout_widgets_url_for( $slug ) . rawurlencode( $entry ),
+		oddout_widget_url_for_relative( $slug, $entry ),
 		array( 'desktop-mode', 'odd-api' ),
 		$ver,
 		true
 	);
-	if ( empty( $bridged_handles[ $handle ] ) ) {
-		wp_add_inline_script( $handle, oddout_widgets_bridge_script(), 'before' );
-		$bridged_handles[ $handle ] = true;
+	if ( empty( $decorated_handles[ $handle ] ) ) {
+		$style_loader = oddout_widget_stylesheet_loader_script( $slug, $row );
+		if ( '' !== $style_loader ) {
+			wp_add_inline_script( $handle, $style_loader, 'before' );
+		}
+		$decorated_handles[ $handle ] = true;
 	}
 	return $handle;
 }
@@ -327,28 +375,12 @@ function oddout_widget_desktop_mode_args( $slug, array $row ) {
 		'resizable'      => array_key_exists( 'resizable', $row ) ? (bool) $row['resizable'] : true,
 		'min_width'      => oddout_widget_row_int( $row, 'minWidth', 180, 120, 720 ),
 		'min_height'     => oddout_widget_row_int( $row, 'minHeight', 120, 80, 720 ),
+		'max_width'      => isset( $row['maxWidth'] ) && (int) $row['maxWidth'] > 0 ? oddout_widget_row_int( $row, 'maxWidth', 0, 120, 1440 ) : 0,
+		'max_height'     => isset( $row['maxHeight'] ) && (int) $row['maxHeight'] > 0 ? oddout_widget_row_int( $row, 'maxHeight', 0, 80, 1440 ) : 0,
 		'default_width'  => oddout_widget_row_int( $row, 'defaultWidth', 280, 120, 960 ),
 		'default_height' => oddout_widget_row_int( $row, 'defaultHeight', 180, 80, 960 ),
+		'capabilities'   => isset( $row['capabilities'] ) && is_array( $row['capabilities'] ) ? $row['capabilities'] : array(),
 	);
-}
-
-function oddout_widgets_bridge_script() {
-	return <<<'JS'
-(function(){
-	if (!window.wp || !window.wp.desktop || window.wp.desktop.__oddWidgetBridge) return;
-	var desktop = window.wp.desktop;
-	var original = desktop.registerWidget;
-	if (typeof original !== 'function') return;
-	window.desktopModeWidgets = window.desktopModeWidgets || {};
-	desktop.__oddWidgetBridge = true;
-	desktop.registerWidget = function(def){
-		if (def && typeof def.id === 'string' && def.id.indexOf('odd/') === 0 && typeof def.mount === 'function') {
-			window.desktopModeWidgets[def.id] = def.mount;
-		}
-		return original.apply(this, arguments);
-	};
-})();
-JS;
 }
 
 add_action(
@@ -373,9 +405,10 @@ add_action(
 );
 
 /**
- * Enqueue installed widget JS on admin_enqueue_scripts. Each file
- * calls wp.desktop.registerWidget() at load time, so the widget
- * appears in the desktop right column without any extra wiring.
+ * Enqueue installed widget assets on admin_enqueue_scripts. Desktop
+ * Mode's server registry owns shell hydration; this eager enqueue keeps
+ * enabled widgets available on shell boot while the handle payload still
+ * supports lazy sync.
  */
 add_action(
 	'admin_enqueue_scripts',
@@ -387,18 +420,15 @@ add_action(
 		if ( empty( $index ) ) {
 			return;
 		}
-		if ( wp_script_is( 'odd-api', 'registered' ) || wp_script_is( 'odd-api', 'enqueued' ) ) {
-			wp_add_inline_script( 'odd-api', oddout_widgets_bridge_script(), 'after' );
-		}
 		foreach ( $index as $slug => $row ) {
 			$ver = isset( $row['version'] ) ? $row['version'] : ODDOUT_VERSION;
 			foreach ( oddout_widget_stylesheet_paths_for( $slug, $row ) as $idx => $css_rel ) {
 				$css_handle = 'odd-widget-' . $slug . '-style-' . (int) $idx;
-				$css_url    = oddout_widgets_url_for( $slug ) . rawurlencode( $css_rel );
+				$css_url    = oddout_widget_url_for_relative( $slug, $css_rel );
 				wp_enqueue_style(
 					$css_handle,
 					$css_url,
-					array( 'desktop-mode' ),
+					array(),
 					$ver,
 					'all'
 				);
