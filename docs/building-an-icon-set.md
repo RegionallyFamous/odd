@@ -183,6 +183,11 @@ per-set material layer:
 - `manifest.funLayer` stores the set's material recipe and color tokens.
 - `_tools/compose-icon-set.py --all` rebuilds the final PNG/WebP icons.
 
+`odd-default-icons` is special: its masks are rendered from the Dashicons font
+and `source-glyph-map.json` before ODD glow/rim effects are applied. Do not
+scale up an already rendered default WebP to fix size; if that WebP was cropped
+or padded incorrectly, scaling only makes the damage larger.
+
 This keeps Dashboard, Posts, Pages, Media, and every other semantic key in the
 same recognizable silhouette across sets. The weirdness belongs in the
 material layer, glow, texture, shadow, and Shop card presentation, not in a new

@@ -19,7 +19,7 @@ import json
 import math
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,6 +27,10 @@ ICON_SETS = ROOT / "_tools" / "catalog-sources" / "icon-sets"
 GLYPHS = ROOT / "_tools" / "icon-glyphs"
 BASE = GLYPHS / "base"
 SIZE = 512
+DASHICONS_FONT = ROOT / "vendor" / "wp-phpunit" / "wp-phpunit" / "data" / "uploads" / "dashicons.woff"
+DASHICON_SOURCE_SIZE = 480
+DASHICON_DEFAULT_TARGET = 400
+DASHICON_BASE_TARGET = 400
 
 ICON_KEYS = (
     "dashboard",
@@ -167,6 +171,42 @@ def load_mask(key: str) -> Image.Image:
     if mask.size != (SIZE, SIZE):
         mask = mask.resize((SIZE, SIZE), Image.Resampling.LANCZOS)
     return mask
+
+
+def render_dashicon_mask(
+    key: str,
+    codepoints: dict[str, str] | None = None,
+    *,
+    target: int,
+) -> Image.Image:
+    if not DASHICONS_FONT.is_file():
+        raise SystemExit(f"missing Dashicons font: {DASHICONS_FONT}")
+    raw = (codepoints or DEFAULT_CODEPOINTS).get(key, DEFAULT_CODEPOINTS[key])
+    try:
+        codepoint = int(str(raw), 16)
+    except ValueError as exc:
+        raise SystemExit(f"invalid Dashicon codepoint for {key}: {raw!r}") from exc
+
+    font = ImageFont.truetype(str(DASHICONS_FONT), DASHICON_SOURCE_SIZE)
+    scratch = Image.new("L", (SIZE * 2, SIZE * 2), 0)
+    draw = ImageDraw.Draw(scratch)
+    char = chr(codepoint)
+    bbox = draw.textbbox((0, 0), char, font=font)
+    draw.text((-bbox[0] + 32, -bbox[1] + 32), char, font=font, fill=255)
+    glyph_box = scratch.getbbox()
+    if glyph_box is None:
+        raise SystemExit(f"Dashicon {key} rendered empty")
+
+    crop = scratch.crop(glyph_box)
+    scale = target / max(crop.size)
+    new_size = (
+        max(1, round(crop.width * scale)),
+        max(1, round(crop.height * scale)),
+    )
+    crop = crop.resize(new_size, Image.Resampling.LANCZOS)
+    mask = Image.new("L", (SIZE, SIZE), 0)
+    mask.paste(crop, ((SIZE - new_size[0]) // 2, (SIZE - new_size[1]) // 2))
+    return mask.filter(ImageFilter.GaussianBlur(0.18))
 
 
 def draw_recipe(draw: ImageDraw.ImageDraw, recipe: str, accent, secondary, spark) -> None:
@@ -323,6 +363,42 @@ def compose_icon(mask: Image.Image, base_material: Image.Image, accent_hex: str,
     return out
 
 
+def compose_default_icon(mask: Image.Image, base_material: Image.Image, accent_hex: str, secondary_hex: str, spark_hex: str) -> Image.Image:
+    accent = rgb(accent_hex)
+    secondary = rgb(secondary_hex)
+    spark = rgb(spark_hex)
+    out = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+
+    shadow_mask = mask.filter(ImageFilter.GaussianBlur(7)).point(lambda p: min(96, p))
+    shadow = Image.new("RGBA", (SIZE, SIZE), (5, 4, 10, 0))
+    shadow.putalpha(shadow_mask)
+    shifted_shadow = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    shifted_shadow.alpha_composite(shadow, (0, 7))
+    out.alpha_composite(shifted_shadow)
+
+    for color, blur, limit, offset in (
+        (accent, 14, 72, (-2, 1)),
+        (secondary, 10, 56, (2, 1)),
+        (spark, 18, 32, (0, 0)),
+    ):
+        glow = Image.new("RGBA", (SIZE, SIZE), (*color, 0))
+        glow.putalpha(mask.filter(ImageFilter.GaussianBlur(blur)).point(lambda p: min(limit, p)))
+        shifted = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+        shifted.alpha_composite(glow, offset)
+        out.alpha_composite(shifted)
+
+    expanded = mask.filter(ImageFilter.MaxFilter(9))
+    rim_mask = ImageChops.subtract(expanded, mask).point(lambda p: min(210, p * 2))
+    rim = Image.new("RGBA", (SIZE, SIZE), (32, 34, 47, 0))
+    rim.putalpha(rim_mask)
+    out.alpha_composite(rim)
+
+    body = base_material.copy()
+    body.putalpha(mask)
+    out.alpha_composite(body)
+    return out
+
+
 def extract_base(source_slug: str) -> None:
     source = ICON_SETS / source_slug
     source_map = source / "source-glyph-map.json"
@@ -330,14 +406,9 @@ def extract_base(source_slug: str) -> None:
     BASE.mkdir(parents=True, exist_ok=True)
     glyphs = {}
     for key in ICON_KEYS:
-        path = source / f"{key}.webp"
-        if not path.is_file():
-            raise SystemExit(f"base source missing {path}")
-        icon = Image.open(path).convert("RGBA").resize((SIZE, SIZE), Image.Resampling.LANCZOS)
-        alpha = icon.getchannel("A")
-        # The default set is already the normal glyph body. Keep only the
-        # readable body alpha so future sets can place their own material layer.
-        mask = alpha.point(lambda p: 255 if p > 18 else 0).filter(ImageFilter.GaussianBlur(0.35))
+        # Keep the canonical source as the actual Dashicon glyph, not a
+        # thresholded copy of a rendered icon with glow/shadow already baked in.
+        mask = render_dashicon_mask(key, data.get("codepoints"), target=DASHICON_BASE_TARGET)
         mask.save(BASE / f"{key}.png")
         glyphs[key] = {
             "mask": f"base/{key}.png",
@@ -362,10 +433,17 @@ def render_set(slug: str) -> None:
     recipe, accent, secondary, spark = fun_layer(manifest)
     src_dir = ICON_SETS / slug
     base_material = material(recipe, accent, secondary, spark)
+    source_map_path = src_dir / "source-glyph-map.json"
+    source_map = json.loads(source_map_path.read_text()) if source_map_path.is_file() else {}
+    codepoints = source_map.get("codepoints") if isinstance(source_map.get("codepoints"), dict) else DEFAULT_CODEPOINTS
     for key, rel in paths.items():
         if not isinstance(rel, str) or not rel.endswith((".webp", ".png")):
             raise SystemExit(f"icon-set {slug}: {key} path must be PNG or WebP")
-        icon = compose_icon(load_mask(key), base_material, accent, secondary, spark)
+        if slug == "odd-default-icons" and recipe == "chroma-halo":
+            mask = render_dashicon_mask(key, codepoints, target=DASHICON_DEFAULT_TARGET)
+            icon = compose_default_icon(mask, base_material, accent, secondary, spark)
+        else:
+            icon = compose_icon(load_mask(key), base_material, accent, secondary, spark)
         out = src_dir / rel
         out.parent.mkdir(parents=True, exist_ok=True)
         if out.suffix.lower() == ".png":

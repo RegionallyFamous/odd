@@ -173,6 +173,9 @@ describe( 'v1 source guardrails', () => {
 			expect( compose ).toContain( `"${ key }"` );
 		}
 		expect( compose ).toContain( 'def compose_icon(' );
+		expect( compose ).toContain( 'DASHICONS_FONT' );
+		expect( compose ).toContain( 'def render_dashicon_mask(' );
+		expect( compose ).toContain( 'def compose_default_icon(' );
 		expect( compose ).toContain( 'def render_set(' );
 		expect( compose ).toContain( 'manifest.funLayer' );
 		expect( catalog ).toContain( 'def _validate_icon_asset_rel(' );
