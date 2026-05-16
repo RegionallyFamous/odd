@@ -615,8 +615,16 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card--icon-set \.odd-shop__card-art > img\.odd-shop__card-art-fill\{[^}]*padding:0[^}]*object-fit:cover/ );
 		expect( css ).toContain( '.odd-panel .odd-shop__card-art[data-odd-fun-layer]' );
 		expect( css ).toContain( '.odd-panel .odd-shop__icon-fun-layer' );
+		expect( css ).toContain( '@keyframes odd-icon-card-drift' );
+		expect( css ).toContain( '@keyframes odd-icon-card-spark-pop' );
+		expect( css ).toContain( '@keyframes odd-icon-card-jitter' );
+		expect( css ).toContain( '--odd-icon-layer-motion:odd-icon-card-drift' );
+		expect( css ).toContain( 'animation-name:var(--odd-icon-layer-motion)' );
+		expect( css ).toContain( '.odd-panel .odd-shop__icon-fun-layer::before,.odd-panel .odd-shop__icon-fun-layer::after' );
 		expect( css ).toContain( '[data-odd-fun-layer="blueprint-grid"]' );
 		expect( css ).toContain( '[data-odd-fun-layer="stitch-cross"]' );
+		expect( css ).toContain( '[data-odd-fun-layer="misprint-dot"]{--odd-icon-layer-motion:odd-icon-card-jitter' );
+		expect( css ).toContain( '[data-odd-fun-layer="blink-ring"]{--odd-icon-layer-motion:odd-icon-card-blink' );
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-art--quartet\{[^}]*padding:clamp\(10px,8%,18px\)[^}]*overflow:visible/ );
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-art--quartet \.odd-shop__card-quartet\{[^}]*width:100%[^}]*gap:clamp\(8px,8%,14px\)/ );
 		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__shelf\{[^}]*content-visibility:auto/ );
