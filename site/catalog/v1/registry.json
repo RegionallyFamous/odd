@@ -891,8 +891,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/board.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-board.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/board.wp",
-      "sha256": "bdbf0cfb1f980e02ce288613121b17f6858878c10de1031e226b49043c4a9d07",
-      "size": 72400
+      "sha256": "58ba410646051463ee9a2608f0e4e9181181fb752f2216f88ac7116bfa48aa8b",
+      "size": 72407
     },
     {
       "type": "app",
@@ -910,8 +910,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/flow.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-flow.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/flow.wp",
-      "sha256": "4f48b5ba3b634b8a3003bb1885b73e7d6bed126ff1de5b3dd4312eb2c546d437",
-      "size": 76681
+      "sha256": "3fec0277d9224d71c3b824263632d92f54decd8f36f963ef64d603f8d5ef2d8f",
+      "size": 76687
     },
     {
       "type": "app",
@@ -929,8 +929,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/ledger.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-ledger.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/ledger.wp",
-      "sha256": "c8586f0c75da2139eade1b09275db39934ba78549fc6a8afb3378ee6d484663d",
-      "size": 313538
+      "sha256": "41d049a2d8366bf192407838f542c7586fe51823f47ae900da31f9d2166b3831",
+      "size": 313546
     },
     {
       "type": "app",
@@ -948,8 +948,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/mosaic.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-mosaic.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/mosaic.wp",
-      "sha256": "a17d3eb689d7f051a61adfc14103dfaf9ce7b5c620600effbdfa86408781031f",
-      "size": 72434
+      "sha256": "97b2c208d7714d0cc0a3e85179a19dceac89e77981cfb9b36d3cd8c01284d8c1",
+      "size": 72441
     },
     {
       "type": "app",
@@ -967,8 +967,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/sine.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-sine.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/sine.wp",
-      "sha256": "dd030dd6ff0dc208f26e5c91a121c2f0382a63ff61f02853273e79b913248964",
-      "size": 74484
+      "sha256": "dce2927a120c61d865f5e9dd7576ffe022876df09c21846009eea18247533fa3",
+      "size": 74491
     },
     {
       "type": "app",
@@ -986,8 +986,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/swatch.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-swatch.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/swatch.wp",
-      "sha256": "2b94a3e880810936e84f04fb726a9545be7de71b0ac5cdb1c0578c3e99ace804",
-      "size": 74568
+      "sha256": "7c94aeae1182d0a6d7c2d07d49a2df4ca7ae7525134bac4bc98f1370137d8846",
+      "size": 74575
     },
     {
       "type": "app",
@@ -1005,8 +1005,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/tome.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-tome.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/tome.wp",
-      "sha256": "882f70907922e1cc7a0c01d503db4752f63964587e095f64a1e4f3525ea2f3a0",
-      "size": 92947
+      "sha256": "26ee2a8bbe18339ca375cbde7f7404b3a5f68e990d95e80207a17a61ead798a2",
+      "size": 92954
     }
   ]
 }
