@@ -178,9 +178,12 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( card.getAttribute( 'data-odd-card-state' ) ).toBe( 'available' );
 		expect( card.getAttribute( 'data-odd-card-action' ) ).toBe( 'install' );
 		expect( card.getAttribute( 'data-odd-trust' ) ).toBe( 'local-code' );
-		expect( card.querySelector( '.odd-shop__card-state' )?.textContent.trim() ).toBe( 'Available' );
 		expect( card.querySelector( '.odd-shop__card-trust' )?.textContent.trim() ).toBe( 'Runs locally' );
-		expect( card.querySelector( '.odd-shop__card-badge' )?.textContent.trim() ).toBe( 'Available' );
+		expect( card.querySelector( '.odd-shop__card-state' ) ).toBeNull();
+		expect( card.querySelector( '.odd-shop__card-badge' ) ).toBeNull();
+		expect( card.querySelector( '.odd-shop__card-actions' ) ).toBeTruthy();
+		expect( card.querySelector( '.odd-shop__card-actions .odd-shop__card-btn' ) ).toBe( btn );
+		expect( card.querySelector( '.odd-shop__card-actions .odd-shop__quick-look' )?.textContent.trim() ).toBe( 'Details' );
 	} );
 
 	it( 'catalog install enters an inline installing state immediately', async () => {

@@ -6859,6 +6859,12 @@
 			return badges;
 		}
 
+		function shopCardImageBadges( row, isActive ) {
+			return shopStatusBadges( row, isActive ).filter( function ( badge ) {
+				return [ 'available', 'installed', 'active' ].indexOf( badge.mod ) === -1;
+			} );
+		}
+
 		function detailBulletsFor( row ) {
 			switch ( row && row.type ) {
 				case 'scene':
@@ -7273,7 +7279,7 @@
 				card.appendChild( pin );
 			}
 
-			var stateBadges = shopStatusBadges( row, isActive );
+			var stateBadges = shopCardImageBadges( row, isActive );
 			if ( stateBadges.length ) {
 				var primaryBadge = stateBadges[ 0 ];
 				var statusBadge = el( 'span', {
@@ -7288,13 +7294,15 @@
 			title.textContent = row.name;
 			var sub = el( 'div', { class: 'odd-shop__card-sub odd-shop__tile-sub' } );
 			sub.textContent = row.subtitle || '';
-			var stateLine = el( 'div', { class: 'odd-shop__card-state' } );
+			var stateLine = el( 'div', { class: 'odd-shop__card-state odd-shop__card-state--' + cardState.id } );
 			stateLine.textContent = cardState.statusLabel;
 			var trustLine = el( 'div', { class: 'odd-shop__card-trust odd-shop__card-trust--' + trust.id } );
 			trustLine.textContent = trust.label;
 			meta.appendChild( title );
 			meta.appendChild( sub );
-			meta.appendChild( stateLine );
+			if ( cardState.id !== 'available' ) {
+				meta.appendChild( stateLine );
+			}
 			meta.appendChild( trustLine );
 			card.appendChild( meta );
 
@@ -7342,7 +7350,6 @@
 			} );
 
 			wrap.appendChild( card );
-			wrap.appendChild( btn );
 
 			if ( row.installed && ! isActive && ( row.type === 'scene' || row.type === 'icon-set' || row.type === 'cursor-set' ) ) {
 				var hint = el( 'div', { class: 'odd-shop__card-hint' } );
@@ -7361,7 +7368,11 @@
 				e.stopPropagation();
 				openProductSheet( row );
 			} );
-			wrap.appendChild( quick );
+
+			var actions = el( 'div', { class: 'odd-shop__card-actions' } );
+			actions.appendChild( btn );
+			actions.appendChild( quick );
+			wrap.appendChild( actions );
 
 			// Favorites star on scenes (the only type with a persisted
 			// favorites list today). Stays outside the button shell so

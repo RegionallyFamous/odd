@@ -26,7 +26,7 @@
  *                     that need storage, prefs, diagnostics, and teardown.
  *   - `odd-cursors`   installs/updates the active cursor stylesheet
  *                     link in the current shell/admin document.
- *   - `odd-icon-effects` runtime hover/focus treatment for raster
+ *   - `odd-icon-effects` CSS-only hover/focus treatment for raster
  *                     icon-set images; keeps the source glyph intact.
  *   - `odd`           wallpaper engine boot (Pixi + scene registrar).
  *                     Registers the `odd` wallpaper with WP Desktop Mode.
@@ -134,13 +134,6 @@ add_action(
 			ODDOUT_URL . '/src/shared/api.js',
 			$foundation_deps,
 			ODDOUT_VERSION,
-			true
-		);
-		wp_enqueue_script(
-			'odd-icon-effects',
-			ODDOUT_URL . '/src/icons/effects.js',
-			array_merge( $foundation_deps, array( 'odd-api' ) ),
-			$asset_version( 'src/icons/effects.js' ),
 			true
 		);
 		wp_enqueue_script(
