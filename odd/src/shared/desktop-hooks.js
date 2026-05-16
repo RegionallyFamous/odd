@@ -190,6 +190,7 @@
 	var warnedShopFullscreen = false;
 	var SHOP_TOP_Y = 16;
 	var SHOP_TOP_MAX_Y = 24;
+	var NATIVE_GEOMETRY_STORAGE_KEY = 'desktop-mode-native-window-geometry';
 	var ODD_ACTIONS = [
 		{
 			id: 'oddout-open-shop',
@@ -242,6 +243,39 @@
 		},
 	];
 	window.__odd.desktopState = desktopState;
+
+	function normalizeOddShopSavedGeometry( source ) {
+		var storage;
+		try {
+			storage = window.localStorage;
+		} catch ( _e ) {
+			return false;
+		}
+		if ( ! storage || typeof storage.getItem !== 'function' || typeof storage.setItem !== 'function' ) {
+			return false;
+		}
+		try {
+			var raw = storage.getItem( NATIVE_GEOMETRY_STORAGE_KEY );
+			if ( ! raw ) return false;
+			var map = JSON.parse( raw );
+			if ( ! map || typeof map !== 'object' || Array.isArray( map ) ) return false;
+			var entry = map.odd;
+			if ( ! entry || typeof entry !== 'object' || Array.isArray( entry ) ) return false;
+			var y = Number( entry.y );
+			if ( ! isFinite( y ) || y <= SHOP_TOP_MAX_Y ) return false;
+			map.odd = Object.assign( {}, entry, { y: SHOP_TOP_Y } );
+			storage.setItem( NATIVE_GEOMETRY_STORAGE_KEY, JSON.stringify( map ) );
+			record( 'info', 'odd.shop-window.saved-placement-normalized', {
+				source: source || '',
+				previousY: y,
+				y: SHOP_TOP_Y,
+				preferredMaxY: SHOP_TOP_MAX_Y,
+			} );
+			return true;
+		} catch ( _e ) {
+			return false;
+		}
+	}
 
 	function stateNow() {
 		return Date.now ? Date.now() : 0;
@@ -1484,6 +1518,9 @@
 			'desktop-mode/presence-snapshot-applied',
 		].forEach( function ( channel ) {
 			addActivity( channel, function ( payload ) {
+				if ( channel === 'desktop-mode/open-requested' && payload && payload.windowId === 'odd' ) {
+					normalizeOddShopSavedGeometry( 'desktop-mode/open-requested' );
+				}
 				if ( channel.indexOf( 'presence' ) !== -1 ) pulseActivity( 'presence' );
 				else if ( channel.indexOf( 'window' ) !== -1 ) pulseActivity( 'window' );
 				else pulseActivity( 'dock' );
@@ -1552,6 +1589,9 @@
 			} );
 		} );
 		addActionFor( 'DESKTOP_ICON_CLICKED', 'desktop-mode.desktop-icon.clicked', function ( payload ) {
+			if ( payload && payload.id === 'odd' && ( ! payload.target || payload.target === 'window' ) ) {
+				normalizeOddShopSavedGeometry( 'desktop-mode.desktop-icon.clicked' );
+			}
 			record( 'info', 'desktop-mode.desktop-icon.clicked', payload || {} );
 			if ( payload && payload.id === 'odd' ) {
 				emit( 'odd.desktop-icon-clicked', payload );
@@ -1658,6 +1698,7 @@
 	}
 
 	function openShopWindowFallback() {
+		normalizeOddShopSavedGeometry( 'odd.shop-window.fallback-open' );
 		if ( adapter && typeof adapter.openWindow === 'function' && adapter.openWindow( 'odd' ) ) {
 			return true;
 		}
@@ -1926,6 +1967,7 @@
 		if ( runOddSurfaceAction( 'oddout-open-shop', 'odd.desktop-file.open' ) ) {
 			return true;
 		}
+		normalizeOddShopSavedGeometry( 'odd.desktop-file.open' );
 		if ( adapter && typeof adapter.openWindow === 'function' && adapter.openWindow( 'odd' ) ) {
 			return true;
 		}
@@ -2105,6 +2147,7 @@
 			}
 			var d = desktop();
 			if ( d && typeof d.openWindow === 'function' ) {
+				normalizeOddShopSavedGeometry( 'odd.cross-surface-link' );
 				d.openWindow( 'odd' );
 			}
 		}
@@ -2116,6 +2159,7 @@
 		} );
 	}
 
+	normalizeOddShopSavedGeometry( 'odd.desktop-hooks.boot' );
 	setupCrossSurfaceOddLinks();
 	setupWindowDiagnostics();
 	setupIframeDiagnostics();

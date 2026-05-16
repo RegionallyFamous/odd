@@ -6,6 +6,7 @@ import { loadFoundation } from './harness.js';
 
 const __dirname = dirname( fileURLToPath( import.meta.url ) );
 const SRC = resolve( __dirname, '../../odd/src/shared/desktop-hooks.js' );
+const NATIVE_GEOMETRY_STORAGE_KEY = 'desktop-mode-native-window-geometry';
 
 function loadDesktopHooks() {
 	const src = readFileSync( SRC, 'utf8' );
@@ -18,6 +19,7 @@ describe( 'Desktop Mode hook bridge', () => {
 		if ( window.__odd && window.__odd.desktopHooks && typeof window.__odd.desktopHooks.uninstall === 'function' ) {
 			try { window.__odd.desktopHooks.uninstall(); } catch ( e ) {}
 		}
+		window.localStorage.removeItem( NATIVE_GEOMETRY_STORAGE_KEY );
 		loadFoundation( {
 			config: {
 				version: 'test',
@@ -279,6 +281,62 @@ describe( 'Desktop Mode hook bridge', () => {
 		expect( emitChange ).not.toHaveBeenCalled();
 		expect( window.__odd.desktopState.windows.all.find( ( row ) => row.id === 'odd' ).bounds.y ).toBe( 260 );
 		expect( window.__odd.diagnostics.recent().some( ( row ) => row.message.includes( 'odd.shop-window.host-placement-observed' ) ) ).toBe( true );
+	} );
+
+	it( 'normalizes saved ODD Shop placement before host open requests', () => {
+		const subscribers = {};
+		window.wp.desktop = {
+			ready: ( cb ) => cb(),
+			activity: {
+				subscribe: vi.fn( ( channel, cb ) => {
+					subscribers[ channel ] = cb;
+					return () => {};
+				} ),
+			},
+		};
+
+		loadDesktopHooks();
+		window.localStorage.setItem(
+			NATIVE_GEOMETRY_STORAGE_KEY,
+			JSON.stringify( {
+				odd: { width: 1040, height: 640, x: 96, y: 260 },
+				notes: { width: 500, height: 400, x: 40, y: 320 },
+			} ),
+		);
+
+		subscribers[ 'desktop-mode/open-requested' ]( { windowId: 'odd', source: 'icon' } );
+
+		const stored = JSON.parse( window.localStorage.getItem( NATIVE_GEOMETRY_STORAGE_KEY ) );
+		expect( stored.odd.y ).toBe( 16 );
+		expect( stored.notes.y ).toBe( 320 );
+		expect( window.__odd.diagnostics.recent().some( ( row ) => row.message.includes( 'odd.shop-window.saved-placement-normalized' ) ) ).toBe( true );
+	} );
+
+	it( 'normalizes saved ODD Shop placement before fallback arrange opens', () => {
+		const openWindow = vi.fn();
+		window.wp.desktop = {
+			ready: ( cb ) => cb(),
+			openWindow,
+		};
+		loadDesktopHooks();
+		window.localStorage.setItem(
+			NATIVE_GEOMETRY_STORAGE_KEY,
+			JSON.stringify( {
+				odd: { width: 1040, height: 640, x: 96, y: 260, state: 'maximized' },
+			} ),
+		);
+
+		window.wp.hooks.doAction( 'desktop-mode.arrange.custom-action', { id: 'oddout-open-shop' } );
+
+		const stored = JSON.parse( window.localStorage.getItem( NATIVE_GEOMETRY_STORAGE_KEY ) );
+		expect( openWindow ).toHaveBeenCalledWith( 'odd', undefined );
+		expect( stored.odd ).toMatchObject( {
+			width: 1040,
+			height: 640,
+			x: 96,
+			y: 16,
+			state: 'maximized',
+		} );
 	} );
 
 	it( 'does not move ODD app windows or fullscreen Shop windows during top correction', () => {
