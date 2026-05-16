@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 const DEFAULT_ADMIN_USER = process.env.WP_ADMIN_USER || 'admin';
@@ -193,21 +193,33 @@ const SHOP_SECTION_ORDER = [
 	'about',
 ] as const;
 
-async function installFirstCatalogSceneIfNeeded( pane: ReturnType<Page['locator']> ) {
+async function ensureInstalledInactiveScene( pane: Locator ): Promise<Locator | null> {
+	const installedInactive = pane
+		.locator( '[data-odd-card-type="scene"].is-installed:not(.is-active)' )
+		.first();
+	if ( ( await installedInactive.count() ) > 0 ) {
+		return installedInactive;
+	}
+
 	const catalogTile = pane
-		.locator( '[data-odd-card-type="scene"][data-catalog-slug]' )
+		.locator( '[data-odd-card-type="scene"][data-catalog-slug]:not(.is-installed)' )
 		.first();
 	if ( ( await catalogTile.count() ) < 1 ) {
-		return;
+		return null;
 	}
+	const slug = await catalogTile.getAttribute( 'data-slug' );
 	const installBtn = catalogTile.locator( '.odd-shop__card-btn', { hasText: /^Install$/ } );
 	if ( ( await installBtn.count() ) < 1 ) {
-		return;
+		return null;
 	}
 	await installBtn.click();
-	await expect( catalogTile.locator( '.odd-shop__card-btn', { hasText: /^(Apply|Active)$/ } ).first() ).toBeVisible( {
+	const installed = slug
+		? pane.locator( `[data-odd-card-type="scene"][data-slug="${ slug }"].is-installed` ).first()
+		: catalogTile;
+	await expect( installed.locator( '.odd-shop__card-btn', { hasText: /^(Apply|Active)$/ } ).first() ).toBeVisible( {
 		timeout: 120_000,
 	} );
+	return installed;
 }
 
 /**
@@ -240,11 +252,12 @@ export async function exerciseOddShopInteractions( page: Page ) {
 	await shop.getByTestId( 'odd-shop-nav-wallpaper' ).click();
 
 	const pane = shop.getByTestId( 'odd-shop-content' );
-	await installFirstCatalogSceneIfNeeded( pane );
-
-	const sceneCard = pane.locator( '[data-odd-shop-card][data-odd-card-type="scene"] .odd-shop__card.is-installed' ).first();
-	await expect( sceneCard ).toBeVisible( { timeout: 20_000 } );
-	await sceneCard.click();
+	const previewTile = await ensureInstalledInactiveScene( pane );
+	if ( previewTile ) {
+		const sceneCard = previewTile.locator( '.odd-shop__card' ).first();
+		await expect( sceneCard ).toBeVisible( { timeout: 20_000 } );
+		await sceneCard.click();
+	}
 
 	await expect( shop.getByTestId( 'odd-preview-cancel' ) ).toBeVisible( { timeout: 15_000 } );
 	await expect( shop.getByTestId( 'odd-preview-commit' ) ).toBeVisible();
