@@ -1,0 +1,277 @@
+/**
+ * ODD icon effects.
+ *
+ * Runtime-only decoration for icon-set images. The source image remains the
+ * legible Desktop Mode glyph; hover/focus adds chromatic echoes around it.
+ */
+
+:root {
+	--odd-icon-fx-cyan: rgba(58, 238, 255, 0.8);
+	--odd-icon-fx-pink: rgba(255, 68, 181, 0.7);
+	--odd-icon-fx-violet: rgba(149, 86, 255, 0.6);
+}
+
+.odd-icon-fx {
+	position: relative;
+	display: inline-grid;
+	place-items: center;
+	inline-size: 1em;
+	block-size: 1em;
+	overflow: visible;
+	isolation: isolate;
+	contain: layout style;
+	pointer-events: none;
+	--odd-icon-fx-intensity: 0;
+	--odd-icon-fx-jitter-x: 0px;
+	--odd-icon-fx-jitter-y: 0px;
+}
+
+.odd-icon-fx > img {
+	position: relative;
+	z-index: 2;
+	grid-area: 1 / 1;
+	display: block;
+	inline-size: 100%;
+	block-size: 100%;
+	max-inline-size: 100%;
+	max-block-size: 100%;
+	object-fit: contain;
+	transition: filter 160ms ease, transform 160ms ease;
+	transform: translate3d(var(--odd-icon-fx-jitter-x), var(--odd-icon-fx-jitter-y), 0);
+}
+
+.odd-icon-fx::before,
+.odd-icon-fx::after {
+	content: "";
+	position: absolute;
+	z-index: 1;
+	inset: -16%;
+	opacity: var(--odd-icon-fx-intensity);
+	background-image: var(--odd-icon-fx-src);
+	background-repeat: no-repeat;
+	background-position: center;
+	background-size: contain;
+	pointer-events: none;
+	will-change: transform, opacity, clip-path, filter;
+}
+
+.odd-icon-fx::before {
+	filter:
+		drop-shadow(-5px 1px 0 var(--odd-icon-fx-cyan))
+		drop-shadow(0 0 10px rgba(58, 238, 255, 0.42));
+	mix-blend-mode: screen;
+	transform: translate3d(-4px, 1px, 0);
+	clip-path: polygon(0 8%, 100% 0, 100% 42%, 0 54%);
+}
+
+.odd-icon-fx::after {
+	filter:
+		drop-shadow(5px -1px 0 var(--odd-icon-fx-pink))
+		drop-shadow(0 0 13px rgba(149, 86, 255, 0.38));
+	mix-blend-mode: screen;
+	transform: translate3d(4px, -1px, 0);
+	clip-path: polygon(0 48%, 100% 40%, 100% 100%, 0 92%);
+}
+
+body.desktop-mode-active .desktop-mode-dock__item-primary > .odd-icon-fx,
+body.desktop-mode-active .wp-desktop-dock__item-primary > .odd-icon-fx {
+	inline-size: calc(100% - 8px);
+	block-size: calc(100% - 8px);
+	max-inline-size: 100%;
+	max-block-size: 100%;
+}
+
+body.desktop-mode-active .desktop-mode-icon__image .odd-icon-fx,
+body.desktop-mode-active .wp-desktop-icon .odd-icon-fx,
+body.desktop-mode-active .wp-desktop-icon__image .odd-icon-fx {
+	inline-size: 100%;
+	block-size: 100%;
+}
+
+.odd-dock-rail-mount__tile .odd-icon-fx {
+	inline-size: calc(100% - 8px);
+	block-size: calc(100% - 8px);
+}
+
+.odd-dock-rail-mount__tile .odd-icon-fx > img {
+	inline-size: 100%;
+	block-size: 100%;
+}
+
+.odd-panel .odd-shop__card-quartet > .odd-icon-fx,
+.odd-panel .odd-shop__card-quartet .odd-icon-fx {
+	inline-size: 100%;
+	block-size: 100%;
+	min-inline-size: 0;
+	min-block-size: 0;
+}
+
+.odd-panel .odd-shop__card-quartet .odd-icon-fx > img {
+	inline-size: 100%;
+	block-size: 100%;
+	min-inline-size: 0;
+	min-block-size: 0;
+	object-fit: contain;
+	background: transparent;
+	border-radius: 0;
+	padding: 0;
+	filter:
+		drop-shadow(0 6px 10px rgba(0, 0, 0, 0.48))
+		drop-shadow(0 0 10px rgba(255, 255, 255, 0.12));
+}
+
+body.desktop-mode-active .desktop-mode-dock__item:hover .odd-icon-fx,
+body.desktop-mode-active .desktop-mode-dock__item:focus-within .odd-icon-fx,
+body.desktop-mode-active .wp-desktop-dock__item:hover .odd-icon-fx,
+body.desktop-mode-active .wp-desktop-dock__item:focus-within .odd-icon-fx,
+body.desktop-mode-active .desktop-mode-icon:hover .odd-icon-fx,
+body.desktop-mode-active .desktop-mode-icon:focus-within .odd-icon-fx,
+body.desktop-mode-active .wp-desktop-icon:hover .odd-icon-fx,
+body.desktop-mode-active .wp-desktop-icon:focus-within .odd-icon-fx,
+.odd-dock-rail-mount__tile:hover .odd-icon-fx,
+.odd-dock-rail-mount__tile:focus-visible .odd-icon-fx,
+.odd-panel .odd-shop__card:hover .odd-icon-fx,
+.odd-panel .odd-shop__card:focus-within .odd-icon-fx {
+	--odd-icon-fx-intensity: 0.82;
+	animation: odd-icon-fx-jitter 520ms steps(2, end) infinite;
+}
+
+body.desktop-mode-active .desktop-mode-dock__item:hover .odd-icon-fx > img,
+body.desktop-mode-active .desktop-mode-dock__item:focus-within .odd-icon-fx > img,
+body.desktop-mode-active .wp-desktop-dock__item:hover .odd-icon-fx > img,
+body.desktop-mode-active .wp-desktop-dock__item:focus-within .odd-icon-fx > img,
+body.desktop-mode-active .desktop-mode-icon:hover .odd-icon-fx > img,
+body.desktop-mode-active .desktop-mode-icon:focus-within .odd-icon-fx > img,
+body.desktop-mode-active .wp-desktop-icon:hover .odd-icon-fx > img,
+body.desktop-mode-active .wp-desktop-icon:focus-within .odd-icon-fx > img,
+.odd-dock-rail-mount__tile:hover .odd-icon-fx > img,
+.odd-dock-rail-mount__tile:focus-visible .odd-icon-fx > img,
+.odd-panel .odd-shop__card:hover .odd-icon-fx > img,
+.odd-panel .odd-shop__card:focus-within .odd-icon-fx > img {
+	filter:
+		drop-shadow(0 0 7px rgba(58, 238, 255, 0.42))
+		drop-shadow(0 0 13px rgba(255, 68, 181, 0.24));
+}
+
+body.desktop-mode-active .desktop-mode-dock__item:hover .odd-icon-fx::before,
+body.desktop-mode-active .desktop-mode-dock__item:focus-within .odd-icon-fx::before,
+body.desktop-mode-active .wp-desktop-dock__item:hover .odd-icon-fx::before,
+body.desktop-mode-active .wp-desktop-dock__item:focus-within .odd-icon-fx::before,
+body.desktop-mode-active .desktop-mode-icon:hover .odd-icon-fx::before,
+body.desktop-mode-active .desktop-mode-icon:focus-within .odd-icon-fx::before,
+body.desktop-mode-active .wp-desktop-icon:hover .odd-icon-fx::before,
+body.desktop-mode-active .wp-desktop-icon:focus-within .odd-icon-fx::before,
+.odd-dock-rail-mount__tile:hover .odd-icon-fx::before,
+.odd-dock-rail-mount__tile:focus-visible .odd-icon-fx::before,
+.odd-panel .odd-shop__card:hover .odd-icon-fx::before,
+.odd-panel .odd-shop__card:focus-within .odd-icon-fx::before {
+	animation: odd-icon-fx-slice-a 360ms steps(2, end) infinite;
+}
+
+body.desktop-mode-active .desktop-mode-dock__item:hover .odd-icon-fx::after,
+body.desktop-mode-active .desktop-mode-dock__item:focus-within .odd-icon-fx::after,
+body.desktop-mode-active .wp-desktop-dock__item:hover .odd-icon-fx::after,
+body.desktop-mode-active .wp-desktop-dock__item:focus-within .odd-icon-fx::after,
+body.desktop-mode-active .desktop-mode-icon:hover .odd-icon-fx::after,
+body.desktop-mode-active .desktop-mode-icon:focus-within .odd-icon-fx::after,
+body.desktop-mode-active .wp-desktop-icon:hover .odd-icon-fx::after,
+body.desktop-mode-active .wp-desktop-icon:focus-within .odd-icon-fx::after,
+.odd-dock-rail-mount__tile:hover .odd-icon-fx::after,
+.odd-dock-rail-mount__tile:focus-visible .odd-icon-fx::after,
+.odd-panel .odd-shop__card:hover .odd-icon-fx::after,
+.odd-panel .odd-shop__card:focus-within .odd-icon-fx::after {
+	animation: odd-icon-fx-slice-b 430ms steps(2, end) infinite;
+}
+
+@keyframes odd-icon-fx-jitter {
+	0%,
+	100% {
+		--odd-icon-fx-jitter-x: 0px;
+		--odd-icon-fx-jitter-y: 0px;
+	}
+	24% {
+		--odd-icon-fx-jitter-x: 0.7px;
+		--odd-icon-fx-jitter-y: -0.4px;
+	}
+	49% {
+		--odd-icon-fx-jitter-x: -0.6px;
+		--odd-icon-fx-jitter-y: 0.3px;
+	}
+	73% {
+		--odd-icon-fx-jitter-x: 0.2px;
+		--odd-icon-fx-jitter-y: 0.6px;
+	}
+}
+
+@keyframes odd-icon-fx-slice-a {
+	0%,
+	100% {
+		transform: translate3d(-4px, 1px, 0);
+		clip-path: polygon(0 8%, 100% 0, 100% 42%, 0 54%);
+	}
+	34% {
+		transform: translate3d(-8px, -1px, 0);
+		clip-path: polygon(0 2%, 100% 16%, 100% 34%, 0 24%);
+	}
+	68% {
+		transform: translate3d(-3px, 4px, 0);
+		clip-path: polygon(0 24%, 100% 18%, 100% 62%, 0 50%);
+	}
+}
+
+@keyframes odd-icon-fx-slice-b {
+	0%,
+	100% {
+		transform: translate3d(4px, -1px, 0);
+		clip-path: polygon(0 48%, 100% 40%, 100% 100%, 0 92%);
+	}
+	42% {
+		transform: translate3d(8px, 2px, 0);
+		clip-path: polygon(0 56%, 100% 48%, 100% 82%, 0 76%);
+	}
+	76% {
+		transform: translate3d(3px, -4px, 0);
+		clip-path: polygon(0 36%, 100% 46%, 100% 100%, 0 88%);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	body.desktop-mode-active .desktop-mode-dock__item:hover .odd-icon-fx,
+	body.desktop-mode-active .desktop-mode-dock__item:focus-within .odd-icon-fx,
+	body.desktop-mode-active .wp-desktop-dock__item:hover .odd-icon-fx,
+	body.desktop-mode-active .wp-desktop-dock__item:focus-within .odd-icon-fx,
+	body.desktop-mode-active .desktop-mode-icon:hover .odd-icon-fx,
+	body.desktop-mode-active .desktop-mode-icon:focus-within .odd-icon-fx,
+	body.desktop-mode-active .wp-desktop-icon:hover .odd-icon-fx,
+	body.desktop-mode-active .wp-desktop-icon:focus-within .odd-icon-fx,
+	.odd-dock-rail-mount__tile:hover .odd-icon-fx,
+	.odd-dock-rail-mount__tile:focus-visible .odd-icon-fx,
+	.odd-panel .odd-shop__card:hover .odd-icon-fx,
+	.odd-panel .odd-shop__card:focus-within .odd-icon-fx,
+	body.desktop-mode-active .desktop-mode-dock__item:hover .odd-icon-fx::before,
+	body.desktop-mode-active .desktop-mode-dock__item:focus-within .odd-icon-fx::before,
+	body.desktop-mode-active .wp-desktop-dock__item:hover .odd-icon-fx::before,
+	body.desktop-mode-active .wp-desktop-dock__item:focus-within .odd-icon-fx::before,
+	body.desktop-mode-active .desktop-mode-icon:hover .odd-icon-fx::before,
+	body.desktop-mode-active .desktop-mode-icon:focus-within .odd-icon-fx::before,
+	body.desktop-mode-active .wp-desktop-icon:hover .odd-icon-fx::before,
+	body.desktop-mode-active .wp-desktop-icon:focus-within .odd-icon-fx::before,
+	.odd-dock-rail-mount__tile:hover .odd-icon-fx::before,
+	.odd-dock-rail-mount__tile:focus-visible .odd-icon-fx::before,
+	.odd-panel .odd-shop__card:hover .odd-icon-fx::before,
+	.odd-panel .odd-shop__card:focus-within .odd-icon-fx::before,
+	body.desktop-mode-active .desktop-mode-dock__item:hover .odd-icon-fx::after,
+	body.desktop-mode-active .desktop-mode-dock__item:focus-within .odd-icon-fx::after,
+	body.desktop-mode-active .wp-desktop-dock__item:hover .odd-icon-fx::after,
+	body.desktop-mode-active .wp-desktop-dock__item:focus-within .odd-icon-fx::after,
+	body.desktop-mode-active .desktop-mode-icon:hover .odd-icon-fx::after,
+	body.desktop-mode-active .desktop-mode-icon:focus-within .odd-icon-fx::after,
+	body.desktop-mode-active .wp-desktop-icon:hover .odd-icon-fx::after,
+	body.desktop-mode-active .wp-desktop-icon:focus-within .odd-icon-fx::after,
+	.odd-dock-rail-mount__tile:hover .odd-icon-fx::after,
+	.odd-dock-rail-mount__tile:focus-visible .odd-icon-fx::after,
+	.odd-panel .odd-shop__card:hover .odd-icon-fx::after,
+	.odd-panel .odd-shop__card:focus-within .odd-icon-fx::after {
+		animation: none;
+	}
+}

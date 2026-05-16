@@ -344,12 +344,7 @@ function oddout_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 		$debug_trace['path_resolved'] = $path;
 	}
 
-	if (
-		false !== strpos( $path, '..' ) ||
-		( strlen( $path ) > 0 && '/' === $path[0] ) ||
-		false !== strpos( $path, "\0" ) ||
-		! preg_match( '#^[a-zA-Z0-9._/-]+$#', $path )
-	) {
+	if ( ! oddout_apps_relative_path_is_safe( $path ) ) {
 		if ( $debug_on ) {
 			oddout_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'bad_path' ) ) );
 		}
@@ -396,7 +391,7 @@ function oddout_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 		$debug_trace['real_base'] = $real_base;
 		$debug_trace['full']      = $full;
 	}
-	if ( ! $real_base || ! $full || 0 !== strpos( $full, $real_base ) ) {
+	if ( ! oddout_apps_realpath_is_inside( $full ? $full : '', $real_base ? $real_base : '' ) ) {
 		if ( $debug_on ) {
 			oddout_apps_debug_emit( array_merge( $debug_trace, array( 'reason' => 'realpath_escape_or_missing' ) ) );
 		}
@@ -651,7 +646,7 @@ function oddout_apps_serve_runtime_module( $name ) {
 	$base_dir = oddout_apps_runtime_dir();
 	$full     = realpath( $base_dir . '/' . $name );
 	$root     = realpath( $base_dir );
-	if ( ! $root || ! $full || 0 !== strpos( $full, $root ) ) {
+	if ( ! oddout_apps_realpath_is_inside( $full ? $full : '', $root ? $root : '' ) ) {
 		status_header( 404 );
 		exit;
 	}

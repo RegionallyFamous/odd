@@ -183,7 +183,7 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		$this->assertSame( 'empty_remote', $meta['last_error_code'] );
 	}
 
-	public function test_non_empty_remote_can_be_repaired_with_fallback_icon_sets() {
+	public function test_non_empty_remote_is_not_augmented_from_fallback() {
 		$raw = array(
 			'version' => 1,
 			'bundles' => array(
@@ -206,12 +206,11 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 
 		$registry = oddout_catalog_load( true );
 		$slugs    = wp_list_pluck( $registry['bundles'], 'slug' );
-		$this->assertContains( 'remote-widget', $slugs );
-		$this->assertContains( 'oddlings', $slugs, 'Missing remote icon sets should be repaired from the bundled fallback.' );
+		$this->assertSame( array( 'remote-widget' ), $slugs, 'Accepted remote registries must not be partially augmented from the bundled fallback.' );
 
 		$mirror       = get_option( ODDOUT_CATALOG_STALE_OPTION );
 		$mirror_slugs = wp_list_pluck( $mirror['bundles'], 'slug' );
-		$this->assertSame( array( 'remote-widget' ), $mirror_slugs, 'The stale mirror should store the accepted remote payload, not the repaired effective view.' );
+		$this->assertSame( array( 'remote-widget' ), $mirror_slugs, 'The stale mirror should store the exact accepted remote payload.' );
 	}
 
 	public function test_private_empty_remote_can_opt_in_without_fallback_repair() {

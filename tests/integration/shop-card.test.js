@@ -175,6 +175,12 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( card, 'catalog scene tile must be rendered' ).toBeTruthy();
 		const btn = card.querySelector( '.odd-shop__card-btn' );
 		expect( btn.textContent.trim() ).toBe( 'Install' );
+		expect( card.getAttribute( 'data-odd-card-state' ) ).toBe( 'available' );
+		expect( card.getAttribute( 'data-odd-card-action' ) ).toBe( 'install' );
+		expect( card.getAttribute( 'data-odd-trust' ) ).toBe( 'local-code' );
+		expect( card.querySelector( '.odd-shop__card-state' )?.textContent.trim() ).toBe( 'Available' );
+		expect( card.querySelector( '.odd-shop__card-trust' )?.textContent.trim() ).toBe( 'Runs locally' );
+		expect( card.querySelector( '.odd-shop__card-badge' )?.textContent.trim() ).toBe( 'Available' );
 	} );
 
 	it( 'catalog install enters an inline installing state immediately', async () => {
@@ -208,6 +214,8 @@ describe( 'ODD Shop · unified card state machine', () => {
 		const installingCard = host.querySelector( '[data-odd-shop-card][data-catalog-slug="gusts"]' );
 		const btn = installingCard.querySelector( '.odd-shop__card-btn' );
 		expect( installingCard.classList.contains( 'is-installing' ) ).toBe( true );
+		expect( installingCard.getAttribute( 'data-odd-card-state' ) ).toBe( 'installing' );
+		expect( installingCard.querySelector( '.odd-shop__card-state' )?.textContent.trim() ).toBe( 'Installing' );
 		expect( btn.textContent.trim() ).toBe( 'Installing…' );
 		expect( btn.disabled ).toBe( true );
 		expect( btn.getAttribute( 'aria-busy' ) ).toBe( 'true' );
@@ -284,6 +292,11 @@ describe( 'ODD Shop · unified card state machine', () => {
 		const btn = card.querySelector( '.odd-shop__card-btn' );
 		expect( btn.textContent.trim() ).toBe( 'Apply' );
 		expect( btn.disabled ).toBe( false );
+		expect( card.getAttribute( 'data-odd-card-state' ) ).toBe( 'ready' );
+		expect( card.getAttribute( 'data-odd-card-action' ) ).toBe( 'apply' );
+		expect( card.getAttribute( 'data-odd-trust' ) ).toBe( 'local-code' );
+		expect( card.querySelector( '.odd-shop__card-state' )?.textContent.trim() ).toBe( 'Ready to apply' );
+		expect( card.querySelector( '.odd-shop__card-trust' )?.textContent.trim() ).toBe( 'Runs locally' );
 		expect( card.querySelector( '.odd-shop__card-hint' )?.textContent ).toBe( 'Click card to preview' );
 	} );
 
@@ -342,6 +355,8 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( btn.textContent.trim() ).toBe( 'Active' );
 		expect( btn.disabled ).toBe( true );
 		expect( card.classList.contains( 'is-active' ) ).toBe( true );
+		expect( card.getAttribute( 'data-odd-card-state' ) ).toBe( 'active' );
+		expect( card.querySelector( '.odd-shop__card-state' )?.textContent.trim() ).toBe( 'Active' );
 	} );
 
 	it( 'incompatible catalog rows render a disabled Incompatible button', () => {
@@ -359,6 +374,8 @@ describe( 'ODD Shop · unified card state machine', () => {
 		const btn  = card.querySelector( '.odd-shop__card-btn' );
 		expect( btn.textContent.trim() ).toBe( 'Incompatible' );
 		expect( btn.disabled ).toBe( true );
+		expect( card.getAttribute( 'data-odd-card-state' ) ).toBe( 'incompatible' );
+		expect( card.querySelector( '.odd-shop__card-state' )?.textContent.trim() ).toBe( 'Incompatible' );
 	} );
 
 	it( 'installed broken apps render a Repair button', async () => {
@@ -376,6 +393,8 @@ describe( 'ODD Shop · unified card state machine', () => {
 		const btn  = card.querySelector( '.odd-shop__card-btn' );
 		expect( btn.textContent.trim() ).toBe( 'Repair' );
 		expect( btn.disabled ).toBe( false );
+		expect( card.getAttribute( 'data-odd-card-state' ) ).toBe( 'repair' );
+		expect( card.querySelector( '.odd-shop__card-state' )?.textContent.trim() ).toBe( 'Needs repair' );
 	} );
 
 	it( 'installed rows with catalog updates render an Update button', async () => {
@@ -393,6 +412,45 @@ describe( 'ODD Shop · unified card state machine', () => {
 		const btn  = card.querySelector( '.odd-shop__card-btn' );
 		expect( btn.textContent.trim() ).toBe( 'Update' );
 		expect( btn.disabled ).toBe( false );
+		expect( card.getAttribute( 'data-odd-card-state' ) ).toBe( 'update' );
+		expect( card.querySelector( '.odd-shop__card-state' )?.textContent.trim() ).toBe( 'Update available' );
+		expect( card.querySelectorAll( '.odd-shop__card-btn' ) ).toHaveLength( 1 );
+	} );
+
+	it( 'installed rows with catalog updates enter an updating state immediately', async () => {
+		seed( {
+			appsEnabled: true,
+			apps: [ { slug: 'board', name: 'Board', version: '1.0.0', update_available: true } ],
+		} );
+		globalThis.fetch = vi.fn( ( url, opts = {} ) => {
+			if ( opts.method === 'POST' && /\/bundles\/install-from-catalog$/.test( String( url ) ) ) {
+				// Keep the update in flight; this spec only cares about
+				// the immediate card transition.
+				return new Promise( () => {} );
+			}
+			return Promise.resolve( {
+				ok:   true,
+				json: () => Promise.resolve( { apps: [] } ),
+			} );
+		} );
+		loadPanel();
+		const { host } = mount();
+		goToDepartment( host, 'Apps' );
+		await new Promise( ( r ) => setTimeout( r, 0 ) );
+		await new Promise( ( r ) => setTimeout( r, 0 ) );
+
+		host.querySelector( '[data-odd-shop-card][data-slug="board"] .odd-shop__card-btn' )
+			.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+		await flush();
+		await new Promise( ( r ) => setTimeout( r, 0 ) );
+		await new Promise( ( r ) => setTimeout( r, 0 ) );
+
+		const card = host.querySelector( '[data-odd-shop-card][data-slug="board"]' );
+		const btn = card.querySelector( '.odd-shop__card-btn' );
+		expect( card.getAttribute( 'data-odd-card-state' ) ).toBe( 'updating' );
+		expect( card.querySelector( '.odd-shop__card-state' )?.textContent.trim() ).toBe( 'Updating' );
+		expect( btn.textContent.trim() ).toBe( 'Updating…' );
+		expect( host.querySelector( '.odd-shop__flow-toast' )?.textContent ).toContain( 'Updating Board' );
 	} );
 
 	it( 'catalog-only apps render from the embedded bundle catalog', async () => {
@@ -469,6 +527,8 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( card, 'icon-set tile must render' ).toBeTruthy();
 		const btn = card.querySelector( '.odd-shop__card-btn' );
 		expect( btn.textContent.trim() ).toBe( 'Apply' );
+		expect( card.getAttribute( 'data-odd-trust' ) ).toBe( 'static-images' );
+		expect( card.querySelector( '.odd-shop__card-trust' )?.textContent.trim() ).toBe( 'Static images' );
 	} );
 
 	it( 'installed icon set card prefers live quartet art over catalog splash art', () => {
@@ -529,6 +589,8 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card--icon-set \.odd-shop__card-art > img\.odd-shop__card-art-fill\{[^}]*padding:12%[^}]*object-fit:contain/ );
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-art--quartet\{[^}]*padding:clamp\(18px,13%,28px\)[^}]*overflow:visible/ );
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-art--quartet \.odd-shop__card-quartet\{[^}]*width:100%[^}]*gap:clamp\(12px,12%,20px\)/ );
+		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__shelf\{[^}]*content-visibility:auto/ );
+		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-wrap\{[^}]*content-visibility:auto/ );
 	} );
 
 	it( 'catalog-only icon set appears as the canonical Install card', () => {

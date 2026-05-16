@@ -7,7 +7,7 @@
   "category": "ODD Defaults",
   "accent": "#38e8ff",
   "preview": "dashboard.webp",
-  "description": "The default ODD raster icon set: transparent, high-contrast glyphs with native admin clarity, dark rims, and small off-kilter accent marks.",
+  "description": "The default ODD raster icon set: exact Desktop Mode / WordPress Dashicon silhouettes rendered as transparent raster icons, with the glyph body left intact and the oddness coming from outside-only chromatic aura and card lighting.",
   "version": "1.0.0",
   "author": "Regionally Famous",
   "icons": {

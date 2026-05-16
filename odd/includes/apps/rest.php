@@ -38,6 +38,47 @@ if ( ! defined( 'ODDOUT_APPS_KV_USER_META' ) ) {
 	define( 'ODDOUT_APPS_KV_USER_META', 'oddout_apps_kv' );
 }
 
+function oddout_apps_rest_slug_arg() {
+	return array(
+		'description'       => __( 'App slug.', 'odd-outlandish-desktop-decorator' ),
+		'type'              => 'string',
+		'pattern'           => '^[a-z0-9-]+$',
+		'sanitize_callback' => 'sanitize_key',
+		'validate_callback' => static function ( $value ) {
+			return is_string( $value ) && (bool) preg_match( '/^[a-z0-9-]+$/', $value );
+		},
+	);
+}
+
+function oddout_apps_rest_segment_arg() {
+	return array(
+		'description'       => __( 'App storage segment.', 'odd-outlandish-desktop-decorator' ),
+		'type'              => 'string',
+		'pattern'           => '^[a-z0-9-]+$',
+		'sanitize_callback' => 'sanitize_key',
+		'validate_callback' => static function ( $value ) {
+			return is_string( $value ) && (bool) preg_match( '/^[a-z0-9-]+$/', $value );
+		},
+	);
+}
+
+function oddout_apps_rest_path_arg() {
+	return array(
+		'description'       => __( 'Path to a static app asset relative to the app root.', 'odd-outlandish-desktop-decorator' ),
+		'type'              => 'string',
+		'required'          => false,
+		'sanitize_callback' => static function ( $value ) {
+			return is_string( $value ) ? ltrim( $value, '/' ) : '';
+		},
+		'validate_callback' => static function ( $value ) {
+			if ( null === $value || '' === $value ) {
+				return true;
+			}
+			return is_string( $value ) && function_exists( 'oddout_apps_relative_path_is_safe' ) && oddout_apps_relative_path_is_safe( $value );
+		},
+	);
+}
+
 add_action(
 	'rest_api_init',
 	function () {
@@ -81,6 +122,10 @@ add_action(
 			'odd/v1',
 			'/apps/store/(?P<slug>[a-z0-9-]+)/(?P<segment>[a-z0-9-]+)',
 			array(
+				'args' => array(
+					'slug'    => oddout_apps_rest_slug_arg(),
+					'segment' => oddout_apps_rest_segment_arg(),
+				),
 				array(
 					'methods'             => 'GET',
 					'callback'            => 'oddout_apps_rest_store_get',
@@ -116,6 +161,9 @@ add_action(
 			'odd/v1',
 			'/apps/store/(?P<slug>[a-z0-9-]+)',
 			array(
+				'args' => array(
+					'slug' => oddout_apps_rest_slug_arg(),
+				),
 				array(
 					'methods'             => 'GET',
 					'callback'            => 'oddout_apps_rest_store_keys',
@@ -137,6 +185,9 @@ add_action(
 			'odd/v1',
 			'/apps/(?P<slug>[a-z0-9-]+)',
 			array(
+				'args' => array(
+					'slug' => oddout_apps_rest_slug_arg(),
+				),
 				array(
 					'methods'             => 'GET',
 					'callback'            => 'oddout_apps_rest_get',
@@ -161,6 +212,7 @@ add_action(
 				'methods'             => 'POST',
 				'callback'            => 'oddout_apps_rest_toggle',
 				'args'                => array(
+					'slug'     => oddout_apps_rest_slug_arg(),
 					'enabled'  => array(
 						'description'       => __( 'Whether the app should be enabled.', 'odd-outlandish-desktop-decorator' ),
 						'type'              => 'boolean',
@@ -188,6 +240,10 @@ add_action(
 			array(
 				'methods'             => 'GET',
 				'callback'            => 'oddout_apps_rest_serve',
+				'args'                => array(
+					'slug' => oddout_apps_rest_slug_arg(),
+					'path' => oddout_apps_rest_path_arg(),
+				),
 				'permission_callback' => 'oddout_apps_rest_serve_permission',
 			)
 		);
@@ -205,6 +261,9 @@ add_action(
 			array(
 				'methods'             => 'GET',
 				'callback'            => 'oddout_apps_rest_icon',
+				'args'                => array(
+					'slug' => oddout_apps_rest_slug_arg(),
+				),
 				'permission_callback' => '__return_true',
 			)
 		);
@@ -225,6 +284,9 @@ add_action(
 			array(
 				'methods'             => 'GET',
 				'callback'            => 'oddout_apps_rest_diag',
+				'args'                => array(
+					'slug' => oddout_apps_rest_slug_arg(),
+				),
 				'permission_callback' => function () {
 					return current_user_can( 'manage_options' );
 				},
@@ -367,12 +429,7 @@ function oddout_apps_rest_serve( WP_REST_Request $req ) {
 		$path     = isset( $manifest['entry'] ) && $manifest['entry'] ? (string) $manifest['entry'] : 'index.html';
 	}
 
-	if (
-		false !== strpos( $path, '..' ) ||
-		( strlen( $path ) > 0 && '/' === $path[0] ) ||
-		false !== strpos( $path, "\0" ) ||
-		! preg_match( '#^[a-zA-Z0-9._/-]+$#', $path )
-	) {
+	if ( ! oddout_apps_relative_path_is_safe( $path ) ) {
 		return new WP_Error( 'bad_path', __( 'Bad app path.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 400 ) );
 	}
 
@@ -392,7 +449,7 @@ function oddout_apps_rest_serve( WP_REST_Request $req ) {
 			$full      = realpath( $base . $path );
 		}
 	}
-	if ( ! $real_base || ! $full || 0 !== strpos( $full, $real_base ) ) {
+	if ( ! oddout_apps_realpath_is_inside( $full ? $full : '', $real_base ? $real_base : '' ) ) {
 		return new WP_Error( 'not_found', __( 'File not found.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 404 ) );
 	}
 	if ( ! is_file( $full ) || ! is_readable( $full ) ) {
@@ -439,6 +496,13 @@ function oddout_apps_rest_serve( WP_REST_Request $req ) {
 	// prevent a third-party site from embedding the serve URL outside
 	// our own admin shell.
 	header( 'X-Frame-Options: SAMEORIGIN' );
+	if ( oddout_apps_is_html_mime( $mime ) && function_exists( 'oddout_apps_cookieauth_csp' ) ) {
+		$manifest = oddout_apps_manifest_load( $slug );
+		$csp      = oddout_apps_cookieauth_csp( $slug, is_array( $manifest ) ? $manifest : array() );
+		if ( is_string( $csp ) && '' !== $csp ) {
+			header( 'Content-Security-Policy: ' . $csp );
+		}
+	}
 	if ( null !== $body ) {
 		oddout_emit_raw_response( $body );
 	} else {
@@ -483,12 +547,7 @@ function oddout_apps_rest_icon( WP_REST_Request $req ) {
 		: 'icon.svg';
 
 	// Restrict to a safe character set and forbid path escape.
-	if (
-		false !== strpos( $icon, '..' ) ||
-		( strlen( $icon ) > 0 && '/' === $icon[0] ) ||
-		false !== strpos( $icon, "\0" ) ||
-		! preg_match( '#^[a-zA-Z0-9._/-]+$#', $icon )
-	) {
+	if ( ! oddout_apps_relative_path_is_safe( $icon ) ) {
 		return new WP_Error( 'not_found', __( 'App not found.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 404 ) );
 	}
 
@@ -508,7 +567,7 @@ function oddout_apps_rest_icon( WP_REST_Request $req ) {
 			$full      = realpath( $base . $icon );
 		}
 	}
-	if ( ! $real_base || ! $full || 0 !== strpos( $full, $real_base ) ) {
+	if ( ! oddout_apps_realpath_is_inside( $full ? $full : '', $real_base ? $real_base : '' ) ) {
 		return new WP_Error( 'not_found', __( 'App not found.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 404 ) );
 	}
 	if ( ! is_file( $full ) || ! is_readable( $full ) ) {
@@ -525,6 +584,8 @@ function oddout_apps_rest_icon( WP_REST_Request $req ) {
 	header( 'Content-Type: ' . $mime );
 	header( 'X-Content-Type-Options: nosniff' );
 	header( 'Cache-Control: public, max-age=86400' );
+	header( 'Referrer-Policy: no-referrer' );
+	header( 'X-Robots-Tag: noindex, nofollow' );
 	if ( $size && ! ini_get( 'zlib.output_compression' ) ) {
 		header( 'Content-Length: ' . (int) $size );
 	}
@@ -722,12 +783,7 @@ function oddout_apps_diag_file_probe( $slug, $path ) {
 		$row['reason'] = 'missing_slug_or_path';
 		return $row;
 	}
-	if (
-		false !== strpos( $path, '..' ) ||
-		( strlen( $path ) > 0 && '/' === $path[0] ) ||
-		false !== strpos( $path, "\0" ) ||
-		! preg_match( '#^[a-zA-Z0-9._/-]+$#', $path )
-	) {
+	if ( ! oddout_apps_relative_path_is_safe( $path ) ) {
 		$row['reason'] = 'bad_path';
 		return $row;
 	}
@@ -736,7 +792,7 @@ function oddout_apps_diag_file_probe( $slug, $path ) {
 	$real_base       = realpath( $base );
 	$full            = realpath( $base . $path );
 	$row['realpath'] = $full ? $full : '';
-	if ( ! $real_base || ! $full || 0 !== strpos( $full, $real_base ) ) {
+	if ( ! oddout_apps_realpath_is_inside( $full ? $full : '', $real_base ? $real_base : '' ) ) {
 		$row['reason'] = 'missing_or_outside_app_dir';
 		return $row;
 	}

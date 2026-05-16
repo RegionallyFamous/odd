@@ -22,10 +22,15 @@
  *   - `odd-api`       shared client helpers on window.__odd.api
  *                     (setScene / setIconSet / shuffle / toast /
  *                     onSceneChange). All other surfaces depend on it.
+ *   - `odd-sdk`       stable facade on window.__odd.sdk for integrations
+ *                     that need storage, prefs, diagnostics, and teardown.
  *   - `odd-cursors`   installs/updates the active cursor stylesheet
  *                     link in the current shell/admin document.
+ *   - `odd-icon-effects` runtime hover/focus treatment for raster
+ *                     icon-set images; keeps the source glyph intact.
  *   - `odd`           wallpaper engine boot (Pixi + scene registrar).
  *                     Registers the `odd` wallpaper with WP Desktop Mode.
+ *   - `odd-shop-flow` Pure card-state/trust helpers used by the Shop.
  *   - `odd-panel`     ODD Shop native-window render callback,
  *                     declared on `window.desktopModeNativeWindows.odd`.
  *                     (1.0+: the stock Sticky Note + Magic 8-Ball
@@ -132,10 +137,31 @@ add_action(
 			true
 		);
 		wp_enqueue_script(
+			'odd-icon-effects',
+			ODDOUT_URL . '/src/icons/effects.js',
+			array_merge( $foundation_deps, array( 'odd-api' ) ),
+			$asset_version( 'src/icons/effects.js' ),
+			true
+		);
+		wp_enqueue_script(
+			'odd-sdk',
+			ODDOUT_URL . '/src/shared/sdk.js',
+			array_merge( $foundation_deps, array( 'odd-api' ) ),
+			$asset_version( 'src/shared/sdk.js' ),
+			true
+		);
+		wp_enqueue_script(
 			'odd-workspace',
 			ODDOUT_URL . '/src/shared/workspace.js',
 			array_merge( $foundation_deps, array( 'odd-api' ) ),
 			$asset_version( 'src/shared/workspace.js' ),
+			true
+		);
+		wp_enqueue_script(
+			'odd-shop-flow',
+			ODDOUT_URL . '/src/panel/shop-flow.js',
+			array_merge( $foundation_deps, array( 'odd-api' ) ),
+			$asset_version( 'src/panel/shop-flow.js' ),
 			true
 		);
 		wp_enqueue_script(
@@ -155,7 +181,7 @@ add_action(
 		wp_enqueue_script(
 			'odd-panel',
 			ODDOUT_URL . '/src/panel/index.js',
-			array_merge( $foundation_deps, array( 'odd-api', 'odd-workspace', 'odd-cursors', 'wp-i18n' ) ),
+			array_merge( $foundation_deps, array( 'odd-api', 'odd-workspace', 'odd-shop-flow', 'odd-cursors', 'wp-i18n' ) ),
 			$asset_version( 'src/panel/index.js' ),
 			true
 		);
@@ -257,6 +283,12 @@ add_action(
 				desktop_mode_register_dock_rail_renderer_script( 'odd-dock-rail' );
 			}
 		}
+		wp_enqueue_style(
+			'odd-icon-effects',
+			ODDOUT_URL . '/src/icons/effects.css',
+			array( 'desktop-mode', 'odd-icon-contrast' ),
+			$asset_version( 'src/icons/effects.css' )
+		);
 
 		// ---- Apps ---- //
 		//

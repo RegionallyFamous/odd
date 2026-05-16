@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Desktop Mode Hello</title>
+		<style>
+			:root { color-scheme: dark; }
+			* { box-sizing: border-box; }
+			body {
+				margin: 0;
+				min-height: 100vh;
+				display: grid;
+				place-items: center;
+				background: radial-gradient(circle at 25% 15%, #374151 0, transparent 34%),
+					linear-gradient(135deg, #111827, #050609);
+				color: #f9fafb;
+				font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+			}
+			main {
+				width: min(420px, calc(100vw - 32px));
+				padding: 24px;
+				border: 1px solid rgb(255 255 255 / .14);
+				border-radius: 24px;
+				background: rgb(17 24 39 / .72);
+				box-shadow: 0 24px 70px -38px rgb(0 0 0 / .8);
+			}
+			h1 { margin: 0 0 8px; font-size: 28px; line-height: 1.05; letter-spacing: -.02em; }
+			p { margin: 0; color: #cbd5e1; }
+			output { display: inline-flex; margin-top: 16px; padding: 6px 10px; border-radius: 999px; background: #1f2937; color: #a7f3d0; font-weight: 800; }
+		</style>
+	</head>
+	<body>
+		<main>
+			<h1>Hello, desktop.</h1>
+			<p>This app is served by ODD, framed by Desktop Mode, and kept intentionally small.</p>
+			<output id="status">Booting</output>
+		</main>
+		<script src="./app.js"></script>
+	</body>
+</html>

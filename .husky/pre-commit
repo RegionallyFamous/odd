@@ -13,8 +13,11 @@ odd/bin/check-version
 echo "→ _tools/build-catalog.py"
 python3 _tools/build-catalog.py >/dev/null
 
+echo "→ catalog artifact drift check"
+git diff --exit-code -- site/catalog/v1 odd/data/fallback-registry.json
+
 echo "→ odd/bin/validate-catalog"
-odd/bin/validate-catalog
+ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog
 
 echo "→ vitest (one-shot)"
 npm test --silent -- --run

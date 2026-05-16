@@ -1,0 +1,11 @@
+{
+  "type": "widget",
+  "slug": "build-for-desktop-mode-widget",
+  "id": "odd/build-for-desktop-mode-widget",
+  "label": "Desktop Mode Status",
+  "description": "A tiny example widget that reads ODD health through window.__odd.sdk.",
+  "category": "Examples",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "entry": "widget.js"
+}

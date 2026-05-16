@@ -14,6 +14,18 @@ add_action(
 			array(
 				'methods'             => 'GET',
 				'callback'            => 'oddout_cursors_rest_active_css',
+				'args'                => array(
+					'set' => array(
+						'description'       => __( 'Optional cursor set slug to preview.', 'odd-outlandish-desktop-decorator' ),
+						'type'              => 'string',
+						'required'          => false,
+						'pattern'           => '^[a-z0-9-]+$',
+						'sanitize_callback' => 'sanitize_key',
+						'validate_callback' => static function ( $value ) {
+							return null === $value || '' === $value || ( is_string( $value ) && (bool) preg_match( '/^[a-z0-9-]+$/', $value ) );
+						},
+					),
+				),
 				'permission_callback' => '__return_true',
 			)
 		);
@@ -24,18 +36,70 @@ add_action(
 			array(
 				'methods'             => 'GET',
 				'callback'            => 'oddout_cursors_rest_asset',
+				'args'                => array(
+					'slug' => array(
+						'description'       => __( 'Cursor set slug.', 'odd-outlandish-desktop-decorator' ),
+						'type'              => 'string',
+						'pattern'           => '^[a-z0-9-]+$',
+						'sanitize_callback' => 'sanitize_key',
+						'validate_callback' => static function ( $value ) {
+							return is_string( $value ) && (bool) preg_match( '/^[a-z0-9-]+$/', $value );
+						},
+					),
+					'file' => array(
+						'description'       => __( 'SVG cursor file path relative to the cursor set root.', 'odd-outlandish-desktop-decorator' ),
+						'type'              => 'string',
+						'required'          => true,
+						'sanitize_callback' => static function ( $value ) {
+							return is_string( $value ) ? ltrim( $value, '/' ) : '';
+						},
+						'validate_callback' => 'oddout_cursors_rest_asset_file_is_valid',
+					),
+				),
 				'permission_callback' => '__return_true',
 			)
 		);
 	}
 );
 
-function oddout_cursors_css_cursor( $kind ) {
-	$kind = sanitize_key( (string) $kind );
-	if ( in_array( $kind, array( 'default', 'pointer', 'text', 'grab', 'grabbing', 'crosshair', 'not-allowed', 'wait', 'help', 'progress' ), true ) ) {
-		return $kind;
+function oddout_cursors_rest_asset_file_is_valid( $value ) {
+	if ( ! is_string( $value ) ) {
+		return false;
 	}
-	return 'default';
+	$value = ltrim( $value, '/' );
+	if (
+		'' === $value ||
+		strlen( $value ) > 256 ||
+		false !== strpos( $value, '..' ) ||
+		false !== strpos( $value, '\\' ) ||
+		false !== strpos( $value, "\0" )
+	) {
+		return false;
+	}
+	return (bool) preg_match( '#^[a-zA-Z0-9._/-]+\.svg$#', $value );
+}
+
+function oddout_cursors_css_url_value( array $cursor, $fallback ) {
+	$url     = isset( $cursor['url'] ) ? esc_url_raw( (string) $cursor['url'] ) : '';
+	$hotspot = isset( $cursor['hotspot'] ) && is_array( $cursor['hotspot'] ) ? array_values( $cursor['hotspot'] ) : array( 0, 0 );
+	$x       = isset( $hotspot[0] ) ? (int) $hotspot[0] : 0;
+	$y       = isset( $hotspot[1] ) ? (int) $hotspot[1] : 0;
+	if ( '' === $url ) {
+		return $fallback;
+	}
+	$url = function_exists( 'oddout_cursors_url_current_scheme' ) ? oddout_cursors_url_current_scheme( $url ) : $url;
+	return sprintf( 'url("%s") %d %d, %s', esc_url_raw( $url ), $x, $y, $fallback );
+}
+
+function oddout_cursors_css_cursor( array $set, $kind, $fallback ) {
+	$cursors = isset( $set['cursors'] ) && is_array( $set['cursors'] ) ? $set['cursors'] : array();
+	if ( isset( $cursors[ $kind ] ) && is_array( $cursors[ $kind ] ) ) {
+		return oddout_cursors_css_url_value( $cursors[ $kind ], $fallback );
+	}
+	if ( 'default' !== $kind && isset( $cursors['default'] ) && is_array( $cursors['default'] ) ) {
+		return oddout_cursors_css_url_value( $cursors['default'], $fallback );
+	}
+	return $fallback;
 }
 
 function oddout_cursors_effect_tokens( array $set ) {
@@ -69,16 +133,16 @@ function oddout_cursors_effect_tokens( array $set ) {
 
 function oddout_cursors_build_css( array $set ) {
 	$effects      = oddout_cursors_effect_tokens( $set );
-	$default      = oddout_cursors_css_cursor( 'default' );
-	$pointer      = oddout_cursors_css_cursor( 'pointer' );
-	$text         = oddout_cursors_css_cursor( 'text' );
-	$grab         = oddout_cursors_css_cursor( 'grab' );
-	$grabbing     = oddout_cursors_css_cursor( 'grabbing' );
-	$crosshair    = oddout_cursors_css_cursor( 'crosshair' );
-	$not_allowed  = oddout_cursors_css_cursor( 'not-allowed' );
-	$wait         = oddout_cursors_css_cursor( 'wait' );
-	$help         = oddout_cursors_css_cursor( 'help' );
-	$progress     = oddout_cursors_css_cursor( 'progress' );
+	$default      = oddout_cursors_css_cursor( $set, 'default', 'default' );
+	$pointer      = oddout_cursors_css_cursor( $set, 'pointer', 'pointer' );
+	$text         = oddout_cursors_css_cursor( $set, 'text', 'text' );
+	$grab         = oddout_cursors_css_cursor( $set, 'grab', 'grab' );
+	$grabbing     = oddout_cursors_css_cursor( $set, 'grabbing', 'grabbing' );
+	$crosshair    = oddout_cursors_css_cursor( $set, 'crosshair', 'crosshair' );
+	$not_allowed  = oddout_cursors_css_cursor( $set, 'not-allowed', 'not-allowed' );
+	$wait         = oddout_cursors_css_cursor( $set, 'wait', 'wait' );
+	$help         = oddout_cursors_css_cursor( $set, 'help', 'help' );
+	$progress     = oddout_cursors_css_cursor( $set, 'progress', 'progress' );
 	$roots        = 'html, body, #wpwrap, #wpcontent, #wpbody, #wpbody-content, .desktop-mode, .desktop-mode-shell, #desktop-mode-shell, .desktop-mode-shell__body, #desktop-mode-area, .desktop-mode-area, .desktop-mode-icons, #desktop-mode-wallpaper, .desktop-mode-wallpaper, #desktop-mode-side-dock, .desktop-mode-dock, .desktop-mode-widgets, .desktop-mode-widgets__list, #wp-desktop-shell, .wp-desktop-shell, .wp-desktop-shell__body, #wp-desktop-area, .wp-desktop-area, #wp-desktop-wallpaper, .wp-desktop-wallpaper, #wp-desktop-dock, .wp-desktop-dock, #wp-desktop-widgets, .wp-desktop-widgets, .wp-desktop-widgets__list, [data-odd-cursor-root]';
 	$windows      = '[data-window-id], [data-windowid], [data-desktop-window-id], [data-native-window-id], .desktop-mode-window, .desktop-mode-window__body, .desktop-mode-window__iframe, .desktop-window, .wp-desktop-window, .wp-desktop-window__body, .wp-desktop-window__iframe';
 	$pointers     = 'a, button, .button, .button-primary, .button-secondary, [role="button"], summary, label[for], input[type="button"], input[type="submit"], input[type="reset"], select, option, .ab-item, .components-button, .desktop-mode-icon, .desktop-mode-file-tile, .desktop-mode-dock__item, .desktop-mode-dock__button, .desktop-mode-window__btn, .desktop-mode-window__tab, .desktop-mode-window__control, .desktop-mode-widgets__card-redock, .desktop-mode-widgets__card-close, .desktop-mode-widgets__add, .wp-desktop-icon, .wp-desktop-dock__item, .wp-desktop-dock__item-primary, .wp-desktop-dock__item-new, .wp-desktop-window__btn, .wp-desktop-window__tab, .wp-desktop-window__meta-btn, .wp-desktop-window__menu-btn, .wp-desktop-window__menu-item, .wp-desktop-widgets__card-redock, .wp-desktop-widgets__card-close, .wp-desktop-widgets__add';
@@ -184,6 +248,8 @@ function oddout_cursors_rest_asset( WP_REST_Request $request ) {
 	header( 'Content-Type: image/svg+xml; charset=UTF-8' );
 	header( 'Cache-Control: public, max-age=86400' );
 	header( 'X-Content-Type-Options: nosniff' );
+	header( 'Referrer-Policy: no-referrer' );
+	header( 'X-Robots-Tag: noindex, nofollow' );
 	oddout_emit_raw_response( $body );
 	exit;
 }

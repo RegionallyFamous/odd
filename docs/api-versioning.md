@@ -6,12 +6,13 @@ the plugin you just installed — plugin releases and API releases
 evolve on their own SemVer tracks so a bug-fix plugin release never
 silently changes what third-party extensions can rely on.
 
-Today: **`2.3.0`** — current for the ODD 1.0.0 baseline. The 2.1 line
+Today: **`2.4.0`** — current for the ODD 1.0.0 baseline. The 2.1 line
 added the `/odd/v1/bundles/*` REST surface and the `/odd/v1/starter`
 pair. The 2.2 line adds Desktop Mode v0.6 helpers for OS settings,
 window attention, dock badges, and diagnostics snapshots. The 2.3 line
 adds Desktop Mode-native helpers for cursor sets, installed widgets,
-ODD apps, shuffle/audio wallpaper prefs, and decoration reset.
+ODD apps, shuffle/audio wallpaper prefs, and decoration reset. The 2.4
+line adds `window.__odd.sdk` as the preferred companion-plugin facade.
 
 ## What counts as the API surface
 
@@ -29,7 +30,9 @@ bundle or companion plugin might touch:
   `onIconSetChange`, `openPanel`, `openOsSettings`, `showAttention`,
   `setBadge`, `diagnosticsSnapshot`, and the `HOOK_SCENE` / `HOOK_ICONSET`
   / `TOAST_TONE` constants.
-- `window.__odd.diagnostics.{collect, collectMarkdown, copy}` —
+- `window.__odd.sdk` — stable facade for storage, preferences, theme,
+  diagnostics, capabilities, toasts, and teardown subscriptions.
+- `window.__odd.diagnostics.{summary, collect, collectMarkdown, copy}` —
   zero-telemetry diagnostic bundle.
 - `window.__odd.store` / `events` / `registries` / `lifecycle` /
   `safeCall` foundation modules and their documented methods.
@@ -86,6 +89,7 @@ if ( major !== 2 ) {
 var hasBundles = minor >= 1;   // /odd/v1/bundles/* landed in API 2.1.0
 var hasDesktopHelpers = minor >= 2;
 var hasNativeOddActions = minor >= 3;
+var hasSdk = minor >= 4 && !! ( window.__odd && window.__odd.sdk );
 // safe to call anything listed for the 2.x surface
 ```
 

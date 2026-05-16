@@ -93,6 +93,13 @@ class Test_REST_Prefs extends ODDOUT_REST_Test_Case {
 		$this->assertSame( 'oddout_invalid_wallpaper', $res->get_data()['code'] );
 	}
 
+	public function test_post_rejects_invalid_rest_shapes_before_callback() {
+		$this->login_as();
+		$res = $this->dispatch_json( 'POST', '/odd/v1/prefs', array( 'favorites' => 'not-an-array' ) );
+		$this->assertSame( 400, $res->get_status() );
+		$this->assertSame( 'rest_invalid_param', $res->get_data()['code'] );
+	}
+
 	public function test_post_clamps_shuffle_minutes() {
 		$this->login_as();
 

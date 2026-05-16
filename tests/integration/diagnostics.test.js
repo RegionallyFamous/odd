@@ -26,6 +26,81 @@ describe( 'ODD diagnostics metrics', () => {
 		expect( d.collectMarkdown() ).toContain( '## Local Metrics' );
 	} );
 
+	it( 'summarizes local health for Shop/UI surfaces', () => {
+		loadFoundation( {
+			config: {
+				restUrl: '/wp-json/odd/v1/prefs',
+				appsEnabled: true,
+				systemHealth: {
+					catalog: {
+						source: 'remote',
+						bundle_count: 4,
+						signature_status: 'valid',
+						stale_age: 60,
+						rollback_count: 0,
+						last_error_message: '',
+					},
+					starter: { status: 'installed' },
+					cursors: { active: 'spark', stylesheet: '/cursors/spark.css', runtimeExpected: true },
+					desktopMode: { baseline: true, version: '0.8.5' },
+				},
+			},
+		} );
+		window.wp.desktop = { desktopLayout: 'desktop' };
+
+		const summary = window.__odd.diagnostics.summary();
+		expect( summary.status ).toBe( 'ok' );
+		expect( summary.counts.problems ).toBe( 0 );
+		expect( summary.ok.map( ( row ) => row.id ) ).toEqual( expect.arrayContaining( [
+			'desktopMode.present',
+			'catalog.available',
+			'logs.quiet',
+		] ) );
+		expect( window.__odd.diagnostics.collect().health.status ).toBe( 'ok' );
+		expect( window.__odd.diagnostics.collectMarkdown() ).toContain( '## Health Summary' );
+	} );
+
+	it( 'reports warnings and problems in the diagnostics health summary', () => {
+		loadFoundation( {
+			config: {
+				restUrl: '',
+				systemHealth: {
+					catalog: {
+						source: 'fallback',
+						signature_status: 'missing',
+						stale_age: 172800,
+						rollback_count: 1,
+						last_error_message: 'catalog unavailable',
+					},
+					starter: { status: 'failed' },
+					cursors: { active: 'spark', stylesheet: '', runtimeExpected: true },
+					desktopMode: { baseline: false },
+				},
+			},
+		} );
+		delete window.wp.desktop;
+		window.__odd.diagnostics.recordAppIframeError( { slug: 'demo', type: 'error', message: 'boom' } );
+
+		const summary = window.__odd.diagnostics.summary();
+		const warningIds = summary.warn.map( ( row ) => row.id );
+		const problemIds = summary.problems.map( ( row ) => row.id );
+		expect( summary.status ).toBe( 'problems' );
+		expect( warningIds ).toEqual( expect.arrayContaining( [
+			'prefs.restUrlMissing',
+			'catalog.lastError',
+			'catalog.signature',
+			'catalog.stale',
+			'catalog.rollback',
+			'cursors.stylesheetMissing',
+		] ) );
+		expect( problemIds ).toEqual( expect.arrayContaining( [
+			'desktopMode.missing',
+			'desktopMode.baseline',
+			'starter.failed',
+			'apps.iframeErrors',
+		] ) );
+	} );
+
 	it( 'actively probes app iframe, module, runtime, and server diagnostics URLs', async () => {
 		loadFoundation( {
 			config: {
@@ -178,6 +253,20 @@ describe( 'ODD diagnostics metrics', () => {
 			data: {
 				type: 'odd-app-diagnostic',
 				event: { type: { nested: true }, message: 'bad shape' },
+			},
+		} ) );
+		window.dispatchEvent( new MessageEvent( 'message', {
+			source: frame.contentWindow,
+			data: {
+				type: 'odd-app-diagnostic',
+				event: { type: 'error', slug: 'other-app', message: 'wrong slug' },
+			},
+		} ) );
+		window.dispatchEvent( new MessageEvent( 'message', {
+			source: frame.contentWindow,
+			data: {
+				type: 'odd-app-diagnostic',
+				event: { type: 'error', message: 'x'.repeat( 2200 ) },
 			},
 		} ) );
 

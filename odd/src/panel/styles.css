@@ -39,6 +39,17 @@
 .odd-panel.odd-shop .odd-shop__health-body strong{font-size:14px;font-weight:750;color:#1d2327}
 .odd-panel.odd-shop .odd-shop__health-body span{font-size:12px;line-height:1.45;color:#50575e}
 .odd-panel.odd-shop .odd-shop__health-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.odd-panel.odd-shop .odd-shop__catalog-dashboard{align-items:flex-start}
+.odd-panel.odd-shop .odd-shop__health-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px;width:100%}
+.odd-panel.odd-shop .odd-shop__health-metric{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border:1px solid rgba(60,60,67,.12);border-radius:12px;background:rgba(255,255,255,.55);font-size:11px;line-height:1.3}
+.odd-panel.odd-shop .odd-shop__health-metric b{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--odd-shop-ink-1,#646970)}
+.odd-panel.odd-shop .odd-shop__health-error{display:block;margin-top:8px;color:#8a4b00!important;font-weight:700}
+.odd-panel.odd-shop .odd-shop__catalog-notice{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:-8px 0 18px;padding:14px 16px;border:1px solid var(--odd-shop-border,#dcdcde);border-radius:16px;background:linear-gradient(180deg,color-mix(in srgb,var(--odd-shop-active-tint,var(--odd-shop-accent,#2271b1)) 8%,var(--odd-shop-surface,#fff)),var(--odd-shop-surface,#fff));color:var(--odd-shop-ink,#1d2327);box-shadow:var(--odd-shop-e-1,0 12px 28px -24px rgba(12,10,29,.42))}
+.odd-panel.odd-shop .odd-shop__catalog-notice--warning,.odd-panel.odd-shop .odd-shop__catalog-notice--empty{border-color:color-mix(in srgb,#d97706 34%,var(--odd-shop-border,#dcdcde))}
+.odd-panel.odd-shop .odd-shop__catalog-notice-body{display:flex;min-width:0;flex-direction:column;gap:3px}
+.odd-panel.odd-shop .odd-shop__catalog-notice-body strong{font-size:13px;font-weight:800;color:var(--odd-shop-ink,#1d2327)}
+.odd-panel.odd-shop .odd-shop__catalog-notice-body span{font-size:12px;line-height:1.45;color:var(--odd-shop-ink-1,#646970)}
+.odd-panel.odd-shop .odd-shop__catalog-notice-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
 .odd-panel .odd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
 .odd-panel .odd-grid--icons{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
 .odd-panel .odd-card{all:unset;display:flex;flex-direction:column;background:#fff;border:1px solid #dcdcde;border-radius:10px;overflow:hidden;cursor:pointer;transition:transform .12s ease,border-color .12s ease,box-shadow .18s ease;position:relative}
@@ -358,7 +369,7 @@
 * pill and a horizontally-scrolling track beneath.
 * A tiny fade-up-on-enter reads as "this pane just loaded"
 * without being showy; dropped under reduced-motion. */
-.odd-panel.odd-shop .odd-shop__shelf{margin:0 0 36px;scroll-margin-top:16px;animation:odd-shop-rise .38s cubic-bezier(.2,.8,.2,1) both}
+.odd-panel.odd-shop .odd-shop__shelf{margin:0 0 36px;scroll-margin-top:16px;animation:odd-shop-rise .38s cubic-bezier(.2,.8,.2,1) both;content-visibility:auto;contain-intrinsic-size:1px 360px}
 .odd-panel.odd-shop .odd-shop__shelf:last-child{margin-bottom:48px}
 .odd-panel.odd-shop .odd-shop__shelf-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin:0 0 16px}
 .odd-panel.odd-shop .odd-shop__shelf-title{margin:0;font-size:19px;font-weight:700;letter-spacing:-.012em;color:var(--odd-shop-ink)}
@@ -482,7 +493,7 @@
 .odd-panel.odd-shop .odd-select{min-height:38px;min-width:170px;border-radius:12px}
 .odd-panel.odd-shop .odd-setting-preview{min-height:40px;margin-left:0;padding:0 20px;background:#0f172a;color:#fff;border-color:#0f172a;box-shadow:0 12px 22px -16px rgba(15,23,42,.8)}
 .odd-panel.odd-shop .odd-switch-row input[type="checkbox"]:checked + .odd-switch{background:var(--odd-shop-accent);box-shadow:0 8px 20px -14px rgba(0,113,227,.7)}
-@media (max-width:760px){.odd-panel.odd-shop .odd-wallpaper-settings{grid-template-columns:1fr}.odd-panel.odd-shop .odd-setting-card:not(.odd-switch-row),.odd-panel.odd-shop .odd-setting-card--screensaver{grid-template-columns:1fr;align-items:start}.odd-panel.odd-shop .odd-setting-card:not(.odd-switch-row) > .odd-switch-row{min-width:0}.odd-panel.odd-shop .odd-setting-card__controls,.odd-panel.odd-shop .odd-setting-card__controls--screensaver{grid-column:1;grid-row:auto;margin-left:0;justify-content:flex-start}.odd-panel.odd-shop .odd-setting-card__controls--screensaver{display:grid;grid-template-columns:auto minmax(0,1fr);max-width:none}.odd-panel.odd-shop .odd-setting-field{grid-column:1/-1;grid-template-columns:auto minmax(0,1fr)}.odd-panel.odd-shop .odd-setting-preview{grid-column:1/-1;justify-content:center;width:100%}.odd-panel.odd-shop .odd-select{min-width:0;width:100%}}
+@media (max-width:760px){.odd-panel.odd-shop .odd-wallpaper-settings{grid-template-columns:1fr}.odd-panel.odd-shop .odd-setting-card:not(.odd-switch-row),.odd-panel.odd-shop .odd-setting-card--screensaver{grid-template-columns:1fr;align-items:start}.odd-panel.odd-shop .odd-setting-card:not(.odd-switch-row) > .odd-switch-row{min-width:0}.odd-panel.odd-shop .odd-setting-card__controls,.odd-panel.odd-shop .odd-setting-card__controls--screensaver{grid-column:1;grid-row:auto;margin-left:0;justify-content:flex-start}.odd-panel.odd-shop .odd-setting-card__controls--screensaver{display:grid;grid-template-columns:auto minmax(0,1fr);max-width:none}.odd-panel.odd-shop .odd-setting-field{grid-column:1/-1;grid-template-columns:auto minmax(0,1fr)}.odd-panel.odd-shop .odd-setting-preview{grid-column:1/-1;justify-content:center;width:100%}.odd-panel.odd-shop .odd-select{min-width:0;width:100%}.odd-panel.odd-shop .odd-shop__catalog-notice,.odd-panel.odd-shop .odd-shop__catalog-dashboard{align-items:stretch;flex-direction:column}.odd-panel.odd-shop .odd-shop__catalog-notice-actions,.odd-panel.odd-shop .odd-shop__health-actions{justify-content:flex-start;flex-wrap:wrap}}
 
 /* Catalog rows (icon sets + app catalog) feel more "store-shelf"
 * with a soft lift on hover so the row reads as "tappable
@@ -675,7 +686,7 @@
 .odd-panel .odd-shop__grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(172px,1fr));gap:20px 18px;padding:4px 2px 24px}
 .odd-panel .odd-shop__grid--apps{grid-template-columns:repeat(auto-fill,minmax(172px,1fr))}
 .odd-panel .odd-shop__grid--widgets{grid-template-columns:repeat(auto-fill,minmax(172px,1fr))}
-.odd-panel .odd-shop__card-wrap{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:0;min-width:0}
+.odd-panel .odd-shop__card-wrap{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:0;min-width:0;content-visibility:auto;contain-intrinsic-size:1px 286px}
 .odd-panel .odd-shop__card-wrap.odd-shop__card-wrap--discover{min-width:172px;flex:0 0 172px}
 .odd-panel .odd-shop__card{all:unset;position:relative;display:flex;flex-direction:column;gap:0;cursor:pointer;overflow:hidden;border-radius:20px;background:#fff;border:1px solid rgba(60,60,67,.12);box-shadow:0 1px 2px rgba(12,10,29,.04),0 12px 28px -24px rgba(12,10,29,.42);transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s ease,border-color .18s ease;will-change:transform}
 .odd-panel .odd-shop__card:focus-visible{outline:3px solid #2271b1;outline-offset:4px;border-radius:26px}
@@ -711,6 +722,8 @@
 .odd-panel .odd-shop__card-badge--update{background:#ff9500;color:#1d1d1f}
 .odd-panel .odd-shop__card-badge--active{background:#34c759;color:#fff}
 .odd-panel .odd-shop__card-badge--installed{background:rgba(255,255,255,.84);color:#1d1d1f}
+.odd-panel .odd-shop__card-badge--available{background:rgba(0,113,227,.84);color:#fff}
+.odd-panel .odd-shop__card-badge--installing,.odd-panel .odd-shop__card-badge--applying{background:rgba(60,60,67,.88);color:#fff}
 .odd-panel .odd-shop__card-badge--warning{background:#ff453a;color:#fff}
 .odd-panel .odd-shop__card-badge--featured{background:#bf5af2;color:#fff}
 .odd-panel .odd-shop__card-fav{position:absolute;top:8px;right:8px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,.92);color:#c7c7cc;cursor:pointer;transition:color .15s ease,background .15s ease,transform .15s ease;z-index:3;box-shadow:0 2px 6px -2px rgba(0,0,0,.35)}
@@ -719,6 +732,11 @@
 .odd-panel .odd-shop__card-meta{box-sizing:border-box;min-height:106px;padding:13px 14px 48px;display:flex;flex-direction:column;justify-content:flex-start;gap:4px;min-width:0;background:#fff}
 .odd-panel .odd-shop__card-title{font:700 15px/1.22 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1d1d1f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.012em}
 .odd-panel .odd-shop__card-sub{font:600 12px/1.25 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#5d5d62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.005em}
+.odd-panel .odd-shop__card-state{margin-top:2px;font:800 10px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#77777d;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.odd-panel .odd-shop__card-trust{display:inline-flex;align-items:center;align-self:flex-start;max-width:100%;margin-top:1px;padding:3px 7px;border-radius:999px;background:rgba(60,60,67,.08);color:#5f6368;font:800 9.5px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.odd-panel .odd-shop__card-trust--static-images,.odd-panel .odd-shop__card-trust--pointer-assets{background:rgba(52,199,89,.13);color:#117b2f}
+.odd-panel .odd-shop__card-trust--sandboxed-app{background:rgba(0,113,227,.12);color:#0057b8}
+.odd-panel .odd-shop__card-trust--local-code{background:rgba(255,149,0,.18);color:#7c2d12}
 .odd-panel .odd-shop__card-btn{all:unset;box-sizing:border-box;position:absolute;right:12px;bottom:12px;z-index:4;display:inline-flex;align-items:center;justify-content:center;min-height:30px;max-width:calc(100% - 24px);padding:7px 13px;margin:0;border-radius:999px;background:#0071e3;color:#fff;font:800 12px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.01em;cursor:pointer;box-shadow:0 10px 20px -12px rgba(0,113,227,.85);transition:background .15s ease,transform .12s ease,box-shadow .15s ease}
 .odd-panel .odd-shop__card-btn:hover{background:#0060c4;transform:translateY(-1px);box-shadow:0 12px 24px -12px rgba(0,113,227,.9)}
 .odd-panel .odd-shop__card-btn:focus-visible{outline:3px solid rgba(0,113,227,.35);outline-offset:2px}
@@ -769,15 +787,17 @@
 .odd-panel.odd-shop .odd-shop__detail-badges{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-right:28px}
 .odd-panel.odd-shop .odd-shop__status{display:inline-flex;align-items:center;min-height:22px;padding:4px 9px;border-radius:999px;background:rgba(60,60,67,.08);color:var(--odd-shop-ink-2);font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}
 .odd-panel.odd-shop .odd-shop__status--catalog{background:rgba(0,113,227,.12);color:#0057b8}
+.odd-panel.odd-shop .odd-shop__status--available{background:rgba(0,113,227,.12);color:#0057b8}
 .odd-panel.odd-shop .odd-shop__status--installed{background:rgba(60,60,67,.1);color:var(--odd-shop-ink)}
 .odd-panel.odd-shop .odd-shop__status--active{background:rgba(52,199,89,.14);color:#117b2f}
 .odd-panel.odd-shop .odd-shop__status--update{background:rgba(255,149,0,.2);color:#7c2d12}
+.odd-panel.odd-shop .odd-shop__status--installing,.odd-panel.odd-shop .odd-shop__status--applying{background:rgba(60,60,67,.12);color:var(--odd-shop-ink)}
 .odd-panel.odd-shop .odd-shop__status--warning{background:rgba(255,69,58,.16);color:#9f1239}
 .odd-panel.odd-shop .odd-shop__status--featured{background:rgba(191,90,242,.14);color:#7e22ce}
 .odd-panel.odd-shop .odd-shop__detail-title{margin:0;font-size:clamp(26px,4cqi,42px);line-height:1.02;letter-spacing:-.025em;color:var(--odd-shop-ink)}
 .odd-panel.odd-shop .odd-shop__detail-sub{margin:-4px 0 0;color:var(--odd-shop-ink-1);font-size:14px;font-weight:750}
 .odd-panel.odd-shop .odd-shop__detail-desc{margin:0;max-width:58ch;color:var(--odd-shop-ink-2);font-size:14px;line-height:1.55}
-.odd-panel.odd-shop .odd-shop__detail-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:2px}
+.odd-panel.odd-shop .odd-shop__detail-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin-top:2px}
 .odd-panel.odd-shop .odd-shop__detail-fact{min-width:0;padding:10px 12px;border-radius:14px;background:rgba(60,60,67,.07);border:1px solid rgba(60,60,67,.08)}
 .odd-panel.odd-shop .odd-shop__detail-fact span{display:block;margin:0 0 3px;color:var(--odd-shop-ink-1);font-size:10px;font-weight:850;letter-spacing:.08em;text-transform:uppercase}
 .odd-panel.odd-shop .odd-shop__detail-fact strong{display:block;color:var(--odd-shop-ink);font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -785,6 +805,7 @@
 .odd-panel.odd-shop .odd-shop__detail-changes h3{margin:0 0 8px;color:var(--odd-shop-ink);font-size:13px;font-weight:850;letter-spacing:.01em}
 .odd-panel.odd-shop .odd-shop__detail-changes ul{margin:0;padding-left:18px;color:var(--odd-shop-ink-2);font-size:13px;line-height:1.5}
 .odd-panel.odd-shop .odd-shop__detail-changes li+li{margin-top:5px}
+.odd-panel.odd-shop .odd-shop__detail-trust{margin:12px 0 0;padding-top:11px;border-top:1px solid rgba(60,60,67,.1);color:var(--odd-shop-ink-2);font-size:12.5px;line-height:1.45}
 .odd-panel.odd-shop .odd-shop__detail-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px}
 .odd-panel.odd-shop .odd-shop__detail-primary,.odd-panel.odd-shop .odd-shop__detail-secondary{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:850;cursor:pointer}
 .odd-panel.odd-shop .odd-shop__detail-primary{background:var(--odd-shop-accent);color:#fff;box-shadow:0 14px 26px -18px rgba(0,113,227,.9)}
@@ -850,6 +871,7 @@
 .odd-panel.odd-shop[data-odd-chrome-theme*="dark"],[data-odd-chrome-theme*="dark"] .odd-panel.odd-shop{--odd-shop-surface-0:#0c0b14;--odd-shop-surface-1:#15131f;--odd-shop-surface-2:#1d1a2a;--odd-shop-surface-3:#242136;--odd-shop-ink-0:rgba(235,235,245,.16);--odd-shop-ink-1:#aaa6b8;--odd-shop-ink-2:#d6d2e4;--odd-shop-ink-3:#fbf9ff;--odd-shop-glass:rgba(20,18,32,.78);--odd-shop-glass-strong:rgba(32,29,47,.92);--odd-shop-border:var(--odd-shop-ink-0);--odd-shop-border-strong:rgba(235,235,245,.24);--odd-shop-bg:var(--odd-shop-surface-0);--odd-shop-surface:var(--odd-shop-surface-1);--odd-shop-rail-bg:var(--odd-shop-glass);--odd-shop-ink:var(--odd-shop-ink-3);--odd-shop-accent:#66aaff;--odd-shop-accent-2:#8f8cff}
 .odd-panel.odd-shop[data-odd-chrome-theme*="light"],[data-odd-chrome-theme*="light"] .odd-panel.odd-shop{--odd-shop-surface-0:#f5f5f7;--odd-shop-surface-1:#ffffff;--odd-shop-surface-2:#fbfbfd;--odd-shop-surface-3:#ffffff;--odd-shop-ink-0:rgba(60,60,67,.14);--odd-shop-ink-1:#5d5d62;--odd-shop-ink-2:#3a3a3d;--odd-shop-ink-3:#1d1d1f;--odd-shop-glass:rgba(247,247,249,.86);--odd-shop-glass-strong:rgba(255,255,255,.94);--odd-shop-border:var(--odd-shop-ink-0);--odd-shop-border-strong:rgba(60,60,67,.22);--odd-shop-bg:var(--odd-shop-surface-0);--odd-shop-surface:var(--odd-shop-surface-1);--odd-shop-rail-bg:var(--odd-shop-glass);--odd-shop-ink:var(--odd-shop-ink-3);--odd-shop-accent:#0071e3;--odd-shop-accent-2:#5856d6}
 @media (prefers-color-scheme:dark){.odd-panel.odd-shop:not([data-odd-theme="light"]){--odd-shop-surface-0:#0c0b14;--odd-shop-surface-1:#15131f;--odd-shop-surface-2:#1d1a2a;--odd-shop-surface-3:#242136;--odd-shop-ink-0:rgba(235,235,245,.16);--odd-shop-ink-1:#aaa6b8;--odd-shop-ink-2:#d6d2e4;--odd-shop-ink-3:#fbf9ff;--odd-shop-glass:rgba(20,18,32,.78);--odd-shop-glass-strong:rgba(32,29,47,.92);--odd-shop-border:var(--odd-shop-ink-0);--odd-shop-border-strong:rgba(235,235,245,.24);--odd-shop-bg:var(--odd-shop-surface-0);--odd-shop-surface:var(--odd-shop-surface-1);--odd-shop-rail-bg:var(--odd-shop-glass);--odd-shop-ink:var(--odd-shop-ink-3);--odd-shop-accent:#66aaff;--odd-shop-accent-2:#8f8cff}}
+.odd-panel.odd-shop{--odd-desktop-accent:var(--wp-desktop-accent-color,var(--wp-desktop-accent,var(--desktop-mode-accent-color,var(--desktop-mode-accent,var(--wp-admin-theme-color,#0071e3)))));--odd-desktop-accent-2:var(--wp-desktop-accent-2,var(--desktop-mode-accent-2,var(--odd-desktop-accent)));--odd-shop-accent:var(--odd-desktop-accent);--odd-shop-accent-2:var(--odd-desktop-accent-2);--odd-shop-bg:var(--wp-desktop-background,var(--desktop-mode-background,var(--odd-shop-surface-0)));--odd-shop-surface:var(--wp-desktop-window-background,var(--desktop-mode-window-background,var(--odd-shop-surface-1)));--odd-shop-border:var(--wp-desktop-border-color,var(--desktop-mode-border-color,var(--odd-shop-ink-0)))}
 .odd-panel.odd-shop[data-odd-chaos="1"]{--odd-shop-chaos-saturation:1.12}
 .odd-panel.odd-shop .odd-shop__cast-oddling{position:absolute;left:-80px;top:var(--odd-cast-y,40%);width:58px;height:58px;z-index:8;pointer-events:none;filter:drop-shadow(0 14px 24px rgba(0,0,0,.38));animation:odd-shop-cast var(--odd-cast-duration,4200ms) var(--odd-cast-delay,0ms) var(--odd-shop-ease-out) forwards}
 @keyframes odd-shop-cast{0%{transform:translateX(0) rotate(-8deg);opacity:0}10%{opacity:1}70%{opacity:1}100%{transform:translateX(calc(100vw + 160px)) rotate(10deg);opacity:0}}
@@ -881,7 +903,7 @@
 .odd-panel.odd-shop .odd-shop__card,.odd-panel.odd-shop .odd-shop__card.odd-card.odd-shop__tile,.odd-panel.odd-shop .odd-card,.odd-panel.odd-shop .odd-catalog-row,.odd-panel.odd-shop .odd-setting-card,.odd-panel.odd-shop .odd-shop__install-type{background:var(--odd-shop-surface);border-color:var(--odd-shop-border);color:var(--odd-shop-ink);box-shadow:var(--odd-shop-e-1)}
 .odd-panel.odd-shop .odd-shop__card-meta,.odd-panel.odd-shop .odd-shop__card.odd-card.odd-shop__tile .odd-shop__card-meta{background:var(--odd-shop-surface)}
 .odd-panel.odd-shop .odd-shop__card-title,.odd-panel.odd-shop .odd-shop__card-sub,.odd-panel.odd-shop .odd-shop__tile-title,.odd-panel.odd-shop .odd-shop__tile-sub,.odd-panel.odd-shop .odd-catalog-row__name,.odd-panel.odd-shop .odd-setting-card__text strong{color:var(--odd-shop-ink)}
-.odd-panel.odd-shop .odd-shop__card-sub,.odd-panel.odd-shop .odd-shop__tile-sub,.odd-panel.odd-shop .odd-catalog-row__desc,.odd-panel.odd-shop .odd-setting-card__text span{color:var(--odd-shop-ink-1)}
+.odd-panel.odd-shop .odd-shop__card-sub,.odd-panel.odd-shop .odd-shop__card-state,.odd-panel.odd-shop .odd-shop__tile-sub,.odd-panel.odd-shop .odd-catalog-row__desc,.odd-panel.odd-shop .odd-setting-card__text span{color:var(--odd-shop-ink-1)}
 .odd-panel.odd-shop .odd-shop__card-btn{background:var(--odd-shop-accent);color:#fff}
 .odd-panel.odd-shop .odd-shop__card-btn--preview,.odd-panel.odd-shop .odd-shop__card-btn--add,.odd-panel.odd-shop .odd-shop__card-btn--open,.odd-panel.odd-shop .odd-shop__tile-btn--ghost,.odd-panel.odd-shop .odd-shop__dropzone-btn,.odd-panel.odd-shop .odd-shop__js-confirm-btn{background:var(--odd-shop-surface-2);border-color:var(--odd-shop-border-strong);color:var(--odd-shop-ink)}
 .odd-panel.odd-shop .odd-shop__card-btn--installing,.odd-panel.odd-shop .odd-shop__card-btn--installing:hover{background:var(--odd-shop-surface-2);border-color:var(--odd-shop-border-strong);color:var(--odd-shop-ink-1);box-shadow:none}

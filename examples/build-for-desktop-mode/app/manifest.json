@@ -1,0 +1,15 @@
+{
+  "type": "app",
+  "slug": "build-for-desktop-mode-app",
+  "name": "Desktop Mode Hello",
+  "description": "A tiny sandboxed app example for ODD and Desktop Mode.",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "entry": "index.html",
+  "icon": "icon.svg",
+  "capability": "manage_options",
+  "surfaces": {
+    "desktop": true,
+    "taskbar": false
+  }
+}

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Build for ODD + WP Desktop Mode</title>
+	<meta name="description" content="A creator guide for building wallpapers, widgets, apps, cursors, and icon sets for ODD and WP Desktop Mode.">
+	<meta name="theme-color" content="#12051f">
+	<link rel="canonical" href="https://odd.regionallyfamous.com/build/">
+	<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+	<link rel="stylesheet" href="/styles.css?v=5">
+</head>
+<body>
+	<div class="goo" aria-hidden="true">
+		<span></span><span></span><span></span>
+	</div>
+	<header class="shell nav">
+		<a class="brand" href="/" aria-label="ODD home">
+			<span class="brand-eye iris-tile" aria-hidden="true">
+				<svg class="iris-svg" viewBox="0 0 64 64">
+					<defs>
+						<linearGradient id="brand-bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+							<stop offset="0%" stop-color="#ff4fa8"/>
+							<stop offset="55%" stop-color="#9d6bff"/>
+							<stop offset="100%" stop-color="#5a35d6"/>
+						</linearGradient>
+						<radialGradient id="brand-iris" cx="42%" cy="38%" r="68%">
+							<stop offset="0%" stop-color="#c6fbff"/>
+							<stop offset="45%" stop-color="#70f5ff"/>
+							<stop offset="100%" stop-color="#1e7ac9"/>
+						</radialGradient>
+					</defs>
+					<rect x="0" y="0" width="64" height="64" rx="14" ry="14" fill="url(#brand-bg)"/>
+					<g class="iris-blinker">
+						<circle cx="32" cy="32" r="20" fill="#fdfaf2" stroke="#130826" stroke-width="3"/>
+						<circle cx="32" cy="32" r="13" fill="url(#brand-iris)"/>
+						<circle class="iris-pupil" cx="32" cy="32" r="6" fill="#091425"/>
+						<circle cx="29" cy="29" r="2.4" fill="#ffffff"/>
+					</g>
+				</svg>
+			</span>
+			<span>ODD</span>
+		</a>
+		<nav class="navlinks" aria-label="Primary">
+			<a href="/playground/">Try it</a>
+			<a href="/build/" aria-current="page">Build</a>
+			<a href="/blog/">Blog</a>
+			<a href="https://github.com/RegionallyFamous/odd/releases/latest">Download</a>
+			<a href="https://github.com/RegionallyFamous/odd">GitHub</a>
+		</nav>
+	</header>
+
+	<main class="shell build-page">
+		<section class="hero build-hero">
+			<div>
+				<div class="kicker wobble-text">Build for the desktop</div>
+				<h1>Make tiny worlds for WordPress.</h1>
+				<p class="lede">ODD bundles are small, inspectable files that plug into WP Desktop Mode: living wallpapers, widgets, sandboxed apps, pointer wardrobes, and native icon sets.</p>
+				<div class="actions">
+					<a class="button primary" href="https://github.com/RegionallyFamous/odd/tree/main/examples/build-for-desktop-mode">Open the example pack</a>
+					<a class="button" href="https://github.com/RegionallyFamous/odd/tree/main/docs">Read the docs</a>
+				</div>
+			</div>
+			<div class="build-card tilt-card">
+				<div class="build-card__header">bundle.wp</div>
+				<pre><code>manifest.json
+scene.js
+wallpaper.webp
+card.webp</code></pre>
+				<p>Declare the surface, ship the assets, return a cleanup function, and let Desktop Mode own the chrome.</p>
+			</div>
+		</section>
+
+		<section class="build-steps" aria-label="How ODD bundles work">
+			<article class="card wild-card">
+				<h3>1. Pick a surface</h3>
+				<p>Wallpaper, widget, app, cursor set, or icon set. Each one has a small manifest and a clear runtime contract.</p>
+			</article>
+			<article class="card wild-card">
+				<h3>2. Stay native</h3>
+				<p>Use Desktop Mode hooks for windows, widgets, commands, and icons. ODD adds content; Desktop Mode keeps control of the system.</p>
+			</article>
+			<article class="card wild-card">
+				<h3>3. Package the vibe</h3>
+				<p>Run the catalog builder to produce a .wp bundle with preview art, hashes, and a store row that ODD can verify.</p>
+			</article>
+		</section>
+
+		<section class="apps build-surface-list">
+			<header class="apps-head">
+				<div class="kicker">Bundle surfaces</div>
+				<h2>Five ways to make the desktop feel alive.</h2>
+			</header>
+			<div class="app-grid">
+				<article class="app-card" style="--app-a:#ff4fa8;--app-b:#64f4ff;">
+					<h3>Wallpapers</h3>
+					<p>Canvas or Pixi scenes that return a synchronous teardown and clean up every ticker, listener, and texture.</p>
+					<div class="app-tags"><span>scene.js</span><span>WebGL</span></div>
+				</article>
+				<article class="app-card" style="--app-a:#64f4ff;--app-b:#ffd64b;">
+					<h3>Widgets</h3>
+					<p>Small desktop companions that use the host widget APIs and leave drag, resize, and close behavior to Desktop Mode.</p>
+					<div class="app-tags"><span>widget.js</span><span>hosted</span></div>
+				</article>
+				<article class="app-card" style="--app-a:#ffd64b;--app-b:#ff4fa8;">
+					<h3>Apps</h3>
+					<p>Sandboxed windows with their own HTML, CSS, and JS, loaded through ODD's iframe bridge and cookie-auth serve path.</p>
+					<div class="app-tags"><span>iframe</span><span>window</span></div>
+				</article>
+				<article class="app-card" style="--app-a:#9d6bff;--app-b:#70f5ff;">
+					<h3>Icon sets</h3>
+					<p>Raster PNG or WebP icon feeds for the native Desktop Mode icon pipeline. No DOM swapping, no rail rewrites.</p>
+					<div class="app-tags"><span>raster</span><span>native</span></div>
+				</article>
+				<article class="app-card" style="--app-a:#ff94ce;--app-b:#9d6bff;">
+					<h3>Cursors</h3>
+					<p>Pointer assets and optional live cursor effects, confined to current-user preferences and Desktop Mode surfaces.</p>
+					<div class="app-tags"><span>SVG</span><span>CSS</span></div>
+				</article>
+			</div>
+		</section>
+
+		<section class="build-callout">
+			<h2>The rule: enhance Desktop Mode, do not replace it.</h2>
+			<p>Use the host hooks, inherit the theme, validate your bundle, and return cleanup handles. The best ODD extensions feel like Desktop Mode grew a new room.</p>
+			<div class="actions">
+				<a class="button primary" href="https://github.com/RegionallyFamous/odd/blob/main/docs/building-on-odd.md">Start building</a>
+				<a class="button" href="/playground/dev/">Try the dev Playground</a>
+			</div>
+		</section>
+	</main>
+
+	<footer class="shell">
+		ODD is GPLv2+ and built for <a href="https://github.com/WordPress/desktop-mode">WP Desktop Mode</a>.
+	</footer>
+</body>
+</html>

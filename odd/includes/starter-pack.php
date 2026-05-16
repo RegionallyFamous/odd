@@ -836,9 +836,6 @@ function oddout_starter_safety_net() {
 	if ( 'installed' === $state['status'] ) {
 		return;
 	}
-	if ( ! is_user_logged_in() ) {
-		return;
-	}
 	if ( ! current_user_can( 'activate_plugins' ) && ! current_user_can( 'manage_options' ) ) {
 		return;
 	}

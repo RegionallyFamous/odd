@@ -46,14 +46,22 @@ catalog base. Site owners can filter those URL rules for private mirrors,
 but first-party ODD catalog updates should ship through `site/catalog/v1/`
 and never require plugin releases by themselves.
 
+First-party catalog deploys are signed. `pages.yml` builds
+`site/catalog/v1/registry.json`, writes the detached Ed25519
+`registry.json.sig` using `ODD_CATALOG_SIGNING_KEY`, validates it with
+`ODD_VALIDATE_REQUIRE_CATALOG_SIGNATURE=1`, and smoke-tests the
+published registry/signature pair against the bundled public key. A
+missing or mismatched signature keeps installed sites on their transient,
+last-known-good mirror, or bundled full-registry fallback.
+
 ## Catalog Trust Model
 
-ODD treats the configured catalog host as part of the trusted computing
-base. SHA256 checks prove the downloaded `.wp` bytes match the registry
-row, and install-time validation proves the archive shape is safe, but a
-compromised registry can still publish new trusted code for admins to
-install. Scenes, widgets, and apps are therefore trusted code after
-installation, not untrusted marketplace content.
+ODD treats the configured catalog signing key as part of the trusted
+computing base. Signature checks prove the first-party registry came
+from the release pipeline, SHA256 checks prove the downloaded `.wp`
+bytes match that registry row, and install-time validation proves the
+archive shape is safe. Scenes, widgets, and apps are still trusted code
+after installation, not hostile-code isolation.
 
 The app iframe sandbox and CSP are defense in depth. Apps run in a
 sandboxed iframe and app files are served through authenticated PHP

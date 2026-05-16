@@ -10,6 +10,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { installOddFailureDiagnostics } from './diagnostics-hooks';
 import {
+	assertOddShopVisualSmoke,
 	exerciseOddShopInteractions,
 	goDesktopShell,
 	installCatalogAppOpenAndAssertHydratedIframe,
@@ -105,6 +106,7 @@ test.describe( 'ODD admin smoke', () => {
 		expect( hookFired, 'wp.hooks must fire odd.pickScene' ).toBe( true );
 
 		await openOddShop( page );
+		await assertOddShopVisualSmoke( page );
 		const results = await new AxeBuilder( { page } )
 			.include( '.odd-panel' )
 			.withTags( [ 'wcag2a', 'wcag2aa' ] )

@@ -6,14 +6,14 @@
 defined( 'ABSPATH' ) || exit;
 
 function oddout_cursors_should_enqueue_admin() {
-	if ( ! is_admin() || ! is_user_logged_in() ) {
+	if ( ! is_admin() || ! current_user_can( 'read' ) ) {
 		return false;
 	}
 	return '' !== oddout_cursors_get_active_slug();
 }
 
 function oddout_cursors_should_enqueue_runtime() {
-	return is_admin() && is_user_logged_in();
+	return is_admin() && current_user_can( 'read' );
 }
 
 function oddout_cursors_enqueue_admin_stylesheet() {

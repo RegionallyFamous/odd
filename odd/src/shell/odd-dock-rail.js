@@ -184,78 +184,23 @@
 		return fallback;
 	}
 
-	function systemTileItemFromElement( tile ) {
-		var btn = tile && tile.matches && tile.matches( 'button' )
-			? tile
-			: tile.querySelector( 'button' );
-		var span = tile.querySelector( '.dashicons' );
-		var img = tile.querySelector( 'img' );
-		var id = tile.getAttribute( 'data-system-id' ) ||
-			tile.getAttribute( 'data-odd-system-id' ) ||
-			'';
-		var icon = '';
-		if ( span && span.className ) {
-			var match = String( span.className ).match( /\bdashicons-[\w-]+\b/ );
-			icon = match ? match[ 0 ] : '';
+	function syncSystemTileItem( item ) {
+		if ( ! item || typeof item !== 'object' ) {
+			return false;
 		}
-		if ( ! icon && img && img.src ) {
-			icon = img.src;
-		}
-		return {
-			id:    id,
-			title: btn ? ( btn.getAttribute( 'aria-label' ) || '' ) : ( tile.getAttribute( 'aria-label' ) || '' ),
-			icon:  icon,
-		};
-	}
-
-	function hostImageClassForTile( tile ) {
-		var name = String( tile.className || '' );
-		if ( name.indexOf( 'wp-desktop-' ) !== -1 ) {
-			return 'wp-desktop-dock__item-img';
-		}
-		return 'desktop-mode-dock__item-img';
-	}
-
-	function replaceSystemTileIcon( tile, match ) {
-		if ( ! tile || ! match || ! match.url ) {
-			return;
-		}
-		var btn = tile.matches && tile.matches( 'button' )
-			? tile
-			: tile.querySelector( 'button' );
-		if ( ! btn ) {
-			return;
-		}
-		var existing = btn.querySelector( 'img[data-odd-skinned-system-icon]' );
-		if ( existing && existing.getAttribute( 'data-odd-icon-url' ) === match.url ) {
-			return;
-		}
-
-		var img = imageMarkup( match.url, hostImageClassForTile( tile ) );
-		img.setAttribute( 'data-odd-skinned-system-icon', 'true' );
-		img.setAttribute( 'data-odd-icon-set', currentIconSetSlug() );
-		img.setAttribute( 'data-odd-icon-key', match.key );
-		img.setAttribute( 'data-odd-icon-url', match.url );
-
-		var old = btn.querySelector(
-			'img, .dashicons, .desktop-mode-dock__item-svg, .wp-desktop-dock__item-svg, .desktop-mode-dock__item-letter, .wp-desktop-dock__item-letter, svg'
-		);
-		if ( old ) {
-			old.parentNode.replaceChild( img, old );
-		} else {
-			btn.insertBefore( img, btn.firstChild );
-		}
-	}
-
-	function skinSystemTileElement( tile ) {
-		var item = systemTileItemFromElement( tile );
 		var match = firstIconMatchForKeys( iconKeysForItem( item.icon, item ) );
-		if ( match ) {
-			replaceSystemTileIcon( tile, match );
+		if ( ! match ) {
+			return false;
 		}
+		try {
+			item.icon = match.url;
+			item.oddIconSet = currentIconSetSlug();
+			item.oddIconKey = match.key;
+		} catch ( _ ) {}
+		return true;
 	}
 
-	function skinSystemTileRegistry() {
+	function syncSystemTileRegistry() {
 		var d = window.wp && window.wp.desktop;
 		if ( ! d || typeof d.listSystemTiles !== 'function' ) {
 			return;
@@ -276,35 +221,21 @@
 					target = d.getSystemTile( item.id ) || item;
 				}
 			} catch ( _ ) {}
-			var match = firstIconMatchForKeys( iconKeysForItem( target.icon || item.icon, target || item ) );
-			if ( match && target ) {
-				try {
-					target.icon = match.url;
-				} catch ( _ ) {}
+			if ( target ) {
+				syncSystemTileItem( target );
+			}
+			if ( target !== item ) {
+				syncSystemTileItem( item );
 			}
 		} );
 	}
 
-	function skinSystemRailIcons() {
-		skinSystemTileRegistry();
-		Array.prototype.forEach.call(
-			document.querySelectorAll( '.desktop-mode-dock__item--system, .wp-desktop-dock__item--system' ),
-			skinSystemTileElement
-		);
-	}
-
-	function scheduleSystemRailSkin() {
-		[ 0, 100, 500, 1500 ].forEach( function ( delay ) {
-			window.setTimeout( skinSystemRailIcons, delay );
-		} );
-	}
-
-	var systemSkinHooksBound = false;
-	function bindSystemSkinHooks() {
-		if ( systemSkinHooksBound ) {
+	var systemTileHooksBound = false;
+	function bindSystemTileHooks() {
+		if ( systemTileHooksBound ) {
 			return;
 		}
-		systemSkinHooksBound = true;
+		systemTileHooksBound = true;
 		var hooks = window.wp && window.wp.hooks;
 		if ( ! hooks || typeof hooks.addAction !== 'function' ) {
 			return;
@@ -320,7 +251,7 @@
 				return;
 			}
 			try {
-				hooks.addAction( name, OWNER + '/skin-system-icons', scheduleSystemRailSkin );
+				hooks.addAction( name, OWNER + '/sync-system-icons', syncSystemTileRegistry );
 			} catch ( _ ) {}
 		} );
 	}
@@ -484,7 +415,7 @@
 			d.registerDockRailRenderer( {
 				id:          'odd-compact',
 				label:       __( 'ODD compact rail' ),
-				description: __( 'High-contrast icon mosaic with violet hover motion — swaps with the shipped strip in OS Settings → Dock.', 'odd-outlandish-desktop-decorator' ),
+				description: __( 'High-contrast icon mosaic selectable alongside the shipped strip in OS Settings.', 'odd-outlandish-desktop-decorator' ),
 				icon:        'dashicons-art',
 				apiVersion:  1,
 				owner:       OWNER,
@@ -497,8 +428,8 @@
 
 	function boot() {
 		registerRenderer();
-		bindSystemSkinHooks();
-		scheduleSystemRailSkin();
+		bindSystemTileHooks();
+		syncSystemTileRegistry();
 	}
 
 	if ( window.wp && window.wp.desktop && typeof window.wp.desktop.ready === 'function' ) {

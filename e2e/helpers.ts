@@ -182,6 +182,70 @@ export async function openOddShop( page: Page ) {
 	await dismissDesktopModeWelcomeIfPresent( page );
 }
 
+export async function assertOddShopVisualSmoke( page: Page ) {
+	const shop = page.locator( '.odd-panel.odd-shop' ).first();
+	await expect( shop ).toBeVisible( { timeout: 15_000 } );
+	await expect( shop.locator( '.odd-shop__topbar' ) ).toBeVisible();
+	await expect( shop.locator( '.odd-shop__rail' ) ).toBeVisible();
+	await expect( shop.locator( '.odd-shop__content' ) ).toBeVisible();
+
+	const metrics = await page.evaluate( () => {
+		const panel = document.querySelector( '.odd-panel.odd-shop' );
+		const rail = panel?.querySelector( '.odd-shop__rail' );
+		const content = panel?.querySelector( '.odd-shop__content' );
+		const cardArt = panel?.querySelector( '.odd-shop__card-art' );
+		function rectOf( node: Element | null | undefined ) {
+			if ( ! node ) {
+				return null;
+			}
+			const r = node.getBoundingClientRect();
+			return { x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom };
+		}
+		function overflowOf( node: Element | null | undefined ) {
+			if ( ! node ) {
+				return null;
+			}
+			return {
+				clientWidth: node.clientWidth,
+				scrollWidth: node.scrollWidth,
+				clientHeight: node.clientHeight,
+				scrollHeight: node.scrollHeight,
+				overflowX: window.getComputedStyle( node ).overflowX,
+				overflowY: window.getComputedStyle( node ).overflowY,
+			};
+		}
+		return {
+			viewport: { width: window.innerWidth, height: window.innerHeight },
+			panel: rectOf( panel ),
+			rail: overflowOf( rail ),
+			content: overflowOf( content ),
+			cardArt: rectOf( cardArt ),
+		};
+	} );
+
+	expect( metrics.panel?.width, 'Shop panel should have width' ).toBeGreaterThan( 480 );
+	expect( metrics.panel?.height, 'Shop panel should have height' ).toBeGreaterThan( 360 );
+	expect(
+		metrics.panel?.y ?? 9999,
+		'Shop should open near the top of the desktop, not halfway down the viewport',
+	).toBeLessThanOrEqual( Math.max( 180, metrics.viewport.height * 0.35 ) );
+	expect(
+		metrics.rail ? metrics.rail.scrollWidth <= metrics.rail.clientWidth + 2 : false,
+		'Shop rail must not create horizontal drift',
+	).toBe( true );
+	expect(
+		metrics.content ? metrics.content.scrollWidth <= metrics.content.clientWidth + 2 : false,
+		'Shop content must not create page-level horizontal overflow',
+	).toBe( true );
+	expect( metrics.cardArt?.width ?? 0, 'At least one card artwork region should render' ).toBeGreaterThan( 64 );
+	expect( metrics.cardArt?.height ?? 0, 'At least one card artwork region should render' ).toBeGreaterThan( 64 );
+	try {
+		await shop.screenshot( { path: 'test-results/odd-shop-visual-smoke.png' } );
+	} catch {
+		// The assertions above are the gate; screenshots are a helpful artifact when the runner allows writes.
+	}
+}
+
 const SHOP_SECTION_ORDER = [
 	'wallpaper',
 	'icons',

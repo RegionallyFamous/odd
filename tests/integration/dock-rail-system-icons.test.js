@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHooks } from '@wordpress/hooks';
 
 const __dirname = dirname( fileURLToPath( import.meta.url ) );
 const SRC = resolve( __dirname, '../../odd/src/shell/odd-dock-rail.js' );
@@ -43,7 +44,7 @@ describe( 'ODD dock rail system icon skinning', () => {
 		seedOdd();
 	} );
 
-	it( 'replaces default Desktop Mode system rail dashicons with active icon-set rasters', async () => {
+	it( 'themes Desktop Mode system tile data without rewriting host dock DOM', () => {
 		const tiles = [
 			{ id: 'desktop-mode-os-settings', title: 'OS Settings', icon: 'dashicons-desktop' },
 			{ id: 'desktop-mode-pwa-install', title: 'Install My WordPress Website as an app', icon: 'dashicons-download' },
@@ -56,7 +57,7 @@ describe( 'ODD dock rail system icon skinning', () => {
 
 		window.wp = {
 			i18n:  { __: ( text ) => text },
-			hooks: { addAction: vi.fn() },
+			hooks: createHooks(),
 			desktop: {
 				HOOKS:                    { DOCK_ITEM_APPENDED: 'wp-desktop.dock.item-appended' },
 				ready:                    ( cb ) => cb(),
@@ -67,7 +68,6 @@ describe( 'ODD dock rail system icon skinning', () => {
 		};
 
 		execRail();
-		await new Promise( ( resolvePromise ) => setTimeout( resolvePromise, 20 ) );
 
 		expect( tiles.map( ( tile ) => tile.icon ) ).toEqual( [
 			'https://example.test/icons/os-settings.webp',
@@ -76,15 +76,15 @@ describe( 'ODD dock rail system icon skinning', () => {
 			'https://example.test/icons/classic-admin.webp',
 		] );
 
-		const imgs = Array.from( document.querySelectorAll( '.desktop-mode-dock__item--system img' ) );
-		expect( imgs.map( ( img ) => img.getAttribute( 'data-odd-icon-key' ) ) ).toEqual( [
-			'os-settings',
-			'import',
-			'plugins',
-			'classic-admin',
-		] );
-		expect( imgs.every( ( img ) => img.className === 'desktop-mode-dock__item-img' ) ).toBe( true );
-		expect( document.querySelectorAll( '.desktop-mode-dock__item--system .dashicons' ) ).toHaveLength( 0 );
+		expect( Array.from( document.querySelectorAll( '.desktop-mode-dock__item--system img' ) ) ).toHaveLength( 0 );
+		expect( document.querySelectorAll( '.desktop-mode-dock__item--system .dashicons' ) ).toHaveLength( 4 );
+
+		tiles[ 0 ].icon = 'dashicons-desktop';
+		window.wp.hooks.doAction( 'wp-desktop.dock.item-appended', {
+			id:        'desktop-mode-os-settings',
+			placement: 'dock',
+		} );
+		expect( tiles[ 0 ].icon ).toBe( 'https://example.test/icons/os-settings.webp' );
 	} );
 
 	it( 'uses the bug glyph for bug-report tiles in the custom ODD compact rail', () => {

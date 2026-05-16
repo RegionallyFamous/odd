@@ -125,3 +125,50 @@ function oddout_apps_exists( $slug ) {
 	$index = oddout_apps_index_load();
 	return isset( $index[ $slug ] );
 }
+
+/**
+ * Validate a path relative to an installed app directory.
+ *
+ * App bundles are allowed to contain nested static assets, but runtime serving
+ * never accepts absolute paths, traversal, backslashes, control bytes, or odd
+ * shell-ish characters. This keeps REST and cookie-auth serving in sync.
+ *
+ * @param string $path Relative path.
+ * @return bool
+ */
+function oddout_apps_relative_path_is_safe( $path ) {
+	$path = (string) $path;
+	if (
+		'' === $path ||
+		strlen( $path ) > 512 ||
+		'/' === $path[0] ||
+		false !== strpos( $path, '..' ) ||
+		false !== strpos( $path, '\\' ) ||
+		false !== strpos( $path, "\0" )
+	) {
+		return false;
+	}
+
+	return (bool) preg_match( '#^[a-zA-Z0-9._/-]+$#', $path );
+}
+
+/**
+ * Boundary-aware realpath confinement.
+ *
+ * Prefix checks such as `strpos( $full, $base ) === 0` accept sibling
+ * directories named like the base path. Normalize separators and require the
+ * full path to be either the base itself or a child below the base boundary.
+ *
+ * @param string $full Absolute realpath candidate.
+ * @param string $base Absolute realpath base.
+ * @return bool
+ */
+function oddout_apps_realpath_is_inside( $full, $base ) {
+	$full = str_replace( '\\', '/', (string) $full );
+	$base = rtrim( str_replace( '\\', '/', (string) $base ), '/' );
+	if ( '' === $full || '' === $base ) {
+		return false;
+	}
+
+	return $full === $base || str_starts_with( $full, $base . '/' );
+}

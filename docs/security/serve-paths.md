@@ -18,11 +18,14 @@ The universal `.wp` installer populates five per-type subtrees under
 Under the 1.0 baseline every bundle that lands in these subtrees is either (a)
 uploaded by a logged-in admin through `POST /odd/v1/bundles/upload`
 or (b) downloaded from the remote catalog at
-`https://odd.regionallyfamous.com/catalog/v1/` and verified against
-the registry's declared SHA256 before extraction. The downloaded archive
-manifest must also match the catalog row's `slug` and `type`. A mismatch
-aborts the install — the archive is never written to the final content
-directory.
+`https://odd.regionallyfamous.com/catalog/v1/`. The first-party registry
+must verify against the bundled Ed25519 public key via `registry.json.sig`,
+then each downloaded archive must match the signed row's SHA256 before
+extraction. The downloaded archive manifest must also match the catalog
+row's `slug` and `type`. A mismatch aborts the install — the archive is
+never written to the final content directory. The bundled fallback is a
+full registry snapshot only; ODD does not splice individual fallback rows
+into an accepted remote registry.
 
 Only `uploads/odd/apps/` has a bespoke serve endpoint (`serve-cookieauth.php`).
 The other four are served through standard WordPress infrastructure —
@@ -43,9 +46,10 @@ to a per-request user input.
       manifest unless the site opts in with filters.
 - [x] **Path traversal.** The path component is regex-constrained to
       `[a-zA-Z0-9._/-]+`, `..` is rejected explicitly, leading `/` is
-      rejected, null bytes are rejected. `realpath()` then anchors the
-      resolved path under the app's own directory with a
-      `strpos($full, $real_base) === 0` prefix check.
+      rejected, backslashes are rejected, and null bytes are rejected.
+      `realpath()` then anchors the resolved path under the app's own
+      directory with a boundary-aware helper so sibling paths such as
+      `demo-copy/` cannot satisfy a string-prefix check.
 - [x] **Scope.** `oddout_apps_dir_for( $slug )` points exclusively into
       `wp-content/uploads/odd/apps/`, so even a hypothetical slug-level escape
       cannot reach `icon-sets/`, `scenes/`, or `widgets/`.
@@ -61,6 +65,11 @@ to a per-request user input.
 - [x] **CSP.** HTML responses include a compatibility-safe CSP with
       `object-src 'none'`, same-origin framing, and explicit allowances
       for the static app patterns ODD supports.
+- [x] **Raw output exceptions.** App HTML/JS/CSS/image responses and
+      cursor CSS/SVG responses are the only intentional raw-byte outputs.
+      They use `oddout_emit_raw_response()` after capability, path,
+      MIME, and header checks because HTML/JS/CSS escaping would corrupt
+      installed app bundles and generated stylesheets.
 
 ### `uploads/odd/icon-sets/` and `uploads/odd/cursor-sets/` — static visual assets
 
@@ -120,7 +129,28 @@ app serve attack surface. Icon sets, cursor sets, scenes, and widgets
 are served by uploads-derived URLs + the HTTP server and carry no custom PHP
 handler that joins a slug into a filesystem path. Apps are the only
 subtree with a bespoke serve endpoint, and that endpoint is scoped to
-`uploads/odd/apps/` via `oddout_apps_dir_for()` + `realpath()`.
+`uploads/odd/apps/` via `oddout_apps_dir_for()` + `realpath()` plus a
+directory-boundary confinement check.
+
+REST permissions are mixed deliberately: public static endpoints only serve
+non-sensitive generated assets, user-local state routes require
+`current_user_can( 'read' )`, and installs, catalog refresh/metadata,
+diagnostics, reconciliation, and other privileged actions require
+`current_user_can( 'manage_options' )`.
+
+## REST access model
+
+| Route family | Access | Notes |
+|--------------|--------|-------|
+| `/odd/v1/prefs` | logged-in users with `read` | User-local wallpaper, icon, cursor, Shop, and app-pinned preferences. |
+| `/odd/v1/bundles/catalog` | logged-in users with `read` | Redacts installer-only fields for non-admins. |
+| `/odd/v1/bundles/install-from-catalog`, `/refresh`, `/catalog-meta`, `/catalog-rollback` | admins with `manage_options` | Installs files, refreshes remote state, or exposes catalog diagnostics. |
+| `/odd/v1/apps`, `/apps/{slug}`, `/apps/store/*`, `/apps/runtime/errors` | logged-in users with `read` | User-local app listing and app storage. |
+| `/odd/v1/apps/upload`, `/apps/{slug}/toggle`, `/apps/{slug}` DELETE, `/apps/diag/{slug}` | admins with `manage_options` | Mutates app installs or exposes diagnostic filesystem context. |
+| `/odd/v1/apps/serve/{slug}/{path}` | logged-in users with the app capability | Serves confined app bundle files. |
+| `/odd/v1/apps/icon/{slug}`, `/cursors/active.css`, `/cursors/asset/{slug}` | public static assets | Path/MIME confined and non-sensitive. |
+| `/odd/v1/content/*`, `/reconcile/*`, `/starter/activate`, `/e2e-diagnostics` | admins with `manage_options` | File mutation, reconciliation, starter mutation, and privileged diagnostics. |
+| `/odd/v1/starter` | logged-in users with `read` | Read-only starter state for the current user/session. |
 
 ## Follow-ups
 

@@ -33,6 +33,18 @@ capabilities, hashes, and manifest fields are never trusted from the browser.
 | `widget` | Add | Adds the widget to the Desktop Mode widget layer. |
 | `app` | Open | Opens the registered Desktop Mode native window. Surface changes set `requiresReload`. |
 
+## Trust Labels
+
+Every card also carries a plain-language trust label:
+
+| Type | Label | Meaning |
+|------|-------|---------|
+| `icon-set` | Static images | PNG/WebP assets validated by ODD and rendered through Desktop Mode. |
+| `cursor-set` | Pointer assets | Cursor assets plus generated CSS; paths, sizes, and formats are validated before install. |
+| `scene` | Runs locally | JavaScript runs locally in the admin session to animate the wallpaper canvas. |
+| `widget` | Runs locally | JavaScript runs locally and cleans up through Desktop Mode widget teardown. |
+| `app` | Sandboxed app | Opens in a Desktop Mode window through ODD file serving, CSP, and local diagnostics. |
+
 ## Store Contract
 
 - Catalog rows come from `/odd/v1/bundles/catalog`, cached server-side with a

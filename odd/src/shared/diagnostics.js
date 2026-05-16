@@ -13,6 +13,7 @@
  * Exposes:
  *   window.__odd.diagnostics.collect()              → payload object
  *   window.__odd.diagnostics.collectMarkdown()      → markdown string
+ *   window.__odd.diagnostics.summary()              → small local health summary
  *   window.__odd.diagnostics.appsSnapshot()     → structured apps / iframe peek
  *   window.__odd.diagnostics.appIframes()       → live iframe snapshots only
  *
@@ -256,24 +257,30 @@
 		return value === undefined || value === null || [ 'string', 'number', 'boolean' ].indexOf( typeof value ) !== -1;
 	}
 
+	function scalarWithin( value, max ) {
+		if ( value === undefined || value === null ) return true;
+		if ( ! scalarOrEmpty( value ) ) return false;
+		return String( value ).length <= max;
+	}
+
 	function diagnosticEventLooksSafe( row ) {
 		if ( ! row || typeof row !== 'object' || Array.isArray( row ) ) return false;
 		var allowed = [ 'at', 'source', 'type', 'slug', 'href', 'message', 'filename', 'lineno', 'colno', 'stack', 'reason', 'error' ];
 		for ( var key in row ) {
 			if ( Object.prototype.hasOwnProperty.call( row, key ) && allowed.indexOf( key ) === -1 ) return false;
 		}
-		return scalarOrEmpty( row.at ) &&
-			scalarOrEmpty( row.source ) &&
-			scalarOrEmpty( row.type ) &&
-			scalarOrEmpty( row.slug ) &&
-			scalarOrEmpty( row.href ) &&
-			scalarOrEmpty( row.message ) &&
-			scalarOrEmpty( row.filename ) &&
-			scalarOrEmpty( row.lineno ) &&
-			scalarOrEmpty( row.colno ) &&
-			scalarOrEmpty( row.stack ) &&
-			scalarOrEmpty( row.reason ) &&
-			scalarOrEmpty( row.error );
+		return scalarWithin( row.at, 80 ) &&
+			scalarWithin( row.source, 80 ) &&
+			scalarWithin( row.type, 80 ) &&
+			scalarWithin( row.slug, 80 ) &&
+			scalarWithin( row.href, 1200 ) &&
+			scalarWithin( row.message, 2000 ) &&
+			scalarWithin( row.filename, 1200 ) &&
+			scalarWithin( row.lineno, 16 ) &&
+			scalarWithin( row.colno, 16 ) &&
+			scalarWithin( row.stack, 3200 ) &&
+			scalarWithin( row.reason, 2000 ) &&
+			scalarWithin( row.error, 2000 );
 	}
 
 	function normalizeAppIframeError( row, source ) {
@@ -482,8 +489,10 @@
 			if ( ! data || data.type !== 'odd-app-diagnostic' || ! data.event ) return;
 			var frame = frameForDiagnosticMessage( e );
 			if ( ! frame || ! diagnosticEventLooksSafe( data.event ) ) return;
+			var expectedSlug = slugFromFrame( frame );
+			if ( data.event.slug && expectedSlug && data.event.slug !== expectedSlug ) return;
 			var row = pushAppIframeError( data.event, e.source );
-			if ( ! row.slug ) row.slug = slugFromFrame( frame );
+			if ( ! row.slug ) row.slug = expectedSlug;
 			record(
 				row.type === 'console.warn' ? 'warn' : 'error',
 				[ 'odd.app.iframe', row.slug, row.type, row.message ]
@@ -851,8 +860,136 @@
 		} catch ( _ ) { return {}; }
 	}
 
+	function hasOwn( obj, key ) {
+		return !! obj && Object.prototype.hasOwnProperty.call( obj, key );
+	}
+
+	function healthAdd( out, bucket, id, message ) {
+		out[ bucket ].push( { id: id, message: message } );
+	}
+
+	function buildHealthSummary( payload ) {
+		payload = payload || {};
+		var env = payload.environment || {};
+		var system = payload.systemHealth || {};
+		var apps = payload.apps || {};
+		var metrics = payload.metrics || {};
+		var recent = Array.isArray( payload.recentLog ) ? payload.recentLog : [];
+		var out = {
+			generatedAt: now(),
+			status: 'ok',
+			ok: [],
+			warn: [],
+			problems: [],
+			counts: { ok: 0, warn: 0, problems: 0 },
+		};
+		var catalog = system.catalog || {};
+		var starter = system.starter || {};
+		var desktop = system.desktopMode || {};
+		var cursors = system.cursors || {};
+
+		if ( env.desktopMode ) {
+			healthAdd( out, 'ok', 'desktopMode.present', 'WP Desktop Mode is present.' );
+		} else {
+			healthAdd( out, 'problems', 'desktopMode.missing', 'WP Desktop Mode is not available in this browser context.' );
+		}
+
+		if ( env.wpHooks ) {
+			healthAdd( out, 'ok', 'wpHooks.present', 'WordPress hooks are available.' );
+		} else {
+			healthAdd( out, 'warn', 'wpHooks.missing', 'WordPress hooks are not available yet.' );
+		}
+
+		if ( env.restUrl === '(present)' ) {
+			healthAdd( out, 'ok', 'prefs.restUrl', 'Preferences REST URL is localized.' );
+		} else {
+			healthAdd( out, 'warn', 'prefs.restUrlMissing', 'Preferences REST URL is missing; preference saves may be unavailable.' );
+		}
+
+		if ( hasOwn( desktop, 'baseline' ) ) {
+			if ( desktop.baseline ) {
+				healthAdd( out, 'ok', 'desktopMode.baseline', 'Desktop Mode meets ODD baseline requirements.' );
+			} else {
+				healthAdd( out, 'problems', 'desktopMode.baseline', 'Desktop Mode does not meet ODD baseline requirements.' );
+			}
+		}
+
+		if ( hasOwn( catalog, 'last_error_message' ) && catalog.last_error_message ) {
+			healthAdd( out, 'warn', 'catalog.lastError', 'Catalog reported a recent fetch or validation error.' );
+		} else if ( hasOwn( catalog, 'source' ) || hasOwn( catalog, 'bundle_count' ) ) {
+			healthAdd( out, 'ok', 'catalog.available', 'Catalog metadata is available.' );
+		}
+
+		if ( catalog.signature_status ) {
+			if ( /^(invalid|failed|rejected|error)$/i.test( String( catalog.signature_status ) ) ) {
+				healthAdd( out, 'problems', 'catalog.signature', 'Catalog signature validation failed.' );
+			} else if ( /^(valid|verified|pass|passed|ok)$/i.test( String( catalog.signature_status ) ) ) {
+				healthAdd( out, 'ok', 'catalog.signature', 'Catalog signature status is healthy.' );
+			} else {
+				healthAdd( out, 'warn', 'catalog.signature', 'Catalog signature status is not verified.' );
+			}
+		}
+
+		if ( Number( catalog.stale_age ) > 86400 ) {
+			healthAdd( out, 'warn', 'catalog.stale', 'Catalog cache is older than one day.' );
+		}
+		if ( Number( catalog.rollback_count ) > 0 ) {
+			healthAdd( out, 'warn', 'catalog.rollback', 'Catalog has rolled back to a previous cache.' );
+		}
+
+		if ( starter.status ) {
+			if ( starter.status === 'failed' ) {
+				healthAdd( out, 'problems', 'starter.failed', 'Starter pack installation is failing.' );
+			} else if ( starter.status === 'pending' || starter.status === 'running' ) {
+				healthAdd( out, 'warn', 'starter.pending', 'Starter pack installation is still in progress.' );
+			} else {
+				healthAdd( out, 'ok', 'starter.' + starter.status, 'Starter pack status is ' + starter.status + '.' );
+			}
+		}
+
+		if ( cursors.active && cursors.runtimeExpected && ! cursors.stylesheet ) {
+			healthAdd( out, 'warn', 'cursors.stylesheetMissing', 'A cursor set is active but no cursor stylesheet is localized.' );
+		}
+
+		if ( apps.iframeErrors && apps.iframeErrors.length ) {
+			healthAdd( out, 'problems', 'apps.iframeErrors', 'One or more ODD app iframes reported runtime errors.' );
+		} else if ( apps.appsEnabled ) {
+			healthAdd( out, 'ok', 'apps.iframes', 'ODD app iframe diagnostics are quiet.' );
+		}
+
+		if ( apps.probes && apps.probes.some( function ( row ) { return row && row.status === 'fail'; } ) ) {
+			healthAdd( out, 'problems', 'apps.probes', 'At least one ODD app probe failed.' );
+		}
+
+		var recentErrors = recent.filter( function ( row ) { return row && row.level === 'error'; } ).length;
+		var recentWarnings = recent.filter( function ( row ) { return row && row.level === 'warn'; } ).length;
+		if ( recentErrors ) {
+			healthAdd( out, 'problems', 'logs.errors', recentErrors + ' recent error log entries were captured locally.' );
+		} else if ( recentWarnings ) {
+			healthAdd( out, 'warn', 'logs.warnings', recentWarnings + ' recent warning log entries were captured locally.' );
+		} else {
+			healthAdd( out, 'ok', 'logs.quiet', 'No recent warnings or errors were captured locally.' );
+		}
+
+		var counters = metrics.counters || {};
+		var badCounters = Object.keys( counters ).filter( function ( key ) {
+			return counters[ key ] > 0 && /(^|[_.:-])(error|failed|failure)$/.test( key );
+		} );
+		if ( badCounters.length ) {
+			healthAdd( out, 'warn', 'metrics.failures', 'Local metrics include failure counters: ' + badCounters.slice( 0, 4 ).join( ', ' ) + '.' );
+		}
+
+		out.counts = {
+			ok: out.ok.length,
+			warn: out.warn.length,
+			problems: out.problems.length,
+		};
+		out.status = out.problems.length ? 'problems' : ( out.warn.length ? 'warn' : 'ok' );
+		return out;
+	}
+
 	function collect() {
-		return {
+		var payload = {
 			collectedAt:   now(),
 			phase:         lifecyclePhase(),
 			environment:   environment(),
@@ -864,15 +1001,29 @@
 			metrics:       metricsSnapshot(),
 			recentLog:     buffer.slice().reverse().slice( 0, 50 ),
 		};
+		payload.health = buildHealthSummary( payload );
+		return payload;
+	}
+
+	function summary() {
+		var payload = collect();
+		return payload.health || buildHealthSummary( payload );
 	}
 
 	function collectMarkdown() {
 		var p = collect();
 		var env = p.environment;
+		var health = p.health || buildHealthSummary( p );
 		var lines = [
 			'# ODD diagnostics',
 			'',
 			'_Collected at ' + p.collectedAt + '. No information has been sent anywhere — this was assembled locally and copied to your clipboard. Paste it into a GitHub issue as-is._',
+			'',
+			'## Health Summary',
+			'- status: `' + health.status + '`',
+			'- ok/warn/problems: `' + [ health.counts.ok, health.counts.warn, health.counts.problems ].join( '/' ) + '`',
+			'- problems: `' + health.problems.map( function ( row ) { return row.id; } ).join( ', ' ) + '`',
+			'- warnings: `' + health.warn.map( function ( row ) { return row.id; } ).join( ', ' ) + '`',
 			'',
 			'## Environment',
 			'- ODD version: `' + env.oddVersion + '`',
@@ -975,6 +1126,7 @@
 		collectMarkdown: collectMarkdown,
 		copy:            copy,
 		count:           count,
+		summary:         summary,
 		metrics:         metricsSnapshot,
 		probeApp:        probeApp,
 		appProbes:       function () { return appProbeRuns.slice(); },

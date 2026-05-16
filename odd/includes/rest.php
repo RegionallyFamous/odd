@@ -16,6 +16,33 @@ defined( 'ABSPATH' ) || exit;
 add_action(
 	'rest_api_init',
 	function () {
+		$slug_arg      = array(
+			'type'              => 'string',
+			'required'          => false,
+			'sanitize_callback' => 'sanitize_key',
+			'validate_callback' => static function ( $value ) {
+				return null === $value || is_string( $value );
+			},
+		);
+		$bool_arg      = array(
+			'type'              => 'boolean',
+			'required'          => false,
+			'sanitize_callback' => 'rest_sanitize_boolean',
+		);
+		$slug_list_arg = array(
+			'type'              => 'array',
+			'required'          => false,
+			'validate_callback' => static function ( $value ) {
+				return is_array( $value ) && count( $value ) <= 100;
+			},
+		);
+		$object_arg    = array(
+			'type'              => 'object',
+			'required'          => false,
+			'validate_callback' => static function ( $value ) {
+				return is_array( $value );
+			},
+		);
 		register_rest_route(
 			'odd/v1',
 			'/prefs',
@@ -33,6 +60,31 @@ add_action(
 						return current_user_can( 'read' );
 					},
 					'callback'            => 'oddout_rest_prefs_post',
+					'args'                => array(
+						'wallpaper'         => $slug_arg,
+						'scene'             => $slug_arg,
+						'favorites'         => $slug_list_arg,
+						'recents'           => $slug_list_arg,
+						'shuffle'           => $object_arg,
+						'screensaver'       => $object_arg,
+						'audioReactive'     => $bool_arg,
+						'shopTaskbar'       => $bool_arg,
+						'shopDock'          => $bool_arg,
+						'shopDesktopPinned' => $bool_arg,
+						'theme'             => array(
+							'type'              => 'string',
+							'required'          => false,
+							'enum'              => oddout_shop_theme_choices(),
+							'sanitize_callback' => 'sanitize_key',
+						),
+						'chaosMode'         => $bool_arg,
+						'initiated'         => $bool_arg,
+						'mascotQuiet'       => $bool_arg,
+						'winkUnlocked'      => $bool_arg,
+						'appsPinned'        => $slug_list_arg,
+						'iconSet'           => $slug_arg,
+						'cursorSet'         => $slug_arg,
+					),
 				),
 			)
 		);

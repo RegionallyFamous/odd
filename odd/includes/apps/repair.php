@@ -92,12 +92,7 @@ function oddout_apps_icon_file_path( $slug, $manifest = null ) {
 	if ( 0 === stripos( $icon, 'http://' ) || 0 === stripos( $icon, 'https://' ) ) {
 		return '';
 	}
-	if (
-		false !== strpos( $icon, '..' ) ||
-		( strlen( $icon ) > 0 && '/' === $icon[0] ) ||
-		false !== strpos( $icon, "\0" ) ||
-		! preg_match( '#^[a-zA-Z0-9._/-]+$#', $icon )
-	) {
+	if ( ! oddout_apps_relative_path_is_safe( $icon ) ) {
 		return '';
 	}
 	$ext = strtolower( pathinfo( $icon, PATHINFO_EXTENSION ) );
@@ -107,7 +102,7 @@ function oddout_apps_icon_file_path( $slug, $manifest = null ) {
 	$base      = oddout_apps_dir_for( $slug );
 	$real_base = realpath( $base );
 	$full      = realpath( $base . $icon );
-	if ( ! $real_base || ! $full || 0 !== strpos( $full, $real_base ) ) {
+	if ( ! oddout_apps_realpath_is_inside( $full ? $full : '', $real_base ? $real_base : '' ) ) {
 		return '';
 	}
 	return ( is_file( $full ) && is_readable( $full ) ) ? $full : '';

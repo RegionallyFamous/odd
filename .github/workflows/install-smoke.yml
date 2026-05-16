@@ -246,7 +246,7 @@ jobs:
         working-directory: /tmp/wp
         run: |
           # Use internal REST so we don't need to stand up a real HTTP
-          # server. The catalog endpoint requires `is_user_logged_in`;
+          # server. The catalog endpoint requires current_user_can( 'read' );
           # wp_set_current_user lets that through for the eval.
           cat > /tmp/assert-catalog.php <<'PHP'
           <?php

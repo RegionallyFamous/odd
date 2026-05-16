@@ -68,6 +68,40 @@
 		} catch ( _ ) {}
 	}
 
+	function hookNames( key, fallback ) {
+		var out = [];
+		var d = desktop();
+		if ( key && d && d.HOOKS && d.HOOKS[ key ] ) {
+			out.push( d.HOOKS[ key ] );
+		}
+		if ( fallback ) out.push( fallback );
+		return out.filter( function ( name, index ) {
+			return name && out.indexOf( name ) === index;
+		} );
+	}
+
+	function addActionFor( key, fallback, cb ) {
+		hookNames( key, fallback ).forEach( function ( name ) {
+			addAction( name, cb );
+		} );
+	}
+
+	function addFilterFor( key, fallback, cb ) {
+		hookNames( key, fallback ).forEach( function ( name ) {
+			addFilter( name, cb );
+		} );
+	}
+
+	function hookTail( hookName ) {
+		return String( hookName || '' )
+			.replace( /^desktop-mode\./, '' )
+			.replace( /^wp-desktop\./, '' );
+	}
+
+	function hookIs( hookName, tail ) {
+		return hookTail( hookName ) === tail;
+	}
+
 	function addDomEvent( name, cb ) {
 		if ( typeof document === 'undefined' || typeof document.addEventListener !== 'function' ) return;
 		document.addEventListener( name, cb );
@@ -198,7 +232,7 @@
 		var id = windowIdFromPayload( payload );
 		if ( ! id ) return;
 		setDesktopSupport( 'windows' );
-		if ( hookName === 'desktop-mode.window.closed' || hookName === 'desktop-mode.native-window.before-close' ) {
+		if ( hookIs( hookName, 'window.closed' ) || hookIs( hookName, 'native-window.before-close' ) ) {
 			delete windowStateById[ id ];
 			if ( desktopState.windows.focusedId === id ) desktopState.windows.focusedId = '';
 			refreshWindowList();
@@ -222,9 +256,9 @@
 		if ( payload && typeof payload.title === 'string' ) row.title = payload.title;
 		if ( payload && payload.config && typeof payload.config.title === 'string' ) row.title = payload.config.title;
 		if ( payload && typeof payload.state === 'string' ) row.state = payload.state;
-		if ( hookName === 'desktop-mode.window.maximized' ) row.state = 'maximized';
-		if ( hookName === 'desktop-mode.window.unmaximized' || hookName === 'desktop-mode.window.fullscreen-exited' ) row.state = 'normal';
-		if ( hookName === 'desktop-mode.window.fullscreen-entered' ) row.state = 'fullscreen';
+		if ( hookIs( hookName, 'window.maximized' ) ) row.state = 'maximized';
+		if ( hookIs( hookName, 'window.unmaximized' ) || hookIs( hookName, 'window.fullscreen-exited' ) ) row.state = 'normal';
+		if ( hookIs( hookName, 'window.fullscreen-entered' ) ) row.state = 'fullscreen';
 		var bounds = normalizeBounds( payload );
 		if ( bounds ) row.bounds = bounds;
 		if ( payload && ( payload.width != null || payload.height != null ) ) {
@@ -233,13 +267,13 @@
 				height: numericOrNull( payload.height ) || 0,
 			};
 		}
-		if ( hookName === 'desktop-mode.window.focused' || hookName === 'desktop-mode.window.opened' || hookName === 'desktop-mode.window.reopened' ) {
+		if ( hookIs( hookName, 'window.focused' ) || hookIs( hookName, 'window.opened' ) || hookIs( hookName, 'window.reopened' ) ) {
 			desktopState.windows.focusedId = id;
 			row.focused = true;
 			Object.keys( windowStateById ).forEach( function ( otherId ) {
 				if ( otherId !== id ) windowStateById[ otherId ].focused = false;
 			} );
-		} else if ( hookName === 'desktop-mode.window.blurred' ) {
+		} else if ( hookIs( hookName, 'window.blurred' ) ) {
 			row.focused = false;
 			if ( desktopState.windows.focusedId === id ) {
 				desktopState.windows.focusedId = payload && payload.focusedTo ? String( payload.focusedTo ) : '';
@@ -531,6 +565,14 @@
 			d.ready( cb );
 			return;
 		}
+		if ( d && typeof d.whenReady === 'function' ) {
+			d.whenReady( cb );
+			return;
+		}
+		if ( d && typeof d.isReady === 'function' && d.isReady() ) {
+			cb();
+			return;
+		}
 		cb();
 	}
 
@@ -613,7 +655,7 @@
 		return null;
 	}
 
-	function keepOddShopNearTop( payload ) {
+	function observeOddShopPlacement( payload ) {
 		if ( windowIdFromPayload( payload ) !== 'odd' ) return;
 		var win = shopWindowFromPayload( payload );
 		var state = win && win.state || payload && payload.state || '';
@@ -622,62 +664,57 @@
 		if ( ! el || ! el.style ) return;
 		var y = shopWindowTop( el, payload );
 		if ( y === null || y <= SHOP_TOP_MAX_Y ) return;
-		el.style.top = SHOP_TOP_Y + 'px';
-		if ( win && win.config && typeof win.config === 'object' ) {
-			try { win.config.y = SHOP_TOP_Y; } catch ( _ ) {}
-		}
-		if ( win && typeof win._emitChange === 'function' ) {
-			try { win._emitChange( 'moved' ); } catch ( _ ) {}
-		}
-		if ( windowStateById.odd && windowStateById.odd.bounds ) {
-			windowStateById.odd.bounds.y = SHOP_TOP_Y;
-			windowStateById.odd.updatedAt = stateNow();
-			refreshWindowList();
-			bumpDesktopState();
-		}
-		record( 'info', 'odd.shop-window.top-corrected', { from: y, to: SHOP_TOP_Y } );
+		record( 'info', 'odd.shop-window.host-placement-observed', {
+			y: y,
+			preferredMaxY: SHOP_TOP_MAX_Y,
+		} );
 	}
 
 	function setupWindowDiagnostics() {
-		var map = {
-			'desktop-mode.window.opened':              'odd.window-opened',
-			'desktop-mode.window.reopened':            'odd.window-reopened',
-			'desktop-mode.window.content-loading':     'odd.window-content-loading',
-			'desktop-mode.window.content-loaded':      'odd.window-content-loaded',
-			'desktop-mode.window.closing':             'odd.window-closing',
-			'desktop-mode.window.closed':              'odd.window-closed',
-			'desktop-mode.window.focused':             'odd.window-focused',
-			'desktop-mode.window.blurred':             'odd.window-blurred',
-			'desktop-mode.window.changed':             'odd.window-changed',
-			'desktop-mode.window.detached':            'odd.window-detached',
-			'desktop-mode.window.bounds-changed':      'odd.window-bounds-changed',
-			'desktop-mode.window.body-resized':        'odd.window-body-resized',
-			'desktop-mode.window.maximized':           'odd.window-maximized',
-			'desktop-mode.window.unmaximized':         'odd.window-unmaximized',
-			'desktop-mode.window.fullscreen-entered':  'odd.window-fullscreen-entered',
-			'desktop-mode.window.fullscreen-exited':   'odd.window-fullscreen-exited',
-			'desktop-mode.native-window.after-render': 'odd.native-window-after-render',
-			'desktop-mode.native-window.before-close': 'odd.native-window-before-close',
-		};
-		Object.keys( map ).forEach( function ( hookName ) {
-			addAction( hookName, function ( payload ) {
-				var windowId = payload && ( payload.windowId || payload.id );
-				updateDesktopWindowState( hookName, payload || {} );
-				if ( hookName === 'desktop-mode.window.opened' || hookName === 'desktop-mode.window.reopened' ) {
-					fullscreenOddShopOnTouch( payload || {} );
-					keepOddShopNearTop( payload || {} );
-				}
-				if ( hookName === 'desktop-mode.native-window.after-render' ) {
-					keepOddShopNearTop( payload || {} );
-				}
-				if ( ! isOddWindow( windowId ) ) return;
-				var normalized = normalizeWindowPayload( payload );
-				record( 'info', hookName, normalized );
-				emit( map[ hookName ], normalized );
+		var map = [
+			[ 'WINDOW_OPENED', 'desktop-mode.window.opened', 'odd.window-opened' ],
+			[ '', 'desktop-mode.window.reopened', 'odd.window-reopened' ],
+			[ '', 'desktop-mode.window.content-loading', 'odd.window-content-loading' ],
+			[ '', 'desktop-mode.window.content-loaded', 'odd.window-content-loaded' ],
+			[ 'WINDOW_CLOSING', 'desktop-mode.window.closing', 'odd.window-closing' ],
+			[ 'WINDOW_CLOSED', 'desktop-mode.window.closed', 'odd.window-closed' ],
+			[ 'WINDOW_FOCUSED', 'desktop-mode.window.focused', 'odd.window-focused' ],
+			[ '', 'desktop-mode.window.blurred', 'odd.window-blurred' ],
+			[ '', 'desktop-mode.window.changed', 'odd.window-changed' ],
+			[ 'WINDOW_DETACHED', 'desktop-mode.window.detached', 'odd.window-detached' ],
+			[ 'WINDOW_BOUNDS_CHANGED', 'desktop-mode.window.bounds-changed', 'odd.window-bounds-changed' ],
+			[ 'WINDOW_BODY_RESIZED', 'desktop-mode.window.body-resized', 'odd.window-body-resized' ],
+			[ 'WINDOW_MAXIMIZED', 'desktop-mode.window.maximized', 'odd.window-maximized' ],
+			[ 'WINDOW_UNMAXIMIZED', 'desktop-mode.window.unmaximized', 'odd.window-unmaximized' ],
+			[ 'WINDOW_FULLSCREEN_ENTERED', 'desktop-mode.window.fullscreen-entered', 'odd.window-fullscreen-entered' ],
+			[ 'WINDOW_FULLSCREEN_EXITED', 'desktop-mode.window.fullscreen-exited', 'odd.window-fullscreen-exited' ],
+			[ 'NATIVE_WINDOW_AFTER_RENDER', 'desktop-mode.native-window.after-render', 'odd.native-window-after-render' ],
+			[ 'NATIVE_WINDOW_BEFORE_CLOSE', 'desktop-mode.native-window.before-close', 'odd.native-window-before-close' ],
+		];
+		map.forEach( function ( row ) {
+			var key = row[ 0 ];
+			var fallback = row[ 1 ];
+			var eventName = row[ 2 ];
+			hookNames( key, fallback ).forEach( function ( hookName ) {
+				addAction( hookName, function ( payload ) {
+					var windowId = payload && ( payload.windowId || payload.id );
+					updateDesktopWindowState( hookName, payload || {} );
+					if ( hookIs( hookName, 'window.opened' ) || hookIs( hookName, 'window.reopened' ) ) {
+						fullscreenOddShopOnTouch( payload || {} );
+						observeOddShopPlacement( payload || {} );
+					}
+					if ( hookIs( hookName, 'native-window.after-render' ) ) {
+						observeOddShopPlacement( payload || {} );
+					}
+					if ( ! isOddWindow( windowId ) ) return;
+					var normalized = normalizeWindowPayload( payload );
+					record( 'info', hookName, normalized );
+					emit( eventName, normalized );
+				} );
 			} );
 		} );
 
-		addFilter( 'desktop-mode.window.loading-overlay', function ( host, ctx ) {
+		addFilterFor( '', 'desktop-mode.window.loading-overlay', function ( host, ctx ) {
 			var windowId = ctx && ctx.windowId;
 			if ( ! host || ! isOddWindow( windowId ) ) return host;
 			try {
@@ -687,7 +724,7 @@
 			return host;
 		} );
 
-		addFilter( 'desktop-mode.native-window.before-render', function ( body, ctx ) {
+		addFilterFor( 'NATIVE_WINDOW_BEFORE_RENDER', 'desktop-mode.native-window.before-render', function ( body, ctx ) {
 			var windowId = ctx && ( ctx.windowId || ctx.id || ( ctx.config && ctx.config.id ) );
 			if ( ! body ) return body;
 			if ( isOddWindow( windowId ) ) {
@@ -707,17 +744,17 @@
 	}
 
 	function setupIframeDiagnostics() {
-		addAction( 'desktop-mode.iframe.error', function ( payload ) {
+		addActionFor( 'IFRAME_ERROR', 'desktop-mode.iframe.error', function ( payload ) {
 			record( 'error', 'desktop-mode.iframe.error', payload || {} );
 			emit( 'odd.iframe-error', payload || {} );
 		} );
-		addAction( 'desktop-mode.iframe.network-completed', function ( payload ) {
+		addActionFor( 'IFRAME_NETWORK_COMPLETED', 'desktop-mode.iframe.network-completed', function ( payload ) {
 			if ( ! payload ) return;
 			if ( payload.failed || Number( payload.status || 0 ) >= 400 ) {
 				record( 'warn', 'desktop-mode.iframe.network-completed', payload );
 			}
 		} );
-		addAction( 'desktop-mode.iframe.ready', function ( payload ) {
+		addActionFor( 'IFRAME_READY', 'desktop-mode.iframe.ready', function ( payload ) {
 			var windowId = payload && payload.windowId;
 			var injected = injectCursorIntoFrame( payload );
 			record( isOddWindow( windowId ) || injected ? 'info' : 'warn', 'desktop-mode.iframe.ready', {
@@ -729,29 +766,31 @@
 
 	function setupWidgetDiagnostics() {
 		[
-			'desktop-mode.widget.mounting',
-			'desktop-mode.widget.added',
-			'desktop-mode.widget.removed',
-			'desktop-mode.widget.mounted',
-			'desktop-mode.widget.unmounting',
-		].forEach( function ( hookName ) {
-			addAction( hookName, function ( payload ) {
-				if ( payload && isOddWidget( payload.id ) ) {
-					var el = elementFromPayload( payload );
-					if ( el ) {
-						markCursorRoot( el );
-						if ( ! observeCursorSurface( el, {
-							source: 'desktop-mode.widget',
-							id:     payload.id || '',
-						} ) ) {
-							markWidgetChrome( el );
+			[ 'WIDGET_MOUNTING', 'desktop-mode.widget.mounting' ],
+			[ 'WIDGET_ADDED', 'desktop-mode.widget.added' ],
+			[ 'WIDGET_REMOVED', 'desktop-mode.widget.removed' ],
+			[ 'WIDGET_MOUNTED', 'desktop-mode.widget.mounted' ],
+			[ 'WIDGET_UNMOUNTING', 'desktop-mode.widget.unmounting' ],
+		].forEach( function ( row ) {
+			hookNames( row[ 0 ], row[ 1 ] ).forEach( function ( hookName ) {
+				addAction( hookName, function ( payload ) {
+					if ( payload && isOddWidget( payload.id ) ) {
+						var el = elementFromPayload( payload );
+						if ( el ) {
+							markCursorRoot( el );
+							if ( ! observeCursorSurface( el, {
+								source: 'desktop-mode.widget',
+								id:     payload.id || '',
+							} ) ) {
+								markWidgetChrome( el );
+							}
 						}
+						record( 'info', hookName, payload );
 					}
-					record( 'info', hookName, payload );
-				}
+				} );
 			} );
 		} );
-		addAction( 'desktop-mode.widget.mount-failed', function ( payload ) {
+		addActionFor( 'WIDGET_MOUNT_FAILED', 'desktop-mode.widget.mount-failed', function ( payload ) {
 			if ( payload && isOddWidget( payload.id ) ) {
 				record( 'error', 'desktop-mode.widget.mount-failed', payload );
 				emit( 'odd.error', {
@@ -766,19 +805,21 @@
 
 	function setupWallpaperDiagnostics() {
 		[
-			'desktop-mode.wallpaper.mounting',
-			'desktop-mode.wallpaper.mounted',
-			'desktop-mode.wallpaper.unmounting',
-			'desktop-mode.wallpaper.visibility',
-		].forEach( function ( hookName ) {
-			addAction( hookName, function ( payload ) {
-				record( 'info', hookName, payload || {} );
-				if ( hookName === 'desktop-mode.wallpaper.visibility' ) {
-					updateWallpaperState( payload || {} );
-				}
+			[ 'WALLPAPER_MOUNTING', 'desktop-mode.wallpaper.mounting' ],
+			[ 'WALLPAPER_MOUNTED', 'desktop-mode.wallpaper.mounted' ],
+			[ 'WALLPAPER_UNMOUNTING', 'desktop-mode.wallpaper.unmounting' ],
+			[ 'WALLPAPER_VISIBILITY', 'desktop-mode.wallpaper.visibility' ],
+		].forEach( function ( row ) {
+			hookNames( row[ 0 ], row[ 1 ] ).forEach( function ( hookName ) {
+				addAction( hookName, function ( payload ) {
+					record( 'info', hookName, payload || {} );
+					if ( hookIs( hookName, 'wallpaper.visibility' ) ) {
+						updateWallpaperState( payload || {} );
+					}
+				} );
 			} );
 		} );
-		addAction( 'desktop-mode.wallpaper.mount-failed', function ( payload ) {
+		addActionFor( 'WALLPAPER_MOUNT_FAILED', 'desktop-mode.wallpaper.mount-failed', function ( payload ) {
 			record( 'error', 'desktop-mode.wallpaper.mount-failed', payload || {} );
 			emit( 'odd.error', {
 				source:   'desktop.wallpaper.mount-failed',
@@ -787,7 +828,7 @@
 				err:      payload && payload.error,
 			} );
 		} );
-		addFilter( 'desktop-mode.wallpaper.surfaces', function ( surfaces ) {
+		addFilterFor( 'WALLPAPER_SURFACES', 'desktop-mode.wallpaper.surfaces', function ( surfaces ) {
 			surfaces = Array.isArray( surfaces ) ? surfaces : [];
 			updateWallpaperSurfaces( surfaces );
 			record( 'info', 'desktop-mode.wallpaper.surfaces', { count: surfaces.length } );
@@ -825,10 +866,15 @@
 			}
 			return label;
 		} );
+		addActionFor( 'DOCK_ITEM_APPENDED', 'desktop-mode.dock.item-appended', function ( payload ) {
+			pulseActivity( 'dock' );
+			var el = elementFromPayload( payload );
+			if ( el ) markCursor( el, 'pointer' );
+			record( 'info', 'desktop-mode.dock.item-appended', payload || {} );
+		} );
 		[
 			'desktop-mode.dock.tile-rendered',
 			'desktop-mode.dock.after-render',
-			'desktop-mode.dock.item-appended',
 			'desktop-mode.dock.item-removed',
 		].forEach( function ( hookName ) {
 			addAction( hookName, function ( payload ) {
@@ -859,15 +905,17 @@
 			return true;
 		}
 		[
-			'desktop-mode.window.opened',
-			'desktop-mode.window.reopened',
-			'desktop-mode.window.content-loaded',
-			'desktop-mode.window.focused',
-			'desktop-mode.window.body-resized',
-			'desktop-mode.window.bounds-changed',
-			'desktop-mode.window.chrome.applied',
-		].forEach( function ( hookName ) {
-			addAction( hookName, mapWindowSurface );
+			[ 'WINDOW_OPENED', 'desktop-mode.window.opened' ],
+			[ '', 'desktop-mode.window.reopened' ],
+			[ '', 'desktop-mode.window.content-loaded' ],
+			[ 'WINDOW_FOCUSED', 'desktop-mode.window.focused' ],
+			[ 'WINDOW_BODY_RESIZED', 'desktop-mode.window.body-resized' ],
+			[ 'WINDOW_BOUNDS_CHANGED', 'desktop-mode.window.bounds-changed' ],
+			[ '', 'desktop-mode.window.chrome.applied' ],
+		].forEach( function ( row ) {
+			hookNames( row[ 0 ], row[ 1 ] ).forEach( function ( hookName ) {
+				addAction( hookName, mapWindowSurface );
+			} );
 		} );
 		if ( typeof document !== 'undefined' ) {
 			ready( function () {
@@ -884,18 +932,18 @@
 	}
 
 	function setupCommandDiagnostics() {
-		addFilter( 'desktop-mode.command.before-run', function ( intent ) {
+		addFilterFor( 'COMMAND_BEFORE_RUN', 'desktop-mode.command.before-run', function ( intent ) {
 			if ( intent && isOddCommand( intent.slug ) ) {
 				record( 'info', 'desktop-mode.command.before-run', intent );
 			}
 			return intent;
 		} );
-		addAction( 'desktop-mode.command.after-run', function ( payload ) {
+		addActionFor( 'COMMAND_AFTER_RUN', 'desktop-mode.command.after-run', function ( payload ) {
 			if ( payload && isOddCommand( payload.slug ) ) {
 				record( 'info', 'desktop-mode.command.after-run', payload );
 			}
 		} );
-		addAction( 'desktop-mode.command.error', function ( payload ) {
+		addActionFor( 'COMMAND_ERROR', 'desktop-mode.command.error', function ( payload ) {
 			if ( payload && isOddCommand( payload.slug ) ) {
 				record( 'error', 'desktop-mode.command.error', payload );
 				emit( 'odd.error', {
@@ -906,7 +954,7 @@
 				} );
 			}
 		} );
-		addFilter( 'desktop-mode.open-command.items', function ( items ) {
+		function openCommandItemsFilter( items ) {
 			items = Array.isArray( items ) ? items : [];
 			var api = window.__odd && window.__odd.api;
 			items.push( {
@@ -930,7 +978,9 @@
 				} );
 			}
 			return items;
-		} );
+		}
+		addFilter( 'wp-desktop.open-command.items', openCommandItemsFilter );
+		addFilter( 'desktop-mode.open-command.items', openCommandItemsFilter );
 	}
 
 	function setupLayoutDiagnostics() {
@@ -1043,7 +1093,7 @@
 				record( 'info', hookName, payload || {} );
 			} );
 		} );
-		addAction( 'desktop-mode.desktop-icon.clicked', function ( payload ) {
+		addActionFor( 'DESKTOP_ICON_CLICKED', 'desktop-mode.desktop-icon.clicked', function ( payload ) {
 			record( 'info', 'desktop-mode.desktop-icon.clicked', payload || {} );
 			if ( payload && payload.id === 'odd' ) {
 				emit( 'odd.desktop-icon-clicked', payload );
@@ -1088,6 +1138,7 @@
 				settingsTabs:  d.listSettingsTabs && typeof d.listSettingsTabs === 'function' ? d.listSettingsTabs().length : null,
 				railRenderers: d.listDockRailRenderers && typeof d.listDockRailRenderers === 'function' ? d.listDockRailRenderers().length : null,
 				systemTiles:   d.listSystemTiles && typeof d.listSystemTiles === 'function' ? d.listSystemTiles().length : null,
+				systemTileApi: typeof d.registerSystemTile === 'function',
 				hostWidgets:   typeof d.registerWidget === 'function' && !! d.widgetLayer,
 				fileTypes:     d.files && typeof d.files.getTypes === 'function' ? d.files.getTypes().length : null,
 				fileOpeners:   d.files && typeof d.files.getOpeners === 'function' ? d.files.getOpeners().length : null,
@@ -1096,12 +1147,19 @@
 				presence:      !! d.presence,
 				heartbeat:     !! d.heartbeat,
 				arrangeMenu:   typeof d.getMenuItems === 'function',
+				commands:      d.listCommands && typeof d.listCommands === 'function' ? d.listCommands().length : null,
+				palettesApi:   typeof d.registerPalette === 'function',
+				refreshMenu:   typeof d.refreshMenu === 'function',
+				wallpaperSurfacesApi: typeof d.getWallpaperSurfaces === 'function',
+				modulesApi:    typeof d.registerModule === 'function' && typeof d.loadModules === 'function',
+				ai:            !! d.ai,
+				dragBridge:    !! d.dragBridge,
 			} );
 		} );
 	}
 
 	function setupArrangeActions() {
-		addAction( 'desktop-mode.arrange.custom-action', function ( payload ) {
+		addActionFor( 'ARRANGE_CUSTOM_ACTION', 'desktop-mode.arrange.custom-action', function ( payload ) {
 			var id = payload && payload.id ? String( payload.id ) : '';
 			var api = window.__odd && window.__odd.api;
 			if ( ! api ) {

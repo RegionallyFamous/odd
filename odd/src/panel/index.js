@@ -95,13 +95,6 @@
 			'scene':    'wallpaper',
 			'widget':   'widgets',
 		};
-		var NOUN_FOR_TYPE = {
-			'app':      'app',
-			'cursor-set': 'cursor set',
-			'icon-set': 'icon set',
-			'scene':    'scene',
-			'widget':   'widget',
-		};
 		var CATALOG_BASE_URL = 'https://odd.regionallyfamous.com/catalog/v1';
 		var cleanupFns = [];
 		var sectionCleanupFns = [];
@@ -976,6 +969,7 @@
 				'Install pocket-sized tools that open in their own desktop windows. Pin them, park them, and launch them like tiny native portals.',
 				{ eyebrow: 'ODD · Mini Apps' }
 			) );
+			appendCatalogNotice( wrap, 'app' );
 
 			wrap.appendChild( renderAppsHero() );
 			var appRows = shopRowsFor( 'app' );
@@ -1089,31 +1083,6 @@
 				// Stable selectors used by tests and the app-management controls.
 			cardWrap.classList.add( 'odd-card--app' );
 			cardWrap.setAttribute( 'data-app-slug', row.slug );
-
-			if ( row.installed && row.update_available ) {
-				var updateBadge = el( 'span', { class: 'odd-shop__card-badge odd-shop__card-badge--update' } );
-				updateBadge.textContent = 'Update';
-				var inner = cardWrap.querySelector( '.odd-shop__card' );
-				if ( inner ) inner.appendChild( updateBadge );
-				var updateBtn = el( 'button', { type: 'button', class: 'odd-shop__card-btn odd-shop__card-btn--update' } );
-				updateBtn.textContent = 'Update';
-				updateBtn.addEventListener( 'click', function () {
-					updateBtn.disabled = true;
-					updateBtn.textContent = 'Updating…';
-					setAppsStatus( wrap, 'Updating ' + ( row.name || row.slug ) + '…', 'busy' );
-					installFromCatalog( row.slug, { allowUpdate: true } ).then( function ( res ) {
-						if ( res && res.ok && res.data && res.data.installed ) {
-							setAppsStatus( wrap, 'Updated ' + ( row.name || row.slug ) + '.', 'ok' );
-							handleInstallSuccess( res.data );
-							return;
-						}
-						updateBtn.disabled = false;
-						updateBtn.textContent = 'Update';
-						setAppsStatus( wrap, ( res && res.message ) || 'Update failed.', 'error' );
-					} );
-				} );
-				cardWrap.appendChild( updateBtn );
-			}
 
 			if ( row.installed ) {
 				cardWrap.appendChild( renderAppCardManagement( row, wrap ) );
@@ -1628,8 +1597,8 @@
 		// and on success auto-switches to the landing department +
 		// flash-highlights the new tile for the user.
 		//
-		// DEPT_FOR_TYPE + NOUN_FOR_TYPE are hoisted up top so inner
-		// helpers (status messaging, routing, etc.) resolve them even
+		// DEPT_FOR_TYPE is hoisted up top so inner helpers
+		// (status messaging, routing, etc.) resolve it even
 		// when renderSection runs before this block is evaluated.
 		// ----------------------------------------------------------
 
@@ -1705,10 +1674,17 @@
 			return !! ( key && state.installing && state.installing[ key ] );
 		}
 
-		function setShopInstalling( row, installing ) {
+		function shopInstallMode( row ) {
+			var key = shopInstallKey( row );
+			var flow = key && state.installing ? state.installing[ key ] : null;
+			if ( flow && typeof flow === 'object' && flow.mode ) return flow.mode;
+			return flow ? 'install' : '';
+		}
+
+		function setShopInstalling( row, installing, mode ) {
 			var key = shopInstallKey( row );
 			if ( ! key ) return;
-			if ( installing ) state.installing[ key ] = true;
+			if ( installing ) state.installing[ key ] = { mode: mode || 'install', at: Date.now() };
 			else delete state.installing[ key ];
 		}
 
@@ -1719,6 +1695,35 @@
 
 		function itemDisplayName( row, fallback ) {
 			return ( row && ( row.name || row.label || row.slug ) ) || fallback || 'item';
+		}
+
+		function actionProgressCopy( mode ) {
+			if ( mode === 'update' ) return { label: __( 'Updating…' ), status: __( 'Updating' ), verb: __( 'Updating' ) };
+			if ( mode === 'repair' ) return { label: __( 'Repairing…' ), status: __( 'Repairing' ), verb: __( 'Repairing' ) };
+			return { label: __( 'Installing…' ), status: __( 'Installing' ), verb: __( 'Installing' ) };
+		}
+
+		function installTypeLabel( type ) {
+			if ( type === 'scene' ) return __( 'scene' );
+			if ( type === 'icon-set' ) return __( 'icon set' );
+			if ( type === 'cursor-set' ) return __( 'cursor set' );
+			if ( type === 'widget' ) return __( 'widget' );
+			if ( type === 'app' ) return __( 'app' );
+			return __( 'bundle' );
+		}
+
+		function installSuccessMessage( type, name, scheduleReload ) {
+			var label = name || __( 'item' );
+			if ( scheduleReload ) {
+				return __( 'Installed ' ) + installTypeLabel( type ) + ' "' + label + __( '". Reloading to finish setup…' );
+			}
+			if ( type === 'widget' ) {
+				return __( 'Installed widget "' ) + label + __( '". Ready to add.' );
+			}
+			if ( type === 'app' ) {
+				return __( 'Installed app "' ) + label + __( '". Ready to open.' );
+			}
+			return __( 'Installed ' ) + installTypeLabel( type ) + ' "' + label + __( '". Ready to apply.' );
 		}
 
 		function errorCopy( code, fallback ) {
@@ -1893,7 +1898,7 @@
 					'scene',
 					slug,
 					name,
-					'Installed scene "' + name + '". Refreshing admin…',
+					installSuccessMessage( 'scene', name, true ),
 					{ scheduleReload: true, delayMs: ODD_RELOAD_DELAY_MS_DEFAULT }
 				);
 			}
@@ -1903,7 +1908,7 @@
 					'scene',
 					slug,
 					name,
-					'Installed scene "' + name + '". Ready to preview.'
+					installSuccessMessage( 'scene', name, false )
 				);
 			} ).catch( function () {
 				onInstallSuccessInPanel(
@@ -1911,7 +1916,7 @@
 					'scene',
 					slug,
 					name,
-					'Installed scene "' + name + '". Refreshing admin…',
+					installSuccessMessage( 'scene', name, true ),
 					{ scheduleReload: true, delayMs: ODD_RELOAD_DELAY_MS_DEFAULT }
 				);
 			} );
@@ -1921,7 +1926,6 @@
 			reloadOpts       = reloadOpts || {};
 			var scheduleReload = !! reloadOpts.scheduleReload;
 			var reloadDelayMs = typeof reloadOpts.delayMs === 'number' ? reloadOpts.delayMs : ODD_RELOAD_DELAY_MS_DEFAULT;
-			var noun         = NOUN_FOR_TYPE[ type ] || 'bundle';
 			var row          = data && data.row;
 			clearInstallFlow( type, slug );
 			if ( 'app' === type ) {
@@ -1941,9 +1945,7 @@
 				// a deferred full reload stays the reliable completion path.
 				scheduleReload = true;
 				reloadDelayMs = ODD_RELOAD_DELAY_MS_DEFAULT;
-				message =
-					message ||
-					( 'Installed app "' + name + '". Refreshing admin…' );
+				message = message || installSuccessMessage( 'app', name, true );
 			}
 			spliceInstalledRow( type, slug, row, data && data.manifest );
 			if ( 'app' === type && data && data.serve_url ) {
@@ -1958,11 +1960,11 @@
 					type:          type,
 					name:          name || slug,
 					toastMessage:  message ||
-						( 'Installed ' + noun + ' "' + name + '". Refreshing admin…' ),
+						installSuccessMessage( type, name, true ),
 				} );
 			} else {
 				showShopFlowToast(
-					message || ( 'Installed ' + noun + ' "' + name + '".' ),
+					message || installSuccessMessage( type, name, false ),
 					{ duration: 4200 }
 				);
 			}
@@ -1988,7 +1990,7 @@
 					'widget',
 					slug,
 					name,
-					'Installed widget "' + name + '". Refreshing admin…',
+					installSuccessMessage( 'widget', name, true ),
 					{ scheduleReload: true, delayMs: ODD_RELOAD_DELAY_MS_DEFAULT }
 				);
 			}
@@ -1999,7 +2001,7 @@
 				spliceInstalledRow( 'widget', slug, row || { id: 'odd/' + slug, slug: slug, label: name, installed: true }, data && data.manifest );
 				state.justInstalled = { type: 'widget', slug: slug, name: name, at: Date.now() };
 				playShopSound( 'success' );
-				showShopFlowToast( 'Installed widget "' + name + '". Ready to add.', { duration: 4200 } );
+				showShopFlowToast( installSuccessMessage( 'widget', name, false ), { duration: 4200 } );
 				renderSection( 'widgets', { keepQuery: true } );
 			} ).catch( function () {
 				fallback();
@@ -2824,15 +2826,17 @@
 			row = row || {};
 			if ( ! row.slug ) return Promise.resolve( null );
 			if ( isShopInstalling( row ) ) return Promise.resolve( null );
+			var mode = opts.mode || ( row.installed && row.updateAvailable ? 'update' : ( row.broken ? 'repair' : 'install' ) );
+			var progress = actionProgressCopy( mode );
 			playShopSound( 'install' );
-			setShopInstalling( row, true );
+			setShopInstalling( row, true, mode );
 			if ( btn ) {
 				btn.disabled = true;
 				btn.classList.add( 'odd-shop__card-btn--installing', 'is-disabled' );
 				btn.setAttribute( 'aria-busy', 'true' );
-				btn.textContent = 'Installing…';
+				btn.textContent = progress.label;
 			}
-			showShopFlowToast( 'Installing ' + itemDisplayName( row ) + '…', { duration: 2400 } );
+			showShopFlowToast( progress.verb + ' ' + itemDisplayName( row ) + '…', { duration: 2400 } );
 			renderSection( state.active, { keepQuery: true } );
 			return installCatalogRowData( row.raw || row, opts ).then( function ( data ) {
 				handleInstallSuccess( data );
@@ -3416,69 +3420,59 @@
 			var apps = health.apps || {};
 			var source = catalog.source || 'unknown';
 			var sig = catalog.signature_status || 'unknown';
-			var badSig = [ 'invalid', 'missing', 'mismatch', 'no_key', 'unavailable' ].indexOf( sig ) !== -1;
+			var badSig = catalogSignatureIsBad( sig );
 			var warning = source === 'fallback_file' || source === 'stale_option' || source === 'empty' || !! catalog.last_error_message || badSig;
-			var strip = el( 'div', { class: 'odd-shop__health' + ( warning ? ' is-warning' : ' is-ok' ) } );
-			var body = el( 'div', { class: 'odd-shop__health-body' } );
-			var title = el( 'strong' );
-			title.textContent = ! badSig && ( source === 'remote' || source === 'transient' )
-				? __( 'Catalog healthy' )
-				: __( 'Catalog needs attention' );
-			var detail = el( 'span' );
 			var effectiveCount = catalog.effective_bundle_count || catalog.bundle_count || 0;
 			var rawCount = catalog.raw_bundle_count || effectiveCount;
-			var staleAge = Math.max( 0, parseInt( catalog.stale_age || 0, 10 ) || 0 );
-			var staleLabel = staleAge > 0
-				? Math.round( staleAge / 60 ) + 'm'
-				: 'fresh';
-			var hash = catalog.registry_sha256 ? String( catalog.registry_sha256 ).slice( 0, 12 ) : '';
-			var parts = [
-				'Catalog: ' + source.replace( /_/g, ' ' ),
-				'Bundles: ' + effectiveCount + ' effective / ' + rawCount + ' raw',
-				'Signature: ' + sig,
-				'Stale age: ' + staleLabel,
-				'Starter: ' + ( starter.status || 'unknown' ),
-				'Apps: ' + ( apps.installed || 0 ),
-			];
-			if ( hash ) {
-				parts.splice( 3, 0, 'Hash: ' + hash );
-			}
-			if ( catalog.rollback_count ) {
-				parts.push( 'Rollback: ' + catalog.rollback_count );
-			}
-			if ( catalog.last_error_message ) {
-				parts.push( 'Last error: ' + catalog.last_error_message );
-			}
-			detail.textContent = parts.join( ' · ' );
+
+			var strip = el( 'div', { class: 'odd-shop__health odd-shop__catalog-dashboard' + ( warning ? ' is-warning' : ' is-ok' ) } );
+			var body = el( 'div', { class: 'odd-shop__health-body' } );
+			var title = el( 'strong' );
+			title.textContent = ! warning
+				? __( 'Signed catalog dashboard' )
+				: __( 'Catalog needs attention' );
+			var detail = el( 'span' );
+			detail.textContent = warning
+				? __( 'ODD keeps a local fallback and previous snapshots so the Shop can fail closed instead of going blank.' )
+				: __( 'Remote catalog rows are signed, cached, hashed, and checked again before install.' );
 			body.appendChild( title );
 			body.appendChild( detail );
+
+			var metrics = el( 'div', { class: 'odd-shop__health-grid', 'aria-label': __( 'Catalog security details' ) } );
+			[
+				[ 'Source', catalogSourceLabel( source ) ],
+				[ 'Signature', catalogSignatureLabel( sig ) ],
+				[ 'Bundles', effectiveCount + ' effective / ' + rawCount + ' raw' ],
+				[ 'Registry hash', formatShortHash( catalog.registry_sha256 ) ],
+				[ 'Registry size', formatBytes( catalog.registry_bytes ) ],
+				[ 'Stale age', formatAge( catalog.stale_age ) ],
+				[ 'Starter', starter.status || 'unknown' ],
+				[ 'Apps', apps.installed || 0 ],
+			].forEach( function ( pair ) {
+				var metric = el( 'span', { class: 'odd-shop__health-metric' } );
+				var key = el( 'b' );
+				key.textContent = pair[ 0 ];
+				var value = el( 'span' );
+				value.textContent = String( pair[ 1 ] );
+				metric.appendChild( key );
+				metric.appendChild( value );
+				metrics.appendChild( metric );
+			} );
+			body.appendChild( metrics );
+
+			if ( catalog.last_error_message ) {
+				var error = el( 'span', { class: 'odd-shop__health-error' } );
+				error.textContent = 'Last error: ' + catalog.last_error_message;
+				body.appendChild( error );
+			}
 			strip.appendChild( body );
 
 			var actions = el( 'div', { class: 'odd-shop__health-actions' } );
 			var refreshBtn = el( 'button', { type: 'button', class: 'odd-apps-btn odd-apps-btn--pill' } );
 			refreshBtn.textContent = __( 'Refresh catalog' );
 			refreshBtn.addEventListener( 'click', function () {
-				refreshBtn.disabled = true;
-				refreshBtn.textContent = __( 'Refreshing…' );
-				fetch( ( state.cfg.bundleCatalogUrl || '' ).replace( /\/catalog\/?$/, '/refresh' ), {
-					method: 'POST',
-					credentials: 'same-origin',
-					headers: { 'X-WP-Nonce': state.cfg.restNonce || '' },
-				} ).then( function ( res ) {
-					return res.ok ? res.json() : null;
-				} ).then( function ( res ) {
-					if ( res && res.meta ) {
-						state.cfg.systemHealth = state.cfg.systemHealth || {};
-						state.cfg.systemHealth.catalog = res.meta;
-					}
-					toast( __( 'Catalog refreshed.' ) );
+				refreshCatalog( refreshBtn, function () {
 					renderSection( 'settings', { keepQuery: true } );
-				} ).catch( function ( err ) {
-					reportError( 'bundles.refresh', err );
-					toast( __( 'Catalog refresh failed.' ), 'error' );
-				} ).finally( function () {
-					refreshBtn.disabled = false;
-					refreshBtn.textContent = __( 'Refresh catalog' );
 				} );
 			} );
 			actions.appendChild( refreshBtn );
@@ -3489,7 +3483,7 @@
 				rollbackBtn.addEventListener( 'click', function () {
 					rollbackBtn.disabled = true;
 					rollbackBtn.textContent = __( 'Restoring…' );
-					fetch( ( state.cfg.bundleCatalogUrl || '' ).replace( /\/catalog\/?$/, '/catalog-rollback' ), {
+					fetch( catalogEndpoint( '/catalog-rollback' ), {
 						method: 'POST',
 						credentials: 'same-origin',
 						headers: {
@@ -3645,6 +3639,7 @@
 				'Living generative scenes for your WordPress desktop. Audition the weather before you let it move in.',
 				{ eyebrow: 'ODD · Living Art' }
 			) );
+			appendCatalogNotice( wrap, 'scene' );
 
 			// Scenes on disk come from installed bundles (plus
 			// the built-in "pending" fallback exposed by the runtime
@@ -3929,6 +3924,184 @@
 			return wrap;
 		}
 
+		function catalogMeta() {
+			var health = state.cfg.systemHealth || {};
+			return health.catalog || {};
+		}
+
+		function catalogSignatureIsBad( status ) {
+			return [ 'invalid', 'missing', 'mismatch', 'no_key', 'unavailable' ].indexOf( String( status || '' ) ) !== -1;
+		}
+
+		function catalogSourceLabel( source ) {
+			source = String( source || 'unknown' );
+			var map = {
+				remote: 'Remote catalog',
+				transient: 'Cached remote catalog',
+				stale_option: 'Saved catalog',
+				fallback_file: 'Bundled fallback catalog',
+				rollback_option: 'Restored catalog',
+				empty: 'Empty catalog',
+			};
+			return map[ source ] || source.replace( /_/g, ' ' );
+		}
+
+		function catalogSignatureLabel( status ) {
+			status = String( status || 'unknown' );
+			var map = {
+				valid: 'Valid signature',
+				skipped: 'Signature skipped',
+				unknown: 'Unknown signature',
+				missing: 'Missing signature',
+				invalid: 'Invalid signature',
+				mismatch: 'Signature mismatch',
+				no_key: 'No trusted key',
+				unavailable: 'Verifier unavailable',
+			};
+			return map[ status ] || status.replace( /_/g, ' ' );
+		}
+
+		function formatShortHash( value ) {
+			value = String( value || '' );
+			return value ? value.slice( 0, 12 ) : 'none';
+		}
+
+		function formatBytes( value ) {
+			var n = parseInt( value || 0, 10 ) || 0;
+			if ( n >= 1024 * 1024 ) return ( n / ( 1024 * 1024 ) ).toFixed( 1 ) + ' MB';
+			if ( n >= 1024 ) return Math.round( n / 1024 ) + ' KB';
+			return n ? n + ' B' : '0 B';
+		}
+
+		function formatAge( seconds ) {
+			var n = Math.max( 0, parseInt( seconds || 0, 10 ) || 0 );
+			if ( n < 60 ) return 'fresh';
+			if ( n < 3600 ) return Math.round( n / 60 ) + 'm';
+			if ( n < 86400 ) return Math.round( n / 3600 ) + 'h';
+			return Math.round( n / 86400 ) + 'd';
+		}
+
+		function catalogTotalRows() {
+			var catalog = ( state.cfg && state.cfg.bundleCatalog ) || {};
+			var total = 0;
+			[ 'scene', 'iconSet', 'cursorSet', 'widget', 'app' ].forEach( function ( key ) {
+				total += Array.isArray( catalog[ key ] ) ? catalog[ key ].length : 0;
+			} );
+			return total;
+		}
+
+		function catalogIssue( type ) {
+			var catalog = catalogMeta();
+			var source = String( catalog.source || 'unknown' );
+			var sig = String( catalog.signature_status || 'unknown' );
+			var total = catalogTotalRows();
+			var effective = parseInt( catalog.effective_bundle_count || catalog.bundle_count || total || 0, 10 ) || 0;
+			var typeRows = type ? catalogRowsFor( type ).length : total;
+			var lastError = String( catalog.last_error_message || '' );
+			var badSig = catalogSignatureIsBad( sig );
+
+			if ( badSig ) {
+				return {
+					level: 'warning',
+					title: 'Catalog signature needs attention',
+					copy: catalogSignatureLabel( sig ) + '. ODD keeps install safety checks on and will not trust changed bundles blindly.',
+				};
+			}
+			if ( source === 'empty' || ( effective <= 0 && total <= 0 ) ) {
+				return {
+					level: 'empty',
+					title: typeRows ? 'The catalog is thin right now' : 'The catalog shelf is empty',
+					copy: lastError || 'Installed items still work, but ODD could not load new catalog rows yet.',
+				};
+			}
+			if ( source === 'fallback_file' || source === 'stale_option' || source === 'rollback_option' ) {
+				return {
+					level: 'warning',
+					title: source === 'fallback_file' ? 'Showing the bundled fallback shelf' : 'Showing a saved catalog shelf',
+					copy: lastError || 'ODD could not verify the newest catalog, so it is using a known local snapshot instead.',
+				};
+			}
+			if ( lastError ) {
+				return {
+					level: 'info',
+					title: 'Catalog refreshed with a note',
+					copy: lastError,
+				};
+			}
+			return null;
+		}
+
+		function catalogEndpoint( suffix ) {
+			var base = ( state.cfg.bundleCatalogUrl || '' ) ||
+				( ( state.cfg.restUrl || '' ).replace( /\/prefs\/?$/, '' ) + '/bundles/catalog' );
+			return base.replace( /\/catalog\/?$/, suffix );
+		}
+
+		function refreshCatalog( button, onDone ) {
+			if ( button ) {
+				button.disabled = true;
+				button.textContent = __( 'Refreshing…' );
+			}
+			return fetch( catalogEndpoint( '/refresh' ), {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: { 'X-WP-Nonce': state.cfg.restNonce || '' },
+			} ).then( function ( res ) {
+				return res.ok ? res.json() : null;
+			} ).then( function ( res ) {
+				if ( res && res.meta ) {
+					state.cfg.systemHealth = state.cfg.systemHealth || {};
+					state.cfg.systemHealth.catalog = res.meta;
+				}
+				toast( __( 'Catalog refreshed.' ) );
+				if ( typeof onDone === 'function' ) onDone( res );
+			} ).catch( function ( err ) {
+				reportError( 'bundles.refresh', err );
+				toast( __( 'Catalog refresh failed.' ), 'error' );
+			} ).finally( function () {
+				if ( button ) {
+					button.disabled = false;
+					button.textContent = __( 'Refresh catalog' );
+				}
+			} );
+		}
+
+		function appendCatalogNotice( wrap, type ) {
+			var issue = catalogIssue( type );
+			if ( ! issue ) return;
+			var notice = el( 'div', {
+				class: 'odd-shop__catalog-notice odd-shop__catalog-notice--' + issue.level,
+				role: issue.level === 'warning' || issue.level === 'empty' ? 'status' : null,
+			} );
+			var body = el( 'div', { class: 'odd-shop__catalog-notice-body' } );
+			var title = el( 'strong' );
+			title.textContent = __( issue.title );
+			var copy = el( 'span' );
+			copy.textContent = __( issue.copy );
+			body.appendChild( title );
+			body.appendChild( copy );
+			notice.appendChild( body );
+			var actions = el( 'div', { class: 'odd-shop__catalog-notice-actions' } );
+			if ( state.cfg.canInstall ) {
+				var refresh = el( 'button', { type: 'button', class: 'odd-apps-btn odd-apps-btn--pill' } );
+				refresh.textContent = __( 'Refresh catalog' );
+				refresh.addEventListener( 'click', function () {
+					refreshCatalog( refresh, function () {
+						renderSection( state.active, { keepQuery: true } );
+					} );
+				} );
+				actions.appendChild( refresh );
+			}
+			var settings = el( 'button', { type: 'button', class: 'odd-apps-btn odd-apps-btn--pill' } );
+			settings.textContent = __( 'View health' );
+			settings.addEventListener( 'click', function () {
+				renderSection( 'settings', { keepQuery: true } );
+			} );
+			actions.appendChild( settings );
+			notice.appendChild( actions );
+			wrap.appendChild( notice );
+		}
+
 		function renderGlobalSearch() {
 			var query = String( state.query || '' ).trim();
 			var wrap = el( 'div', { class: 'odd-shop__dept odd-shop__dept--search' } );
@@ -3939,6 +4112,7 @@
 					: 'Search wallpapers, icon sets, cursors, widgets, and apps from one little command nest.',
 				{ eyebrow: 'ODD · All Departments' }
 			) );
+			appendCatalogNotice( wrap, 'all' );
 
 			var allRows = collectSearchRows();
 			var matches = applyStoreControls( allRows, 'all' );
@@ -4605,6 +4779,53 @@
 			return renderShelf( title, items, renderSceneCard, { scope: scope || 'wallpaper' } );
 		}
 
+		function appendShelfCards( track, items, cardFn ) {
+			var frag = document.createDocumentFragment();
+			( items || [] ).forEach( function ( item ) {
+				var card = cardFn( item );
+				if ( card ) frag.appendChild( card );
+			} );
+			track.appendChild( frag );
+		}
+
+		function deferShopWork( fn, delay ) {
+			var done = false;
+			function run() {
+				if ( done ) return;
+				done = true;
+				fn();
+			}
+			if ( typeof delay === 'number' && delay > 0 && typeof window.setTimeout === 'function' ) {
+				var timer = window.setTimeout( run, delay );
+				addSectionCleanup( function () {
+					done = true;
+					window.clearTimeout( timer );
+				} );
+				return;
+			}
+			if ( typeof window.requestIdleCallback === 'function' ) {
+				var idle = window.requestIdleCallback( run, { timeout: 180 } );
+				addSectionCleanup( function () {
+					done = true;
+					if ( typeof window.cancelIdleCallback === 'function' ) window.cancelIdleCallback( idle );
+				} );
+				return;
+			}
+			if ( typeof window.requestAnimationFrame === 'function' ) {
+				var raf = window.requestAnimationFrame( run );
+				addSectionCleanup( function () {
+					done = true;
+					window.cancelAnimationFrame( raf );
+				} );
+				return;
+			}
+			var fallback = window.setTimeout( run, 0 );
+			addSectionCleanup( function () {
+				done = true;
+				window.clearTimeout( fallback );
+			} );
+		}
+
 		function renderShelf( category, items, cardFn, opts ) {
 			opts = opts || {};
 			var scope = opts.scope || 'wallpaper';
@@ -4636,9 +4857,7 @@
 				? 'odd-shop__shelf-track odd-shop__shelf-track--tiles'
 				: 'odd-shop__shelf-track odd-shop__shelf-track--list';
 			var track = el( 'div', { class: trackClass } );
-			items.forEach( function ( item ) {
-				track.appendChild( cardFn( item ) );
-			} );
+			appendShelfCards( track, items, cardFn );
 
 			// Wrap the track in a slider shell so we can overlay
 			// prev/next pills. The native scroll still works for
@@ -4688,12 +4907,14 @@
 				slider.classList.toggle( 'is-overflowing', track.scrollWidth > track.clientWidth + 2 );
 			}
 			track.addEventListener( 'scroll', updateButtons, { passive: true } );
-			if ( typeof window !== 'undefined' && typeof window.setTimeout === 'function' ) {
-				window.setTimeout( updateButtons, 0 );
-				window.setTimeout( updateButtons, 400 );
-			}
+			deferShopWork( updateButtons );
+			deferShopWork( updateButtons, 400 );
 			if ( typeof ResizeObserver !== 'undefined' ) {
-				try { new ResizeObserver( updateButtons ).observe( track ); } catch ( _e ) {}
+				try {
+					var ro = new ResizeObserver( updateButtons );
+					ro.observe( track );
+					addSectionCleanup( function () { try { ro.disconnect(); } catch ( _e2 ) {} } );
+				} catch ( _e ) {}
 			}
 
 			return shelf;
@@ -5003,6 +5224,7 @@
 				'Dress Desktop Mode icon surfaces in a new costume. Apply reloads once so the native dock, taskbar, and shortcuts update together.',
 				{ eyebrow: 'ODD · Icon Couture' }
 			) );
+			appendCatalogNotice( wrap, 'icon-set' );
 
 			var sets = Array.isArray( state.cfg.iconSets ) ? state.cfg.iconSets.slice() : [];
 			var rows = shopRowsFor( 'icon-set' ).filter( function ( s ) {
@@ -5251,6 +5473,7 @@
 				'Keep the native pointer, then give it a living aura. Preview instantly; Apply lets the effect follow you through Desktop Mode and classic wp-admin.',
 				{ eyebrow: 'ODD · Cursor Effects' }
 			) );
+			appendCatalogNotice( wrap, 'cursor-set' );
 
 			var sets = Array.isArray( state.cfg.cursorSets ) ? state.cfg.cursorSets.slice() : [];
 			var rows = shopRowsFor( 'cursor-set' ).filter( function ( s ) { return s && s.slug && s.slug !== 'none'; } );
@@ -5750,6 +5973,7 @@
 				'Widgets appear on your desktop — drag one by its title bar to park it wherever you like.',
 				{ eyebrow: 'ODD · Desktop Companions' }
 			) );
+			appendCatalogNotice( wrap, 'widget' );
 
 			var allRows = shopRowsFor( 'widget' );
 			var rows = applyStoreControls( allRows, 'widget' );
@@ -5808,7 +6032,7 @@
 				var tipIcon = el( 'span', { class: 'odd-shop__tip-icon', 'aria-hidden': 'true' } );
 				tipIcon.textContent = '💡';
 				var tipText = el( 'span', { class: 'odd-shop__tip-text' } );
-				tipText.textContent = 'Added widgets land on the desktop — grab the title bar and park them wherever your dashboard goblin heart desires.';
+				tipText.textContent = 'Added widgets land on the desktop — grab the title bar and park them wherever your dashboard wants them.';
 				tip.appendChild( tipIcon );
 				tip.appendChild( tipText );
 				wrap.appendChild( tip );
@@ -6430,46 +6654,163 @@
 			return false;
 		}
 
+		// One derived state model feeds the visible badge, state line,
+		// button label, and data attributes for every Shop card.
+		function shopCardState( row, opts ) {
+			opts = opts || {};
+			var hasActive = Object.prototype.hasOwnProperty.call( opts, 'isActive' );
+			var isActive = hasActive ? !! opts.isActive : shopCardIsActive( row );
+			var flow = window.__odd && window.__odd.shopFlow;
+			if ( flow && typeof flow.cardState === 'function' ) {
+				return flow.cardState( row, {
+					isActive: isActive,
+					isInstalling: isShopInstalling( row ),
+					installMode: shopInstallMode( row ),
+					progress: actionProgressCopy( shopInstallMode( row ) ),
+					pendingReload: state.pendingAdminReload,
+					t: __,
+				} );
+			}
+			function make( id, phase, statusLabel, badgeLabel, badgeMod, action ) {
+				return {
+					id: id,
+					phase: phase,
+					statusLabel: statusLabel,
+					badge: { label: badgeLabel || statusLabel, mod: badgeMod || id },
+					action: action,
+					isActive: isActive,
+				};
+			}
+
+			if ( row && row.incompatible ) {
+				return make(
+					'incompatible',
+					'blocked',
+					__( 'Incompatible' ),
+					__( 'Requires newer host' ),
+					'warning',
+					{ label: __( 'Incompatible' ), kind: 'incompatible', disabled: true }
+				);
+			}
+			if ( isShopInstalling( row ) ) {
+				var installMode = shopInstallMode( row );
+				var progress = actionProgressCopy( installMode );
+				var busyId = installMode === 'update' ? 'updating' : ( installMode === 'repair' ? 'repairing' : 'installing' );
+				return make(
+					busyId,
+					'busy',
+					progress.status,
+					progress.status,
+					'installing',
+					{ label: progress.label, kind: 'installing', disabled: true, progress: true }
+				);
+			}
+			if ( ! row || ! row.installed ) {
+				return make(
+					'available',
+					'available',
+					__( 'Available' ),
+					__( 'Available' ),
+					'available',
+					{ label: __( 'Install' ), kind: 'install', disabled: false }
+				);
+			}
+			if ( row.broken ) {
+				return make(
+					'repair',
+					'attention',
+					__( 'Needs repair' ),
+					__( 'Needs repair' ),
+					'warning',
+					{ label: __( 'Repair' ), kind: 'repair', disabled: false }
+				);
+			}
+			if ( row.updateAvailable ) {
+				return make(
+					'update',
+					'attention',
+					__( 'Update available' ),
+					__( 'Update' ),
+					'update',
+					{ label: __( 'Update' ), kind: 'update', disabled: false }
+				);
+			}
+			var pend = state.pendingAdminReload;
+			if ( pend && row && row.slug && row.installed && ( pend.slug === row.slug || pend.slug === '*' ) ) {
+				return make(
+					'applying',
+					'busy',
+					__( 'Applying changes' ),
+					__( 'Applying' ),
+					'applying',
+					{ label: __( 'Applying…' ), kind: 'pending_reload', disabled: true }
+				);
+			}
+			if ( row.requiresReload ) {
+				return make(
+					'reload',
+					'attention',
+					__( 'Reload required' ),
+					__( 'Reload required' ),
+					'warning',
+					{ label: __( 'Reload now' ), kind: 'reload', disabled: false }
+				);
+			}
+			if ( isActive ) {
+				return make(
+					'active',
+					'active',
+					__( 'Active' ),
+					__( 'Active' ),
+					'active',
+					{ label: __( 'Active' ), kind: 'active', disabled: true }
+				);
+			}
+			if ( row.type === 'scene' || row.type === 'icon-set' || row.type === 'cursor-set' ) {
+				return make(
+					'ready',
+					'ready',
+					__( 'Ready to apply' ),
+					__( 'Installed' ),
+					'installed',
+					{ label: __( 'Apply' ), kind: 'apply', disabled: false }
+				);
+			}
+			if ( row.type === 'widget' ) {
+				return make(
+					'ready',
+					'ready',
+					__( 'Ready to add' ),
+					__( 'Installed' ),
+					'installed',
+					{ label: __( 'Add' ), kind: 'add', disabled: false }
+				);
+			}
+			if ( row.type === 'app' ) {
+				return make(
+					'installed',
+					'installed',
+					__( 'Installed' ),
+					__( 'Installed' ),
+					'installed',
+					{ label: __( 'Open' ), kind: 'open', disabled: false }
+				);
+			}
+			return make(
+				'installed',
+				'installed',
+				__( 'Installed' ),
+				__( 'Installed' ),
+				'installed',
+				{ label: __( 'Open' ), kind: 'open', disabled: false }
+			);
+		}
+
 		// Primary action label + kind derived from state. The kind is
 		// routed through `dispatchShopAction` below; the label is what
 		// the user actually sees on the tile's pill button.
 		function shopCardAction( row ) {
-			if ( row && row.incompatible ) {
-				return { label: 'Incompatible', kind: 'incompatible', disabled: true };
-			}
-			if ( isShopInstalling( row ) ) {
-				return { label: 'Installing…', kind: 'installing', disabled: true, progress: true };
-			}
-			if ( ! row || ! row.installed ) {
-				return { label: 'Install', kind: 'install', disabled: false };
-			}
-			if ( row.broken ) {
-				return { label: 'Repair', kind: 'repair', disabled: false };
-			}
-			if ( row.updateAvailable ) {
-				return { label: 'Update', kind: 'update', disabled: false };
-			}
-			var pend = state.pendingAdminReload;
-			if ( pend && row && row.slug && row.installed && pend.slug === row.slug ) {
-				return { label: __( 'Applying…' ), kind: 'pending_reload', disabled: true };
-			}
-			if ( row.requiresReload ) {
-				return { label: __( 'Reload now' ), kind: 'reload', disabled: false };
-			}
-			if ( shopCardIsActive( row ) ) {
-				return { label: 'Active', kind: 'active', disabled: true };
-			}
-			switch ( row.type ) {
-				case 'scene':
-				case 'icon-set':
-				case 'cursor-set':
-					return { label: 'Apply', kind: 'apply', disabled: false };
-				case 'widget':
-					return { label: 'Add', kind: 'add', disabled: false };
-				case 'app':
-					return { label: 'Open', kind: 'open', disabled: false };
-			}
-			return { label: 'Open', kind: 'open', disabled: false };
+			return shopCardState( row ).action;
 		}
 
 		function dispatchShopAction( row, kind, btn ) {
@@ -6479,15 +6820,7 @@
 					break;
 				case 'repair':
 				case 'update':
-					if ( btn ) { btn.disabled = true; btn.textContent = kind === 'repair' ? 'Repairing…' : 'Updating…'; }
-					installFromCatalog( row.slug, { allowUpdate: true } ).then( function ( res ) {
-						if ( res && res.ok && res.data && res.data.installed ) {
-							handleInstallSuccess( res.data );
-							return;
-						}
-						if ( btn ) { btn.disabled = false; btn.textContent = kind === 'repair' ? 'Repair' : 'Update'; }
-						onInstallFailure( res );
-					} );
+					startShopInstall( row, btn, { allowUpdate: true, mode: kind } );
 					break;
 				case 'preview':
 					if ( row.type === 'scene' )    { previewScene( row.slug );    break; }
@@ -6520,14 +6853,9 @@
 		}
 
 		function shopStatusBadges( row, isActive ) {
-			var badges = [];
-			if ( row && row.updateAvailable ) badges.push( { label: 'Update', mod: 'update' } );
-			if ( row && row.incompatible ) badges.push( { label: 'Requires newer host', mod: 'warning' } );
-			if ( row && row.broken ) badges.push( { label: 'Needs repair', mod: 'warning' } );
-			if ( isActive ) badges.push( { label: 'Active', mod: 'active' } );
-			else if ( row && row.installed ) badges.push( { label: 'Installed', mod: 'installed' } );
-			else badges.push( { label: 'Catalog', mod: 'catalog' } );
-			if ( row && row.featured ) badges.push( { label: 'Featured', mod: 'featured' } );
+			var model = shopCardState( row, { isActive: isActive } );
+			var badges = [ model.badge ];
+			if ( row && row.featured ) badges.push( { label: __( 'Featured' ), mod: 'featured' } );
 			return badges;
 		}
 
@@ -6568,6 +6896,54 @@
 			}
 		}
 
+		function trustProfileFor( row ) {
+			var flow = window.__odd && window.__odd.shopFlow;
+			if ( flow && typeof flow.trustProfile === 'function' ) {
+				return flow.trustProfile( row, { t: __ } );
+			}
+			var type = row && row.type;
+			if ( type === 'icon-set' ) {
+				return {
+					id: 'static-images',
+					label: __( 'Static images' ),
+					detail: __( 'Raster icon files only. ODD validates the image files and Desktop Mode renders them natively.' ),
+				};
+			}
+			if ( type === 'cursor-set' ) {
+				return {
+					id: 'pointer-assets',
+					label: __( 'Pointer assets' ),
+					detail: __( 'Cursor files and generated CSS only. ODD validates paths, sizes, and cursor formats before install.' ),
+				};
+			}
+			if ( type === 'scene' ) {
+				return {
+					id: 'local-code',
+					label: __( 'Runs locally' ),
+					detail: __( 'Wallpaper scenes run JavaScript locally in your admin session so they can animate the desktop canvas.' ),
+				};
+			}
+			if ( type === 'widget' ) {
+				return {
+					id: 'local-code',
+					label: __( 'Runs locally' ),
+					detail: __( 'Widgets run JavaScript locally and use Desktop Mode widget teardown when they leave the desktop.' ),
+				};
+			}
+			if ( type === 'app' ) {
+				return {
+					id: 'sandboxed-app',
+					label: __( 'Sandboxed app' ),
+					detail: __( 'Apps open inside a Desktop Mode window with ODD file serving, CSP headers, and local diagnostics.' ),
+				};
+			}
+			return {
+				id: 'bundle',
+				label: __( 'ODD bundle' ),
+				detail: __( 'Installed through the same validated ODD bundle pipeline as the rest of the Shop.' ),
+			};
+		}
+
 		function closeProductSheet() {
 			if ( productSheetClose ) productSheetClose();
 		}
@@ -6582,6 +6958,7 @@
 			normalised.featured = row.featured;
 			var isActive = shopCardIsActive( normalised );
 			var action = shopCardAction( normalised );
+			var trust = trustProfileFor( normalised );
 
 			var overlay = el( 'div', {
 				class: 'odd-shop__detail-overlay',
@@ -6629,6 +7006,7 @@
 				[ 'Type', rowTypeLabel( normalised.type, false ) ],
 				[ 'Style', normalised.category || 'ODD' ],
 				[ 'Version', normalised.version || 'Catalog' ],
+				[ 'Trust', trust.label ],
 			].forEach( function ( pair ) {
 				var fact = el( 'div', { class: 'odd-shop__detail-fact' } );
 				var key = el( 'span' );
@@ -6652,6 +7030,9 @@
 			} );
 			changes.appendChild( changesTitle );
 			changes.appendChild( list );
+			var trustNote = el( 'p', { class: 'odd-shop__detail-trust odd-shop__detail-trust--' + trust.id } );
+			trustNote.textContent = trust.detail;
+			changes.appendChild( trustNote );
 			bodyWrap.appendChild( changes );
 
 			var actions = el( 'div', { class: 'odd-shop__detail-actions' } );
@@ -6836,19 +7217,27 @@
 		function renderShopCard( row, opts ) {
 			opts = opts || {};
 			if ( ! row ) return null;
-			var isActive = shopCardIsActive( row );
-			var action   = shopCardAction( row );
+			var cardState = shopCardState( row );
+			var isActive = cardState.isActive;
+			var action   = cardState.action;
 			var kind     = action.kind;
 			var installing = !! action.progress;
+			var trust = trustProfileFor( row );
 
 			var wrap = el( 'div', {
 				class: 'odd-shop__card-wrap'
 					+ ( row.installed ? ' is-installed' : ' is-catalog' )
 					+ ( isActive ? ' is-active' : '' )
 					+ ( installing ? ' is-installing' : '' )
+					+ ' is-state-' + cardState.id
 					+ ( opts.variant ? ' odd-shop__card-wrap--' + opts.variant : '' ),
 				'data-odd-shop-card': '1',
 				'data-odd-card-type': row.type,
+				'data-odd-card-state': cardState.id,
+				'data-odd-card-phase': cardState.phase,
+				'data-odd-card-status': cardState.statusLabel,
+				'data-odd-card-action': kind,
+				'data-odd-trust':      trust.id,
 				'data-slug':          row.slug,
 				'data-scene-slug':    row.type === 'scene' ? row.slug : null,
 				'data-set-slug':      row.type === 'icon-set' ? row.slug : null,
@@ -6863,7 +7252,7 @@
 				class: 'odd-shop__card odd-shop__card--' + row.type
 					+ ( row.installed ? ' is-installed' : ' is-catalog' )
 					+ ( isActive ? ' is-active' : '' ),
-				'aria-label': row.name,
+				'aria-label': row.name + ' - ' + cardState.statusLabel,
 				'data-slug': row.slug,
 				'data-odd-cursor': 'pointer',
 			} );
@@ -6899,8 +7288,14 @@
 			title.textContent = row.name;
 			var sub = el( 'div', { class: 'odd-shop__card-sub odd-shop__tile-sub' } );
 			sub.textContent = row.subtitle || '';
+			var stateLine = el( 'div', { class: 'odd-shop__card-state' } );
+			stateLine.textContent = cardState.statusLabel;
+			var trustLine = el( 'div', { class: 'odd-shop__card-trust odd-shop__card-trust--' + trust.id } );
+			trustLine.textContent = trust.label;
 			meta.appendChild( title );
 			meta.appendChild( sub );
+			meta.appendChild( stateLine );
+			meta.appendChild( trustLine );
 			card.appendChild( meta );
 
 			var btn = el( 'button', {
@@ -6909,6 +7304,7 @@
 					+ ( action.disabled ? ' is-disabled' : ' odd-shop__tile-btn--primary' )
 					+ ( kind === 'install' ? ' odd-shop__card-btn--install' : '' ),
 				'aria-pressed': isActive ? 'true' : 'false',
+				'aria-label': action.label + ' ' + row.name,
 				'data-odd-cursor': action.disabled ? 'not-allowed' : 'pointer',
 			} );
 			if ( action.progress ) {

@@ -60,6 +60,36 @@ function oddout_content_forbidden_extensions() {
 }
 
 /**
+ * Validate one ZIP entry path before extraction.
+ *
+ * ZipArchive accepts platform-specific separators and odd control bytes; the
+ * installer treats every bundle as a portable web archive and only allows
+ * relative forward-slash paths.
+ *
+ * @param string $name Entry name from ZipArchive.
+ * @return bool
+ */
+function oddout_content_archive_entry_path_is_safe( $name ) {
+	$name = (string) $name;
+	if (
+		'' === $name ||
+		false !== strpos( $name, '..' ) ||
+		false !== strpos( $name, '\\' ) ||
+		false !== strpos( $name, "\0" ) ||
+		'/' === $name[0]
+	) {
+		return false;
+	}
+
+	$trimmed = rtrim( $name, '/' );
+	if ( '' === $trimmed ) {
+		return false;
+	}
+
+	return (bool) preg_match( '#^[a-zA-Z0-9._/-]+$#', $trimmed );
+}
+
+/**
  * Validate the filename extension + open the archive. Returns a tuple
  * of [ $zip, null ] on success, or [ null, WP_Error ] on failure.
  *
@@ -111,7 +141,7 @@ function oddout_content_archive_scan( ZipArchive $zip ) {
 		}
 		$name = isset( $stat['name'] ) ? (string) $stat['name'] : '';
 
-		if ( false !== strpos( $name, '..' ) || ( strlen( $name ) > 0 && '/' === $name[0] ) ) {
+		if ( ! oddout_content_archive_entry_path_is_safe( $name ) ) {
 			return new WP_Error( 'path_traversal', sprintf( /* translators: %s entry name */ __( 'Bundle contains a path-traversal entry: %s', 'odd-outlandish-desktop-decorator' ), $name ) );
 		}
 

@@ -1,0 +1,42 @@
+{
+  "note": "ODD Default preserves the normal Desktop Mode / WordPress Dashicon glyph masks. The raster treatment keeps the white glyph body intact and applies odd effects outside the mask.",
+  "style": "outside-only chromatic aura",
+  "icons": {
+    "dashboard": "dashicons-dashboard",
+    "posts": "dashicons-admin-post",
+    "pages": "dashicons-admin-page",
+    "media": "dashicons-admin-media",
+    "comments": "dashicons-admin-comments",
+    "appearance": "dashicons-admin-appearance",
+    "plugins": "dashicons-buddicons-replies",
+    "users": "dashicons-admin-users",
+    "tools": "dashicons-admin-tools",
+    "settings": "dashicons-admin-settings",
+    "profile": "dashicons-businessman",
+    "links": "dashicons-admin-links",
+    "recycle-bin": "dashicons-trash",
+    "fallback": "dashicons-admin-generic",
+    "os-settings": "dashicons-desktop",
+    "import": "dashicons-download",
+    "classic-admin": "dashicons-arrow-left-alt"
+  },
+  "codepoints": {
+    "dashboard": "f226",
+    "posts": "f109",
+    "pages": "f105",
+    "media": "f104",
+    "comments": "f101",
+    "appearance": "f100",
+    "plugins": "f451",
+    "users": "f110",
+    "tools": "f107",
+    "settings": "f108",
+    "profile": "f338",
+    "links": "f103",
+    "recycle-bin": "f182",
+    "fallback": "f111",
+    "os-settings": "f472",
+    "import": "f316",
+    "classic-admin": "f340"
+  }
+}

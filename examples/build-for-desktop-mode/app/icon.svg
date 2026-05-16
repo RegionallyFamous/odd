@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Desktop Mode Hello">
+  <rect width="128" height="128" rx="30" fill="#111827"/>
+  <rect x="26" y="30" width="76" height="52" rx="10" fill="#38bdf8"/>
+  <path d="M42 98h44M55 82v16M73 82v16" fill="none" stroke="#f9fafb" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="44" cy="52" r="6" fill="#111827"/>
+  <circle cx="84" cy="52" r="6" fill="#111827"/>
+</svg>

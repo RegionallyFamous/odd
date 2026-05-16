@@ -85,6 +85,53 @@ window.__odd.lifecycle.whenPhase( 'ready' ).then( () => {
 
 `window.__odd.lifecycle.phase()` returns the current phase string.
 
+## JavaScript SDK
+
+`window.__odd.sdk` is the preferred browser entry point for companion
+plugins and themes that need to read ODD state without coupling to each
+individual module. It is a facade over the existing store, lifecycle,
+diagnostics, and `window.__odd.api` helpers; `window.__odd.api` remains
+available and unchanged for code that already uses it.
+
+```js
+var sdk = window.__odd && window.__odd.sdk;
+if ( sdk ) {
+    var prefs = sdk.preferences.get();
+    sdk.preferences.save( { wallpaper: 'oddling-desktop' } );
+    sdk.theme.set( 'dark' );
+    sdk.toast( 'ODD is ready.' );
+
+    var wallpaper = sdk.storage.get( 'user.wallpaper' );
+    var off = sdk.onTeardown( function () {
+        // Release timers, observers, or DOM nodes.
+    } );
+
+    var health = sdk.diagnostics.summary();
+    // → { status: 'ok'|'warn'|'problems', ok: [], warn: [], problems: [] }
+}
+```
+
+The SDK intentionally stays local. `sdk.diagnostics.summary()` and
+`sdk.diagnostics.collect()` assemble browser-local state for UI and
+bug reports; they do not send telemetry. Preference writes go through
+the same `/odd/v1/prefs` cookie-auth endpoint used by the Shop.
+
+For a tiny working reference, see
+[`examples/build-for-desktop-mode`](../examples/build-for-desktop-mode/).
+It includes one widget and one app that use Desktop Mode registration
+contracts plus `window.__odd.sdk` without patching host DOM.
+
+Useful groups:
+
+| Group / method            | Purpose                                                       |
+|---------------------------|---------------------------------------------------------------|
+| `sdk.storage`             | Safe wrappers for `store.get`, `store.set`, `getState`, and subscriptions. |
+| `sdk.preferences`         | Read the current user preference snapshot and save partial patches. |
+| `sdk.theme`               | Get or save the ODD Shop theme (`light`, `dark`, `auto`).     |
+| `sdk.capabilities()`      | Read localized install, Desktop Mode, toast, diagnostics, and storage capabilities. |
+| `sdk.diagnostics.summary()` | Small health object for Shop/UI status chips and troubleshooting affordances. |
+| `sdk.onTeardown()`        | Subscribe to the ODD teardown lifecycle.                      |
+
 ## Event bus
 
 All events live on `window.__odd.events`, a typed wrapper around
@@ -544,6 +591,10 @@ add a test for your extension:
 
 The harness provides `resetOdd`, `seedConfig`, `loadFoundation`, and
 `sleep` helpers under `tests/integration/harness.js`.
+
+The public creator mini-site lives at [`site/build/`](../site/build/).
+It mirrors the high-level path for people who want the shape of the
+platform before opening the repo or the example pack.
 
 ## Versioning and stability
 

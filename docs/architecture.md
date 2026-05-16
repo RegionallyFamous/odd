@@ -149,9 +149,11 @@ button to ODD windows.
 | `iconSet`       | set slug or `"none"`                                        | `oddout_icon_set`       |
 | `cursorSet`     | set slug or `"none"`                                        | `oddout_cursor_set`     |
 
-Permission callback across the whole namespace is `is_user_logged_in`,
-with per-endpoint capability escalation where needed
-(`manage_options` for installs, uploads, refresh, and diagnostics).
+Permissions are explicit per route: user-local reads and preference writes
+require `current_user_can( 'read' )`, while installs, uploads, refreshes, and
+diagnostics require `current_user_can( 'manage_options' )`. Public routes are
+reserved for static generated assets such as cursor CSS and app icons, and must
+stay path/MIME confined.
 
 ## Remote catalog
 

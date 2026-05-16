@@ -152,7 +152,7 @@ describe( 'Desktop Mode hook bridge', () => {
 		expect( requestMaximize ).not.toHaveBeenCalled();
 	} );
 
-	it( 'keeps the ODD Shop host window near the top when the host opens it too low', () => {
+	it( 'observes low ODD Shop placement without moving the host window', () => {
 		const element = document.createElement( 'div' );
 		element.style.left = '120px';
 		element.style.top = '260px';
@@ -171,10 +171,11 @@ describe( 'Desktop Mode hook bridge', () => {
 			bounds: { x: 120, y: 260, width: 1080, height: 720 },
 		} );
 
-		expect( element.style.top ).toBe( '32px' );
-		expect( win.config.y ).toBe( 32 );
-		expect( emitChange ).toHaveBeenCalledWith( 'moved' );
-		expect( window.__odd.desktopState.windows.all.find( ( row ) => row.id === 'odd' ).bounds.y ).toBe( 32 );
+		expect( element.style.top ).toBe( '260px' );
+		expect( win.config.y ).toBe( 260 );
+		expect( emitChange ).not.toHaveBeenCalled();
+		expect( window.__odd.desktopState.windows.all.find( ( row ) => row.id === 'odd' ).bounds.y ).toBe( 260 );
+		expect( window.__odd.diagnostics.recent().some( ( row ) => row.message.includes( 'odd.shop-window.host-placement-observed' ) ) ).toBe( true );
 	} );
 
 	it( 'does not move ODD app windows or fullscreen Shop windows during top correction', () => {
@@ -314,6 +315,8 @@ describe( 'Desktop Mode hook bridge', () => {
 		window.wp.desktop = {
 			ready:          ( cb ) => cb(),
 			registerWidget: () => {},
+			registerSystemTile: () => 'taskbar',
+			registerPalette: () => () => {},
 			widgetLayer:    {},
 			files:          {
 				getTypes:   () => [ { type: 'shortcut' }, { type: 'folder' } ],
@@ -321,6 +324,13 @@ describe( 'Desktop Mode hook bridge', () => {
 			},
 			getOsSettings:  () => ( { foldersSharingEnabled: true } ),
 			getMenuItems:   () => [],
+			listCommands:   () => [ { slug: 'open' } ],
+			refreshMenu:    () => Promise.resolve(),
+			getWallpaperSurfaces: () => [],
+			registerModule: () => {},
+			loadModules:    () => Promise.resolve(),
+			ai:             {},
+			dragBridge:     {},
 			presence:       {},
 			heartbeat:      {},
 		};
@@ -338,6 +348,78 @@ describe( 'Desktop Mode hook bridge', () => {
 		expect( log ).toContain( 'desktop-mode.presence.changed' );
 		expect( log ).toContain( 'desktop-mode.heartbeat.pulse' );
 		expect( log ).toContain( '"arrangeMenu":true' );
+		expect( log ).toContain( '"systemTileApi":true' );
+		expect( log ).toContain( '"commands":1' );
+		expect( log ).toContain( '"palettesApi":true' );
+		expect( log ).toContain( '"refreshMenu":true' );
+		expect( log ).toContain( '"wallpaperSurfacesApi":true' );
+		expect( log ).toContain( '"modulesApi":true' );
+		expect( log ).toContain( '"ai":true' );
+		expect( log ).toContain( '"dragBridge":true' );
+	} );
+
+	it( 'honors current wp-desktop hook constants when Desktop Mode exposes them', () => {
+		window.wp.desktop = {
+			ready:      ( cb ) => cb(),
+			openWindow: vi.fn(),
+			HOOKS: {
+				WINDOW_OPENED:               'wp-desktop.window.opened',
+				IFRAME_ERROR:                'wp-desktop.iframe.error',
+				WIDGET_MOUNTED:              'wp-desktop.widget.mounted',
+				WALLPAPER_VISIBILITY:        'wp-desktop.wallpaper.visibility',
+				WALLPAPER_SURFACES:          'wp-desktop.wallpaper.surfaces',
+				NATIVE_WINDOW_BEFORE_RENDER: 'wp-desktop.native-window.before-render',
+				ARRANGE_CUSTOM_ACTION:       'wp-desktop.arrange.custom-action',
+				COMMAND_ERROR:               'wp-desktop.command.error',
+				DESKTOP_ICON_CLICKED:        'wp-desktop.desktop-icon.clicked',
+			},
+		};
+		const iframeErrors = [];
+		const iconClicks = [];
+		loadDesktopHooks();
+		window.__odd.events.on( 'odd.iframe-error', ( payload ) => iframeErrors.push( payload ) );
+		window.__odd.events.on( 'odd.desktop-icon-clicked', ( payload ) => iconClicks.push( payload ) );
+		window.__odd.api = { shuffle: vi.fn() };
+
+		window.wp.hooks.doAction( 'wp-desktop.window.opened', {
+			windowId: 'odd-app-demo',
+			title: 'Demo',
+		} );
+		window.wp.hooks.doAction( 'wp-desktop.iframe.error', { windowId: 'odd-app-demo', message: 'boom' } );
+		window.wp.hooks.doAction( 'wp-desktop.wallpaper.visibility', { id: 'odd', state: 'hidden' } );
+
+		const widget = document.createElement( 'div' );
+		widget.innerHTML = '<button>Tap</button>';
+		window.wp.hooks.doAction( 'wp-desktop.widget.mounted', { id: 'odd/weather', element: widget } );
+
+		const nativeBody = document.createElement( 'div' );
+		const filteredBody = window.wp.hooks.applyFilters(
+			'wp-desktop.native-window.before-render',
+			nativeBody,
+			{ windowId: 'odd-app-demo' },
+		);
+		const surfaces = window.wp.hooks.applyFilters( 'wp-desktop.wallpaper.surfaces', [
+			{ id: 'dock:edge', x: 0, y: 0, width: 48, height: 600 },
+		] );
+		const openItems = window.wp.hooks.applyFilters( 'wp-desktop.open-command.items', [] );
+		window.wp.hooks.doAction( 'wp-desktop.arrange.custom-action', { id: 'oddout-shuffle-wallpaper' } );
+		window.wp.hooks.doAction( 'wp-desktop.command.error', {
+			slug: 'odd-panel',
+			error: new Error( 'nope' ),
+		} );
+		window.wp.hooks.doAction( 'wp-desktop.desktop-icon.clicked', { id: 'odd', target: 'window' } );
+
+		expect( window.__odd.desktopState.windows.focusedId ).toBe( 'odd-app-demo' );
+		expect( iframeErrors ).toHaveLength( 1 );
+		expect( window.__odd.desktopState.wallpaper.state ).toBe( 'hidden' );
+		expect( widget.getAttribute( 'data-odd-cursor-root' ) ).toBe( 'true' );
+		expect( filteredBody ).toBe( nativeBody );
+		expect( nativeBody.getAttribute( 'data-odd-native-window' ) ).toBe( 'odd-app-demo' );
+		expect( surfaces ).toHaveLength( 1 );
+		expect( window.__odd.desktopState.surfaces.count ).toBe( 1 );
+		expect( openItems.map( ( item ) => item.id ) ).toContain( 'odd' );
+		expect( window.__odd.api.shuffle ).toHaveBeenCalledTimes( 1 );
+		expect( iconClicks ).toEqual( [ { id: 'odd', target: 'window' } ] );
 	} );
 
 	it( 'handles ODD custom Arrange menu actions', () => {

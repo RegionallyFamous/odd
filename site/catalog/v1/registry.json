@@ -674,14 +674,14 @@
       "name": "ODD Default",
       "version": "1.0.0",
       "author": "Regionally Famous",
-      "description": "The default ODD raster icon set: transparent, high-contrast glyphs with native admin clarity, dark rims, and small off-kilter accent marks.",
+      "description": "The default ODD raster icon set: exact Desktop Mode / WordPress Dashicon silhouettes rendered as transparent raster icons, with the glyph body left intact and the oddness coming from outside-only chromatic aura and card lighting.",
       "category": "ODD Defaults",
       "accent": "#38e8ff",
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/iconset-odd-default-icons.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/iconset-odd-default-icons.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/iconset-odd-default-icons.wp",
-      "sha256": "723a0380ab26797f50d41e75ddd4ae28dae59dbc466f9e3dd097f2ce37f7b996",
-      "size": 402549
+      "sha256": "d3eccc002e82fa9620837f9194cf4368646a8a1b302868d12a34a50fbf79ba2c",
+      "size": 605407
     },
     {
       "type": "icon-set",

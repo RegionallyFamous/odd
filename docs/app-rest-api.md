@@ -31,6 +31,8 @@ Permission shorthand used below:
 
 | Method   | Path                                         | Auth          | Purpose                                    |
 |----------|----------------------------------------------|---------------|--------------------------------------------|
+| `GET`    | `/prefs`                                     | login         | Read the current user's ODD preferences and installed registries. |
+| `POST`   | `/prefs`                                     | login         | Persist a partial ODD preference patch.    |
 | `GET`    | `/apps`                                      | login         | List installed apps.                       |
 | `GET`    | `/apps/{slug}`                               | login         | Full manifest for one app.                 |
 | `POST`   | `/apps/upload`                               | admin         | App bundle upload endpoint for `.wp` archives. |
@@ -50,6 +52,73 @@ Permission shorthand used below:
 ---
 
 ## Endpoints
+
+### `GET /prefs`
+
+Read the current user's ODD preference snapshot plus the installed scene,
+icon-set, cursor-set, and app registries needed by browser surfaces.
+
+**Auth:** login
+
+The browser SDK exposes this state through `window.__odd.sdk.preferences.get()`
+using the localized payload already present on the page. Callers that need a
+fresh server read can use the REST endpoint directly.
+
+**Response** — `200 OK`:
+
+```json
+{
+    "wallpaper": "oddling-desktop",
+    "favorites": [],
+    "recents": [],
+    "shuffle": { "enabled": false, "minutes": 15 },
+    "screensaver": {},
+    "audioReactive": false,
+    "shopTaskbar": false,
+    "shopDesktopPinned": false,
+    "iconSet": "",
+    "cursorSet": "",
+    "cursorStylesheet": "",
+    "theme": "auto",
+    "chaosMode": false,
+    "initiated": true,
+    "mascotQuiet": false,
+    "winkUnlocked": false,
+    "scenes": [],
+    "sets": [],
+    "cursorSets": [],
+    "appsEnabled": true,
+    "apps": [],
+    "userApps": { "installed": [], "pinned": [] }
+}
+```
+
+### `POST /prefs`
+
+Persist any subset of the current user's ODD preferences. Partial writes are
+accepted; omitted keys keep their current values. Browser integrations should
+prefer `window.__odd.sdk.preferences.save( patch )`, which routes through the
+same endpoint and keeps the localized client state in sync where possible.
+
+**Auth:** login
+**Content-Type:** `application/json`
+
+Writable keys: `wallpaper`, `scene`, `favorites`, `recents`, `shuffle`,
+`screensaver`, `audioReactive`, `shopTaskbar`, `shopDesktopPinned`, `theme`,
+`chaosMode`, `initiated`, `mascotQuiet`, `winkUnlocked`, `appsPinned`,
+`iconSet`, and `cursorSet`.
+
+```json
+{
+    "theme": "dark",
+    "shuffle": { "enabled": true, "minutes": 30 }
+}
+```
+
+The response echoes the keys that were written after server-side
+normalization. Diagnostics are intentionally separate and local-only:
+`window.__odd.sdk.diagnostics.summary()` does not call this endpoint or send
+telemetry.
 
 ### `GET /apps`
 

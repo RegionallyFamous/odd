@@ -68,7 +68,16 @@ function seedConfig() {
 		apps:        [],
 		userApps:    { installed: [], pinned: [] },
 		systemHealth: {
-			catalog: { source: 'fallback_file', bundle_count: 12, last_error_message: 'offline' },
+			catalog: {
+				source: 'fallback_file',
+				bundle_count: 12,
+				raw_bundle_count: 14,
+				effective_bundle_count: 12,
+				signature_status: 'missing',
+				registry_sha256: 'abcdef1234567890',
+				registry_bytes: 2048,
+				last_error_message: 'offline',
+			},
 			starter: { status: 'partial' },
 			apps: { installed: 2 },
 		},
@@ -254,6 +263,18 @@ describe( 'ODD Shop', () => {
 		const clear = host.querySelector( '.odd-shop__clear-filters' );
 		clear.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
 		expect( host.querySelectorAll( '.odd-card[data-slug]' ).length ).toBe( 3 );
+
+		if ( typeof cleanup === 'function' ) cleanup();
+	} );
+
+	it( 'surfaces catalog trouble near browsing shelves', () => {
+		const { host, cleanup } = mountPanel();
+
+		const notice = host.querySelector( '.odd-shop__catalog-notice' );
+		expect( notice ).toBeTruthy();
+		expect( notice.textContent ).toContain( 'Catalog signature needs attention' );
+		expect( notice.textContent ).toContain( 'Missing signature' );
+		expect( notice.querySelectorAll( 'button' ).length ).toBeGreaterThanOrEqual( 2 );
 
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );
@@ -761,8 +782,10 @@ describe( 'ODD Shop', () => {
 
 		const health = host.querySelector( '.odd-shop__health' );
 		expect( health ).toBeTruthy();
-		expect( health.textContent ).toContain( 'fallback file' );
-		expect( health.textContent ).toContain( 'Starter: partial' );
+		expect( health.textContent ).toContain( 'Bundled fallback catalog' );
+		expect( health.textContent ).toContain( 'Missing signature' );
+		expect( health.textContent ).toContain( 'Registry hash' );
+		expect( health.textContent ).toContain( 'Starterpartial' );
 		const copy = Array.from( health.querySelectorAll( 'button' ) )
 			.find( ( b ) => b.textContent.trim() === 'Copy diagnostics' );
 		copy.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
