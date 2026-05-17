@@ -72,6 +72,9 @@ describe( 'Desktop Mode hook bridge', () => {
 		expect( body.textContent ).toContain( 'Catalog source' );
 		expect( body.textContent ).toContain( 'Signature' );
 		expect( body.textContent ).toContain( 'Bundle rows' );
+		expect( body.querySelector( 'wpd-code' ) ).toBeNull();
+		expect( body.querySelector( '[data-odd-settings-health]' ).tagName ).toBe( 'PRE' );
+		expect( body.querySelector( '[data-odd-settings-log]' ).classList.contains( 'odd-settings-code' ) ).toBe( true );
 
 		body.querySelector( '[data-odd-settings-action="oddout-shuffle-wallpaper"]' )
 			.dispatchEvent( new MouseEvent( 'click', { bubbles: true } ) );

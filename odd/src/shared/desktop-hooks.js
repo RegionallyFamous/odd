@@ -1796,10 +1796,10 @@
 			'</wpd-stack>',
 			'<wpd-section heading="Current state" stack>',
 			'<dl data-odd-settings-summary>' + renderSummaryRows( summaryRows ) + '</dl>',
-			'<wpd-code block data-odd-settings-health></wpd-code>',
+			'<pre class="odd-settings-code" data-odd-settings-health></pre>',
 			'</wpd-section>',
 			'<wpd-section heading="Recent diagnostics" stack>',
-			'<wpd-code block data-odd-settings-log></wpd-code>',
+			'<pre class="odd-settings-code" data-odd-settings-log></pre>',
 			'</wpd-section>',
 			'</wpd-section>',
 		].join( '' );

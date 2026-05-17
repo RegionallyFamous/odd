@@ -25,6 +25,23 @@
 	color: inherit;
 }
 
+.odd-settings-code {
+	box-sizing: border-box;
+	display: block;
+	max-width: 100%;
+	max-height: 240px;
+	margin: 0;
+	padding: 10px 12px;
+	overflow: auto;
+	border: 1px solid rgba(106, 92, 255, 0.18);
+	border-radius: 10px;
+	background: rgba(24, 24, 31, 0.08);
+	color: inherit;
+	font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
 wpd-context-menu.odd-dock-context-menu:not(:defined) {
 	position: fixed;
 	z-index: 100000;

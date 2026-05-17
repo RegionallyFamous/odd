@@ -3,7 +3,7 @@
 > One of four ODD author guides. Siblings: [Building an App](building-an-app.md), [Building a Scene](building-a-scene.md), [Building a Widget](building-a-widget.md).
 
 An icon set is a native Desktop Mode raster image URL feed: a themed
-set of PNG/WebP files for desktop shortcuts, the desktop Recycle Bin,
+set of PNG/WebP files for desktop shortcuts, the Recycle Bin,
 and file shortcut previews. Drop a `.wp` on the ODD Shop
 and ODD validates the manifest, verifies each image, copies the set into
 `wp-content/uploads/odd/icon-sets/`, and makes it selectable from the Icon
@@ -11,9 +11,9 @@ Sets department - no WordPress plugin, no custom PHP.
 
 ODD does not replace Desktop Mode's rail, dock, or renderer implementations.
 It saves the user's selected set and gives Desktop Mode themed image URLs for
-desktop shortcuts, file shortcut previews, and the ODD Shop native-window
-launcher. The rail, dock, and Desktop Mode system actions stay on host-default
-icons.
+desktop shortcuts, file shortcut previews, the ODD Shop native-window launcher,
+and the Recycle Bin taskbar/native-window launcher. The rail, dock, and
+unrelated Desktop Mode system actions stay on host-default icons.
 
 Icon sets ship **no JavaScript**, so they install without a consent
 prompt.

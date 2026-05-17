@@ -159,7 +159,30 @@ function oddout_icons_entry_is_odd_shop_window( array $entry ) {
 	return 'odd' === $id || 'odd' === $base_id || 'odd' === $window || '#odd' === $url;
 }
 
-function oddout_icons_filter_odd_native_window_icon( $config ) {
+function oddout_icons_entry_shell_key( array $entry ) {
+	$key = oddout_icons_entry_to_key(
+		isset( $entry['id'] ) ? (string) $entry['id'] : '',
+		isset( $entry['window'] ) ? (string) $entry['window'] : '',
+		isset( $entry['title'] ) ? (string) $entry['title'] : '',
+		isset( $entry['icon'] ) ? (string) $entry['icon'] : ''
+	);
+	if ( '' !== $key ) {
+		return $key;
+	}
+
+	foreach ( array( 'baseId', 'base_id', 'url' ) as $field ) {
+		if ( ! isset( $entry[ $field ] ) ) {
+			continue;
+		}
+		$key = oddout_icons_slug_to_key( (string) $entry[ $field ] );
+		if ( '' !== $key ) {
+			return $key;
+		}
+	}
+	return '';
+}
+
+function oddout_icons_filter_native_window_icons( $config ) {
 	if ( ! is_array( $config ) || empty( $config['nativeWindows'] ) || ! is_array( $config['nativeWindows'] ) ) {
 		return $config;
 	}
@@ -169,21 +192,23 @@ function oddout_icons_filter_odd_native_window_icon( $config ) {
 		return $config;
 	}
 
-	$url = oddout_icons_icon_url_for_key( $set, 'odd' );
-	if ( '' === $url ) {
-		return $config;
-	}
-
 	foreach ( $config['nativeWindows'] as $i => $entry ) {
-		if ( ! is_array( $entry ) || ! oddout_icons_entry_is_odd_shop_window( $entry ) ) {
+		if ( ! is_array( $entry ) ) {
 			continue;
 		}
-		$config['nativeWindows'][ $i ]['icon'] = $url;
+		$key = oddout_icons_entry_is_odd_shop_window( $entry ) ? 'odd' : oddout_icons_entry_shell_key( $entry );
+		if ( ! in_array( $key, array( 'odd', 'recycle-bin' ), true ) ) {
+			continue;
+		}
+		$url = oddout_icons_icon_url_for_key( $set, $key );
+		if ( '' !== $url ) {
+			$config['nativeWindows'][ $i ]['icon'] = $url;
+		}
 	}
 
 	return $config;
 }
-add_filter( 'desktop_mode_shell_config', 'oddout_icons_filter_odd_native_window_icon', 25 );
+add_filter( 'desktop_mode_shell_config', 'oddout_icons_filter_native_window_icons', 25 );
 
 /**
  * Re-run {@see desktop_mode_icons} against a single static-registry entry so

@@ -226,8 +226,9 @@ Re-render happens server-side through filters in `includes/icons/dock-filter.php
 - `desktop_mode_icons` (priority 20): re-skins desktop shortcuts by
   `oddout_icons_slug_to_key()` logic, but skips ODD-owned launchers so apps
   keep their own art.
-- `desktop_mode_shell_config` (priority 25): re-skins only the ODD Shop
-  native-window launcher from the active set's `odd` icon.
+- `desktop_mode_shell_config` (priority 25): re-skins the ODD Shop
+  native-window launcher from the active set's `odd` icon, and the Recycle
+  Bin taskbar/native-window launcher from the active set's `recycle-bin` icon.
 - `desktop_mode_file_serialize` mirrors themed HTTPS shortcut icons into
   file-layer previews so desktop file tiles match the desktop-icon registry.
 
@@ -248,9 +249,9 @@ single public URL per logical key:
 
 1. `oddout_icons_get_sets()` scans icon-set manifests and converts each
    valid relative path into an upload/plugin asset URL.
-2. Desktop shortcut, recycle-bin, ODD native-window launcher, and file-layer
-   filters consume that same URL map. Rail, dock, and system actions stay on
-   Desktop Mode defaults.
+2. Desktop shortcut, recycle-bin, Recycle Bin taskbar/native-window, ODD
+   native-window launcher, and file-layer filters consume that same URL map.
+   Rail, dock, and unrelated system actions stay on Desktop Mode defaults.
 3. The Shop uses the same registry for thumbnails, so the image shown in
    the panel is the image Desktop Mode receives after apply/reload.
 

@@ -226,6 +226,33 @@ class Test_Icons_Dock_Filter extends WP_UnitTestCase {
 		$this->assertSame( 'dashicons-admin-generic', $config_after['nativeWindows'][1]['icon'] );
 	}
 
+	public function test_recycle_bin_taskbar_icon_uses_active_set() {
+		$set_slug = $this->pick_set_with_fallback();
+		oddout_icons_set_active_slug( $set_slug );
+
+		$config_before = array(
+			'nativeWindows' => array(
+				array(
+					'id'        => 'desktop-mode-recycle-bin',
+					'title'     => 'Recycle Bin',
+					'icon'      => 'dashicons-trash',
+					'placement' => 'dock',
+				),
+				array(
+					'id'        => 'wpdc-editor',
+					'title'     => 'Code',
+					'icon'      => 'dashicons-editor-code',
+					'placement' => 'dock',
+				),
+			),
+		);
+
+		$config_after = apply_filters( 'desktop_mode_shell_config', $config_before );
+
+		$this->assertStringEndsWith( '/recycle-bin.webp', $config_after['nativeWindows'][0]['icon'] );
+		$this->assertSame( 'dashicons-editor-code', $config_after['nativeWindows'][1]['icon'] );
+	}
+
 	public function test_shell_config_themes_odd_native_window_icon_only() {
 		$set_slug = $this->pick_set_with_fallback();
 		oddout_icons_set_active_slug( $set_slug );
