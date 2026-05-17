@@ -29,9 +29,9 @@ Directory assets live in `/assets/` on the SVN side (sibling of `/trunk/`, `/tag
 | `banner-772x250.png`  | 772x250          | Standard directory header banner                        |
 | `icon-256x256.gif`    | 256x256          | High-DPI animated directory icon                        |
 | `icon-128x128.gif`    | 128x128          | Standard animated directory icon                        |
-| `screenshot-1.png`    | 1280x720 target  | Desktop with themed wallpaper, icons, cursors, widgets  |
-| `screenshot-2.png`    | 1280x720 target  | Wallpaper department with direct apply controls         |
-| `screenshot-3.png`    | 1280x720 target  | Icon Sets department with catalog cards                 |
+| `screenshot-1.png`    | 1280x720 target  | Desktop with living wallpaper, icons, widgets           |
+| `screenshot-2.png`    | 1280x720 target  | ODD Shop wallpaper department with catalog cards        |
+| `screenshot-3.png`    | 1280x720 target  | Don't Read the Comments running in a desktop window     |
 
 Generated banner and animated icon files are kept in [`wporg-assets/`](../wporg-assets/). WordPress.org documents GIF as a valid extension for `icon-128x128` and `icon-256x256`; do not upload `icon.svg` with the animated icon set because SVG can take precedence over raster icons in WordPress icon selection paths. Screenshots should be captured from the stable live demo at `https://odd.regionallyfamous.com/go/` at 1x zoom, cropped to the desktop surface, and saved as lowercase PNG files that match the `readme.txt` screenshot captions. WordPress.org permits PNG or JPG screenshots, but local PNG keeps the desktop UI crisp.
 

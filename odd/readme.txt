@@ -89,9 +89,9 @@ No. ODD does not send telemetry, analytics, license checks, or error reports. It
 
 == Screenshots ==
 
-1. A decorated WordPress desktop with wallpaper, icons, widgets, and docked apps.
+1. A decorated WordPress desktop with living wallpaper, icons, widgets, and docked desk tools.
 2. The ODD Shop, where you can browse living wallpapers and desktop upgrades.
-3. Icon sets in the ODD Shop, ready to install and apply.
+3. A tiny desktop app running in its own window, surrounded by ODD desktop icons and widgets.
 
 == External services ==
 
