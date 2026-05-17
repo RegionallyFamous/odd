@@ -88,7 +88,7 @@ def peel_release_tag(repo_root: Path, version: str) -> str | None:
 
 
 def bump_blueprint(text: str, new_version: str, label: str) -> tuple[str, list[str]]:
-    """Rewrite ODD's `git:directory` pin to peeled commit or semver tag.
+    """Rewrite ODD's public Playground pin to the requested release.
 
     Returns (new_text, summary_lines).
     """
@@ -114,9 +114,25 @@ def bump_blueprint(text: str, new_version: str, label: str) -> tuple[str, list[s
             and plugin.get("slug") == "odd-outlandish-desktop-decorator"
         ):
             lines.append(
-                f"  {label}: ODD wordpress.org/plugins latest — skipped (version follows WP.org)"
+                f"  {label}: ODD wordpress.org/plugins latest — skipped (cannot pin a version)"
             )
             return text, lines
+        if plugin.get("resource") == "url":
+            url = str(plugin.get("url", ""))
+            if re.search(
+                r"/odd-outlandish-desktop-decorator\.[0-9]+\.[0-9]+\.[0-9]+\.zip$",
+                url,
+            ):
+                plugin["url"] = (
+                    "https://downloads.wordpress.org/"
+                    f"plugin/odd-outlandish-desktop-decorator.{new_version}.zip"
+                )
+                lines.append(
+                    f"  {label}: ODD WordPress.org zip -> {new_version}"
+                )
+                matched = True
+                break
+            continue
         if plugin.get("resource") != "git:directory":
             continue
         if "RegionallyFamous/odd" not in str(plugin.get("url", "")):

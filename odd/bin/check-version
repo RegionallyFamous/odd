@@ -2,9 +2,10 @@
 """Assert Version header + ODDOUT_VERSION constant agree, and blueprint refs when tagged.
 
 With --expect <x.y.z>, assert the plugin header and constant match that value.
-When Playground blueprints install ODD via a semver git **tag**, that tag must
-also match `odd.php`. Branch installs (`main`) and WordPress.org Plugin
-Directory installs skip blueprint↔semver checks.
+When Playground blueprints install ODD via a semver git **tag** or a
+versioned WordPress.org zip, that version must also match `odd.php`. Branch
+installs (`main`) and moving WordPress.org Plugin Directory slug installs skip
+blueprint↔semver checks.
 
 Usage:
     odd/bin/check-version
@@ -36,6 +37,7 @@ def blueprint_install_ref(path: Path) -> str | None:
 
     Returns one of:
       - a bare x.y.z value if the blueprint pins ODD to a vX.Y.Z git tag
+        or a downloads.wordpress.org ODD x.y.z zip
       - SENTINEL_GIT_DIRECTORY if the blueprint pulls ODD via another
         `git:directory` ref against `RegionallyFamous/odd`.
       - SENTINEL_WPORG_LATEST if the blueprint installs ODD from the
@@ -65,6 +67,15 @@ def blueprint_install_ref(path: Path) -> str | None:
         if resource == "wordpress.org/plugins":
             if plugin_data.get("slug") == "odd-outlandish-desktop-decorator":
                 return SENTINEL_WPORG_LATEST
+            continue
+        if resource == "url":
+            url = str(plugin_data.get("url", ""))
+            match = re.search(
+                r"/odd-outlandish-desktop-decorator\.([0-9]+\.[0-9]+\.[0-9]+)\.zip$",
+                url,
+            )
+            if match:
+                return match.group(1)
             continue
     return None
 
@@ -131,7 +142,7 @@ def main() -> int:
 
     if all(ref == SENTINEL_WPORG_LATEST for ref in blueprint_refs.values()):
         print(
-            f"OK: odd.php version {version} (blueprint installs latest ODD from wordpress.org/plugins)"
+            f"OK: odd.php version {version} (blueprint installs moving ODD from wordpress.org/plugins)"
         )
     elif all(ref == SENTINEL_GIT_DIRECTORY for ref in blueprint_refs.values()):
         print(

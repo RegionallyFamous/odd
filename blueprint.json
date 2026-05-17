@@ -13,8 +13,8 @@
     {
       "step": "installPlugin",
       "pluginData": {
-        "resource": "wordpress.org/plugins",
-        "slug": "desktop-mode"
+        "resource": "url",
+        "url": "https://downloads.wordpress.org/plugin/desktop-mode.0.8.5.zip"
       },
       "options": {
         "activate": true,
@@ -24,8 +24,8 @@
     {
       "step": "installPlugin",
       "pluginData": {
-        "resource": "wordpress.org/plugins",
-        "slug": "odd-outlandish-desktop-decorator"
+        "resource": "url",
+        "url": "https://downloads.wordpress.org/plugin/odd-outlandish-desktop-decorator.1.1.0.zip"
       },
       "options": {
         "activate": true,
