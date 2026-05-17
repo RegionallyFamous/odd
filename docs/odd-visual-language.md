@@ -31,7 +31,7 @@ Rail icons live in `odd/assets/shop/glyphs.svg` as 24px line-art symbols (`g-wal
 
 ## Card Rules
 
-Every catalog item gets a generated `card.webp` in its source folder. The catalog builder publishes these as `site/catalog/v1/cards/<type>-<slug>.webp` and exposes `card_url` in `registry.json`.
+Every catalog item gets a generated `card.webp` in its source folder. Cards are `1024x576` landscape WebP files so the Shop can render every type in the same 16:9 art slot. The catalog builder publishes these as `site/catalog/v1/cards/<type>-<slug>.webp` and exposes `card_url` in `registry.json`.
 
 - **Scenes:** show the world as a destination poster without text. Keep the wallpaper subject recognizable, but frame it as a miniature desktop environment.
 - **Icon sets:** show each pack's actual raster glyph language large enough to read, staged on the same dark ODD surface. First-party sets should feel related through sizing, padding, and card framing, but their identity should come from the finished raster icons themselves.

@@ -312,6 +312,10 @@ function oddout_bundle_panel_row_for( array $manifest ) {
 				'icon'        => isset( $manifest['icon'] ) ? (string) $manifest['icon'] : '',
 				'enabled'     => true,
 				'installed'   => true,
+				'surfaces'    => function_exists( 'oddout_apps_row_surfaces' ) ? oddout_apps_row_surfaces( $manifest ) : array(
+					'desktop' => true,
+					'taskbar' => false,
+				),
 			);
 	}
 

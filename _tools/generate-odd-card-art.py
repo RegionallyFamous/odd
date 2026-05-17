@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import io
 import json
 import os
 import sys
@@ -22,15 +23,15 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 SOURCES = HERE / "catalog-sources"
-SCENE_CARD_SIZE = (1024, 576)
+CATALOG_CARD_SIZE = (1024, 576)
 
-STYLE = """ODD Diorama System: cozy weird polished toy-like desktop surrealism; dark ink-plum base, iris violet, electric cyan, peach glow, acid green details, paper cream highlights; rounded squircle portals, soft bevels, layered cardboard/paper depth, luminous desktop props, subtle eye or portal motifs, tactile grain, rim lighting, soft shadows, tiny magical desktop universe. Square editorial shop card art. No text, no letters, no readable UI, no logos, no WordPress marks, no browser chrome, no people, no horror, no gore, no weapons, no generic corporate SaaS vector art."""
+STYLE = """ODD Diorama System: cozy weird polished toy-like desktop surrealism; dark ink-plum base, iris violet, electric cyan, peach glow, acid green details, paper cream highlights; rounded squircle portals, soft bevels, layered cardboard/paper depth, luminous desktop props, subtle eye or portal motifs, tactile grain, rim lighting, soft shadows, tiny magical desktop universe. Landscape 16:9 editorial shop card art with all important subject matter inside the center safe area. No text, no letters, no readable UI, no logos, no WordPress marks, no browser chrome, no people, no horror, no gore, no weapons, no generic corporate SaaS vector art."""
 
 
 TYPE_NOTES = {
@@ -152,7 +153,7 @@ def prompt_for(item: Item) -> str:
             f"Description: {item.description or 'No extra description.'}",
             f"Tags/material hints: {tags or 'ODD original.'}",
             "Make it visually unique for this item while unmistakably belonging to the same ODD Shop family.",
-            "Output: one square 1024x1024 WebP card image, no text.",
+            "Output: one 16:9 landscape WebP card image, no text.",
         ]
     )
 
@@ -195,7 +196,19 @@ def write_scene_card(item: Item) -> None:
     if not wallpaper.is_file():
         raise RuntimeError(f"{item.type}/{item.slug}: missing wallpaper.webp")
     with Image.open(wallpaper) as src:
-        card = src.convert("RGB").resize(SCENE_CARD_SIZE, Image.Resampling.LANCZOS)
+        card = src.convert("RGB").resize(CATALOG_CARD_SIZE, Image.Resampling.LANCZOS)
+    card.save(item.output, "WEBP", quality=88, method=6)
+
+
+def write_generated_card(item: Item, image: bytes) -> None:
+    """Normalize generated output to the catalog card size."""
+    with Image.open(io.BytesIO(image)) as src:
+        card = ImageOps.fit(
+            src.convert("RGB"),
+            CATALOG_CARD_SIZE,
+            method=Image.Resampling.LANCZOS,
+            centering=(0.5, 0.5),
+        )
     card.save(item.output, "WEBP", quality=88, method=6)
 
 
@@ -246,7 +259,7 @@ def main() -> int:
             continue
         print(f"[{index}/{len(items)}] generate {item.type}/{item.slug}")
         image = generate_image(api_key, args.model, prompt_for(item))
-        item.output.write_bytes(image)
+        write_generated_card(item, image)
         if args.sleep:
             time.sleep(args.sleep)
 

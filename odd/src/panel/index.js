@@ -597,12 +597,7 @@
 				if ( Object.prototype.hasOwnProperty.call( visibility, id ) ) {
 					return corePlacementToAppSurfaces( visibility[ id ], fallback );
 				}
-				if (
-					app.enabled !== false &&
-					app.surfaces &&
-					appSurfacesToCorePlacement( fallback ) !== 'desktop' &&
-					! migratedCoreAppSurfaces[ id ]
-				) {
+				if ( app.enabled !== false && ! migratedCoreAppSurfaces[ id ] ) {
 					migratedCoreAppSurfaces[ id ] = true;
 					writeCoreAppSurfaceState( app.slug, fallback );
 				}

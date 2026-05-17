@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Generate first-party raster Shop card art.
 
-The Shop uses small square tiles, so catalog cards should read like big,
-direct glyph plates rather than dense illustrations. This script keeps the
-first-party app, widget, and cursor-set cards in the same odd-flat raster
-language as the default icon cards.
+The Shop renders catalog artwork in a landscape card slot, so generated
+cards should be 1024x576 plates with one clear central subject. This script
+keeps first-party app, widget, cursor-set, and icon-set cards in the same
+odd-flat raster language as the default icon cards.
 """
 
 from __future__ import annotations
@@ -19,8 +19,9 @@ from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[1]
 SIZE = 1024
-CARD = (SIZE, SIZE)
-CURSOR_CARD = (1024, 576)
+CARD = (1024, 576)
+GLYPH_CANVAS = (SIZE, SIZE)
+CURSOR_CARD = CARD
 INK = "#080511"
 RIM = "#07050f"
 PAPER = "#f3efe7"
@@ -89,22 +90,31 @@ def line_round(draw: ImageDraw.ImageDraw, points, fill, width: int) -> None:
         draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=fill)
 
 
-def shadow_paste(base: Image.Image, layer: Image.Image, offset=(0, 28), blur=28, alpha=150) -> None:
+def shadow_paste(
+    base: Image.Image,
+    layer: Image.Image,
+    *,
+    position: tuple[int, int] = (0, 0),
+    offset=(0, 28),
+    blur=28,
+    alpha=150,
+) -> None:
     mask = layer.getchannel("A")
-    shadow = Image.new("RGBA", CARD, (0, 0, 0, 0))
+    shadow = Image.new("RGBA", layer.size, (0, 0, 0, 0))
     shadow.putalpha(mask.point(lambda p: min(alpha, p)))
-    shifted = Image.new("RGBA", CARD, (0, 0, 0, 0))
-    shifted.alpha_composite(shadow, offset)
+    shifted = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    shifted.alpha_composite(shadow, (position[0] + offset[0], position[1] + offset[1]))
     base.alpha_composite(shifted.filter(ImageFilter.GaussianBlur(blur)))
-    base.alpha_composite(layer)
+    base.alpha_composite(layer, position)
 
 
 def plate(accent: str, secondary: str, warm: str) -> Image.Image:
+    width, height = CARD
     img = Image.new("RGBA", CARD, rgba(INK))
     draw = ImageDraw.Draw(img)
-    for y in range(SIZE):
-        t = y / (SIZE - 1)
-        draw.line((0, y, SIZE, y), fill=(*mix("#171126", "#05030a", t), 255))
+    for y in range(height):
+        t = y / (height - 1)
+        draw.line((0, y, width, y), fill=(*mix("#171126", "#05030a", t), 255))
 
     glows = Image.new("RGBA", CARD, (0, 0, 0, 0))
     gd = ImageDraw.Draw(glows)
@@ -115,12 +125,12 @@ def plate(accent: str, secondary: str, warm: str) -> Image.Image:
 
     grid = Image.new("RGBA", CARD, (0, 0, 0, 0))
     gd = ImageDraw.Draw(grid)
-    for x in range(64, SIZE, 96):
-        gd.line((x, 0, x, SIZE), fill=(255, 255, 255, 24), width=2)
-    for y in range(64, SIZE, 96):
-        gd.line((0, y, SIZE, y), fill=(255, 255, 255, 22), width=2)
-    for x in range(112, SIZE, 192):
-        gd.line((x, 0, x, SIZE), fill=rgba(accent, 28), width=2)
+    for x in range(64, width, 96):
+        gd.line((x, 0, x, height), fill=(255, 255, 255, 24), width=2)
+    for y in range(64, height, 96):
+        gd.line((0, y, width, y), fill=(255, 255, 255, 22), width=2)
+    for x in range(112, width, 192):
+        gd.line((x, 0, x, height), fill=rgba(accent, 28), width=2)
     img.alpha_composite(grid)
 
     shine = Image.new("RGBA", CARD, (0, 0, 0, 0))
@@ -133,7 +143,7 @@ def plate(accent: str, secondary: str, warm: str) -> Image.Image:
 
 
 def card_rect(layer: Image.Image, xy, fill: str, radius: int = 34, tilt: float = 0) -> None:
-    card = Image.new("RGBA", CARD, (0, 0, 0, 0))
+    card = Image.new("RGBA", layer.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(card)
     x1, y1, x2, y2 = xy
     rounded(draw, (x1 - 14, y1 - 14, x2 + 14, y2 + 14), radius + 12, rgba(RIM, 255))
@@ -142,7 +152,7 @@ def card_rect(layer: Image.Image, xy, fill: str, radius: int = 34, tilt: float =
     rounded(draw, (x1 + 22, y1 + 102, x2 - 80, y1 + 130), 14, rgba(INK, 108))
     rounded(draw, (x1 + 22, y2 - 78, x1 + 76, y2 - 24), 17, (255, 255, 255, 64))
     if tilt:
-        card = card.rotate(tilt, resample=Image.Resampling.BICUBIC, center=(SIZE // 2, SIZE // 2))
+        card = card.rotate(tilt, resample=Image.Resampling.BICUBIC, center=(layer.width // 2, layer.height // 2))
     layer.alpha_composite(card)
 
 
@@ -502,12 +512,14 @@ DRAWERS = {
 def render(slug: str) -> Image.Image:
     colors = THEMES[slug]
     base = plate(*colors)
-    glyph = Image.new("RGBA", CARD, (0, 0, 0, 0))
+    glyph = Image.new("RGBA", GLYPH_CANVAS, (0, 0, 0, 0))
     if slug in DRAWERS:
         DRAWERS[slug](glyph, colors)
     else:
         raise SystemExit(f"no drawer for {slug}")
-    shadow_paste(base, glyph)
+    glyph.thumbnail((520, 520), Image.Resampling.LANCZOS)
+    position = ((CARD[0] - glyph.width) // 2, (CARD[1] - glyph.height) // 2 + 8)
+    shadow_paste(base, glyph, position=position, offset=(0, 20), blur=18, alpha=132)
     return base.convert("RGB")
 
 
@@ -525,11 +537,11 @@ def render_iconset_card(src_dir: Path) -> Image.Image:
     preview_keys = [key for key in ("odd", "my-wordpress", "content-graph", "recycle-bin", "fallback") if key in icons]
     preview_keys.extend([key for key in icons.keys() if key not in preview_keys])
     placements = [
-        (preview_keys[0] if len(preview_keys) > 0 else "fallback", 340, 314, 344, 0),
-        (preview_keys[1] if len(preview_keys) > 1 else "fallback", 82, 106, 282, -4),
-        (preview_keys[2] if len(preview_keys) > 2 else "fallback", 660, 106, 282, 4),
-        (preview_keys[3] if len(preview_keys) > 3 else "fallback", 92, 638, 282, 3),
-        (preview_keys[4] if len(preview_keys) > 4 else "fallback", 650, 638, 282, -3),
+        (preview_keys[0] if len(preview_keys) > 0 else "fallback", 388, 128, 300, 0),
+        (preview_keys[1] if len(preview_keys) > 1 else "fallback", 112, 88, 214, -4),
+        (preview_keys[2] if len(preview_keys) > 2 else "fallback", 700, 84, 214, 4),
+        (preview_keys[3] if len(preview_keys) > 3 else "fallback", 184, 336, 188, 3),
+        (preview_keys[4] if len(preview_keys) > 4 else "fallback", 652, 334, 188, -3),
     ]
     for key, x, y, size, rot in placements:
         rel = icons.get(key) or icons.get("fallback") or next(iter(icons.values()), "")

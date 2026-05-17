@@ -140,7 +140,9 @@ function oddout_apps_install( $tmp_path, $filename ) {
 
 	$manifest['installed'] = $index[ $slug ]['installed'];
 	$manifest['enabled']   = true;
+	$manifest['surfaces']  = $surfaces;
 	oddout_apps_manifest_save( $slug, $manifest );
+	oddout_apps_seed_core_item_visibility( $slug, $surfaces );
 
 	oddout_apps_apply_manifest_extensions( $manifest );
 
@@ -174,6 +176,7 @@ function oddout_apps_uninstall( $slug ) {
 		unset( $index[ $slug ] );
 		oddout_apps_index_save( $index );
 	}
+	oddout_apps_remove_core_item_visibility( $slug );
 	do_action( 'oddout_app_uninstalled', $slug );
 	return true;
 }
@@ -246,6 +249,7 @@ function oddout_apps_set_surfaces( $slug, $surfaces ) {
 		$manifest['surfaces'] = $clean;
 		oddout_apps_manifest_save( $slug, $manifest );
 	}
+	oddout_apps_seed_core_item_visibility( $slug, $clean, 0, true );
 
 	/**
 	 * Fires after an app's surface preferences change.
@@ -256,6 +260,102 @@ function oddout_apps_set_surfaces( $slug, $surfaces ) {
 	do_action( 'oddout_app_surfaces_changed', $slug, $clean );
 
 	return true;
+}
+
+function oddout_apps_core_item_id( $slug ) {
+	$slug = sanitize_key( (string) $slug );
+	return '' === $slug ? '' : 'odd-app-' . $slug;
+}
+
+function oddout_apps_surfaces_to_core_placement( $surfaces ) {
+	$clean = oddout_apps_row_surfaces(
+		array(
+			'surfaces' => is_array( $surfaces ) ? $surfaces : array(),
+		)
+	);
+	if ( $clean['desktop'] && $clean['taskbar'] ) {
+		return 'both';
+	}
+	if ( $clean['taskbar'] ) {
+		return 'dock';
+	}
+	if ( $clean['desktop'] ) {
+		return 'desktop';
+	}
+	return 'hidden';
+}
+
+/**
+ * Seed Desktop Mode's native launcher placement for an app.
+ *
+ * The installed-app index stores ODD's fallback `{ desktop, taskbar }`
+ * shape, but current Desktop Mode decides visibility from
+ * `osSettings.itemVisibility[odd-app-{slug}]`. Without this server-side
+ * seed, installs that happen outside the live panel JS path register a
+ * window/icon but have no visible desktop launcher until a manual toggle.
+ *
+ * Existing host placement wins unless `$force` is true; this keeps app
+ * updates and reinstalls from silently undoing a user's hidden/taskbar choice.
+ *
+ * @param string $slug     App slug.
+ * @param array  $surfaces { desktop: bool, taskbar: bool }
+ * @param int    $user_id  Optional user id. Defaults to current user.
+ * @param bool   $force    Whether to overwrite an existing placement.
+ * @return bool Whether a host settings write occurred.
+ */
+function oddout_apps_seed_core_item_visibility( $slug, $surfaces, $user_id = 0, $force = false ) {
+	$item_id = oddout_apps_core_item_id( $slug );
+	$user_id = (int) ( $user_id ?: get_current_user_id() );
+	if (
+		'' === $item_id ||
+		$user_id <= 0 ||
+		! function_exists( 'oddout_desktop_mode_supports' ) ||
+		! oddout_desktop_mode_supports( 'os_settings' )
+	) {
+		return false;
+	}
+
+	$settings = desktop_mode_get_os_settings( $user_id );
+	if ( ! is_array( $settings ) ) {
+		$settings = desktop_mode_default_os_settings();
+	}
+	if ( ! is_array( $settings ) ) {
+		return false;
+	}
+
+	if ( empty( $settings['itemVisibility'] ) || ! is_array( $settings['itemVisibility'] ) ) {
+		$settings['itemVisibility'] = array();
+	}
+	if ( ! $force && array_key_exists( $item_id, $settings['itemVisibility'] ) ) {
+		return false;
+	}
+
+	$settings['itemVisibility'][ $item_id ] = oddout_apps_surfaces_to_core_placement( $surfaces );
+	return (bool) desktop_mode_save_os_settings( $user_id, $settings );
+}
+
+function oddout_apps_remove_core_item_visibility( $slug, $user_id = 0 ) {
+	$item_id = oddout_apps_core_item_id( $slug );
+	$user_id = (int) ( $user_id ?: get_current_user_id() );
+	if (
+		'' === $item_id ||
+		$user_id <= 0 ||
+		! function_exists( 'oddout_desktop_mode_supports' ) ||
+		! oddout_desktop_mode_supports( 'os_settings' )
+	) {
+		return false;
+	}
+
+	$settings = desktop_mode_get_os_settings( $user_id );
+	if ( ! is_array( $settings ) || empty( $settings['itemVisibility'] ) || ! is_array( $settings['itemVisibility'] ) ) {
+		return false;
+	}
+	if ( ! array_key_exists( $item_id, $settings['itemVisibility'] ) ) {
+		return false;
+	}
+
+	unset( $settings['itemVisibility'][ $item_id ] );
+	return (bool) desktop_mode_save_os_settings( $user_id, $settings );
 }
 
 /**

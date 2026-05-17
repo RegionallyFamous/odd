@@ -233,7 +233,21 @@ describe( 'ODD Shop · App surfaces', () => {
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );
 
+	it( 'seeds missing Desktop Mode itemVisibility for enabled installed apps', async () => {
+		const { host, cleanup } = mountPanel();
+		await gotoAppsDepartment( host );
+
+		expect( updateOsSettingsSpy ).toHaveBeenCalledTimes( 1 );
+		expect( updateOsSettingsSpy.mock.calls[ 0 ][ 0 ] ).toEqual( {
+			itemVisibility: { 'odd-app-demo-app': 'desktop' },
+		} );
+		expect( osSettings.itemVisibility[ 'odd-app-demo-app' ] ).toBe( 'desktop' );
+
+		if ( typeof cleanup === 'function' ) cleanup();
+	} );
+
 	it( 'toggling taskbar writes the core itemVisibility placement without reloading', async () => {
+		osSettings.itemVisibility[ 'odd-app-demo-app' ] = 'desktop';
 		const { host, cleanup } = mountPanel();
 		await gotoAppsDepartment( host );
 
@@ -261,6 +275,7 @@ describe( 'ODD Shop · App surfaces', () => {
 	} );
 
 	it( 'toggling desktop writes hidden when both launch surfaces are off', async () => {
+		osSettings.itemVisibility[ 'odd-app-demo-app' ] = 'desktop';
 		const { host, cleanup } = mountPanel();
 		await gotoAppsDepartment( host );
 
@@ -372,6 +387,11 @@ describe( 'ODD Shop · App surfaces', () => {
 		await tick( 0 );
 		await tick( 0 );
 		await tick( 0 );
+
+		expect( updateOsSettingsSpy ).toHaveBeenCalledTimes( 1 );
+		expect( updateOsSettingsSpy.mock.calls[ 0 ][ 0 ] ).toEqual( {
+			itemVisibility: { 'odd-app-board': 'desktop' },
+		} );
 
 		const labelsMid = Array.from( host.querySelectorAll( '.odd-shop__card-btn' ) )
 			.map( ( btn ) => btn.textContent.trim() );

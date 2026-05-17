@@ -68,7 +68,7 @@ ICON_IMAGE_MAX_BYTES = 768 * 1024
 ICON_IMAGE_EXTENSIONS = {"png": "PNG", "webp": "WEBP"}
 ICON_VISIBLE_ALPHA_THRESHOLD = 32
 ICON_VISIBLE_MIN_FILL = 0.80
-SCENE_CARD_SIZE = (1024, 576)
+CATALOG_CARD_SIZE = (1024, 576)
 SCENE_CARD_RMS_LIMIT = 10.0
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 SEMVER_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$")
@@ -182,7 +182,28 @@ def validate_icon_image(slug: str, rel: str, data: bytes, problems: list[str]) -
 
 def scene_card_from_wallpaper(wallpaper_data: bytes) -> Image.Image:
     with Image.open(io.BytesIO(wallpaper_data)) as img:
-        return img.convert("RGB").resize(SCENE_CARD_SIZE, Image.Resampling.LANCZOS)
+        return img.convert("RGB").resize(CATALOG_CARD_SIZE, Image.Resampling.LANCZOS)
+
+
+def validate_catalog_card_size(
+    label: str,
+    card_disk: Path,
+    problems: list[str],
+) -> bool:
+    try:
+        with Image.open(card_disk) as img:
+            size = img.size
+    except Exception as exc:  # noqa: BLE001 - validation should report and continue.
+        problems.append(f"{label}: card_url image is invalid ({exc})")
+        return False
+
+    if size != CATALOG_CARD_SIZE:
+        problems.append(
+            f"{label}: card_url image must be {CATALOG_CARD_SIZE[0]}x{CATALOG_CARD_SIZE[1]}, "
+            f"got {size[0]}x{size[1]}"
+        )
+        return False
+    return True
 
 
 def validate_scene_card_matches_wallpaper(
@@ -198,11 +219,7 @@ def validate_scene_card_matches_wallpaper(
         problems.append(f"scene {slug}: card_url image is invalid ({exc})")
         return
 
-    if card.size != SCENE_CARD_SIZE:
-        problems.append(
-            f"scene {slug}: card_url image must be {SCENE_CARD_SIZE[0]}x{SCENE_CARD_SIZE[1]}, "
-            f"got {card.size[0]}x{card.size[1]}"
-        )
+    if card.size != CATALOG_CARD_SIZE:
         return
 
     expected = scene_card_from_wallpaper(wallpaper_data)
@@ -318,6 +335,8 @@ def check_bundle_row(
             f"bundle[{idx}] ({slug}): card_url asset is too large "
             f"({card_disk.stat().st_size} bytes > 750 KiB)"
         )
+    else:
+        validate_catalog_card_size(f"bundle[{idx}] ({slug})", card_disk, problems)
 
     try:
         with zipfile.ZipFile(disk, "r") as zf:

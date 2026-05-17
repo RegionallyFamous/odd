@@ -28,9 +28,18 @@ class Test_Apps_Surfaces extends ODDOUT_REST_Test_Case {
 	 */
 	public static $calls = array();
 
+	/**
+	 * @var array Captured Desktop Mode OS settings for stubbed get/save calls.
+	 */
+	public static $os_settings = array();
+
 	public function set_up() {
 		parent::set_up();
-		self::$calls = array();
+		self::$calls       = array();
+		self::$os_settings = array(
+			'itemVisibility' => array(),
+			'dockOrder'      => array(),
+		);
 	}
 
 	public function tear_down() {
@@ -49,9 +58,9 @@ class Test_Apps_Surfaces extends ODDOUT_REST_Test_Case {
 	 */
 	protected function install_fixture( $slug, array $manifest_overrides = array() ) {
 		$manifest = array_merge(
-				array(
-					'type'    => 'app',
-					'name'    => 'Surfaces ' . $slug,
+			array(
+				'type'    => 'app',
+				'name'    => 'Surfaces ' . $slug,
 				'slug'    => $slug,
 				'version' => '0.0.1',
 				'entry'   => 'index.html',
@@ -104,6 +113,49 @@ class Test_Apps_Surfaces extends ODDOUT_REST_Test_Case {
 			),
 			$row['surfaces']
 		);
+		$this->assertSame(
+			array(
+				'desktop' => true,
+				'taskbar' => false,
+			),
+			$manifest['surfaces']
+		);
+	}
+
+	public function test_install_seeds_core_item_visibility_to_desktop() {
+		$this->require_desktop_mode_stubs();
+		$this->login_as();
+
+		$this->install_fixture( 'seed-desktop' );
+
+		$this->assertSame( 'desktop', self::$os_settings['itemVisibility']['odd-app-seed-desktop'] );
+	}
+
+	public function test_install_honors_manifest_surfaces_in_core_item_visibility() {
+		$this->require_desktop_mode_stubs();
+		$this->login_as();
+
+		$this->install_fixture(
+			'seed-taskbar',
+			array(
+				'surfaces' => array(
+					'desktop' => false,
+					'taskbar' => true,
+				),
+			)
+		);
+
+		$this->assertSame( 'dock', self::$os_settings['itemVisibility']['odd-app-seed-taskbar'] );
+	}
+
+	public function test_install_preserves_existing_core_item_visibility() {
+		$this->require_desktop_mode_stubs();
+		$this->login_as();
+		self::$os_settings['itemVisibility']['odd-app-seed-hidden'] = 'hidden';
+
+		$this->install_fixture( 'seed-hidden' );
+
+		$this->assertSame( 'hidden', self::$os_settings['itemVisibility']['odd-app-seed-hidden'] );
 	}
 
 	public function test_install_honors_manifest_surfaces_opt_in() {
@@ -171,6 +223,35 @@ class Test_Apps_Surfaces extends ODDOUT_REST_Test_Case {
 		$this->assertCount( 1, $captured );
 		$this->assertSame( 'surfaces-action', $captured[0]['slug'] );
 		$this->assertTrue( $captured[0]['surfaces']['taskbar'] );
+	}
+
+	public function test_set_surfaces_updates_core_item_visibility() {
+		$this->require_desktop_mode_stubs();
+		$this->login_as();
+		$this->install_fixture( 'surfaces-core' );
+
+		oddout_apps_set_surfaces( 'surfaces-core', array( 'taskbar' => true ) );
+
+		$this->assertSame( 'both', self::$os_settings['itemVisibility']['odd-app-surfaces-core'] );
+	}
+
+	public function test_uninstall_removes_core_item_visibility() {
+		$this->require_desktop_mode_stubs();
+		$this->login_as();
+		$this->install_fixture( 'surfaces-remove' );
+		$this->assertArrayHasKey( 'odd-app-surfaces-remove', self::$os_settings['itemVisibility'] );
+
+		oddout_apps_uninstall( 'surfaces-remove' );
+
+		$this->assertArrayNotHasKey( 'odd-app-surfaces-remove', self::$os_settings['itemVisibility'] );
+		$this->installed = array_values(
+			array_filter(
+				$this->installed,
+				static function ( $slug ) {
+					return 'surfaces-remove' !== $slug;
+				}
+			)
+		);
 	}
 
 	public function test_rest_toggle_accepts_surfaces_payload() {
@@ -410,19 +491,42 @@ class Test_Apps_Surfaces extends ODDOUT_REST_Test_Case {
 			define( 'DESKTOP_MODE_VERSION', '0.8.5' );
 		}
 		// phpcs:disable
-		eval(
-			'function desktop_mode_is_enabled() {' .
-			'  return true;' .
-			'}' .
-			'function desktop_mode_register_window( $id, $args = array() ) {' .
-			'  Test_Apps_Surfaces::$calls[] = array( "fn" => "window", "id" => $id, "args" => $args );' .
-			'  return true;' .
-			'}' .
-			'function desktop_mode_register_icon( $id, $args = array() ) {' .
-			'  Test_Apps_Surfaces::$calls[] = array( "fn" => "icon", "id" => $id, "args" => $args );' .
-			'  return true;' .
-			'}'
-		);
+		$stubs = '';
+		if ( ! function_exists( 'desktop_mode_is_enabled' ) ) {
+			$stubs .= 'function desktop_mode_is_enabled() { return true; }';
+		}
+		if ( ! function_exists( 'desktop_mode_register_window' ) ) {
+			$stubs .= 'function desktop_mode_register_window( $id, $args = array() ) {' .
+				' Test_Apps_Surfaces::$calls[] = array( "fn" => "window", "id" => $id, "args" => $args );' .
+				' return true;' .
+			'}';
+		}
+		if ( ! function_exists( 'desktop_mode_register_icon' ) ) {
+			$stubs .= 'function desktop_mode_register_icon( $id, $args = array() ) {' .
+				' Test_Apps_Surfaces::$calls[] = array( "fn" => "icon", "id" => $id, "args" => $args );' .
+				' return true;' .
+			'}';
+		}
+		if ( ! function_exists( 'desktop_mode_default_os_settings' ) ) {
+			$stubs .= 'function desktop_mode_default_os_settings() {' .
+				' return array( "itemVisibility" => array(), "dockOrder" => array() );' .
+			'}';
+		}
+		if ( ! function_exists( 'desktop_mode_get_os_settings' ) ) {
+			$stubs .= 'function desktop_mode_get_os_settings( $user_id = 0 ) {' .
+				' return Test_Apps_Surfaces::$os_settings;' .
+			'}';
+		}
+		if ( ! function_exists( 'desktop_mode_save_os_settings' ) ) {
+			$stubs .= 'function desktop_mode_save_os_settings( $user_id, $settings ) {' .
+				' Test_Apps_Surfaces::$os_settings = $settings;' .
+				' Test_Apps_Surfaces::$calls[] = array( "fn" => "os_settings", "id" => (string) $user_id, "args" => $settings );' .
+				' return true;' .
+			'}';
+		}
+		if ( '' !== $stubs ) {
+			eval( $stubs );
+		}
 		// phpcs:enable
 	}
 }

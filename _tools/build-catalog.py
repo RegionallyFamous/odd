@@ -33,7 +33,7 @@ Bundle types:
                 + living-layer preview art)
     widget      source: catalog-sources/widgets/<slug>/{widget.js,
                 widget.css?, manifest.json, preview.svg?, assets/*}
-    app         source: catalog-sources/apps/<slug>/{bundle.wp, icon.svg,
+    app         source: catalog-sources/apps/<slug>/{bundle.wp, icon.webp|icon.png|icon.svg,
                 meta.json} — app .wp is prebuilt, we just publish it.
 """
 
@@ -80,6 +80,7 @@ ICON_IMAGE_MAX_DIM = 2048
 ICON_IMAGE_EXTENSIONS = {"png": "PNG", "webp": "WEBP"}
 ICON_VISIBLE_ALPHA_THRESHOLD = 32
 ICON_VISIBLE_MIN_FILL = 0.80
+CATALOG_CARD_SIZE = (1024, 576)
 ASSET_REL_PATH = re.compile(r"^[a-zA-Z0-9._-]+(/[a-zA-Z0-9._-]+)*$")
 BUNDLE_FORBIDDEN_EXTENSIONS = {
     "php", "phtml", "phar", "php3", "php4", "php5", "php7",
@@ -394,6 +395,13 @@ def publish_card(src_dir: Path, type_prefix: str, slug: str) -> str:
     card = src_dir / "card.webp"
     if not card.is_file():
         return ""
+    with Image.open(card) as img:
+        if img.size != CATALOG_CARD_SIZE:
+            raise SystemExit(
+                f"{type_prefix}/{slug}: card.webp must be "
+                f"{CATALOG_CARD_SIZE[0]}x{CATALOG_CARD_SIZE[1]}, "
+                f"got {img.size[0]}x{img.size[1]}"
+            )
     name = f"{type_prefix}-{slug}.webp"
     shutil.copy2(card, OUT_CARDS / name)
     return f"{CATALOG_BASE}/cards/{name}"
@@ -402,7 +410,7 @@ def publish_card(src_dir: Path, type_prefix: str, slug: str) -> str:
 def scene_card_from_wallpaper(wallpaper: bytes) -> bytes:
     """Return the exact 16:9 Shop card derivative for a scene wallpaper."""
     with Image.open(io.BytesIO(wallpaper)) as src:
-        card = src.convert("RGB").resize((1024, 576), Image.Resampling.LANCZOS)
+        card = src.convert("RGB").resize(CATALOG_CARD_SIZE, Image.Resampling.LANCZOS)
     out = io.BytesIO()
     card.save(out, "WEBP", quality=88, method=6)
     return out.getvalue()
@@ -953,7 +961,18 @@ def build_widget(slug: str, src_dir: Path) -> dict:
 def build_app(slug: str, src_dir: Path) -> dict:
     meta = json.loads((src_dir / "meta.json").read_text())
     bundle_src = src_dir / "bundle.wp"
-    icon_src = src_dir / "icon.svg"
+    icon_src = next(
+        (
+            candidate
+            for candidate in (
+                src_dir / "icon.webp",
+                src_dir / "icon.png",
+                src_dir / "icon.svg",
+            )
+            if candidate.is_file()
+        ),
+        None,
+    )
     if not bundle_src.is_file():
         raise SystemExit(f"app {slug}: missing bundle.wp")
     with zipfile.ZipFile(bundle_src, "r") as zf:
@@ -967,8 +986,8 @@ def build_app(slug: str, src_dir: Path) -> dict:
     bundle_dest = OUT_BUNDLES / f"{slug}.wp"
     shutil.copy2(bundle_src, bundle_dest)
 
-    icon_name = f"{slug}.svg"
-    if icon_src.is_file():
+    icon_name = f"{slug}{icon_src.suffix}" if icon_src is not None else f"{slug}.svg"
+    if icon_src is not None:
         shutil.copy2(icon_src, OUT_ICONS / icon_name)
     else:
         (OUT_ICONS / icon_name).write_text(widget_tile(slug, meta["name"]))
