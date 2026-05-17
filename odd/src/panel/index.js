@@ -1638,7 +1638,6 @@
 
 		function shouldBrowserInstallCatalogBundle( row, res, opts ) {
 			opts = opts || {};
-			if ( opts.allowUpdate ) return false;
 			if ( ! row || ! row.slug || ! catalogDownloadUrl( row ) ) return false;
 			var code = catalogInstallErrorCode( res );
 			var dataStatus = res && res.data && res.data.data && res.data.data.status;
@@ -1729,11 +1728,12 @@
 			} );
 		}
 
-		function installCatalogBundleViaBrowser( row ) {
+		function installCatalogBundleViaBrowser( row, opts ) {
+			opts = opts || {};
 			diagCount( 'catalog.install.browserFallback' );
 			toast( 'Server download hiccuped. Retrying from your browser...' );
 			return fetchCatalogBundleInBrowser( row ).then( function ( bundle ) {
-				return uploadBundleBlob( bundle.blob, catalogBundleFilename( row, bundle.url ) );
+				return uploadBundleBlob( bundle.blob, catalogBundleFilename( row, bundle.url ), { allowUpdate: !! opts.allowUpdate } );
 			} ).then( function ( res ) {
 				if ( res && res.ok && res.data && res.data.installed ) {
 					return res.data;
@@ -1762,7 +1762,7 @@
 					return retryCatalogInstallAfterRefresh( row, opts );
 				}
 				if ( shouldBrowserInstallCatalogBundle( row, res, opts ) ) {
-					return installCatalogBundleViaBrowser( row ).catch( function ( err ) {
+					return installCatalogBundleViaBrowser( row, opts ).catch( function ( err ) {
 						if ( catalogIntegrityError( err ) && ! opts.catalogRefreshed ) {
 							return retryCatalogInstallAfterRefresh( row, opts );
 						}
@@ -2552,9 +2552,11 @@
 			}, 80 );
 		}
 
-		function uploadBundleBlob( blob, filename ) {
+		function uploadBundleBlob( blob, filename, opts ) {
+			opts = opts || {};
 			var fd = new FormData();
 			fd.append( 'file', blob, filename || ( blob && blob.name ) || 'bundle.wp' );
+			if ( opts.allowUpdate ) fd.append( 'allow_update', '1' );
 			return fetch( bundlesUploadUrl(), {
 				method:      'POST',
 				credentials: 'same-origin',
@@ -6148,6 +6150,9 @@
 			takeIfEmpty( 'previewUrl' );
 			takeIfEmpty( 'wallpaperUrl' );
 			takeIfEmpty( 'preview' );
+			takeIfEmpty( 'downloadUrl' );
+			takeIfEmpty( 'sha256' );
+			takeIfEmpty( 'size' );
 			takeIfEmpty( 'category' );
 			takeIfEmpty( 'accent' );
 			takeIfEmpty( 'fallbackColor' );

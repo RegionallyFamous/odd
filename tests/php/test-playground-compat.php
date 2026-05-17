@@ -87,6 +87,28 @@ class Test_ODD_Playground_Compat extends WP_UnitTestCase {
 		}
 	}
 
+	public function test_playground_enqueues_desktop_mode_service_worker_cleanup() {
+		$server = $_SERVER;
+		try {
+			$_SERVER['HTTP_HOST'] = 'playground.wordpress.net';
+
+			oddout_playground_compat_unregister_desktop_mode_service_worker();
+
+			$this->assertTrue( wp_script_is( 'odd-playground-sw-cleanup', 'enqueued' ) );
+			$scripts = wp_scripts();
+			$after   = isset( $scripts->registered['odd-playground-sw-cleanup']->extra['after'] )
+				? implode( "\n", $scripts->registered['odd-playground-sw-cleanup']->extra['after'] )
+				: '';
+
+			$this->assertStringContainsString( 'getRegistrations', $after );
+			$this->assertStringContainsString( '/desktop-mode/sw.js', $after );
+			$this->assertStringContainsString( 'registration.unregister', $after );
+		} finally {
+			wp_deregister_script( 'odd-playground-sw-cleanup' );
+			$_SERVER = $server;
+		}
+	}
+
 	public function test_playground_removes_dashboard_feed_widgets() {
 		global $wp_meta_boxes;
 

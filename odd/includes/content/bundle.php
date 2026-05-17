@@ -4,7 +4,7 @@
  *
  * Single public entry for every content type:
  *
- *   oddout_bundle_install( $tmp_path, $filename ) → array{ slug, type, manifest } | WP_Error
+ *   oddout_bundle_install( $tmp_path, $filename, $args = array() ) → array{ slug, type, manifest } | WP_Error
  *   oddout_bundle_uninstall( $slug )              → true | WP_Error
  *   oddout_bundle_type_for_slug( $slug )          → 'app' | 'icon-set' | 'cursor-set' | 'scene' | 'widget' | ''
  *   oddout_bundle_slug_in_use( $slug )            → bool
@@ -74,7 +74,10 @@ function oddout_bundle_type_modules() {
  *
  * @return array|WP_Error { slug, type, manifest }
  */
-function oddout_bundle_install( $tmp_path, $filename ) {
+function oddout_bundle_install( $tmp_path, $filename, $args = array() ) {
+	$args             = is_array( $args ) ? $args : array();
+	$replace_existing = ! empty( $args['replace_existing'] );
+
 	list( $zip, $open_err ) = oddout_content_archive_open( $tmp_path, $filename );
 	if ( $open_err ) {
 		return $open_err;
@@ -101,14 +104,6 @@ function oddout_bundle_install( $tmp_path, $filename ) {
 	$slug = $header['slug'];
 	$type = $header['type'];
 
-	if ( oddout_bundle_slug_in_use( $slug ) ) {
-		$zip->close();
-		return new WP_Error(
-			'slug_exists',
-			sprintf( /* translators: %s slug */ __( 'A bundle named "%s" is already installed. Remove it before reinstalling.', 'odd-outlandish-desktop-decorator' ), $slug )
-		);
-	}
-
 	$modules = oddout_bundle_type_modules();
 	if ( empty( $modules[ $type ] ) || ! function_exists( $modules[ $type ]['validate'] ) ) {
 		$zip->close();
@@ -122,6 +117,28 @@ function oddout_bundle_install( $tmp_path, $filename ) {
 	$zip->close();
 	if ( is_wp_error( $normalised ) ) {
 		return $normalised;
+	}
+
+	$existing_type = oddout_bundle_type_for_slug( $slug );
+	if ( '' !== $existing_type ) {
+		if ( ! $replace_existing ) {
+			return new WP_Error(
+				'slug_exists',
+				sprintf( /* translators: %s slug */ __( 'A bundle named "%s" is already installed. Remove it before reinstalling.', 'odd-outlandish-desktop-decorator' ), $slug ),
+				array( 'status' => 409 )
+			);
+		}
+		if ( $existing_type !== $type ) {
+			return new WP_Error(
+				'slug_type_mismatch',
+				__( 'An installed bundle with this slug has a different type.', 'odd-outlandish-desktop-decorator' ),
+				array(
+					'status'   => 409,
+					'existing' => $existing_type,
+					'incoming' => $type,
+				)
+			);
+		}
 	}
 
 	// Atomic install lock per slug — add_option returns false when
@@ -142,6 +159,14 @@ function oddout_bundle_install( $tmp_path, $filename ) {
 			);
 		}
 		update_option( $lock_key, (string) time(), false );
+	}
+
+	if ( '' !== $existing_type ) {
+		$removed = oddout_bundle_uninstall( $slug );
+		if ( is_wp_error( $removed ) ) {
+			delete_option( $lock_key );
+			return $removed;
+		}
 	}
 
 	$installed = call_user_func( $modules[ $type ]['install'], $tmp_path, $normalised );

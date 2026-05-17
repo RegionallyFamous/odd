@@ -455,6 +455,72 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		}
 	}
 
+	public function test_catalog_update_download_failure_preserves_installed_bundle() {
+		$slug      = 'catalog-update-safe-widget';
+		$zip_path  = $this->build_widget_catalog_zip( $slug );
+		$installed = oddout_bundle_install( $zip_path, $slug . '.wp' );
+		wp_delete_file( $zip_path );
+
+		$this->assertIsArray( $installed, is_wp_error( $installed ) ? $installed->get_error_message() : 'Fixture install failed.' );
+		$this->assertSame( 'widget', oddout_bundle_type_for_slug( $slug ) );
+
+		$download_url = 'https://odd.regionallyfamous.com/catalog/v1/bundles/widget-' . $slug . '.wp';
+		$registry     = array(
+			'version' => 1,
+			'bundles' => array(
+				$this->catalog_row(
+					$slug,
+					array(
+						'name'         => 'Catalog Update Safe Widget',
+						'version'      => '1.0.1',
+						'download_url' => $download_url,
+					)
+				),
+			),
+		);
+
+		add_filter(
+			'pre_http_request',
+			static function ( $preempt, $args, $url ) use ( $registry, $download_url ) {
+				if ( ODDOUT_CATALOG_URL === $url ) {
+					return array(
+						'headers'  => array(),
+						'body'     => wp_json_encode( $registry ),
+						'response' => array(
+							'code'    => 200,
+							'message' => 'OK',
+						),
+					);
+				}
+				if ( $download_url === $url ) {
+					return new WP_Error( 'http_request_failed', 'No network from this environment.' );
+				}
+				return $preempt;
+			},
+			10,
+			3
+		);
+
+		$user = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user );
+
+		global $wp_rest_server;
+		$wp_rest_server = new WP_REST_Server();
+		do_action( 'rest_api_init' );
+
+		try {
+			$request = new WP_REST_Request( 'POST', '/odd/v1/bundles/install-from-catalog' );
+			$request->set_param( 'slug', $slug );
+			$request->set_param( 'allow_update', true );
+			$response = $wp_rest_server->dispatch( $request );
+
+			$this->assertSame( 502, $response->get_status() );
+			$this->assertSame( 'widget', oddout_bundle_type_for_slug( $slug ), 'Existing bundle should remain installed when the catalog download fails.' );
+		} finally {
+			oddout_bundle_uninstall( $slug );
+		}
+	}
+
 	public function test_catalog_normalise_preserves_card_url_for_shop_art() {
 		$registry = oddout_catalog_normalise(
 			array(
@@ -817,7 +883,7 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 			)
 		);
 
-		$registry = oddout_catalog_normalise(
+		$registry                             = oddout_catalog_normalise(
 			array(
 				'version' => 1,
 				'bundles' => array( $this->catalog_row( 'fallback-widget' ) ),

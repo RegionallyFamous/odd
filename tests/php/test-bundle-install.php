@@ -165,6 +165,34 @@ class Test_Bundle_Install extends ODDOUT_REST_Test_Case {
 		$this->assertNotContains( 'test-set', $slugs, 'uninstalled icon set must vanish from the registry' );
 	}
 
+	public function test_bundle_install_can_replace_existing_bundle_after_validation() {
+		$zip = $this->make_iconset_zip( 'replaceable-set' );
+		$res = oddout_bundle_install( $zip, 'replaceable-set.wp' );
+		@unlink( $zip );
+		$this->assertIsArray( $res, is_wp_error( $res ) ? $res->get_error_message() : 'initial install returned non-array' );
+		$this->installed[] = array(
+			'slug' => 'replaceable-set',
+			'type' => 'icon-set',
+		);
+
+		$blocked_zip = $this->make_iconset_zip( 'replaceable-set' );
+		$blocked     = oddout_bundle_install( $blocked_zip, 'replaceable-set.wp' );
+		@unlink( $blocked_zip );
+		$this->assertWPError( $blocked );
+		$this->assertSame( 'slug_exists', $blocked->get_error_code() );
+
+		$replacement_zip = $this->make_iconset_zip( 'replaceable-set' );
+		$replacement     = oddout_bundle_install(
+			$replacement_zip,
+			'replaceable-set.wp',
+			array( 'replace_existing' => true )
+		);
+		@unlink( $replacement_zip );
+
+		$this->assertIsArray( $replacement, is_wp_error( $replacement ) ? $replacement->get_error_message() : 'replacement install returned non-array' );
+		$this->assertSame( 'icon-set', oddout_bundle_type_for_slug( 'replaceable-set' ) );
+	}
+
 	public function test_scene_round_trip_install_register_uninstall() {
 		$zip = $this->make_scene_zip( 'test-scene' );
 		$res = oddout_bundle_install( $zip, 'test-scene.wp' );

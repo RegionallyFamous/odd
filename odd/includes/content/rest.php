@@ -25,6 +25,15 @@ add_action(
 			array(
 				'methods'             => 'POST',
 				'callback'            => 'oddout_bundle_rest_upload',
+				'args'                => array(
+					'allow_update' => array(
+						'description'       => __( 'Whether to replace an installed bundle with the uploaded archive.', 'odd-outlandish-desktop-decorator' ),
+						'type'              => 'boolean',
+						'required'          => false,
+						'default'           => false,
+						'sanitize_callback' => 'rest_sanitize_boolean',
+					),
+				),
 				'permission_callback' => $manage_cb,
 			)
 		);
@@ -63,7 +72,13 @@ function oddout_bundle_rest_upload( WP_REST_Request $req ) {
 	$tmp  = $file['tmp_name'];
 	$name = $file['name'];
 
-	$result = oddout_bundle_install( $tmp, $name );
+	$result = oddout_bundle_install(
+		$tmp,
+		$name,
+		array(
+			'replace_existing' => (bool) $req->get_param( 'allow_update' ),
+		)
+	);
 	if ( is_wp_error( $result ) ) {
 		$data           = $result->get_error_data();
 		$data           = is_array( $data ) ? $data : array();

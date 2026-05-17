@@ -1944,15 +1944,14 @@ function oddout_bundle_rest_install_from_catalog( WP_REST_Request $req ) {
 				array( 'status' => 409 )
 			);
 		}
-		if ( function_exists( 'oddout_bundle_uninstall' ) ) {
-			$uninstall = oddout_bundle_uninstall( $slug );
-			if ( is_wp_error( $uninstall ) ) {
-				return $uninstall;
-			}
-		}
 	}
 
-	$install = oddout_catalog_install_entry( $entry );
+	$install = oddout_catalog_install_entry(
+		$entry,
+		array(
+			'replace_existing' => $is_installed && $allow_update,
+		)
+	);
 	if ( is_wp_error( $install ) ) {
 		$data           = $install->get_error_data();
 		$data           = is_array( $data ) ? $data : array();
@@ -1989,10 +1988,12 @@ function oddout_bundle_rest_install_from_catalog( WP_REST_Request $req ) {
  * @param array $entry Normalised catalog row.
  * @return array|WP_Error On success: {slug, type, manifest}.
  */
-function oddout_catalog_install_entry( array $entry ) {
-	$slug     = isset( $entry['slug'] ) ? sanitize_key( (string) $entry['slug'] ) : '';
-	$lock_key = 'oddout_catalog_install_lock_' . $slug;
-	$lock     = oddout_catalog_lock_acquire( $lock_key, 10 * MINUTE_IN_SECONDS );
+function oddout_catalog_install_entry( array $entry, $args = array() ) {
+	$args             = is_array( $args ) ? $args : array();
+	$replace_existing = ! empty( $args['replace_existing'] );
+	$slug             = isset( $entry['slug'] ) ? sanitize_key( (string) $entry['slug'] ) : '';
+	$lock_key         = 'oddout_catalog_install_lock_' . $slug;
+	$lock             = oddout_catalog_lock_acquire( $lock_key, 10 * MINUTE_IN_SECONDS );
 	if ( is_wp_error( $lock ) ) {
 		return $lock;
 	}
@@ -2026,7 +2027,13 @@ function oddout_catalog_install_entry( array $entry ) {
 		oddout_catalog_lock_release( $lock_key );
 		return $matches;
 	}
-	$result = oddout_bundle_install( $tmp, $filename );
+	$result = oddout_bundle_install(
+		$tmp,
+		$filename,
+		array(
+			'replace_existing' => $replace_existing,
+		)
+	);
 	wp_delete_file( $tmp );
 	oddout_catalog_lock_release( $lock_key );
 	if ( is_wp_error( $result ) ) {

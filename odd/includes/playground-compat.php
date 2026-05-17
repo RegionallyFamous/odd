@@ -62,6 +62,50 @@ add_filter(
 );
 
 /**
+ * Remove stale Desktop Mode service workers from older Playground sessions.
+ *
+ * ODD already clears Desktop Mode's PWA URLs above so new sessions should not
+ * register a Desktop Mode worker in Playground. Existing browser profiles can
+ * still carry an older `/desktop-mode/` registration, though, and Chrome will
+ * keep evaluating it until it is explicitly unregistered. Leave Playground's
+ * own root worker alone; only remove registrations whose scope/script clearly
+ * belongs to Desktop Mode.
+ */
+function oddout_playground_compat_unregister_desktop_mode_service_worker() {
+	if ( ! function_exists( 'oddout_is_playground_host' ) || ! oddout_is_playground_host() ) {
+		return;
+	}
+	wp_register_script( 'odd-playground-sw-cleanup', false, array(), ODDOUT_VERSION, true );
+	wp_enqueue_script( 'odd-playground-sw-cleanup' );
+	wp_add_inline_script(
+		'odd-playground-sw-cleanup',
+		<<<'JS'
+(function(){
+	if (!('serviceWorker' in navigator) || typeof navigator.serviceWorker.getRegistrations !== 'function') {
+		return;
+	}
+	navigator.serviceWorker.getRegistrations().then(function(registrations){
+		registrations.forEach(function(registration){
+			var scope = String(registration && registration.scope || '');
+			var worker = registration && (registration.active || registration.waiting || registration.installing);
+			var script = String(worker && worker.scriptURL || '');
+			var isDesktopModeWorker =
+				scope.indexOf('/desktop-mode/') !== -1 ||
+				script.indexOf('/desktop-mode/sw.js') !== -1 ||
+				script.indexOf('/wp-content/plugins/desktop-mode/assets/js/sw.js') !== -1;
+			if (isDesktopModeWorker && typeof registration.unregister === 'function') {
+				registration.unregister().catch(function(){});
+			}
+		});
+	}).catch(function(){});
+})();
+JS,
+		'after'
+	);
+}
+add_action( 'admin_enqueue_scripts', 'oddout_playground_compat_unregister_desktop_mode_service_worker', 1 );
+
+/**
  * In Playground, keep Desktop Mode's admin-bar toggle inside the sandboxed
  * frame instead of asking the browser to navigate the top window.
  */

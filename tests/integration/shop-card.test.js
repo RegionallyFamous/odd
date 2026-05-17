@@ -1016,6 +1016,107 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( host.querySelector( '[data-odd-shop-card][data-set-slug="filament"]' ) ).toBeTruthy();
 	} );
 
+	it( 'catalog update falls back to browser download without dropping allow_update', async () => {
+		const downloadUrl = 'https://example.com/catalog/v1/bundles/board.wp';
+		seed( {
+			appsEnabled: true,
+			apps: [
+				{ slug: 'board', name: 'Board', version: '1.0.0', update_available: true },
+			],
+			bundleCatalog: {
+				scene: [],
+				iconSet: [],
+				cursorSet: [],
+				widget: [],
+				app: [
+					{
+						slug:         'board',
+						name:         'Board',
+						version:      '1.0.1',
+						installed:    true,
+						download_url: downloadUrl,
+					},
+				],
+			},
+		} );
+
+		const bundleBlob = new Blob( [ 'bundle bytes' ], { type: 'application/octet-stream' } );
+		globalThis.fetch = vi.fn( ( url, opts = {} ) => {
+			const href = String( url );
+			if ( opts.method === 'POST' && /\/bundles\/install-from-catalog$/.test( href ) ) {
+				return Promise.resolve( {
+					ok:     false,
+					status: 502,
+					json:   () => Promise.resolve( {
+						code:    'download_failed',
+						message: 'Could not download bundle.',
+						data:    { status: 502 },
+					} ),
+				} );
+			}
+			if ( href === downloadUrl ) {
+				return Promise.resolve( {
+					ok:     true,
+					status: 200,
+					blob:   () => Promise.resolve( bundleBlob ),
+				} );
+			}
+			if ( opts.method === 'POST' && /\/bundles\/upload$/.test( href ) ) {
+				return Promise.resolve( {
+					ok:     true,
+					status: 200,
+					json:   () => Promise.resolve( {
+						installed: true,
+						slug:      'board',
+						type:      'app',
+						manifest:  { slug: 'board', name: 'Board', version: '1.0.1' },
+						row:       { slug: 'board', name: 'Board', version: '1.0.1', installed: true },
+					} ),
+				} );
+			}
+			if ( /\/apps$/.test( href ) ) {
+				return Promise.resolve( {
+					ok:     true,
+					status: 200,
+					json:   () => Promise.resolve( {
+						apps: [ { slug: 'board', name: 'Board', version: '1.0.0', update_available: true } ],
+					} ),
+				} );
+			}
+			return Promise.resolve( {
+				ok:   true,
+				json: () => Promise.resolve( { apps: [] } ),
+			} );
+		} );
+
+		loadPanel();
+		const { host } = mount();
+		goToDepartment( host, 'Apps' );
+		await flush();
+		await new Promise( ( r ) => setTimeout( r, 0 ) );
+		await new Promise( ( r ) => setTimeout( r, 0 ) );
+
+		const card = host.querySelector( '[data-odd-shop-card][data-slug="board"]' );
+		card.querySelector( '.odd-shop__card-btn' )
+			.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+
+		await flush();
+		await new Promise( ( r ) => setTimeout( r, 0 ) );
+		await flush();
+
+		const installCall = globalThis.fetch.mock.calls.find( ( [ url, opts = {} ] ) => (
+			opts.method === 'POST' && /\/bundles\/install-from-catalog$/.test( String( url ) )
+		) );
+		const uploadCall = globalThis.fetch.mock.calls.find( ( [ url, opts = {} ] ) => (
+			opts.method === 'POST' && /\/bundles\/upload$/.test( String( url ) )
+		) );
+		expect( JSON.parse( installCall[ 1 ].body ) ).toEqual( { slug: 'board', allow_update: 1 } );
+		expect( uploadCall ).toBeTruthy();
+		expect( uploadCall[ 1 ].body.get( 'file' ).name ).toBe( 'board.wp' );
+		expect( uploadCall[ 1 ].body.get( 'allow_update' ) ).toBe( '1' );
+		expect( host.querySelector( '[data-odd-shop-card][data-slug="board"]' ) ).toBeTruthy();
+	} );
+
 	it( 'refreshes the catalog and retries once after an integrity mismatch', async () => {
 		const oldDownloadUrl = 'https://example.com/catalog/v1/bundles/iconset-filament-old.wp';
 		const newDownloadUrl = 'https://example.com/catalog/v1/bundles/iconset-filament.wp';
