@@ -309,10 +309,11 @@ jobs:
             exit 1
           fi
 
-  # Degraded-mode smoke: activate ODD without WP Desktop Mode installed.
-  # The reliability contract is "no fatal, clear diagnostic, no calls
-  # to missing host APIs." Everything in odd/includes/dependencies.php
-  # must route every Desktop Mode integration through the central guard.
+  # Dependency smoke: install ODD without WP Desktop Mode installed.
+  # WordPress 6.9+ blocks activation when a required plugin is missing,
+  # so the release contract is now "clear dependency failure, no fatal,
+  # plugin remains inactive." Runtime degraded-mode paths are covered by
+  # PHPUnit where the plugin can be bootstrapped under controlled stubs.
   install-smoke-no-host:
     runs-on: ubuntu-latest
     services:
@@ -391,19 +392,22 @@ jobs:
         env:
           ODD_ZIP: ${{ github.workspace }}/${{ inputs.zip-path }}
         run: |
-          wp plugin install "$ODD_ZIP" --activate
-          wp plugin list --status=active --field=name | grep -E '^odd$'
-      - name: Assert no fatal and Desktop Mode reported missing
+          set +e
+          output=$(wp plugin install "$ODD_ZIP" --activate 2>&1)
+          status=$?
+          set -e
+          echo "$output"
+          echo "$output" | grep -F 'requires 1 plugin to be installed and activated: desktop-mode'
+          wp plugin list --status=inactive --field=name | grep -E '^odd$'
+          if wp plugin list --status=active --field=name | grep -E '^odd$'; then
+            echo "error: ODD activated despite missing required Desktop Mode plugin" >&2
+            exit 1
+          fi
+          exit 0
+      - name: Assert dependency block did not fatal
         working-directory: /tmp/wp
         run: |
-          wp eval 'exit( function_exists( "oddout_desktop_mode_available" ) ? 0 : 1 );'
-          wp eval 'exit( oddout_desktop_mode_available() ? 1 : 0 );' # should be false
-          wp eval '$m = oddout_desktop_mode_missing_functions( "core" ); if ( empty( $m ) ) { exit( 1 ); } fwrite( STDOUT, "missing core: " . implode( ",", $m ) . "\n" ); exit( 0 );'
-      - name: Assert degraded-mode init dispatches without fatal
-        working-directory: /tmp/wp
-        run: |
-          wp eval 'do_action( "init" ); echo "init ok\n";'
-          wp eval 'do_action( "admin_enqueue_scripts" ); echo "admin_enqueue_scripts ok\n";'
+          wp plugin list --field=name | grep -E '^odd$'
       - name: Scan debug.log for PHP errors in degraded mode
         working-directory: /tmp/wp
         run: |
@@ -450,6 +454,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+      - name: Install Python catalog dependencies
+        run: python -m pip install --quiet -r requirements-catalog.txt
       - name: Wait for MySQL
         run: |
           for i in $(seq 1 30); do
