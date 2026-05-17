@@ -888,6 +888,7 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-actions\{[^}]*display:flex[^}]*min-width:0/ );
 		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__card-btn\{[^}]*flex:1 1 0[^}]*min-width:0[^}]*text-align:center[^}]*user-select:none/ );
 		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__quick-look\{[^}]*flex:0 0 auto[^}]*text-align:center[^}]*user-select:none/ );
+		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__card-btn--add:hover,[^{}]*\.odd-panel\.odd-shop \.odd-shop__quick-look:hover,[^{}]*\{[^}]*background:color-mix\(in srgb,var\(--odd-shop-active-tint,var\(--odd-shop-accent\)\) 12%,var\(--odd-shop-surface-3\)\)[^}]*color:var\(--odd-shop-ink\)/ );
 		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__card-btn--active,\.odd-panel\.odd-shop \.odd-shop__card-btn\.is-disabled[^{}]*\{[^}]*color:var\(--odd-shop-muted-strong\)/ );
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-wrap\.is-active \.odd-shop__card-art\{[^}]*inset 0 1px 0 rgba\(255,255,255,\.25\)/ );
 		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__card-wrap\.is-state-active \.odd-shop__card-btn--active\{[^}]*display:none/ );
