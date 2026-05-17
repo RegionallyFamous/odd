@@ -4,7 +4,7 @@
   "label": "Magic 8-Ball",
   "description": "A WordPress-flavored magic 8-ball. Click to shake for wisdom.",
   "category": "ODD Originals",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Regionally Famous",
   "entry": "widget.js",
   "css": [

@@ -3,6 +3,7 @@
 /* =========================================================== */
 
 .odd-widget--eight {
+	box-sizing: border-box;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -27,8 +28,8 @@
 	cursor: pointer;
 	outline-offset: 4px;
 	border-radius: 50%;
-	/* Fill most of the widget height; width adapts to fit. */
-	width: min( 178px, 100% );
+	/* Leave enough frame around the ball at the minimum widget size. */
+	width: min( 158px, 88% );
 	aspect-ratio: 1 / 1;
 	filter: drop-shadow( 0 20px 34px rgba( 3, 7, 18, 0.62 ) );
 }
