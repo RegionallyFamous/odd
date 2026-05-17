@@ -657,7 +657,7 @@
 .odd-panel .odd-shop__card-glyph{position:relative;font-size:68px;line-height:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.35))}
 .odd-panel .odd-shop__card-mono{position:relative;font:800 44px/1 -apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:-.02em;color:rgba(255,255,255,.92)}
 .odd-panel .odd-shop__card-shine{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 60% at 50% -10%,rgba(255,255,255,.45) 0%,rgba(255,255,255,0) 60%)}
-.odd-panel .odd-shop__card-pin{position:absolute;top:10px;right:10px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#34c759;color:#fff;box-shadow:0 4px 10px -4px rgba(52,199,89,.8),0 0 0 3px rgba(255,255,255,.9);z-index:2}
+.odd-panel .odd-shop__card-pin{position:absolute;top:12px;right:12px;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(18,18,28,.72);border:1px solid rgba(255,255,255,.34);color:#83f59a;box-shadow:0 8px 18px -12px rgba(0,0,0,.72),0 1px 0 rgba(255,255,255,.22) inset;backdrop-filter:blur(10px) saturate(1.15);-webkit-backdrop-filter:blur(10px) saturate(1.15);z-index:2}
 .odd-panel .odd-shop__card-badge{position:absolute;top:10px;left:10px;padding:3px 8px;border-radius:999px;background:rgba(8,6,20,.62);color:#fff;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:2}
 .odd-panel .odd-shop__card-badge--update{background:#ff9500;color:#1d1d1f}
 .odd-panel .odd-shop__card-badge--active{background:#34c759;color:#fff}
@@ -700,9 +700,12 @@
 .odd-panel .odd-shop__card-manage-actions .odd-apps-btn:hover{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.24);color:#fff}
 .odd-panel .odd-shop__card-manage-actions .odd-apps-btn--danger{color:#ffb3bc;border-color:rgba(255,104,122,.44);background:rgba(255,104,122,.08)}
 .odd-panel .odd-shop__card-manage-actions .odd-apps-btn--danger:hover{background:rgba(255,104,122,.16);color:#ffdce1;border-color:rgba(255,104,122,.64)}
-.odd-panel .odd-shop__card-wrap.is-active{box-shadow:0 2px 4px rgba(12,10,29,.06),0 18px 36px -24px rgba(12,10,29,.48)}
+.odd-panel .odd-shop__card-wrap.is-active{border-color:color-mix(in srgb,#34c759 34%,var(--odd-shop-border,rgba(60,60,67,.18)));box-shadow:0 0 0 1px color-mix(in srgb,#34c759 24%,transparent),0 2px 4px rgba(12,10,29,.06),0 18px 36px -24px rgba(12,10,29,.48)}
 .odd-panel .odd-shop__card.is-active::after{content:none}
-.odd-panel .odd-shop__card-wrap.is-active .odd-shop__card-art{box-shadow:0 14px 30px -18px rgba(52,199,89,.55),0 2px 4px rgba(12,10,29,.12),inset 0 0 0 3px #34c759}
+.odd-panel .odd-shop__card-wrap.is-active .odd-shop__card-art{box-shadow:0 14px 30px -18px rgba(12,10,29,.45),0 2px 4px rgba(12,10,29,.12),inset 0 1px 0 rgba(255,255,255,.25)}
+.odd-panel .odd-shop__card-wrap.is-state-active .odd-shop__card-state--active{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.odd-panel.odd-shop .odd-shop__card-wrap.is-state-active .odd-shop__card-btn--active{display:none}
+.odd-panel.odd-shop .odd-shop__card-wrap.is-state-active .odd-shop__quick-look{flex:1 1 auto}
 .odd-panel .odd-shop__card-wrap.is-installing .odd-shop__card{pointer-events:none;filter:saturate(.82);opacity:.9}
 .odd-panel .odd-shop__card-wrap.is-installing .odd-shop__card-art::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,rgba(255,255,255,0) 18%,rgba(255,255,255,.28) 42%,rgba(255,255,255,0) 66%);transform:translateX(-120%);animation:odd-shop-card-sheen 1.25s ease-in-out infinite;pointer-events:none}
 .odd-panel .odd-shop__card-wrap.is-just-installed .odd-shop__card-art{animation:odd-shop-card-pulse 2.4s ease-out 1}

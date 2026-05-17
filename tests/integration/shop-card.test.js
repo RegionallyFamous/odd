@@ -794,6 +794,10 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__card-btn\{[^}]*flex:1 1 0[^}]*min-width:0[^}]*text-align:center[^}]*user-select:none/ );
 		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__quick-look\{[^}]*flex:0 0 auto[^}]*text-align:center[^}]*user-select:none/ );
 		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__card-btn--active,\.odd-panel\.odd-shop \.odd-shop__card-btn\.is-disabled\{[^}]*color:#3f3f46/ );
+		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-wrap\.is-active \.odd-shop__card-art\{[^}]*inset 0 1px 0 rgba\(255,255,255,\.25\)/ );
+		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__card-wrap\.is-state-active \.odd-shop__card-btn--active\{[^}]*display:none/ );
+		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__card-wrap\.is-state-active \.odd-shop__quick-look\{[^}]*flex:1 1 auto/ );
+		expect( css ).not.toContain( 'inset 0 0 0 3px #34c759' );
 		expect( css ).toContain( '.odd-panel .odd-shop__card-fav:focus-visible' );
 		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__card-btn:focus-visible,[^{}]*\.odd-panel\.odd-shop \.odd-shop__card-fav:focus-visible\{[^}]*outline:3px solid var\(--odd-shop-focus-ring\)/ );
 	} );
