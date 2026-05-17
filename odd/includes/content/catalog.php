@@ -441,6 +441,24 @@ function oddout_catalog_local_registry_hash() {
 	return '';
 }
 
+function oddout_catalog_cached_registry_hash() {
+	$fresh = get_transient( ODDOUT_CATALOG_TRANSIENT );
+	if ( is_array( $fresh ) ) {
+		return oddout_catalog_registry_hash( $fresh );
+	}
+
+	$stale = get_option( ODDOUT_CATALOG_STALE_OPTION, null );
+	if ( is_array( $stale ) && isset( $stale['bundles'] ) && is_array( $stale['bundles'] ) ) {
+		$stale_hash = oddout_catalog_registry_hash( $stale );
+		if ( '' !== $stale_hash ) {
+			return $stale_hash;
+		}
+	}
+
+	$meta = oddout_catalog_meta();
+	return ! empty( $meta['registry_sha256'] ) ? sanitize_text_field( (string) $meta['registry_sha256'] ) : '';
+}
+
 function oddout_catalog_rollback_snapshots() {
 	$snapshots = get_option( ODDOUT_CATALOG_ROLLBACK_OPTION, array() );
 	if ( ! is_array( $snapshots ) ) {
@@ -1017,16 +1035,23 @@ function oddout_catalog_download_entry_file( array $entry, $context = 'install' 
  * @return array      Normalised registry structure.
  */
 function oddout_catalog_load( $force = false ) {
-	static $runtime = null;
+	static $runtime      = null;
+	static $runtime_hash = '';
 	if ( ! $force && null !== $runtime ) {
-		return $runtime;
+		$cached_hash = oddout_catalog_cached_registry_hash();
+		if ( '' !== $cached_hash && hash_equals( $runtime_hash, $cached_hash ) ) {
+			return $runtime;
+		}
+		$runtime      = null;
+		$runtime_hash = '';
 	}
 	$failure_meta = null;
 
 	if ( ! $force ) {
 		$fresh = get_transient( ODDOUT_CATALOG_TRANSIENT );
 		if ( is_array( $fresh ) ) {
-			$runtime = oddout_catalog_effective_registry( $fresh );
+			$runtime      = oddout_catalog_effective_registry( $fresh );
+			$runtime_hash = oddout_catalog_registry_hash( $fresh );
 			oddout_catalog_record_source(
 				'transient',
 				$fresh,
@@ -1068,8 +1093,9 @@ function oddout_catalog_load( $force = false ) {
 			);
 		} else {
 			oddout_catalog_remember_previous_stale( $normalised );
-			$normalised = oddout_catalog_stamp_accepted_registry( $normalised );
-			$runtime    = oddout_catalog_effective_registry( $normalised );
+			$normalised   = oddout_catalog_stamp_accepted_registry( $normalised );
+			$runtime      = oddout_catalog_effective_registry( $normalised );
+			$runtime_hash = oddout_catalog_registry_hash( $normalised );
 			set_transient( ODDOUT_CATALOG_TRANSIENT, $normalised, ODDOUT_CATALOG_CACHE_TTL );
 			update_option( ODDOUT_CATALOG_STALE_OPTION, $normalised, false );
 			oddout_catalog_record_source(
@@ -1102,6 +1128,7 @@ function oddout_catalog_load( $force = false ) {
 		&& ( ! empty( $stale['bundles'] ) || oddout_catalog_should_accept_empty_remote( $stale, $stale ) )
 	) {
 		$runtime           = oddout_catalog_effective_registry( $stale );
+		$runtime_hash      = oddout_catalog_registry_hash( $stale );
 		$failure_signature = is_array( $failure_meta )
 			? array(
 				'signature_status' => $failure_meta['signature_status'],
@@ -1132,6 +1159,7 @@ function oddout_catalog_load( $force = false ) {
 		$fallback = oddout_catalog_fallback_load();
 		if ( ! empty( $fallback['bundles'] ) ) {
 			$runtime           = oddout_catalog_effective_registry( $fallback );
+			$runtime_hash      = oddout_catalog_registry_hash( $fallback );
 			$failure_signature = is_array( $failure_meta )
 				? array(
 					'signature_status' => $failure_meta['signature_status'],
@@ -1154,7 +1182,8 @@ function oddout_catalog_load( $force = false ) {
 		}
 	}
 
-	$runtime = oddout_catalog_empty_registry();
+	$runtime      = oddout_catalog_empty_registry();
+	$runtime_hash = oddout_catalog_registry_hash( $runtime );
 	oddout_catalog_record_source( 'empty', $runtime );
 	return $runtime;
 }
