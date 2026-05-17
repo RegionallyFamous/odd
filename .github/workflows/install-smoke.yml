@@ -165,7 +165,7 @@ jobs:
           wp eval '$n = count( oddout_wallpaper_scene_slugs() ); echo "scene slugs after starter: $n\n"; exit( $n >= 1 ? 0 : 1 );'
           wp eval 'if ( ! function_exists( "oddout_icons_get_sets" ) ) { echo "no icons API; skipping\n"; exit( 0 ); } $n = count( oddout_icons_get_sets() ); echo "icon sets after starter: $n\n"; exit( $n >= 1 ? 0 : 1 );'
           wp eval 'if ( ! function_exists( "oddout_cursors_get_sets" ) ) { echo "no cursors API\n"; exit( 1 ); } $n = count( oddout_cursors_get_sets() ); echo "cursor sets after starter: $n\n"; exit( $n >= 1 ? 0 : 1 );'
-          wp eval '$css = oddout_cursors_build_css( oddout_cursors_get_set( "oddlings-cursors" ) ); echo substr( $css, 0, 80 ) . "\n"; exit( false !== strpos( $css, "ODD custom cursors" ) ? 0 : 1 );'
+          wp eval '$sets = oddout_cursors_get_sets(); $slug = array_key_first( $sets ); $css = oddout_cursors_build_css( $sets[ $slug ] ); echo substr( $css, 0, 80 ) . "\n"; exit( false !== strpos( $css, "ODD custom cursors" ) ? 0 : 1 );'
 
       - name: Assert apps API is loaded
         working-directory: /tmp/wp
