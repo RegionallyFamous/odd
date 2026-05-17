@@ -2529,6 +2529,7 @@
 			var slug = state.justInstalled.slug;
 			if ( ! slug ) { state.justInstalled = null; return; }
 			setTimeout( function () {
+				if ( typeof window === 'undefined' || typeof document === 'undefined' ) return;
 				var selectors = [
 					'[data-odd-shop-card][data-slug="' + slug + '"]',
 					'[data-slug="' + slug + '"]',
