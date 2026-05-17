@@ -507,6 +507,7 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		global $wp_rest_server;
 		$wp_rest_server = new WP_REST_Server();
 		do_action( 'rest_api_init' );
+		oddout_catalog_load( true );
 
 		try {
 			$request = new WP_REST_Request( 'POST', '/odd/v1/bundles/install-from-catalog' );
