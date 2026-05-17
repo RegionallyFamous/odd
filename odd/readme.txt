@@ -17,6 +17,8 @@ ODD turns your WordPress admin into a customizable desktop you actually want to 
 
 WordPress does not have to feel like a plain control panel. With ODD and WP Desktop Mode, your admin can become a little digital room: a place with wallpaper, personality, favorite tools, charming desk toys, and a shop full of strange little upgrades.
 
+Want to try it first? Launch the regular ODD Playground at https://odd.regionallyfamous.com/playground/.
+
 Open the ODD Shop, pick what feels right, and make the workspace yours.
 
 With ODD you can:
