@@ -19,6 +19,8 @@ regressions are caught before they reach `main`.
 The public blueprints intentionally install both WP Desktop Mode and ODD from
 exact versioned WordPress.org release zip URLs. That keeps the normal
 Playground link deterministic while still using the approved dotorg packages.
+During release prep, the public ODD zip may intentionally lag behind
+`ODDOUT_VERSION` until the matching WordPress.org SVN tag exists.
 The dev blueprints stay deterministic: Desktop Mode is pinned with
 `resource: "url"` to
 `https://downloads.wordpress.org/plugin/desktop-mode.{version}.zip` where
@@ -53,8 +55,9 @@ Checks (all emit bullets; any failure → exit code 1):
      (`assets/js/desktop.min.js`). Install packaged zips (`downloads.
      wordpress.org` or HTTPS mirrors), never raw plugin source repos.
   8. Public blueprints install Desktop Mode and ODD from exact
-     `downloads.wordpress.org` zip URLs matching the versions declared by
-     `odd/odd.php`, and deterministic folder names.
+     `downloads.wordpress.org` zip URLs and deterministic folder names.
+     The ODD zip may match `odd/odd.php` or the previous public release while
+     preparing a release whose dotorg package is not live yet.
   9. Every blueprint requests a Playground PHP runtime that satisfies
      the plugin header's `Requires PHP` value.
  10. Dev blueprints: Desktop Mode from the pinned release zip matching
@@ -91,6 +94,10 @@ ODD_CONST_RE = re.compile(
 )
 
 ODD_GIT_COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
+ODD_WPORG_ZIP_RE = re.compile(
+    r"^https://downloads\.wordpress\.org/plugin/"
+    r"odd-outlandish-desktop-decorator\.([0-9]+\.[0-9]+\.[0-9]+)\.zip$"
+)
 REQUIRES_PHP_RE = re.compile(r"^\s*\*\s*Requires PHP:\s*([0-9]+(?:\.[0-9]+)*)\s*$", re.MULTILINE)
 
 # Dev Playground: pinned current shell from WordPress.org + ODD trunk.
@@ -133,6 +140,12 @@ def odd_zip_url(odd_version: str) -> str:
         "https://downloads.wordpress.org/"
         + f"plugin/odd-outlandish-desktop-decorator.{odd_version}.zip"
     )
+
+
+def odd_zip_version(url: str) -> str | None:
+    """Return the ODD WordPress.org zip version embedded in a URL."""
+    match = ODD_WPORG_ZIP_RE.match(url)
+    return match.group(1) if match else None
 
 
 def odd_php_constants() -> tuple[str, str, str, str]:
@@ -280,6 +293,27 @@ def validate_file(path: Path, odd_version: str, dm_min: str, requires_php: str) 
                     )
                 else:
                     odd_pin_ok = True
+            else:
+                odd_lag_version = odd_zip_version(url)
+                if odd_lag_version is not None:
+                    if options.get("targetFolderName") != "odd-outlandish-desktop-decorator":
+                        problems.append(
+                            f"step[{idx}] ODD zip must use "
+                            'options.targetFolderName "odd-outlandish-desktop-decorator"'
+                        )
+                    elif version_tuple(odd_lag_version) < version_tuple(odd_version):
+                        print(
+                            f"note: {path.relative_to(REPO_ROOT)} keeps public "
+                            f"Playground on ODD {odd_lag_version} while "
+                            f"preparing {odd_version}"
+                        )
+                        odd_pin_ok = True
+                    else:
+                        problems.append(
+                            f"step[{idx}] ODD WordPress.org zip must be "
+                            f"{odd_zip_expected!r} or an older public release "
+                            f"during release prep; got {url!r}"
+                        )
 
         elif resource == "wordpress.org/plugins":
             slug = plugin.get("slug")
@@ -379,7 +413,7 @@ def validate_file(path: Path, odd_version: str, dm_min: str, requires_php: str) 
     if not odd_pin_ok:
         problems.append(
             f"{rel}: missing pinned WordPress.org ODD release "
-            f"(resource=url, url={odd_zip_expected!r}, "
+            f"(resource=url, url={odd_zip_expected!r} or an older public release, "
             "targetFolderName=odd-outlandish-desktop-decorator)"
         )
 

@@ -108,6 +108,13 @@ The `.github/workflows/release-odd.yml` workflow fires on the tag: runs the reus
 
 The `.github/workflows/pages.yml` workflow runs independently on any push to `main` that touches `site/`, `_tools/catalog-sources/`, or `_tools/build-catalog.py` — it rebuilds the catalog, validates it, and publishes `site/` (marketing + catalog) to GitHub Pages. Content releases (a new scene / icon set / widget / app) ship through Pages, not through the plugin release flow.
 
+Keep the public stable Playground blueprint on the newest WordPress.org zip
+that actually exists. During release prep, `odd.php`, `odd/readme.txt`,
+`CHANGELOG.md`, package metadata, and the local release zip can move to the
+next version while `blueprint.json` and `site/playground/blueprint.json` still
+pin the previous public release. Update those public demo pins only after the
+matching `downloads.wordpress.org` zip returns 200.
+
 ## CHANGELOG
 
 We maintain `CHANGELOG.md` in the keep-a-changelog format. Each release entry calls out:

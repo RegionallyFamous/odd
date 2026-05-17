@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Assert Version header + ODDOUT_VERSION constant agree, and blueprint refs when tagged.
+"""Assert Version header + ODDOUT_VERSION constant agree, and blueprint refs.
 
 With --expect <x.y.z>, assert the plugin header and constant match that value.
-When Playground blueprints install ODD via a semver git **tag** or a
-versioned WordPress.org zip, that version must also match `odd.php`. Branch
-installs (`main`) and moving WordPress.org Plugin Directory slug installs skip
-blueprint↔semver checks.
+When public stable blueprints install ODD via a semver git **tag** or a
+versioned WordPress.org zip, that version normally matches `odd.php`. Public
+stable blueprints may intentionally lag while preparing a release, because the
+new `downloads.wordpress.org` zip does not exist until the WordPress.org SVN
+tag is committed. Branch installs (`main`) and moving WordPress.org Plugin
+Directory slug installs skip blueprint↔semver checks.
 
 Usage:
     odd/bin/check-version
@@ -80,6 +82,11 @@ def blueprint_install_ref(path: Path) -> str | None:
     return None
 
 
+def semver_tuple(version: str) -> tuple[int, int, int]:
+    major, minor, patch = version.split(".")
+    return int(major), int(minor), int(patch)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Check that ODD versions are in sync.")
     parser.add_argument("--expect", help="also assert all match this value", default=None)
@@ -102,6 +109,21 @@ def main() -> int:
         "ODDOUT_VERSION": constant.group(1) if constant else None,
     }
 
+    missing = [k for k, v in found.items() if v is None]
+    if missing:
+        for k in missing:
+            print(f"error: could not find {k}", file=sys.stderr)
+        return 1
+
+    declared_versions = set(found.values())
+    if len(declared_versions) != 1:
+        print("error: version strings disagree:", file=sys.stderr)
+        for k, v in found.items():
+            print(f"  {k}: {v}", file=sys.stderr)
+        return 1
+
+    declared_version = next(iter(declared_versions))
+
     blueprint_refs: dict[str, str] = {}
     for label, path in (
         ("blueprint.json ref", BLUEPRINT),
@@ -116,13 +138,16 @@ def main() -> int:
             return 1
         blueprint_refs[label] = blueprint_ref
         if blueprint_ref not in (SENTINEL_GIT_DIRECTORY, SENTINEL_WPORG_LATEST):
+            if (
+                blueprint_ref != declared_version
+                and semver_tuple(blueprint_ref) < semver_tuple(declared_version)
+            ):
+                print(
+                    f"note: {label} stays on public stable {blueprint_ref} "
+                    f"while odd.php is prepared for {declared_version}"
+                )
+                continue
             found[label] = blueprint_ref
-
-    missing = [k for k, v in found.items() if v is None]
-    if missing:
-        for k in missing:
-            print(f"error: could not find {k}", file=sys.stderr)
-        return 1
 
     unique = set(found.values())
     if len(unique) != 1:

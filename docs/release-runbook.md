@@ -11,6 +11,7 @@
 5. Tag `v<version>` and push `main` plus the tag.
 6. Confirm `.github/workflows/release-odd.yml` passes `quality-gates`, install smoke, Plugin Check, and publish.
 7. Verify `https://github.com/RegionallyFamous/odd/releases/latest/download/odd.zip` resolves to the new release.
+8. After the WordPress.org SVN tag exists and `https://downloads.wordpress.org/plugin/odd-outlandish-desktop-decorator.<version>.zip` returns 200, update the public stable Playground blueprint/cache-busting links from the previous public version to `<version>`.
 
 ## Validation Suite
 
