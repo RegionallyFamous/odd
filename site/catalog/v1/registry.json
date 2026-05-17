@@ -641,6 +641,25 @@
     },
     {
       "type": "app",
+      "slug": "dont-read-the-comments",
+      "name": "Don't Read the Comments",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A crisp little Minesweeper-style puzzle where the dangerous squares reveal playful fake comment cards instead of explosions.",
+      "tags": [
+        "game",
+        "puzzle",
+        "minesweeper",
+        "fun"
+      ],
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/dont-read-the-comments.svg",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-dont-read-the-comments.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/dont-read-the-comments.wp",
+      "sha256": "2754c1a706fb5fe5550b11dc648b2bfdfd9315c6bf1dcc898e0bff78e1517a3e",
+      "size": 133656
+    },
+    {
+      "type": "app",
       "slug": "flow",
       "name": "Flow",
       "version": "1.0.0",

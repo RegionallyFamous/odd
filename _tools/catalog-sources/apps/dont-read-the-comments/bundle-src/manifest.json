@@ -1,0 +1,24 @@
+{
+	"$schema": "https://raw.githubusercontent.com/RegionallyFamous/odd/main/docs/schemas/manifest.schema.json",
+	"type": "app",
+	"slug": "dont-read-the-comments",
+	"name": "Don't Read the Comments",
+	"label": "Comments",
+	"version": "1.0.0",
+	"author": "Regionally Famous",
+	"description": "A crisp little Minesweeper-style puzzle where the dangerous squares reveal playful fake comment cards instead of explosions.",
+	"icon": "icon.svg",
+	"entry": "index.html",
+	"capability": "manage_options",
+	"window": {
+		"width": 900,
+		"height": 700,
+		"minWidth": 420,
+		"minHeight": 520,
+		"title": "Don't Read the Comments"
+	},
+	"surfaces": {
+		"desktop": true,
+		"taskbar": false
+	}
+}

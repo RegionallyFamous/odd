@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Don't Read the Comments</title>
+		<link rel="stylesheet" href="./styles.css">
+	</head>
+	<body>
+		<main class="app-shell" aria-labelledby="app-title">
+			<header class="topbar">
+				<div class="brand">
+					<span class="brand-mark" aria-hidden="true"></span>
+					<div>
+						<h1 id="app-title">Don't Read the Comments</h1>
+						<p id="status-line" class="status-line" aria-live="polite">Choose a tile. The thread is waiting.</p>
+					</div>
+				</div>
+				<div class="score-strip" aria-label="Game status">
+					<div class="score-item">
+						<span class="score-label">Comments</span>
+						<strong id="comments-left">0</strong>
+					</div>
+					<div class="score-item">
+						<span class="score-label">Time</span>
+						<strong id="timer">000</strong>
+					</div>
+					<div class="score-item">
+						<span class="score-label">Best</span>
+						<strong id="best-time">--</strong>
+					</div>
+				</div>
+			</header>
+
+			<section class="control-row" aria-label="Game controls">
+				<div id="difficulty-tabs" class="difficulty-tabs" role="tablist" aria-label="Difficulty">
+					<button class="difficulty-tab" type="button" role="tab" data-level="cozy">Cozy</button>
+					<button class="difficulty-tab" type="button" role="tab" data-level="spicy">Spicy</button>
+					<button class="difficulty-tab" type="button" role="tab" data-level="chaos">Chaos</button>
+				</div>
+				<button id="reset-button" class="reset-button" type="button">
+					<span class="reset-icon" aria-hidden="true"></span>
+					<span>New Thread</span>
+				</button>
+			</section>
+
+			<section class="play-surface">
+				<div class="board-wrap">
+					<div id="game-board" class="game-board" role="grid" aria-label="Comment field"></div>
+				</div>
+				<aside id="comment-panel" class="comment-panel" aria-live="polite">
+					<div class="comment-avatar avatar-0" aria-hidden="true"></div>
+					<div>
+						<p class="comment-kicker">Latest reply</p>
+						<p id="comment-line" class="comment-line">No comments opened yet.</p>
+					</div>
+				</aside>
+			</section>
+		</main>
+
+		<div id="reveal-layer" class="reveal-layer" aria-hidden="true">
+			<section class="reveal-card" role="dialog" aria-modal="true" aria-labelledby="reveal-title">
+				<div id="reveal-avatar" class="comment-avatar avatar-1" aria-hidden="true"></div>
+				<p class="comment-kicker">Comment opened</p>
+				<h2 id="reveal-title">Thread derailed</h2>
+				<p id="reveal-line" class="comment-line">This tile has notes.</p>
+				<button id="reveal-reset" class="reset-button" type="button">
+					<span class="reset-icon" aria-hidden="true"></span>
+					<span>New Thread</span>
+				</button>
+			</section>
+		</div>
+
+		<script src="./app.js"></script>
+	</body>
+</html>
