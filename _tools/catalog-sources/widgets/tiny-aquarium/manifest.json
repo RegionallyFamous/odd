@@ -4,7 +4,7 @@
   "label": "Tiny Aquarium",
   "description": "A calm little desktop aquarium with drifting fish, bubbles, and a gentle water shimmer.",
   "category": "ODD Originals",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Regionally Famous",
   "entry": "widget.js",
   "css": [

@@ -666,15 +666,15 @@
       "type": "widget",
       "slug": "tiny-aquarium",
       "name": "Tiny Aquarium",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": "Regionally Famous",
       "description": "A calm little desktop aquarium with drifting fish, bubbles, and a gentle water shimmer.",
       "category": "ODD Originals",
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/widget-tiny-aquarium.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/widget-tiny-aquarium.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/widget-tiny-aquarium.wp",
-      "sha256": "c534ede119b896e431f99bbf9d3b9a726b6631e88457b1f3ebf7005a7e0e6c28",
-      "size": 50731
+      "sha256": "db34a7796230f72cee33994f5cd49c7597ba93fe2f98fade777c50c26e551c0e",
+      "size": 50785
     },
     {
       "type": "app",
