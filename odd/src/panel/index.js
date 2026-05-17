@@ -1607,6 +1607,40 @@
 			};
 		}
 
+		function catalogIntegrityError( res ) {
+			var code = catalogInstallErrorCode( res );
+			return code === 'size_mismatch' ||
+				code === 'sha256_mismatch' ||
+				code === 'browser_size_mismatch' ||
+				code === 'browser_sha256_mismatch';
+		}
+
+		function catalogBundleType( row ) {
+			var raw = row && row.raw && typeof row.raw === 'object' ? row.raw : {};
+			var type = ( row && row.type ) || raw.type || '';
+			return typeof type === 'string' ? type : '';
+		}
+
+		function currentCatalogRowForInstall( row ) {
+			var slug = row && row.slug;
+			if ( ! slug ) return null;
+			var type = catalogBundleType( row );
+			var candidates = [];
+			if ( type ) {
+				candidates = catalogRowsFor( type );
+			} else {
+				[ 'scene', 'icon-set', 'cursor-set', 'widget', 'app' ].forEach( function ( key ) {
+					candidates = candidates.concat( catalogRowsFor( key ) );
+				} );
+			}
+			for ( var i = 0; i < candidates.length; i++ ) {
+				if ( candidates[ i ] && candidates[ i ].slug === slug ) {
+					return candidates[ i ].raw || candidates[ i ];
+				}
+			}
+			return null;
+		}
+
 		function shouldBrowserInstallCatalogBundle( row, res, opts ) {
 			opts = opts || {};
 			if ( opts.allowUpdate ) return false;
@@ -1646,7 +1680,19 @@
 		}
 
 		function verifyCatalogBundleBlob( row, blob ) {
+			var expectedSha = catalogExpectedSha( row );
 			var expectedSize = catalogExpectedSize( row );
+			if ( expectedSha ) {
+				return sha256HexForBlob( blob ).then( function ( actualSha ) {
+					if ( actualSha !== expectedSha ) {
+						return Promise.reject( browserCatalogError(
+							'browser_sha256_mismatch',
+							'Catalog bundle sha256 mismatch. Try refreshing the catalog and installing again.',
+							502
+						) );
+					}
+				} );
+			}
 			if ( expectedSize && blob && typeof blob.size === 'number' && blob.size !== expectedSize ) {
 				return Promise.reject( browserCatalogError(
 					'browser_size_mismatch',
@@ -1654,17 +1700,7 @@
 					502
 				) );
 			}
-			var expectedSha = catalogExpectedSha( row );
-			if ( ! expectedSha ) return Promise.resolve();
-			return sha256HexForBlob( blob ).then( function ( actualSha ) {
-				if ( actualSha !== expectedSha ) {
-					return Promise.reject( browserCatalogError(
-						'browser_sha256_mismatch',
-						'Catalog bundle sha256 mismatch. Try refreshing the catalog and installing again.',
-						502
-					) );
-				}
-			} );
+			return Promise.resolve();
 		}
 
 		function fetchCatalogBundleInBrowser( row ) {
@@ -1711,6 +1747,15 @@
 			} );
 		}
 
+		function retryCatalogInstallAfterRefresh( row, opts ) {
+			diagCount( 'catalog.install.refreshRetry' );
+			toast( 'Catalog changed. Refreshing the shelf and trying again...' );
+			return refreshCatalog( null, null, { silent: true } ).then( function () {
+				var freshRow = currentCatalogRowForInstall( row ) || row;
+				return installCatalogRowData( freshRow, Object.assign( {}, opts, { catalogRefreshed: true } ) );
+			} );
+		}
+
 		function installCatalogRowData( row, opts ) {
 			row = row || {};
 			opts = opts || {};
@@ -1718,8 +1763,16 @@
 				if ( res && res.ok && res.data && res.data.installed ) {
 					return res.data;
 				}
+				if ( catalogIntegrityError( res ) && ! opts.catalogRefreshed ) {
+					return retryCatalogInstallAfterRefresh( row, opts );
+				}
 				if ( shouldBrowserInstallCatalogBundle( row, res, opts ) ) {
-					return installCatalogBundleViaBrowser( row );
+					return installCatalogBundleViaBrowser( row ).catch( function ( err ) {
+						if ( catalogIntegrityError( err ) && ! opts.catalogRefreshed ) {
+							return retryCatalogInstallAfterRefresh( row, opts );
+						}
+						throw err;
+					} );
 				}
 				throw res;
 			} );
@@ -4196,7 +4249,8 @@
 			return true;
 		}
 
-		function refreshCatalog( button, onDone ) {
+		function refreshCatalog( button, onDone, opts ) {
+			opts = opts || {};
 			if ( button ) {
 				button.disabled = true;
 				button.textContent = __( 'Refreshing…' );
@@ -4215,11 +4269,13 @@
 				if ( res && Array.isArray( res.bundles ) ) {
 					replaceBundleCatalogRows( res.bundles );
 				}
-				toast( __( 'Catalog refreshed.' ) );
+				if ( ! opts.silent ) toast( __( 'Catalog refreshed.' ) );
 				if ( typeof onDone === 'function' ) onDone( res );
+				return res;
 			} ).catch( function ( err ) {
 				reportError( 'bundles.refresh', err );
-				toast( __( 'Catalog refresh failed.' ), 'error' );
+				if ( ! opts.silent ) toast( __( 'Catalog refresh failed.' ), 'error' );
+				return null;
 			} ).finally( function () {
 				if ( button ) {
 					button.disabled = false;

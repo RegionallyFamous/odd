@@ -1015,4 +1015,211 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( uploadCall[ 1 ].body.get( 'file' ).name ).toBe( 'iconset-filament.wp' );
 		expect( host.querySelector( '[data-odd-shop-card][data-set-slug="filament"]' ) ).toBeTruthy();
 	} );
+
+	it( 'refreshes the catalog and retries once after an integrity mismatch', async () => {
+		const oldDownloadUrl = 'https://example.com/catalog/v1/bundles/iconset-filament-old.wp';
+		const newDownloadUrl = 'https://example.com/catalog/v1/bundles/iconset-filament.wp';
+		seed( {
+			bundleCatalog: {
+				scene: [],
+				iconSet: [
+					{
+						slug:         'filament',
+						label:        'Filament',
+						installed:    false,
+						download_url: oldDownloadUrl,
+						size:         12,
+						sha256:       '0'.repeat( 64 ),
+					},
+				],
+				cursorSet: [],
+				widget: [],
+			},
+		} );
+
+		let installAttempts = 0;
+		globalThis.fetch = vi.fn( ( url, opts = {} ) => {
+			const href = String( url );
+			if ( opts.method === 'POST' && /\/bundles\/install-from-catalog$/.test( href ) ) {
+				installAttempts += 1;
+				if ( installAttempts === 1 ) {
+					return Promise.resolve( {
+						ok:     false,
+						status: 502,
+						json:   () => Promise.resolve( {
+							code:    'size_mismatch',
+							message: 'Bundle size mismatch.',
+							data:    { status: 502 },
+						} ),
+					} );
+				}
+				return Promise.resolve( {
+					ok:     true,
+					status: 200,
+					json:   () => Promise.resolve( {
+						installed: true,
+						slug:      'filament',
+						type:      'icon-set',
+						manifest:  { slug: 'filament', label: 'Filament' },
+						row:       { slug: 'filament', label: 'Filament', installed: true },
+					} ),
+				} );
+			}
+			if ( opts.method === 'POST' && /\/bundles\/refresh$/.test( href ) ) {
+				return Promise.resolve( {
+					ok:     true,
+					status: 200,
+					json:   () => Promise.resolve( {
+						meta:    { source: 'remote' },
+						bundles: [
+							{
+								type:         'icon-set',
+								slug:         'filament',
+								label:        'Filament',
+								download_url: newDownloadUrl,
+								size:         13,
+								sha256:       '1'.repeat( 64 ),
+							},
+						],
+					} ),
+				} );
+			}
+			return Promise.resolve( {
+				ok:   true,
+				json: () => Promise.resolve( {} ),
+			} );
+		} );
+
+		loadPanel();
+		const { host } = mount();
+		goToDepartment( host, 'Icon Sets' );
+
+		const card = host.querySelector( '[data-odd-shop-card][data-catalog-slug="filament"]' );
+		card.querySelector( '.odd-shop__card-btn' )
+			.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+
+		await flush();
+		await new Promise( ( r ) => setTimeout( r, 0 ) );
+		await flush();
+
+		const installCalls = globalThis.fetch.mock.calls.filter( ( [ url, opts = {} ] ) => (
+			opts.method === 'POST' && /\/bundles\/install-from-catalog$/.test( String( url ) )
+		) );
+		const refreshCall = globalThis.fetch.mock.calls.find( ( [ url, opts = {} ] ) => (
+			opts.method === 'POST' && /\/bundles\/refresh$/.test( String( url ) )
+		) );
+		const browserDownload = globalThis.fetch.mock.calls.find( ( [ url, opts = {} ] ) => (
+			String( url ) === oldDownloadUrl || String( url ) === newDownloadUrl && ! opts.method
+		) );
+		expect( installCalls ).toHaveLength( 2 );
+		expect( refreshCall ).toBeTruthy();
+		expect( browserDownload ).toBeFalsy();
+		expect( host.querySelector( '[data-odd-shop-card][data-set-slug="filament"]' ) ).toBeTruthy();
+	} );
+
+	it( 'refreshes and retries when the browser fallback catches stale bundle metadata', async () => {
+		const downloadUrl = 'https://example.com/catalog/v1/bundles/iconset-filament.wp';
+		seed( {
+			bundleCatalog: {
+				scene: [],
+				iconSet: [
+					{
+						slug:         'filament',
+						label:        'Filament',
+						installed:    false,
+						download_url: downloadUrl,
+						size:         999,
+					},
+				],
+				cursorSet: [],
+				widget: [],
+			},
+		} );
+
+		let installAttempts = 0;
+		const bundleBlob = new Blob( [ 'new bytes' ], { type: 'application/octet-stream' } );
+		globalThis.fetch = vi.fn( ( url, opts = {} ) => {
+			const href = String( url );
+			if ( opts.method === 'POST' && /\/bundles\/install-from-catalog$/.test( href ) ) {
+				installAttempts += 1;
+				if ( installAttempts === 1 ) {
+					return Promise.resolve( {
+						ok:     false,
+						status: 502,
+						json:   () => Promise.resolve( {
+							code:    'download_failed',
+							message: 'Could not download bundle.',
+							data:    { status: 502 },
+						} ),
+					} );
+				}
+				return Promise.resolve( {
+					ok:     true,
+					status: 200,
+					json:   () => Promise.resolve( {
+						installed: true,
+						slug:      'filament',
+						type:      'icon-set',
+						manifest:  { slug: 'filament', label: 'Filament' },
+						row:       { slug: 'filament', label: 'Filament', installed: true },
+					} ),
+				} );
+			}
+			if ( href === downloadUrl ) {
+				return Promise.resolve( {
+					ok:     true,
+					status: 200,
+					blob:   () => Promise.resolve( bundleBlob ),
+				} );
+			}
+			if ( opts.method === 'POST' && /\/bundles\/refresh$/.test( href ) ) {
+				return Promise.resolve( {
+					ok:     true,
+					status: 200,
+					json:   () => Promise.resolve( {
+						meta:    { source: 'remote' },
+						bundles: [
+							{
+								type:         'icon-set',
+								slug:         'filament',
+								label:        'Filament',
+								download_url: downloadUrl,
+								size:         bundleBlob.size,
+							},
+						],
+					} ),
+				} );
+			}
+			return Promise.resolve( {
+				ok:   true,
+				json: () => Promise.resolve( {} ),
+			} );
+		} );
+
+		loadPanel();
+		const { host } = mount();
+		goToDepartment( host, 'Icon Sets' );
+
+		const card = host.querySelector( '[data-odd-shop-card][data-catalog-slug="filament"]' );
+		card.querySelector( '.odd-shop__card-btn' )
+			.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+
+		await flush();
+		await new Promise( ( r ) => setTimeout( r, 0 ) );
+		await flush();
+
+		const installCalls = globalThis.fetch.mock.calls.filter( ( [ url, opts = {} ] ) => (
+			opts.method === 'POST' && /\/bundles\/install-from-catalog$/.test( String( url ) )
+		) );
+		const refreshCall = globalThis.fetch.mock.calls.find( ( [ url, opts = {} ] ) => (
+			opts.method === 'POST' && /\/bundles\/refresh$/.test( String( url ) )
+		) );
+		const uploadCall = globalThis.fetch.mock.calls.find( ( [ url, opts = {} ] ) => (
+			opts.method === 'POST' && /\/bundles\/upload$/.test( String( url ) )
+		) );
+		expect( installCalls ).toHaveLength( 2 );
+		expect( refreshCall ).toBeTruthy();
+		expect( uploadCall ).toBeFalsy();
+		expect( host.querySelector( '[data-odd-shop-card][data-set-slug="filament"]' ) ).toBeTruthy();
+	} );
 } );

@@ -924,23 +924,6 @@ function oddout_catalog_download_entry_file( array $entry, $context = 'install' 
 	}
 
 	$expected_size = isset( $entry['size'] ) ? (int) $entry['size'] : 0;
-	if ( $expected_size > 0 ) {
-		$actual_size = filesize( $tmp );
-		if ( false === $actual_size || (int) $actual_size !== $expected_size ) {
-			wp_delete_file( $tmp );
-			return new WP_Error(
-				'size_mismatch',
-				sprintf(
-					/* translators: 1: expected 2: actual */
-					__( 'Bundle size mismatch. Expected %1$d bytes, downloaded %2$d bytes.', 'odd-outlandish-desktop-decorator' ),
-					$expected_size,
-					false === $actual_size ? 0 : (int) $actual_size
-				),
-				array( 'status' => 502 )
-			);
-		}
-	}
-
 	if ( '' !== $expected_sha ) {
 		$actual_sha = hash_file( 'sha256', $tmp );
 		if ( ! is_string( $actual_sha ) || $actual_sha !== $expected_sha ) {
@@ -952,6 +935,21 @@ function oddout_catalog_download_entry_file( array $entry, $context = 'install' 
 					__( 'Bundle sha256 mismatch. Expected %1$s, downloaded %2$s.', 'odd-outlandish-desktop-decorator' ),
 					$expected_sha,
 					(string) $actual_sha
+				),
+				array( 'status' => 502 )
+			);
+		}
+	} elseif ( $expected_size > 0 ) {
+		$actual_size = filesize( $tmp );
+		if ( false === $actual_size || (int) $actual_size !== $expected_size ) {
+			wp_delete_file( $tmp );
+			return new WP_Error(
+				'size_mismatch',
+				sprintf(
+					/* translators: 1: expected 2: actual */
+					__( 'Bundle size mismatch. Expected %1$d bytes, downloaded %2$d bytes.', 'odd-outlandish-desktop-decorator' ),
+					$expected_size,
+					false === $actual_size ? 0 : (int) $actual_size
 				),
 				array( 'status' => 502 )
 			);
