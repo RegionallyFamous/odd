@@ -5,7 +5,7 @@ Requires at least: 6.8
 Tested up to: 6.9
 Requires PHP: 8.1
 Requires Plugins: desktop-mode
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -120,6 +120,15 @@ Typical build commands:
 
 == Changelog ==
 
+= 1.1.1 =
+
+ODD 1.1.1 is a stability release for catalog freshness, Shop teardown cleanup, and the current bundled catalog baseline.
+
+* Catalog refreshes now invalidate the runtime catalog cache immediately, so the Shop stops showing old rows after a successful remote refresh or repair.
+* The Shop highlight timer is guarded during teardown, fixing the lingering async handle that could make CI report Vitest cleanup failures.
+* Refreshed bundled catalog metadata, app/widget presentation, Tiny Aquarium sizing, and game app card/icon polish from the post-1.1.0 catalog updates.
+* Updated the stable Playground/readme links for the next pinned WordPress.org release package.
+
 = 1.1.0 =
 
 ODD 1.1.0 makes the desktop experience feel more native, more polished, and more fun.
@@ -139,6 +148,10 @@ ODD 1.1.0 makes the desktop experience feel more native, more polished, and more
 Welcome to ODD. The first public release brings living wallpapers, icon sets, cursor themes, desktop widgets, tiny apps, starter content, and the ODD Shop to WP Desktop Mode.
 
 == Upgrade Notice ==
+
+= 1.1.1 =
+
+Catalog freshness, Shop teardown cleanup, and the bundled fallback catalog baseline are improved. Requires WP Desktop Mode v0.8.5 or newer.
 
 = 1.1.0 =
 

@@ -13,6 +13,24 @@ notes to GitHub Releases.
 
 Nothing yet.
 
+<a id="v1.1.1"></a>
+## [1.1.1] — 2026-05-17
+
+### Changed
+- Refreshed the bundled catalog snapshot and first-party catalog metadata so
+  fallback/offline installs match the current Shop content more closely.
+- Updated the stable Playground/readme links for the next pinned WordPress.org
+  release package.
+
+### Fixed
+- Catalog refreshes now invalidate the runtime catalog cache immediately, so
+  the Shop stops showing old rows after a successful remote refresh or repair.
+- The Shop highlight timer is guarded during teardown, fixing the lingering
+  async handle that was making CI report Vitest cleanup failures.
+- First-party app/widget catalog polish from the post-1.1.0 catalog updates is
+  included in the release baseline, including Tiny Aquarium sizing and refreshed
+  game app card/icon presentation.
+
 <a id="v1.1.0"></a>
 ## [1.1.0] — 2026-05-16
 
