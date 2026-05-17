@@ -1,0 +1,547 @@
+#!/usr/bin/env node
+/**
+ * smoke-catalog-apps — browser-smoke ODD catalog app bundles.
+ *
+ * The test opens the actual `.wp` archives, not bundle-src directly:
+ *   1. unzip each app bundle to a temp directory
+ *   2. validate its manifest
+ *   3. serve it from localhost
+ *   4. load it in Chromium at desktop + mobile viewports
+ *   5. exercise basic keyboard/button controls
+ *   6. fail on console/page errors, missing content, blank canvases,
+ *      horizontal overflow, external network requests, or non-namespaced
+ *      localStorage writes
+ *
+ * Usage:
+ *   odd/bin/smoke-catalog-apps
+ *   odd/bin/smoke-catalog-apps plugin-panic four-oh-four-runner
+ *   odd/bin/smoke-catalog-apps --only plugin-panic,cache-invaders
+ *   odd/bin/smoke-catalog-apps --headed --screenshots-dir /tmp/odd-app-smoke
+ */
+
+const { chromium } = require( '@playwright/test' );
+const fs = require( 'node:fs' );
+const fsp = require( 'node:fs/promises' );
+const http = require( 'node:http' );
+const os = require( 'node:os' );
+const path = require( 'node:path' );
+const { spawnSync } = require( 'node:child_process' );
+
+const REPO_ROOT = path.resolve( __dirname, '..', '..' );
+const APPS_DIR = path.join( REPO_ROOT, '_tools', 'catalog-sources', 'apps' );
+const RUNTIME_DIR = path.join( REPO_ROOT, 'odd', 'apps', 'runtime' );
+const VALIDATE_MANIFEST = path.join( REPO_ROOT, 'odd', 'bin', 'validate-manifest' );
+const DEFAULT_SCREENSHOTS_DIR = path.join( REPO_ROOT, 'test-results', 'catalog-app-smoke' );
+const VIEWPORTS = [
+	{ name: 'desktop', width: 1000, height: 760 },
+	{ name: 'mobile', width: 390, height: 740 },
+];
+
+function usage() {
+	console.log( `usage: odd/bin/smoke-catalog-apps [--only slug1,slug2] [--headed] [--no-screenshots] [--screenshots-dir DIR] [slug ...]` );
+}
+
+function parseArgs() {
+	const args = process.argv.slice( 2 );
+	const slugs = [];
+	let headed = false;
+	let screenshots = true;
+	let screenshotsDir = DEFAULT_SCREENSHOTS_DIR;
+
+	for ( let i = 0; i < args.length; i++ ) {
+		const arg = args[ i ];
+		if ( arg === '--help' || arg === '-h' ) {
+			usage();
+			process.exit( 0 );
+		} else if ( arg === '--headed' ) {
+			headed = true;
+		} else if ( arg === '--no-screenshots' ) {
+			screenshots = false;
+		} else if ( arg === '--screenshots-dir' ) {
+			screenshotsDir = path.resolve( args[ ++i ] || '' );
+			if ( ! screenshotsDir ) {
+				throw new Error( '--screenshots-dir requires a directory' );
+			}
+		} else if ( arg === '--only' ) {
+			const value = args[ ++i ] || '';
+			value.split( ',' ).map( ( s ) => s.trim() ).filter( Boolean ).forEach( ( slug ) => slugs.push( slug ) );
+		} else if ( arg.startsWith( '-' ) ) {
+			throw new Error( `unknown option: ${ arg }` );
+		} else {
+			slugs.push( arg );
+		}
+	}
+
+	return { headed, screenshots, screenshotsDir, slugs };
+}
+
+function listAllAppSlugs() {
+	if ( ! fs.existsSync( APPS_DIR ) ) {
+		return [];
+	}
+	return fs.readdirSync( APPS_DIR )
+		.filter( ( slug ) => fs.statSync( path.join( APPS_DIR, slug ) ).isDirectory() )
+		.sort();
+}
+
+function unique( values ) {
+	return Array.from( new Set( values ) );
+}
+
+function contentTypeFor( filePath ) {
+	const ext = path.extname( filePath ).toLowerCase();
+	if ( ext === '.html' ) return 'text/html; charset=utf-8';
+	if ( ext === '.css' ) return 'text/css; charset=utf-8';
+	if ( ext === '.js' ) return 'text/javascript; charset=utf-8';
+	if ( ext === '.json' ) return 'application/json; charset=utf-8';
+	if ( ext === '.svg' ) return 'image/svg+xml';
+	if ( ext === '.png' ) return 'image/png';
+	if ( ext === '.jpg' || ext === '.jpeg' ) return 'image/jpeg';
+	if ( ext === '.webp' ) return 'image/webp';
+	if ( ext === '.woff2' ) return 'font/woff2';
+	return 'application/octet-stream';
+}
+
+function runtimeImportMapHtml() {
+	const imports = {
+		react: '/odd-app-runtime/react.js',
+		'react-dom': '/odd-app-runtime/react-dom.js',
+		'react-dom/client': '/odd-app-runtime/react-dom-client.js',
+		'react/jsx-runtime': '/odd-app-runtime/react-jsx-runtime.js',
+	};
+	return `<script type="importmap">${ JSON.stringify( { imports } ) }</script>`;
+}
+
+function injectRuntimeImportMap( html ) {
+	if ( /type\s*=\s*["']importmap["']/i.test( html ) ) {
+		return html;
+	}
+	const map = runtimeImportMapHtml();
+	if ( /<head>/i.test( html ) ) {
+		return html.replace( /<head>/i, `<head>\n${ map }` );
+	}
+	if ( /<head\b[^>]*>/i.test( html ) ) {
+		return html.replace( /<head\b[^>]*>/i, ( tag ) => `${ tag }\n${ map }` );
+	}
+	return `${ map }\n${ html }`;
+}
+
+function rewriteRuntimeBareImports( js ) {
+	if ( ! js || ( ! js.includes( '"react' ) && ! js.includes( "'react" ) ) ) {
+		return js;
+	}
+	return js.replace(
+		/(\b(?:from|import)\s*)(["'])(react(?:\/jsx-runtime|-dom(?:\/client)?)?)\2/g,
+		( _match, prefix, quote, specifier ) => {
+			const runtimeSlug = specifier.replace( /\//g, '-' ).replace( /[^a-z0-9-]/g, '' );
+			return `${ prefix }${ quote }/odd-app-runtime/${ runtimeSlug }.js${ quote }`;
+		}
+	);
+}
+
+function transformBodyForServe( filePath, body ) {
+	const contentType = contentTypeFor( filePath );
+	if ( contentType.startsWith( 'text/html' ) ) {
+		return Buffer.from( injectRuntimeImportMap( body.toString( 'utf8' ) ), 'utf8' );
+	}
+	if ( contentType.startsWith( 'text/javascript' ) || contentType.startsWith( 'application/javascript' ) ) {
+		return Buffer.from( rewriteRuntimeBareImports( body.toString( 'utf8' ) ), 'utf8' );
+	}
+	return body;
+}
+
+function readRequestBody( req ) {
+	return new Promise( ( resolve, reject ) => {
+		const chunks = [];
+		req.on( 'data', ( chunk ) => chunks.push( chunk ) );
+		req.on( 'end', () => resolve( Buffer.concat( chunks ).toString( 'utf8' ) ) );
+		req.on( 'error', reject );
+	} );
+}
+
+function sendJson( res, status, value ) {
+	const body = Buffer.from( JSON.stringify( value ), 'utf8' );
+	res.writeHead( status, {
+		'content-type': 'application/json; charset=utf-8',
+		'x-content-type-options': 'nosniff',
+	} );
+	res.end( body );
+}
+
+async function maybeServeOddApiStub( req, res, pathname, appStore ) {
+	const restPath = pathname.startsWith( '/wp-json/odd/v1/' )
+		? pathname.slice( '/wp-json'.length )
+		: pathname;
+	if ( ! restPath.startsWith( '/odd/v1/' ) ) {
+		return false;
+	}
+
+	if ( restPath === '/odd/v1/apps/runtime/errors' ) {
+		sendJson( res, 200, { ok: true } );
+		return true;
+	}
+
+	const storeSegment = restPath.match( /^\/odd\/v1\/apps\/store\/([a-z0-9-]+)\/([A-Za-z0-9-]+)$/ );
+	if ( storeSegment ) {
+		const key = `${ storeSegment[ 1 ] }/${ storeSegment[ 2 ].toLowerCase() }`;
+		if ( req.method === 'GET' ) {
+			sendJson( res, 200, { value: appStore.has( key ) ? appStore.get( key ) : null } );
+			return true;
+		}
+		if ( req.method === 'POST' || req.method === 'PUT' ) {
+			let parsed = {};
+			try {
+				parsed = JSON.parse( await readRequestBody( req ) || '{}' );
+			} catch ( _error ) {
+				parsed = {};
+			}
+			const value = Object.prototype.hasOwnProperty.call( parsed, 'value' ) ? parsed.value : null;
+			appStore.set( key, value );
+			sendJson( res, 200, { value } );
+			return true;
+		}
+		if ( req.method === 'DELETE' ) {
+			appStore.delete( key );
+			res.writeHead( 204 );
+			res.end();
+			return true;
+		}
+	}
+
+	const storeKeys = restPath.match( /^\/odd\/v1\/apps\/store\/([a-z0-9-]+)$/ );
+	if ( storeKeys ) {
+		const slugPrefix = `${ storeKeys[ 1 ] }/`;
+		if ( req.method === 'GET' ) {
+			const keys = Array.from( appStore.keys() )
+				.filter( ( key ) => key.startsWith( slugPrefix ) )
+				.map( ( key ) => key.slice( slugPrefix.length ) )
+				.sort();
+			sendJson( res, 200, keys );
+			return true;
+		}
+		if ( req.method === 'DELETE' ) {
+			for ( const key of Array.from( appStore.keys() ) ) {
+				if ( key.startsWith( slugPrefix ) ) {
+					appStore.delete( key );
+				}
+			}
+			res.writeHead( 204 );
+			res.end();
+			return true;
+		}
+	}
+
+	sendJson( res, 404, { code: 'not_found', message: 'Smoke API stub has no route for this request.' } );
+	return true;
+}
+
+function serveDirectory( root ) {
+	const appStore = new Map();
+	const server = http.createServer( async ( req, res ) => {
+		try {
+			const url = new URL( req.url || '/', 'http://127.0.0.1' );
+			let pathname = decodeURIComponent( url.pathname );
+			if ( await maybeServeOddApiStub( req, res, pathname, appStore ) ) {
+				return;
+			}
+			if ( pathname.startsWith( '/odd-app-runtime/' ) ) {
+				const runtimeName = path.basename( pathname );
+				const runtimePath = path.resolve( RUNTIME_DIR, runtimeName );
+				if ( ! runtimePath.startsWith( RUNTIME_DIR + path.sep ) || ! runtimeName.endsWith( '.js' ) ) {
+					res.writeHead( 403 );
+					res.end( 'forbidden' );
+					return;
+				}
+				const raw = await fsp.readFile( runtimePath );
+				const body = transformBodyForServe( runtimePath, raw );
+				res.writeHead( 200, {
+					'content-type': 'text/javascript; charset=utf-8',
+					'x-content-type-options': 'nosniff',
+				} );
+				res.end( body );
+				return;
+			}
+			if ( pathname.endsWith( '/' ) ) {
+				pathname += 'index.html';
+			}
+			const filePath = path.resolve( root, '.' + pathname );
+			if ( ! filePath.startsWith( root + path.sep ) ) {
+				res.writeHead( 403 );
+				res.end( 'forbidden' );
+				return;
+			}
+			const raw = await fsp.readFile( filePath );
+			const body = transformBodyForServe( filePath, raw );
+			res.writeHead( 200, {
+				'content-type': contentTypeFor( filePath ),
+				'x-content-type-options': 'nosniff',
+			} );
+			res.end( body );
+		} catch ( error ) {
+			res.writeHead( error && error.code === 'ENOENT' ? 404 : 500 );
+			res.end( 'not found' );
+		}
+	} );
+
+	return new Promise( ( resolve, reject ) => {
+		server.on( 'error', reject );
+		server.listen( 0, '127.0.0.1', () => {
+			const address = server.address();
+			resolve( {
+				baseUrl: `http://127.0.0.1:${ address.port }`,
+				close: () => new Promise( ( done ) => server.close( done ) ),
+			} );
+		} );
+	} );
+}
+
+function runChecked( cmd, args, options = {} ) {
+	const result = spawnSync( cmd, args, {
+		cwd: REPO_ROOT,
+		encoding: 'utf8',
+		...options,
+	} );
+	if ( result.status !== 0 ) {
+		throw new Error( [
+			`${ cmd } ${ args.join( ' ' ) } failed with exit ${ result.status }`,
+			result.stdout && result.stdout.trim(),
+			result.stderr && result.stderr.trim(),
+		].filter( Boolean ).join( '\n' ) );
+	}
+	return result;
+}
+
+function extractBundle( slug, tempRoot ) {
+	const sourceDir = path.join( APPS_DIR, slug );
+	const bundlePath = path.join( sourceDir, 'bundle.wp' );
+	const extractDir = path.join( tempRoot, slug );
+	if ( ! fs.existsSync( sourceDir ) ) {
+		throw new Error( `${ slug }: missing app source directory` );
+	}
+	if ( ! fs.existsSync( bundlePath ) ) {
+		throw new Error( `${ slug }: missing bundle.wp` );
+	}
+	fs.mkdirSync( extractDir, { recursive: true } );
+	runChecked( 'unzip', [ '-qq', bundlePath, '-d', extractDir ] );
+	const manifestPath = path.join( extractDir, 'manifest.json' );
+	if ( ! fs.existsSync( manifestPath ) ) {
+		throw new Error( `${ slug }: bundle.wp did not contain manifest.json` );
+	}
+	runChecked( VALIDATE_MANIFEST, [ manifestPath ] );
+	const manifest = JSON.parse( fs.readFileSync( manifestPath, 'utf8' ) );
+	if ( manifest.type !== 'app' ) {
+		throw new Error( `${ slug }: manifest type must be "app"` );
+	}
+	if ( manifest.slug !== slug ) {
+		throw new Error( `${ slug }: manifest slug is "${ manifest.slug }"` );
+	}
+	const entry = manifest.entry || 'index.html';
+	if ( ! fs.existsSync( path.join( extractDir, entry ) ) ) {
+		throw new Error( `${ slug }: entry "${ entry }" missing from bundle.wp` );
+	}
+	return { slug, sourceDir, bundlePath, extractDir, manifest, entry };
+}
+
+async function exercisePage( page ) {
+	await page.keyboard.press( 'Space' );
+	await page.keyboard.press( 'ArrowLeft' );
+	await page.keyboard.press( 'ArrowRight' );
+	await page.keyboard.press( 'ArrowUp' );
+	await page.keyboard.down( 'ArrowDown' );
+	await page.waitForTimeout( 80 );
+	await page.keyboard.up( 'ArrowDown' );
+	await page.keyboard.press( 'KeyP' );
+	await page.waitForTimeout( 80 );
+	await page.keyboard.press( 'KeyP' );
+
+	const buttons = await page.locator( '[data-action], #reset-button' ).elementHandles();
+	for ( const button of buttons.slice( 0, 8 ) ) {
+		try {
+			await button.click( { timeout: 1000 } );
+		} catch ( _error ) {
+			// Hidden or covered buttons are not a smoke failure by themselves.
+		}
+	}
+	await page.waitForTimeout( 250 );
+}
+
+async function inspectPage( page ) {
+	return page.evaluate( () => {
+		const canvas = document.querySelector( '#game-canvas' ) || document.querySelector( 'canvas' );
+		let canvasInfo = null;
+		if ( canvas ) {
+			const box = canvas.getBoundingClientRect();
+			const ctx = canvas.getContext( '2d' );
+			const sample = ctx.getImageData( 0, 0, canvas.width, canvas.height ).data;
+			let nonblank = 0;
+			for ( let i = 0; i < sample.length; i += 64 ) {
+				if ( sample[ i ] || sample[ i + 1 ] || sample[ i + 2 ] || sample[ i + 3 ] ) {
+					nonblank++;
+				}
+			}
+			canvasInfo = {
+				width: canvas.width,
+				height: canvas.height,
+				cssWidth: Math.round( box.width ),
+				cssHeight: Math.round( box.height ),
+				nonblank,
+			};
+		}
+		return {
+			title: document.title,
+			bodyTextLength: ( document.body.innerText || '' ).trim().length,
+			canvas: canvasInfo,
+			actionButtons: document.querySelectorAll( '[data-action]' ).length,
+			storageKeys: Object.keys( localStorage ).sort(),
+			horizontalOverflow: Math.max( 0, document.documentElement.scrollWidth - window.innerWidth ),
+		};
+	} );
+}
+
+function assertPageMetrics( app, viewport, metrics, events ) {
+	const problems = [];
+	const externalRequests = events.requests.filter( ( url ) => {
+		try {
+			const parsed = new URL( url );
+			return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+		} catch ( _error ) {
+			return false;
+		}
+	} ).filter( ( url ) => ! url.startsWith( events.baseUrl + '/' ) );
+
+	if ( events.pageErrors.length ) {
+		problems.push( `page errors: ${ events.pageErrors.join( ' | ' ) }` );
+	}
+	if ( events.consoleErrors.length ) {
+		problems.push( `console errors: ${ events.consoleErrors.join( ' | ' ) }` );
+	}
+	if ( events.httpErrors.length ) {
+		problems.push( `HTTP errors: ${ events.httpErrors.join( ' | ' ) }` );
+	}
+	if ( events.requestFailures.length ) {
+		problems.push( `failed requests: ${ events.requestFailures.join( ' | ' ) }` );
+	}
+	if ( externalRequests.length ) {
+		problems.push( `external requests: ${ externalRequests.join( ' | ' ) }` );
+	}
+	if ( ! metrics.title ) {
+		problems.push( 'document title is empty' );
+	}
+	if ( metrics.bodyTextLength < 8 ) {
+		problems.push( 'body text is unexpectedly sparse' );
+	}
+	if ( metrics.horizontalOverflow > 2 ) {
+		problems.push( `horizontal overflow ${ Math.ceil( metrics.horizontalOverflow ) }px` );
+	}
+	if ( metrics.canvas && metrics.canvas.nonblank < 64 ) {
+		problems.push( `canvas appears blank (${ metrics.canvas.nonblank } nonblank samples)` );
+	}
+	const badStorage = metrics.storageKeys.filter( ( key ) => ! key.startsWith( `odd.${ app.slug }.` ) );
+	if ( badStorage.length ) {
+		problems.push( `localStorage keys are not app-namespaced: ${ badStorage.join( ', ' ) }` );
+	}
+	if ( problems.length ) {
+		throw new Error( `${ app.slug }/${ viewport.name }: ${ problems.join( '; ' ) }` );
+	}
+}
+
+async function smokeOneViewport( browser, server, app, viewport, screenshots, screenshotsDir ) {
+	const context = await browser.newContext( {
+		viewport: { width: viewport.width, height: viewport.height },
+	} );
+	const page = await context.newPage();
+	const events = {
+		baseUrl: server.baseUrl,
+		consoleErrors: [],
+		httpErrors: [],
+		pageErrors: [],
+		requestFailures: [],
+		requests: [],
+	};
+	page.on( 'console', ( msg ) => {
+		if ( msg.type() === 'error' ) {
+			events.consoleErrors.push( msg.text() );
+		}
+	} );
+	page.on( 'pageerror', ( error ) => events.pageErrors.push( error.message ) );
+	page.on( 'request', ( request ) => events.requests.push( request.url() ) );
+	page.on( 'response', ( response ) => {
+		if ( response.status() >= 400 ) {
+			events.httpErrors.push( `${ response.status() } ${ response.url() }` );
+		}
+	} );
+	page.on( 'requestfailed', ( request ) => {
+		events.requestFailures.push( `${ request.url() } ${ request.failure()?.errorText || '' }`.trim() );
+	} );
+
+	try {
+		const entryUrl = `${ server.baseUrl }/${ app.slug }/${ app.entry }`;
+		await page.goto( entryUrl, { waitUntil: 'load' } );
+		await page.waitForTimeout( 350 );
+		await exercisePage( page );
+		const metrics = await inspectPage( page );
+		assertPageMetrics( app, viewport, metrics, events );
+		if ( screenshots ) {
+			await fsp.mkdir( screenshotsDir, { recursive: true } );
+			await page.screenshot( {
+				path: path.join( screenshotsDir, `${ app.slug }-${ viewport.name }.png` ),
+				fullPage: true,
+			} );
+		}
+		const canvas = metrics.canvas ? `${ metrics.canvas.cssWidth }x${ metrics.canvas.cssHeight }, samples=${ metrics.canvas.nonblank }` : 'no canvas';
+		return { app: app.slug, viewport: viewport.name, title: metrics.title, canvas };
+	} finally {
+		await context.close();
+	}
+}
+
+async function run() {
+	const args = parseArgs();
+	const slugs = unique( args.slugs.length ? args.slugs : listAllAppSlugs() );
+	if ( ! slugs.length ) {
+		throw new Error( 'no app sources found' );
+	}
+
+	const tempRoot = await fsp.mkdtemp( path.join( os.tmpdir(), 'odd-app-smoke-' ) );
+	let server = null;
+	let browser = null;
+	try {
+		const apps = slugs.map( ( slug ) => extractBundle( slug, tempRoot ) );
+		server = await serveDirectory( tempRoot );
+		browser = await chromium.launch( { headless: ! args.headed } );
+
+		console.log( `[smoke-catalog-apps] testing ${ apps.length } app bundle(s)` );
+		const results = [];
+		for ( const app of apps ) {
+			for ( const viewport of VIEWPORTS ) {
+				const result = await smokeOneViewport(
+					browser,
+					server,
+					app,
+					viewport,
+					args.screenshots,
+					args.screenshotsDir
+				);
+				results.push( result );
+				console.log( `  ok ${ result.app }/${ result.viewport } — ${ result.title } (${ result.canvas })` );
+			}
+		}
+		if ( args.screenshots ) {
+			console.log( `[smoke-catalog-apps] screenshots: ${ path.relative( REPO_ROOT, args.screenshotsDir ) }` );
+		}
+		console.log( `[smoke-catalog-apps] ok: ${ results.length } page loads` );
+	} finally {
+		if ( browser ) {
+			await browser.close();
+		}
+		if ( server ) {
+			await server.close();
+		}
+		await fsp.rm( tempRoot, { recursive: true, force: true } );
+	}
+}
+
+run().catch( ( error ) => {
+	console.error( `[smoke-catalog-apps] FAIL: ${ error && error.stack || error }` );
+	process.exit( 1 );
+} );

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Cache Invaders</title>
+		<link rel="stylesheet" href="./styles.css">
+	</head>
+	<body class="cache-invaders">
+		<main class="app-shell" aria-labelledby="app-title">
+			<header class="topbar">
+				<div class="brand">
+					<span class="brand-mark" aria-hidden="true"></span>
+					<div>
+						<h1 id="app-title">Cache Invaders</h1>
+						<p id="status-line" class="status-line" aria-live="polite">Purge the stale layers before they hit production.</p>
+					</div>
+				</div>
+				<div class="score-strip" aria-label="Game status">
+					<div class="score-item"><span class="score-label">Score</span><strong id="score">0</strong></div>
+					<div class="score-item"><span class="score-label">Wave</span><strong id="level">1</strong></div>
+					<div class="score-item"><span class="score-label">Best</span><strong id="best">0</strong></div>
+				</div>
+			</header>
+			<section class="game-layout runner-layout">
+				<div class="canvas-wrap wide">
+					<canvas id="game-canvas" width="800" height="560" aria-label="Cache Invaders arcade field"></canvas>
+				</div>
+				<aside class="side-panel">
+					<div class="sprite-card" aria-hidden="true"></div>
+					<div class="mini-card">
+						<p class="panel-label">Lives</p>
+						<p id="lives" class="readout">3</p>
+					</div>
+					<div class="button-grid runner-buttons">
+						<button type="button" data-action="left">Left</button>
+						<button type="button" data-action="fire">Purge</button>
+						<button type="button" data-action="right">Right</button>
+						<button type="button" data-action="pause">Pause</button>
+					</div>
+					<button id="reset-button" class="primary-button" type="button">New Purge</button>
+					<p class="help-text">Keys: arrows move, Space fires, P pauses.</p>
+				</aside>
+			</section>
+		</main>
+		<section id="overlay" class="overlay" aria-hidden="true">
+			<div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
+				<p class="panel-label">Cache stampede</p>
+				<h2 id="overlay-title">Stale layer landed</h2>
+				<p id="overlay-line">The purge queue needs another pass.</p>
+				<button id="overlay-reset" class="primary-button" type="button">Purge Again</button>
+			</div>
+		</section>
+		<script src="./app.js"></script>
+	</body>
+</html>

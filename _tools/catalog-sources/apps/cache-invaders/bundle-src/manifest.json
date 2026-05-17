@@ -1,0 +1,24 @@
+{
+	"$schema": "https://raw.githubusercontent.com/RegionallyFamous/odd/main/docs/schemas/manifest.schema.json",
+	"type": "app",
+	"slug": "cache-invaders",
+	"name": "Cache Invaders",
+	"label": "Cache",
+	"version": "1.0.0",
+	"author": "Regionally Famous",
+	"description": "A neon arcade shooter where a purge cannon clears stale cache ghosts, CDN shields, CSS blobs, and one very stubborn browser cache.",
+	"icon": "icon.webp",
+	"entry": "index.html",
+	"capability": "manage_options",
+	"window": {
+		"width": 820,
+		"height": 680,
+		"minWidth": 460,
+		"minHeight": 520,
+		"title": "Cache Invaders"
+	},
+	"surfaces": {
+		"desktop": true,
+		"taskbar": false
+	}
+}

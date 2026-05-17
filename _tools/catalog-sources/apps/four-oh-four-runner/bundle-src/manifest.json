@@ -1,0 +1,24 @@
+{
+	"$schema": "https://raw.githubusercontent.com/RegionallyFamous/odd/main/docs/schemas/manifest.schema.json",
+	"type": "app",
+	"slug": "four-oh-four-runner",
+	"name": "404 Runner",
+	"label": "404",
+	"version": "1.0.0",
+	"author": "Regionally Famous",
+	"description": "An endless runner where a missing page dashes through broken links, redirect rings, query rubble, and tiny uptime miracles.",
+	"icon": "icon.webp",
+	"entry": "index.html",
+	"capability": "manage_options",
+	"window": {
+		"width": 900,
+		"height": 620,
+		"minWidth": 480,
+		"minHeight": 440,
+		"title": "404 Runner"
+	},
+	"surfaces": {
+		"desktop": true,
+		"taskbar": false
+	}
+}

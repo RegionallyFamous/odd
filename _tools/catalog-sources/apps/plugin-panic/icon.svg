@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Plugin Panic">
+  <defs>
+    <linearGradient id="g" x1="18" y1="12" x2="112" y2="118" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffd45a"/>
+      <stop offset=".48" stop-color="#ff4fa3"/>
+      <stop offset="1" stop-color="#56e7f4"/>
+    </linearGradient>
+  </defs>
+  <rect x="12" y="12" width="104" height="104" rx="26" fill="#12051f"/>
+  <path d="M34 32h60v24H70v18h24v24H34V74h24V56H34z" fill="url(#g)" stroke="#fff4dc" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M83 31l28 48H55z" fill="#ffd45a" stroke="#12051f" stroke-width="5" stroke-linejoin="round"/>
+  <circle cx="83" cy="66" r="5" fill="#12051f"/>
+  <path d="M83 47v13" stroke="#12051f" stroke-width="7" stroke-linecap="round"/>
+</svg>

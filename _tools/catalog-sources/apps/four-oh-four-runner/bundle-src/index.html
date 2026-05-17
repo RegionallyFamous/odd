@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>404 Runner</title>
+		<link rel="stylesheet" href="./styles.css">
+	</head>
+	<body class="four-oh-four-runner">
+		<main class="app-shell" aria-labelledby="app-title">
+			<header class="topbar">
+				<div class="brand">
+					<span class="brand-mark" aria-hidden="true"></span>
+					<div>
+						<h1 id="app-title">404 Runner</h1>
+						<p id="status-line" class="status-line" aria-live="polite">Run the permalink gauntlet. Find a route home.</p>
+					</div>
+				</div>
+				<div class="score-strip" aria-label="Game status">
+					<div class="score-item"><span class="score-label">Distance</span><strong id="score">0m</strong></div>
+					<div class="score-item"><span class="score-label">Canonical</span><strong id="level">0</strong></div>
+					<div class="score-item"><span class="score-label">Best</span><strong id="best">0m</strong></div>
+				</div>
+			</header>
+			<section class="game-layout runner-layout">
+				<div class="canvas-wrap wide">
+					<canvas id="game-canvas" width="900" height="480" aria-label="404 Runner arcade field"></canvas>
+				</div>
+				<aside class="side-panel">
+					<div class="sprite-card" aria-hidden="true"></div>
+					<div class="mini-card">
+						<p class="panel-label">Route status</p>
+						<p id="route-line" class="readout">Temporary redirect detected.</p>
+					</div>
+					<div class="button-grid runner-buttons">
+						<button type="button" data-action="jump">Jump</button>
+						<button type="button" data-action="duck">Duck</button>
+						<button type="button" data-action="pause">Pause</button>
+					</div>
+					<button id="reset-button" class="primary-button" type="button">New Route</button>
+					<p class="help-text">Keys: Space or Up jumps, Down ducks, P pauses.</p>
+				</aside>
+			</section>
+		</main>
+		<section id="overlay" class="overlay" aria-hidden="true">
+			<div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
+				<p class="panel-label">Page not found</p>
+				<h2 id="overlay-title">Route lost</h2>
+				<p id="overlay-line">A broken link took the scenic route.</p>
+				<button id="overlay-reset" class="primary-button" type="button">Run Again</button>
+			</div>
+		</section>
+		<script src="./app.js"></script>
+	</body>
+</html>

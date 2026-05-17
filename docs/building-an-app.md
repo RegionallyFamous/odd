@@ -23,8 +23,9 @@ plugin. If it runs as a static site, it runs as an ODD app.
 7. [manifest.extensions — apps that extend ODD](#manifestextensions--apps-that-extend-odd)
 8. [App lifecycle events](#app-lifecycle-events)
 9. [Installing, updating, and uninstalling](#installing-updating-and-uninstalling)
-10. [Debugging](#debugging)
-11. [Limits and validation](#limits-and-validation)
+10. [Testing app bundles](#testing-app-bundles)
+11. [Debugging](#debugging)
+12. [Limits and validation](#limits-and-validation)
 
 Reference material:
 
@@ -544,6 +545,33 @@ a `slug_exists` error with HTTP 400. To upgrade:
 
 A future release will add a force-replace flag so updates become a
 single call; for now, delete-then-upload is the way.
+
+---
+
+## Testing app bundles
+
+Use the catalog app smoke tester before publishing a new app bundle:
+
+```bash
+odd/bin/smoke-catalog-apps my-app
+```
+
+For first-party catalog apps, pass one or more slugs from
+`_tools/catalog-sources/apps/`:
+
+```bash
+odd/bin/smoke-catalog-apps plugin-panic four-oh-four-runner cache-invaders
+```
+
+With no slugs, it tests every catalog app source. The tester unpacks
+each committed `.wp`, validates the bundled `manifest.json`, serves the
+app through a local ODD-like static server, injects the same React
+runtime import map/rewrite used by ODD's app serve path, loads desktop
+and mobile Chromium viewports, exercises basic keyboard/button controls,
+checks for console and network failures, samples canvases for nonblank
+rendering, checks horizontal overflow, and flags non-namespaced
+`localStorage` writes. Screenshots land in
+`test-results/catalog-app-smoke/` unless `--no-screenshots` is passed.
 
 ---
 

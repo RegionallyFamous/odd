@@ -697,6 +697,25 @@
     },
     {
       "type": "app",
+      "slug": "cache-invaders",
+      "name": "Cache Invaders",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A neon arcade shooter where a purge cannon clears stale cache ghosts, CDN shields, CSS blobs, and one very stubborn browser cache.",
+      "tags": [
+        "game",
+        "arcade",
+        "shooter",
+        "fun"
+      ],
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/cache-invaders.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-cache-invaders.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/cache-invaders.wp",
+      "sha256": "e08e00cbd7d93c2808d533a6d097126aef09012f2102e8e29686c97a335d29f1",
+      "size": 123354
+    },
+    {
+      "type": "app",
       "slug": "dont-read-the-comments",
       "name": "Don't Read the Comments",
       "version": "1.0.0",
@@ -735,6 +754,25 @@
     },
     {
       "type": "app",
+      "slug": "four-oh-four-runner",
+      "name": "404 Runner",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "An endless runner where a missing page dashes through broken links, redirect rings, query rubble, and tiny uptime miracles.",
+      "tags": [
+        "game",
+        "arcade",
+        "runner",
+        "fun"
+      ],
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/four-oh-four-runner.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-four-oh-four-runner.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/four-oh-four-runner.wp",
+      "sha256": "bf68bc00b86557a89c3d6fe33391fc7090948133678d9ad6d18c957b8399f4e3",
+      "size": 149409
+    },
+    {
+      "type": "app",
       "slug": "ledger",
       "name": "Ledger",
       "version": "1.0.0",
@@ -770,6 +808,25 @@
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/mosaic.wp",
       "sha256": "bec3cf11266e15319366561cd12213f9ac06b6daa79135854624f54d270d2feb",
       "size": 173205
+    },
+    {
+      "type": "app",
+      "slug": "plugin-panic",
+      "name": "Plugin Panic",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A falling-block puzzle where plugin packages stack up, dependency conflicts loom, and every cleared line resolves one more update queue.",
+      "tags": [
+        "game",
+        "puzzle",
+        "falling-blocks",
+        "fun"
+      ],
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/plugin-panic.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-plugin-panic.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/plugin-panic.wp",
+      "sha256": "13827bb12e5d88a6d759b3ebabf3d81b60fedebc230483233e7afeccbb286192",
+      "size": 134282
     },
     {
       "type": "app",

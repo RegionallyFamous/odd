@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Cache Invaders">
+  <defs>
+    <linearGradient id="g" x1="16" y1="12" x2="112" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#56e7f4"/>
+      <stop offset=".5" stop-color="#7cff8a"/>
+      <stop offset="1" stop-color="#ff4fa3"/>
+    </linearGradient>
+  </defs>
+  <rect x="12" y="12" width="104" height="104" rx="26" fill="#12051f"/>
+  <path d="M33 59c0-22 14-37 31-37s31 15 31 37v32c0 9-8 15-16 10l-8-5-8 6-8-6-8 5c-8 5-16-1-16-10z" fill="url(#g)" stroke="#fff4dc" stroke-width="5" stroke-linejoin="round"/>
+  <circle cx="53" cy="58" r="7" fill="#12051f"/>
+  <circle cx="76" cy="58" r="7" fill="#12051f"/>
+  <path d="M43 91h42" stroke="#12051f" stroke-width="7" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,13 @@
+{
+  "slug": "four-oh-four-runner",
+  "name": "404 Runner",
+  "description": "An endless runner where a missing page dashes through broken links, redirect rings, query rubble, and tiny uptime miracles.",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "tags": [
+    "game",
+    "arcade",
+    "runner",
+    "fun"
+  ]
+}

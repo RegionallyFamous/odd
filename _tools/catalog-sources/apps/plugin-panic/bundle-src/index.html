@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Plugin Panic</title>
+		<link rel="stylesheet" href="./styles.css">
+	</head>
+	<body class="plugin-panic">
+		<main class="app-shell" aria-labelledby="app-title">
+			<header class="topbar">
+				<div class="brand">
+					<span class="brand-mark" aria-hidden="true"></span>
+					<div>
+						<h1 id="app-title">Plugin Panic</h1>
+						<p id="status-line" class="status-line" aria-live="polite">Stack updates. Resolve dependencies. Do not panic.</p>
+					</div>
+				</div>
+				<div class="score-strip" aria-label="Game status">
+					<div class="score-item"><span class="score-label">Score</span><strong id="score">0</strong></div>
+					<div class="score-item"><span class="score-label">Level</span><strong id="level">1</strong></div>
+					<div class="score-item"><span class="score-label">Best</span><strong id="best">0</strong></div>
+				</div>
+			</header>
+			<section class="game-layout">
+				<div class="canvas-wrap">
+					<canvas id="game-canvas" width="360" height="720" aria-label="Plugin Panic falling-block board"></canvas>
+				</div>
+				<aside class="side-panel">
+					<div class="sprite-card" aria-hidden="true"></div>
+					<div class="mini-card"><p class="panel-label">Next update</p><canvas id="next-canvas" width="96" height="96"></canvas></div>
+					<div class="mini-card"><p class="panel-label">Hold</p><canvas id="hold-canvas" width="96" height="96"></canvas></div>
+					<div class="button-grid">
+						<button type="button" data-action="left">Left</button>
+						<button type="button" data-action="rotate">Rotate</button>
+						<button type="button" data-action="right">Right</button>
+						<button type="button" data-action="drop">Drop</button>
+						<button type="button" data-action="hold">Hold</button>
+						<button type="button" data-action="pause">Pause</button>
+					</div>
+					<button id="reset-button" class="primary-button" type="button">New Stack</button>
+					<p class="help-text">Keys: arrows move, Up rotates, Space drops, C holds, P pauses.</p>
+				</aside>
+			</section>
+		</main>
+		<section id="overlay" class="overlay" aria-hidden="true">
+			<div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
+				<p class="panel-label">Dependency conflict</p>
+				<h2 id="overlay-title">Plugin stack crashed</h2>
+				<p id="overlay-line">Rollback, breathe, try again.</p>
+				<button id="overlay-reset" class="primary-button" type="button">Resolve Again</button>
+			</div>
+		</section>
+		<script src="./app.js"></script>
+	</body>
+</html>
