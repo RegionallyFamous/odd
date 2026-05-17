@@ -16,7 +16,6 @@
 	if ( window.__odd.sdk ) return;
 
 	var SDK_VERSION = '1.0.0';
-	var THEME_CHOICES = [ 'light', 'dark', 'auto' ];
 	var PREF_KEYS = [
 		'wallpaper',
 		'scene',
@@ -26,9 +25,6 @@
 		'screensaver',
 		'audioReactive',
 		'shopTaskbar',
-		'shopDesktopPinned',
-		'theme',
-		'chaosMode',
 		'initiated',
 		'mascotQuiet',
 		'winkUnlocked',
@@ -82,11 +78,6 @@
 		return Array.isArray( value ) ? value.slice() : [];
 	}
 
-	function normalizeTheme( value ) {
-		value = String( value || 'auto' ).toLowerCase();
-		return THEME_CHOICES.indexOf( value ) === -1 ? 'auto' : value;
-	}
-
 	function preferenceValue( user, key, fallback ) {
 		if ( user && Object.prototype.hasOwnProperty.call( user, key ) ) return user[ key ];
 		var c = cfg();
@@ -109,9 +100,6 @@
 			screensaver: clone( c.screensaver || {} ),
 			audioReactive: !! preferenceValue( user, 'audioReactive', c.audioReactive ),
 			shopTaskbar: !! c.shopTaskbar,
-			shopDesktopPinned: !! c.shopDesktopPinned,
-			theme: normalizeTheme( c.theme ),
-			chaosMode: !! c.chaosMode,
 			initiated: !! preferenceValue( user, 'initiated', c.initiated ),
 			mascotQuiet: !! preferenceValue( user, 'mascotQuiet', c.mascotQuiet ),
 			winkUnlocked: !! preferenceValue( user, 'winkUnlocked', c.winkUnlocked ),
@@ -175,18 +163,6 @@
 				if ( typeof cb === 'function' ) cb( data );
 				resolve( data || null );
 			} );
-		} );
-	}
-
-	function getTheme() {
-		return normalizeTheme( cfg().theme );
-	}
-
-	function setTheme( theme, cb ) {
-		var next = normalizeTheme( theme );
-		return savePreferences( { theme: next }, function ( data ) {
-			cfg().theme = normalizeTheme( data && data.theme ? data.theme : next );
-			if ( typeof cb === 'function' ) cb( cfg().theme, data || null );
 		} );
 	}
 
@@ -320,11 +296,6 @@
 		preferences: {
 			get: readPreferences,
 			save: savePreferences,
-		},
-		theme: {
-			choices: function () { return THEME_CHOICES.slice(); },
-			get: getTheme,
-			set: setTheme,
 		},
 		capabilities: capabilitySnapshot,
 		toast: showToast,

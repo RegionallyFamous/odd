@@ -45,8 +45,8 @@ class Test_Odd_Rate_Limit_Bundles extends WP_UnitTestCase {
 		$this->assertGreaterThanOrEqual( 1, $data['retry_after'] );
 	}
 
-	public function test_rate_limit_covers_refresh_and_starter_retry_actions() {
-		foreach ( array( 'bundle_catalog_refresh', 'starter_retry' ) as $action ) {
+	public function test_rate_limit_covers_catalog_and_starter_retry_actions() {
+		foreach ( array( 'bundle_catalog_check', 'bundle_catalog_refresh', 'starter_retry' ) as $action ) {
 			$bucket = (int) floor( time() / 60 );
 			delete_transient( 'oddout_rl_v2_' . $action . '_' . $this->admin_id . '_' . $bucket );
 			add_filter(

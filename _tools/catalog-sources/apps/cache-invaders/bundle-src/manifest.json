@@ -4,7 +4,7 @@
 	"slug": "cache-invaders",
 	"name": "Cache Invaders",
 	"label": "Cache",
-	"version": "1.0.0",
+	"version": "1.0.2",
 	"author": "Regionally Famous",
 	"description": "A neon arcade shooter where a purge cannon clears stale cache ghosts, CDN shields, CSS blobs, and one very stubborn browser cache.",
 	"icon": "icon.webp",

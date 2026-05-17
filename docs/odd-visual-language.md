@@ -23,7 +23,7 @@ The ODD Shop uses a layered token set under `.odd-panel.odd-shop`:
 - **Motion:** `--odd-shop-dur-xs..l`, `--odd-shop-ease-out`, and `--odd-shop-ease-spring` are the only timing primitives new Shop chrome should use.
 - **Department tints:** wallpaper `#ff3d9a`, icon sets `#00d1b2`, cursors `#ffd23f`, widgets `#6a5cff`, apps `#ff6d00`. Tints accent rails, heroes, focus rings, and editorial moments; neutral chrome stays neutral.
 
-Dark mode is token-driven via `prefers-color-scheme` and the `data-odd-theme="light|dark|auto"` root attribute.
+The ODD Shop is dark-only. Keep new chrome on the dark token stack and use Desktop Mode's accent color only as an accent, not as a light-theme switch.
 
 ## Shop Glyph System
 

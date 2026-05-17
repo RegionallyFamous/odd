@@ -10,7 +10,7 @@ Use them when you want to copy the same mood from one WordPress site to another:
 - Active icon set and cursor set.
 - Enabled ODD widgets.
 - Pinned ODD apps.
-- Shuffle, screensaver, audio-reactive, Shop taskbar, desktop-pin, theme, and chaos preferences.
+- Shuffle, screensaver, audio-reactive, and Shop taskbar preferences.
 - Favorite and recent wallpaper slugs.
 
 ## What Does Not Get Saved

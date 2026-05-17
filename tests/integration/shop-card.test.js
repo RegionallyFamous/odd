@@ -236,6 +236,63 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( card.querySelector( '.odd-shop__card-actions .odd-shop__quick-look' )?.getAttribute( 'aria-label' ) ).toBe( 'View details for Gusts' );
 	} );
 
+	it( 'product details render a preview-first sheet with source and compatibility facts', () => {
+		window.wp = window.wp || {};
+		window.wp.desktop = window.wp.desktop || {};
+		window.wp.desktop.widgetLayer = {
+			add: () => {},
+			remove: () => {},
+			getEnabledIds: () => [ 'odd/tiny-aquarium' ],
+		};
+		seed( {
+			installedWidgets: [ { id: 'odd/tiny-aquarium', slug: 'tiny-aquarium', label: 'Tiny Aquarium' } ],
+			bundleCatalog: {
+				scene: [],
+				iconSet: [],
+				cursorSet: [],
+				widget: [
+					{
+						slug:        'tiny-aquarium',
+						label:       'Tiny Aquarium',
+						category:    'ODD Originals',
+						version:     '1.2.3',
+						description: 'A calm little desktop aquarium with drifting fish and bubbles.',
+						icon_url:    'https://example.com/catalog/v1/icons/widget-tiny-aquarium.webp',
+						installed:   false,
+					},
+				],
+				app: [],
+			},
+		} );
+		loadPanel();
+		const { host } = mount();
+		goToDepartment( host, 'Widgets' );
+
+		const card = host.querySelector( '[data-odd-shop-card][data-widget-id="odd/tiny-aquarium"]' );
+		card.querySelector( '.odd-shop__quick-look' )
+			.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+
+		const sheet = host.querySelector( '.odd-shop__detail-sheet' );
+		expect( sheet ).toBeTruthy();
+		expect( sheet.getAttribute( 'role' ) ).toBe( 'dialog' );
+		expect( sheet.querySelector( '.odd-shop__detail-title' )?.textContent.trim() ).toBe( 'Tiny Aquarium' );
+		expect( sheet.querySelector( '.odd-shop__detail-media img.odd-shop__card-art-fill' )?.getAttribute( 'src' ) )
+			.toBe( 'https://example.com/catalog/v1/icons/widget-tiny-aquarium.webp' );
+		expect( Array.from( sheet.querySelectorAll( '.odd-shop__detail-fact span' ) ).map( ( node ) => node.textContent.trim() ) )
+			.toEqual( [ 'Type', 'Version', 'Compatibility', 'Source' ] );
+		expect( Array.from( sheet.querySelectorAll( '.odd-shop__detail-fact strong' ) ).map( ( node ) => node.textContent.trim() ) )
+			.toEqual( [ 'Widget', '1.2.3', 'Works here', 'ODD Originals' ] );
+		expect( sheet.querySelectorAll( '.odd-shop__detail-change' ).length ).toBe( 3 );
+		expect( sheet.querySelector( '.odd-shop__detail-section-title' )?.textContent.trim() ).toBe( 'What changes' );
+		expect( sheet.textContent ).toContain( 'Safety checks' );
+		expect( sheet.textContent ).not.toContain( 'Trust' );
+		expect( sheet.querySelector( '.odd-shop__detail-primary' )?.textContent.trim() ).toBe( 'Active' );
+		expect( sheet.querySelector( '.odd-shop__detail-primary' )?.disabled ).toBe( true );
+		const done = sheet.querySelector( '.odd-shop__detail-secondary--primary' );
+		expect( done?.textContent.trim() ).toBe( 'Done' );
+		expect( document.activeElement ).toBe( done );
+	} );
+
 	it( 'catalog install enters an inline installing state immediately', async () => {
 		let resolveInstall;
 		seed( {
@@ -450,6 +507,43 @@ describe( 'ODD Shop · unified card state machine', () => {
 		expect( card.classList.contains( 'is-active' ) ).toBe( true );
 		expect( card.getAttribute( 'data-odd-card-state' ) ).toBe( 'active' );
 		expect( card.querySelector( '.odd-shop__card-state' )?.textContent.trim() ).toBe( 'Active' );
+	} );
+
+	it( 'installed content inherits catalog update availability', () => {
+		seed( {
+			wallpaper: 'gusts',
+			scene:     'gusts',
+			scenes: [
+				{ slug: 'gusts', label: 'Gusts', version: '1.0.0', category: 'Atmosphere', fallbackColor: '#333' },
+			],
+			bundleCatalog: {
+				scene: [
+					{
+						slug: 'gusts',
+						label: 'Gusts',
+						version: '1.1.0',
+						installed: true,
+						update_available: true,
+						download_url: 'https://example.com/catalog/v1/bundles/gusts.wp',
+						sha256: 'abc123',
+						size: 42,
+					},
+				],
+				iconSet: [],
+				cursorSet: [],
+				widget: [],
+				app: [],
+			},
+		} );
+		loadPanel();
+		const { host } = mount();
+
+		const card = host.querySelector( '[data-odd-shop-card][data-scene-slug="gusts"]' );
+		const btn = card.querySelector( '.odd-shop__card-btn' );
+		expect( btn.textContent.trim() ).toBe( 'Update' );
+		expect( btn.disabled ).toBe( false );
+		expect( card.getAttribute( 'data-odd-card-state' ) ).toBe( 'attention' );
+		expect( card.getAttribute( 'data-odd-card-action' ) ).toBe( 'update' );
 	} );
 
 	it( 'keeps scene cards in place when activation changes', async () => {
@@ -784,16 +878,17 @@ describe( 'ODD Shop · unified card state machine', () => {
 
 	it( 'shop card CSS keeps catalog text and keyboard affordances accessible', () => {
 		const css = readFileSync( PANEL_CSS, 'utf8' );
-		expect( css ).toContain( '--odd-shop-focus-ring:#005fcc' );
-		expect( css ).toContain( '--odd-shop-muted-strong:#3f3f46' );
+		expect( css ).toContain( '--odd-shop-focus-ring:#8fc7ff' );
+		expect( css ).toContain( '--odd-shop-muted-strong:#d6d2e4' );
+		expect( css ).not.toContain( '--odd-shop-focus-ring:#005fcc' );
 		expect( css ).toContain( '.odd-panel .odd-sr-only' );
-		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-state\{[^}]*font:800 11px\/1\.25[^}]*color:#333336/ );
+		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-state\{[^}]*font:800 11px\/1\.25[^}]*color:var\(--odd-shop-status-ink,#e7e3f2\)/ );
 		expect( css ).not.toContain( '.odd-shop__card-trust' );
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-art\{[^}]*aspect-ratio:16\/9/ );
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-actions\{[^}]*display:flex[^}]*min-width:0/ );
 		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__card-btn\{[^}]*flex:1 1 0[^}]*min-width:0[^}]*text-align:center[^}]*user-select:none/ );
 		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__quick-look\{[^}]*flex:0 0 auto[^}]*text-align:center[^}]*user-select:none/ );
-		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__card-btn--active,\.odd-panel\.odd-shop \.odd-shop__card-btn\.is-disabled\{[^}]*color:#3f3f46/ );
+		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__card-btn--active,\.odd-panel\.odd-shop \.odd-shop__card-btn\.is-disabled[^{}]*\{[^}]*color:var\(--odd-shop-muted-strong\)/ );
 		expect( css ).toMatch( /\.odd-panel \.odd-shop__card-wrap\.is-active \.odd-shop__card-art\{[^}]*inset 0 1px 0 rgba\(255,255,255,\.25\)/ );
 		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__card-wrap\.is-state-active \.odd-shop__card-btn--active\{[^}]*display:none/ );
 		expect( css ).toMatch( /\.odd-panel\.odd-shop \.odd-shop__card-wrap\.is-state-active \.odd-shop__quick-look\{[^}]*flex:1 1 auto/ );

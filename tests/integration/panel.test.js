@@ -53,8 +53,6 @@ function seedConfig() {
 			{ slug: 'aurora',         label: 'Aurora',         category: 'Atmosphere',    tags: [], fallbackColor: '#112233' },
 			{ slug: 'circuit-garden', label: 'Circuit Garden', category: 'ODD Originals', tags: [], fallbackColor: '#0b1a10' },
 		],
-		theme: 'auto',
-		chaosMode: false,
 		sets: [
 			{
 				slug: 'filament',
@@ -737,33 +735,31 @@ describe( 'ODD Shop', () => {
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );
 
-	it( 'Settings renders server-provided system health and copy diagnostics action', () => {
-		window.__odd = window.__odd || {};
-		window.__odd.diagnostics = { copy: vi.fn( () => Promise.resolve( true ) ) };
+	it( 'Settings only renders taskbar and sound effect controls', () => {
 		const { host, cleanup } = mountPanel();
 
 		const settingsTab = Array.from( host.querySelectorAll( '.odd-shop__rail-item' ) )
 			.find( ( b ) => b.querySelector( '.odd-shop__rail-label strong' )?.textContent.trim() === 'Settings' );
 		settingsTab.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
 
-		const health = host.querySelector( '.odd-shop__health' );
-		expect( health ).toBeTruthy();
-		expect( health.textContent ).toContain( 'Bundled fallback catalog' );
-		expect( health.textContent ).toContain( 'Missing signature' );
-		expect( health.textContent ).toContain( 'Registry hash' );
-		expect( health.textContent ).toContain( 'Starterpartial' );
-		expect( health.tagName ).toBe( 'SECTION' );
-		expect( health.getAttribute( 'aria-label' ) ).toBe( 'Catalog integrity status' );
-		expect( health.querySelectorAll( '.odd-shop__health-signals .odd-shop__health-metric' ) ).toHaveLength( 3 );
-		expect( health.querySelector( '.odd-shop__health-orbit' ) ).toBeTruthy();
+		const labels = Array.from( host.querySelectorAll( '.odd-setting-card__text strong' ) )
+			.map( ( node ) => node.textContent.trim() );
+		expect( labels ).toEqual( [ 'Sound effects', 'Keep in taskbar' ] );
+		expect( host.querySelector( '.odd-shop__health' ) ).toBeNull();
+		expect( host.textContent ).not.toContain( 'Appearance' );
+		expect( host.textContent ).not.toContain( 'Shuffle every' );
+		expect( host.textContent ).not.toContain( 'Audio-reactive' );
+		expect( host.textContent ).not.toContain( 'Chaos mode' );
+		expect( host.textContent ).not.toContain( 'Screensaver after' );
+		expect( host.textContent ).not.toContain( 'Pin ODD to desktop wallpaper' );
 		const css = readFileSync( resolve( __dirname, '../../odd/src/panel/styles.css' ), 'utf8' );
 		expect( css ).toContain( '.odd-panel.odd-shop .odd-shop__dept--settings{width:100%;max-width:none}' );
-		expect( css ).toContain( '.odd-panel.odd-shop .odd-shop__health{position:relative;display:block;width:100%;max-width:none;' );
-		const copy = Array.from( health.querySelectorAll( 'button' ) )
-			.find( ( b ) => b.textContent.trim() === 'Copy diagnostics' );
-		expect( copy.classList.contains( 'odd-shop__health-action--primary' ) ).toBe( true );
-		copy.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
-		expect( window.__odd.diagnostics.copy ).toHaveBeenCalled();
+		expect( css ).not.toContain( 'odd-shop__health' );
+		expect( css ).not.toContain( 'odd-minutes' );
+		expect( css ).not.toContain( 'odd-select' );
+		expect( css ).not.toContain( 'odd-setting-preview' );
+		expect( css ).not.toContain( 'data-odd-theme' );
+		expect( css ).not.toContain( 'data-odd-chaos' );
 
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );
@@ -864,6 +860,78 @@ describe( 'ODD Shop', () => {
 		expect( window.odd.bundleCatalog.scene.map( ( row ) => row.slug ) ).toEqual( [ 'fresh-clouds' ] );
 
 		if ( typeof cleanup === 'function' ) cleanup();
+	} );
+
+	it( 'shows a refresh prompt when the remote catalog hash changes', async () => {
+		vi.useFakeTimers();
+		let cleanup;
+		try {
+			window.odd.systemHealth.catalog = {
+				source: 'remote',
+				bundle_count: 1,
+				raw_bundle_count: 1,
+				effective_bundle_count: 1,
+				signature_status: 'valid',
+				registry_sha256: 'localhash',
+				registry_bytes: 2048,
+			};
+			window.odd.bundleCatalog = {
+				scene: [
+					{ type: 'scene', slug: 'old-clouds', name: 'Old Clouds', category: 'Archive', installed: false },
+				],
+				iconSet: [],
+				cursorSet: [],
+				widget: [],
+				app: [],
+			};
+			fetchMock.mockImplementation( ( url ) => {
+				if ( String( url ).endsWith( '/bundles/catalog-check' ) ) {
+					return Promise.resolve( {
+						ok: true,
+						json: () => Promise.resolve( {
+							checked: true,
+							ok: true,
+							update_available: true,
+							local_registry_sha256: 'localhash',
+							remote_registry_sha256: 'remotehash',
+							remote_bundle_count: 2,
+							meta: {
+								source: 'remote',
+								bundle_count: 1,
+								raw_bundle_count: 1,
+								effective_bundle_count: 1,
+								signature_status: 'valid',
+								registry_sha256: 'localhash',
+								remote_update_available: true,
+								remote_registry_sha256: 'remotehash',
+								remote_bundle_count: 2,
+								last_update_check: 1770000000,
+							},
+						} ),
+					} );
+				}
+				return Promise.resolve( {
+					ok: true,
+					json: () => Promise.resolve( { wallpaper: 'aurora' } ),
+				} );
+			} );
+
+			const mounted = mountPanel();
+			cleanup = mounted.cleanup;
+			const host = mounted.host;
+			expect( host.textContent ).not.toContain( 'New ODD stuff is available' );
+			await vi.advanceTimersByTimeAsync( 850 );
+			await vi.waitFor( () => {
+				expect( host.textContent ).toContain( 'New ODD stuff is available' );
+			} );
+			const refresh = Array.from( host.querySelectorAll( '.odd-shop__catalog-notice button' ) )
+				.find( ( b ) => b.textContent.trim() === 'Refresh catalog' );
+			expect( refresh ).toBeTruthy();
+			expect( window.odd.systemHealth.catalog.remote_update_available ).toBe( true );
+		} finally {
+			if ( typeof cleanup === 'function' ) cleanup();
+			vi.useRealTimers();
+		}
 	} );
 
 	it( 'Widgets department renders unified widget cards with the Add/Active state machine', () => {

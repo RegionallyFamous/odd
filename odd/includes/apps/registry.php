@@ -310,28 +310,35 @@ function oddout_apps_seed_core_item_visibility( $slug, $surfaces, $user_id = 0, 
 		'' === $item_id ||
 		$user_id <= 0 ||
 		! function_exists( 'oddout_desktop_mode_supports' ) ||
-		! oddout_desktop_mode_supports( 'os_settings' )
+		! oddout_desktop_mode_supports( 'os_settings' ) ||
+		! function_exists( 'desktop_mode_get_os_settings' ) ||
+		! function_exists( 'desktop_mode_default_os_settings' ) ||
+		! function_exists( 'desktop_mode_save_os_settings' )
 	) {
 		return false;
 	}
 
-	$settings = desktop_mode_get_os_settings( $user_id );
-	if ( ! is_array( $settings ) ) {
-		$settings = desktop_mode_default_os_settings();
-	}
-	if ( ! is_array( $settings ) ) {
+	try {
+		$settings = desktop_mode_get_os_settings( $user_id );
+		if ( ! is_array( $settings ) ) {
+			$settings = desktop_mode_default_os_settings();
+		}
+		if ( ! is_array( $settings ) ) {
+			return false;
+		}
+
+		if ( empty( $settings['itemVisibility'] ) || ! is_array( $settings['itemVisibility'] ) ) {
+			$settings['itemVisibility'] = array();
+		}
+		if ( ! $force && array_key_exists( $item_id, $settings['itemVisibility'] ) ) {
+			return false;
+		}
+
+		$settings['itemVisibility'][ $item_id ] = oddout_apps_surfaces_to_core_placement( $surfaces );
+		return (bool) desktop_mode_save_os_settings( $user_id, $settings );
+	} catch ( Throwable $e ) {
 		return false;
 	}
-
-	if ( empty( $settings['itemVisibility'] ) || ! is_array( $settings['itemVisibility'] ) ) {
-		$settings['itemVisibility'] = array();
-	}
-	if ( ! $force && array_key_exists( $item_id, $settings['itemVisibility'] ) ) {
-		return false;
-	}
-
-	$settings['itemVisibility'][ $item_id ] = oddout_apps_surfaces_to_core_placement( $surfaces );
-	return (bool) desktop_mode_save_os_settings( $user_id, $settings );
 }
 
 function oddout_apps_remove_core_item_visibility( $slug, $user_id = 0 ) {
@@ -341,21 +348,27 @@ function oddout_apps_remove_core_item_visibility( $slug, $user_id = 0 ) {
 		'' === $item_id ||
 		$user_id <= 0 ||
 		! function_exists( 'oddout_desktop_mode_supports' ) ||
-		! oddout_desktop_mode_supports( 'os_settings' )
+		! oddout_desktop_mode_supports( 'os_settings' ) ||
+		! function_exists( 'desktop_mode_get_os_settings' ) ||
+		! function_exists( 'desktop_mode_save_os_settings' )
 	) {
 		return false;
 	}
 
-	$settings = desktop_mode_get_os_settings( $user_id );
-	if ( ! is_array( $settings ) || empty( $settings['itemVisibility'] ) || ! is_array( $settings['itemVisibility'] ) ) {
-		return false;
-	}
-	if ( ! array_key_exists( $item_id, $settings['itemVisibility'] ) ) {
-		return false;
-	}
+	try {
+		$settings = desktop_mode_get_os_settings( $user_id );
+		if ( ! is_array( $settings ) || empty( $settings['itemVisibility'] ) || ! is_array( $settings['itemVisibility'] ) ) {
+			return false;
+		}
+		if ( ! array_key_exists( $item_id, $settings['itemVisibility'] ) ) {
+			return false;
+		}
 
-	unset( $settings['itemVisibility'][ $item_id ] );
-	return (bool) desktop_mode_save_os_settings( $user_id, $settings );
+		unset( $settings['itemVisibility'][ $item_id ] );
+		return (bool) desktop_mode_save_os_settings( $user_id, $settings );
+	} catch ( Throwable $e ) {
+		return false;
+	}
 }
 
 /**

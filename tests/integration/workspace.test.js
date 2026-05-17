@@ -28,12 +28,10 @@ describe( 'ODD workspace files', () => {
 			scene: 'aurora',
 			iconSet: 'filament',
 			cursorSet: 'spark',
-			theme: 'dark',
 			shuffle: { enabled: true, minutes: 20 },
 			screensaver: { enabled: true, minutes: 8, scene: 'flux' },
 			audioReactive: true,
 			shopTaskbar: true,
-			shopDesktopPinned: false,
 			favorites: [ 'aurora', 'flux' ],
 			recents: [ 'bad slug', 'circuit-garden' ],
 			userApps: { installed: [], pinned: [ 'sine' ] },
@@ -88,7 +86,6 @@ describe( 'ODD workspace files', () => {
 				wallpaper: 'aurora',
 				iconSet: 'filament',
 				cursorSet: 'none',
-				theme: 'purple',
 				shuffle: { enabled: true, minutes: 999 },
 			},
 			desktop: { widgets: { enabled: [ 'odd/sticky' ] } },
@@ -101,14 +98,12 @@ describe( 'ODD workspace files', () => {
 
 		const workspace = window.__odd.workspace.parseText( raw );
 		expect( workspace.prefs.cursorSet ).toBe( '' );
-		expect( workspace.prefs.theme ).toBe( 'auto' );
 		expect( workspace.prefs.shuffle.minutes ).toBe( 240 );
 		expect( window.__odd.workspace.widgetIds( workspace ) ).toEqual( [ 'sticky' ] );
 		expect( window.__odd.workspace.buildPrefsPatch( workspace ) ).toMatchObject( {
 			wallpaper: 'aurora',
 			iconSet: 'filament',
 			cursorSet: '',
-			theme: 'auto',
 		} );
 		expect( window.__odd.workspace.requiredContent( workspace ) ).toEqual( expect.arrayContaining( [
 			{ type: 'scene', slug: 'aurora' },

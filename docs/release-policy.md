@@ -30,7 +30,9 @@ Merge to `main`; `.github/workflows/pages.yml` rebuilds and validates
 
 Installed sites read the remote registry through the Shop's catalog
 fetch. They may see the update after the 12-hour transient expires, or
-immediately after an admin uses **Refresh catalog**. The bundled
+immediately after an admin uses **Refresh catalog**. The Shop and a twice-daily
+WP-Cron task also run a lightweight signed-registry hash check; when that sees
+new remote content, admins get a **Refresh catalog** prompt. The bundled
 `odd/data/fallback-registry.json` is only a last-resort offline snapshot
 inside future plugin zips; updating it in the repo does not change the
 fallback embedded in already-installed plugin copies.

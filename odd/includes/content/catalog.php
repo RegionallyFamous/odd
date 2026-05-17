@@ -78,6 +78,15 @@ if ( ! defined( 'ODDOUT_CATALOG_CACHE_TTL' ) ) {
 if ( ! defined( 'ODDOUT_CATALOG_MAX_RESPONSE_BYTES' ) ) {
 	define( 'ODDOUT_CATALOG_MAX_RESPONSE_BYTES', 2 * 1024 * 1024 );
 }
+if ( ! defined( 'ODDOUT_CATALOG_UPDATE_CHECK_TRANSIENT' ) ) {
+	define( 'ODDOUT_CATALOG_UPDATE_CHECK_TRANSIENT', 'oddout_catalog_v1_update_check' );
+}
+if ( ! defined( 'ODDOUT_CATALOG_UPDATE_CHECK_TTL' ) ) {
+	define( 'ODDOUT_CATALOG_UPDATE_CHECK_TTL', 30 * MINUTE_IN_SECONDS );
+}
+if ( ! defined( 'ODDOUT_CATALOG_UPDATE_CHECK_HOOK' ) ) {
+	define( 'ODDOUT_CATALOG_UPDATE_CHECK_HOOK', 'oddout_catalog_update_check' );
+}
 
 /**
  * Resolve the catalog URL at runtime. Hosts can override via
@@ -94,6 +103,11 @@ function oddout_catalog_allowed_types() {
 function oddout_catalog_max_response_bytes() {
 	$bytes = (int) apply_filters( 'oddout_catalog_max_response_bytes', ODDOUT_CATALOG_MAX_RESPONSE_BYTES );
 	return max( 1024, min( 10 * 1024 * 1024, $bytes ) );
+}
+
+function oddout_catalog_update_check_ttl() {
+	$ttl = (int) apply_filters( 'oddout_catalog_update_check_ttl', ODDOUT_CATALOG_UPDATE_CHECK_TTL );
+	return max( 5 * MINUTE_IN_SECONDS, min( DAY_IN_SECONDS, $ttl ) );
 }
 
 function oddout_catalog_base_url( $catalog_url = '' ) {
@@ -340,31 +354,38 @@ function oddout_catalog_empty_registry() {
 
 function oddout_catalog_default_meta() {
 	return array(
-		'source'                 => 'empty',
-		'url_host'               => '',
-		'http_status'            => 0,
-		'bundle_count'           => 0,
-		'raw_bundle_count'       => 0,
-		'effective_bundle_count' => 0,
-		'generated_at'           => '',
-		'registry_sha256'        => '',
-		'registry_bytes'         => 0,
-		'catalog_base_url'       => '',
-		'signature_status'       => 'unknown',
-		'signature_key'          => '',
-		'signature_url'          => '',
-		'last_success'           => 0,
-		'last_failure'           => 0,
-		'last_error_code'        => '',
-		'last_error_message'     => '',
-		'fallback_available'     => false,
-		'stale_available'        => false,
-		'stale_age'              => 0,
-		'stale_registry_sha256'  => '',
-		'rollback_available'     => false,
-		'rollback_count'         => 0,
-		'rollback_hashes'        => array(),
-		'empty_remote'           => false,
+		'source'                          => 'empty',
+		'url_host'                        => '',
+		'http_status'                     => 0,
+		'bundle_count'                    => 0,
+		'raw_bundle_count'                => 0,
+		'effective_bundle_count'          => 0,
+		'generated_at'                    => '',
+		'registry_sha256'                 => '',
+		'registry_bytes'                  => 0,
+		'catalog_base_url'                => '',
+		'signature_status'                => 'unknown',
+		'signature_key'                   => '',
+		'signature_url'                   => '',
+		'last_success'                    => 0,
+		'last_failure'                    => 0,
+		'last_error_code'                 => '',
+		'last_error_message'              => '',
+		'fallback_available'              => false,
+		'stale_available'                 => false,
+		'stale_age'                       => 0,
+		'stale_registry_sha256'           => '',
+		'rollback_available'              => false,
+		'rollback_count'                  => 0,
+		'rollback_hashes'                 => array(),
+		'empty_remote'                    => false,
+		'last_update_check'               => 0,
+		'remote_update_available'         => false,
+		'remote_registry_sha256'          => '',
+		'remote_generated_at'             => '',
+		'remote_bundle_count'             => 0,
+		'last_update_check_error_code'    => '',
+		'last_update_check_error_message' => '',
 	);
 }
 
@@ -399,6 +420,25 @@ function oddout_catalog_registry_hash( $registry ) {
 	unset( $copy['_oddout_accepted_at'] );
 	$json = wp_json_encode( $copy );
 	return is_string( $json ) ? hash( 'sha256', $json ) : '';
+}
+
+function oddout_catalog_local_registry_hash() {
+	$meta = oddout_catalog_meta();
+	if ( ! empty( $meta['registry_sha256'] ) ) {
+		return sanitize_text_field( (string) $meta['registry_sha256'] );
+	}
+
+	$fresh = get_transient( ODDOUT_CATALOG_TRANSIENT );
+	if ( is_array( $fresh ) ) {
+		return oddout_catalog_registry_hash( $fresh );
+	}
+
+	$stale = get_option( ODDOUT_CATALOG_STALE_OPTION, array() );
+	if ( is_array( $stale ) ) {
+		return oddout_catalog_registry_hash( $stale );
+	}
+
+	return '';
 }
 
 function oddout_catalog_rollback_snapshots() {
@@ -1550,7 +1590,152 @@ function oddout_catalog_refresh() {
 	delete_transient( ODDOUT_CATALOG_TRANSIENT );
 	$registry = oddout_catalog_load( true );
 	oddout_catalog_lock_release( $lock_key );
+	delete_transient( ODDOUT_CATALOG_UPDATE_CHECK_TRANSIENT );
+	$meta = oddout_catalog_meta();
+	if ( 'remote' === $meta['source'] ) {
+		oddout_catalog_update_meta(
+			array(
+				'remote_update_available'         => false,
+				'remote_registry_sha256'          => $meta['registry_sha256'],
+				'remote_generated_at'             => $meta['generated_at'],
+				'remote_bundle_count'             => $meta['bundle_count'],
+				'last_update_check'               => time(),
+				'last_update_check_error_code'    => '',
+				'last_update_check_error_message' => '',
+			)
+		);
+	}
 	return $registry;
+}
+
+function oddout_catalog_check_remote_updates( $force = false ) {
+	$force = (bool) $force;
+	if ( ! $force ) {
+		$cached = get_transient( ODDOUT_CATALOG_UPDATE_CHECK_TRANSIENT );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+	}
+
+	$checked_at = time();
+	$url        = oddout_catalog_url();
+	$local_hash = oddout_catalog_local_registry_hash();
+	$remote     = oddout_catalog_fetch_remote( $url );
+
+	if ( is_wp_error( $remote ) ) {
+		$current = oddout_catalog_meta();
+		$result  = array(
+			'checked'                => true,
+			'ok'                     => false,
+			'checked_at'             => $checked_at,
+			'update_available'       => (bool) $current['remote_update_available'],
+			'local_registry_sha256'  => $local_hash,
+			'remote_registry_sha256' => isset( $current['remote_registry_sha256'] ) ? (string) $current['remote_registry_sha256'] : '',
+			'remote_generated_at'    => isset( $current['remote_generated_at'] ) ? (string) $current['remote_generated_at'] : '',
+			'remote_bundle_count'    => isset( $current['remote_bundle_count'] ) ? (int) $current['remote_bundle_count'] : 0,
+			'error_code'             => $remote->get_error_code(),
+			'error_message'          => $remote->get_error_message(),
+		);
+		oddout_catalog_update_meta(
+			array(
+				'last_update_check'               => $checked_at,
+				'last_update_check_error_code'    => $remote->get_error_code(),
+				'last_update_check_error_message' => $remote->get_error_message(),
+			)
+		);
+		set_transient( ODDOUT_CATALOG_UPDATE_CHECK_TRANSIENT, $result, oddout_catalog_update_check_ttl() );
+		return $result;
+	}
+
+	$normalised = oddout_catalog_normalise( $remote );
+	if ( ! oddout_catalog_should_accept_empty_remote( $normalised, $remote ) ) {
+		$error  = new WP_Error(
+			'empty_remote',
+			__( 'Remote catalog returned zero bundles; keeping the current catalog.', 'odd-outlandish-desktop-decorator' )
+		);
+		$result = array(
+			'checked'                => true,
+			'ok'                     => false,
+			'checked_at'             => $checked_at,
+			'update_available'       => false,
+			'local_registry_sha256'  => $local_hash,
+			'remote_registry_sha256' => oddout_catalog_registry_hash( $normalised ),
+			'remote_generated_at'    => isset( $normalised['generated_at'] ) ? (string) $normalised['generated_at'] : '',
+			'remote_bundle_count'    => 0,
+			'error_code'             => $error->get_error_code(),
+			'error_message'          => $error->get_error_message(),
+		);
+		oddout_catalog_update_meta(
+			array(
+				'last_update_check'               => $checked_at,
+				'last_update_check_error_code'    => $error->get_error_code(),
+				'last_update_check_error_message' => $error->get_error_message(),
+				'remote_update_available'         => false,
+				'remote_registry_sha256'          => $result['remote_registry_sha256'],
+				'remote_generated_at'             => $result['remote_generated_at'],
+				'remote_bundle_count'             => 0,
+			)
+		);
+		set_transient( ODDOUT_CATALOG_UPDATE_CHECK_TRANSIENT, $result, oddout_catalog_update_check_ttl() );
+		return $result;
+	}
+
+	$effective    = oddout_catalog_effective_registry( $normalised );
+	$remote_hash  = oddout_catalog_registry_hash( $normalised );
+	$remote_count = oddout_catalog_registry_bundle_count( $effective );
+	$changed      = '' !== $remote_hash && $remote_hash !== $local_hash;
+	$result       = array(
+		'checked'                => true,
+		'ok'                     => true,
+		'checked_at'             => $checked_at,
+		'update_available'       => $changed,
+		'local_registry_sha256'  => $local_hash,
+		'remote_registry_sha256' => $remote_hash,
+		'remote_generated_at'    => isset( $normalised['generated_at'] ) ? (string) $normalised['generated_at'] : '',
+		'remote_bundle_count'    => $remote_count,
+		'error_code'             => '',
+		'error_message'          => '',
+	);
+	oddout_catalog_update_meta(
+		array(
+			'last_update_check'               => $checked_at,
+			'remote_update_available'         => $changed,
+			'remote_registry_sha256'          => $remote_hash,
+			'remote_generated_at'             => $result['remote_generated_at'],
+			'remote_bundle_count'             => $remote_count,
+			'last_update_check_error_code'    => '',
+			'last_update_check_error_message' => '',
+		)
+	);
+	set_transient( ODDOUT_CATALOG_UPDATE_CHECK_TRANSIENT, $result, oddout_catalog_update_check_ttl() );
+	return $result;
+}
+
+function oddout_catalog_cron_update_check() {
+	oddout_catalog_check_remote_updates( true );
+}
+
+function oddout_catalog_schedule_update_check() {
+	if ( ! (bool) apply_filters( 'oddout_catalog_update_check_enabled', true ) ) {
+		return;
+	}
+	if ( ! wp_next_scheduled( ODDOUT_CATALOG_UPDATE_CHECK_HOOK ) ) {
+		wp_schedule_event( time() + HOUR_IN_SECONDS, 'twicedaily', ODDOUT_CATALOG_UPDATE_CHECK_HOOK );
+	}
+}
+
+function oddout_catalog_unschedule_update_check() {
+	$timestamp = wp_next_scheduled( ODDOUT_CATALOG_UPDATE_CHECK_HOOK );
+	if ( $timestamp ) {
+		wp_unschedule_event( $timestamp, ODDOUT_CATALOG_UPDATE_CHECK_HOOK );
+	}
+	delete_transient( ODDOUT_CATALOG_UPDATE_CHECK_TRANSIENT );
+}
+
+add_action( 'init', 'oddout_catalog_schedule_update_check' );
+add_action( ODDOUT_CATALOG_UPDATE_CHECK_HOOK, 'oddout_catalog_cron_update_check' );
+if ( defined( 'ODDOUT_FILE' ) ) {
+	register_deactivation_hook( ODDOUT_FILE, 'oddout_catalog_unschedule_update_check' );
 }
 
 /**
@@ -1796,6 +1981,34 @@ add_action(
 					return rest_ensure_response(
 						$response
 					);
+				},
+				'permission_callback' => function () {
+					return current_user_can( 'manage_options' );
+				},
+			)
+		);
+		register_rest_route(
+			'odd/v1',
+			'/bundles/catalog-check',
+			array(
+				'methods'             => 'POST',
+				'args'                => array(
+					'force' => array(
+						'description'       => __( 'Bypass the short update-check cache.', 'odd-outlandish-desktop-decorator' ),
+						'type'              => 'boolean',
+						'required'          => false,
+						'default'           => false,
+						'sanitize_callback' => 'rest_sanitize_boolean',
+					),
+				),
+				'callback'            => function ( WP_REST_Request $request ) {
+					$rl = oddout_bundle_rate_limit_check( 'bundle_catalog_check' );
+					if ( is_wp_error( $rl ) ) {
+						return $rl;
+					}
+					$result         = oddout_catalog_check_remote_updates( (bool) $request->get_param( 'force' ) );
+					$result['meta'] = oddout_catalog_meta();
+					return rest_ensure_response( $result );
 				},
 				'permission_callback' => function () {
 					return current_user_can( 'manage_options' );

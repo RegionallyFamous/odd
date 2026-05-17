@@ -7,7 +7,7 @@
  *          full catalog of installed scenes, icon sets, and cursor sets so the panel
  *          can hydrate without re-fetching localized data.
  *   - POST accepts any subset of wallpaper/favorites/recents/shuffle/
- *          audioReactive/shopTaskbar/shopDesktopPinned/iconSet/cursorSet and writes each to its own user_meta
+ *          audioReactive/shopTaskbar/iconSet/cursorSet and writes each to its own user_meta
  *          key. Partial updates are fine.
  */
 
@@ -61,29 +61,21 @@ add_action(
 					},
 					'callback'            => 'oddout_rest_prefs_post',
 					'args'                => array(
-						'wallpaper'         => $slug_arg,
-						'scene'             => $slug_arg,
-						'favorites'         => $slug_list_arg,
-						'recents'           => $slug_list_arg,
-						'shuffle'           => $object_arg,
-						'screensaver'       => $object_arg,
-						'audioReactive'     => $bool_arg,
-						'shopTaskbar'       => $bool_arg,
-						'shopDock'          => $bool_arg,
-						'shopDesktopPinned' => $bool_arg,
-						'theme'             => array(
-							'type'              => 'string',
-							'required'          => false,
-							'enum'              => oddout_shop_theme_choices(),
-							'sanitize_callback' => 'sanitize_key',
-						),
-						'chaosMode'         => $bool_arg,
-						'initiated'         => $bool_arg,
-						'mascotQuiet'       => $bool_arg,
-						'winkUnlocked'      => $bool_arg,
-						'appsPinned'        => $slug_list_arg,
-						'iconSet'           => $slug_arg,
-						'cursorSet'         => $slug_arg,
+						'wallpaper'     => $slug_arg,
+						'scene'         => $slug_arg,
+						'favorites'     => $slug_list_arg,
+						'recents'       => $slug_list_arg,
+						'shuffle'       => $object_arg,
+						'screensaver'   => $object_arg,
+						'audioReactive' => $bool_arg,
+						'shopTaskbar'   => $bool_arg,
+						'shopDock'      => $bool_arg,
+						'initiated'     => $bool_arg,
+						'mascotQuiet'   => $bool_arg,
+						'winkUnlocked'  => $bool_arg,
+						'appsPinned'    => $slug_list_arg,
+						'iconSet'       => $slug_arg,
+						'cursorSet'     => $slug_arg,
 					),
 				),
 			)
@@ -126,28 +118,25 @@ function oddout_rest_prefs_get() {
 
 	return rest_ensure_response(
 		array(
-			'wallpaper'         => oddout_wallpaper_get_user_scene( $uid ),
-			'favorites'         => oddout_wallpaper_get_user_slug_list( $uid, 'oddout_favorites' ),
-			'recents'           => oddout_wallpaper_get_user_slug_list( $uid, 'oddout_recents' ),
-			'shuffle'           => oddout_wallpaper_get_user_shuffle( $uid ),
-			'screensaver'       => oddout_wallpaper_get_user_screensaver( $uid ),
-			'audioReactive'     => oddout_wallpaper_get_user_audio_reactive( $uid ),
-			'shopTaskbar'       => function_exists( 'oddout_shop_taskbar_enabled' ) ? oddout_shop_taskbar_enabled( $uid ) : false,
-			'shopDesktopPinned' => function_exists( 'oddout_shop_desktop_pinned' ) ? oddout_shop_desktop_pinned( $uid ) : false,
-			'iconSet'           => oddout_icons_get_active_slug( $uid ),
-			'cursorSet'         => oddout_cursors_get_active_slug( $uid ),
-			'cursorStylesheet'  => oddout_cursors_active_stylesheet_url(),
-			'theme'             => oddout_shop_get_theme( $uid ),
-			'chaosMode'         => (bool) get_user_meta( $uid, 'oddout_chaos', true ),
-			'initiated'         => (bool) get_user_meta( $uid, 'oddout_initiated', true ),
-			'mascotQuiet'       => (bool) get_user_meta( $uid, 'oddout_mascot_quiet', true ),
-			'winkUnlocked'      => (bool) get_user_meta( $uid, 'oddout_wink_unlocked', true ),
-			'scenes'            => oddout_wallpaper_scenes(),
-			'sets'              => $sets,
-			'cursorSets'        => $cursor_sets,
-			'appsEnabled'       => $apps_enabled,
-			'apps'              => $apps_list,
-			'userApps'          => array(
+			'wallpaper'        => oddout_wallpaper_get_user_scene( $uid ),
+			'favorites'        => oddout_wallpaper_get_user_slug_list( $uid, 'oddout_favorites' ),
+			'recents'          => oddout_wallpaper_get_user_slug_list( $uid, 'oddout_recents' ),
+			'shuffle'          => oddout_wallpaper_get_user_shuffle( $uid ),
+			'screensaver'      => oddout_wallpaper_get_user_screensaver( $uid ),
+			'audioReactive'    => oddout_wallpaper_get_user_audio_reactive( $uid ),
+			'shopTaskbar'      => function_exists( 'oddout_shop_taskbar_enabled' ) ? oddout_shop_taskbar_enabled( $uid ) : false,
+			'iconSet'          => oddout_icons_get_active_slug( $uid ),
+			'cursorSet'        => oddout_cursors_get_active_slug( $uid ),
+			'cursorStylesheet' => oddout_cursors_active_stylesheet_url(),
+			'initiated'        => (bool) get_user_meta( $uid, 'oddout_initiated', true ),
+			'mascotQuiet'      => (bool) get_user_meta( $uid, 'oddout_mascot_quiet', true ),
+			'winkUnlocked'     => (bool) get_user_meta( $uid, 'oddout_wink_unlocked', true ),
+			'scenes'           => oddout_wallpaper_scenes(),
+			'sets'             => $sets,
+			'cursorSets'       => $cursor_sets,
+			'appsEnabled'      => $apps_enabled,
+			'apps'             => $apps_list,
+			'userApps'         => array(
 				'installed' => wp_list_pluck( $apps_list, 'slug' ),
 				'pinned'    => (array) get_user_meta( $uid, 'oddout_apps_pinned', true ),
 			),
@@ -224,34 +213,6 @@ function oddout_rest_prefs_post( WP_REST_Request $request ) {
 		}
 	}
 
-	if ( array_key_exists( 'shopDesktopPinned', $params ) ) {
-		$on = ! empty( $params['shopDesktopPinned'] );
-		if ( function_exists( 'oddout_shop_set_desktop_pinned' ) ) {
-			$out['shopDesktopPinned'] = oddout_shop_set_desktop_pinned( $uid, $on );
-		} else {
-			update_user_meta( $uid, 'oddout_shop_desktop_pinned', $on ? 1 : 0 );
-			$out['shopDesktopPinned'] = $on;
-		}
-	}
-
-	if ( array_key_exists( 'theme', $params ) ) {
-		$theme = is_string( $params['theme'] ) ? sanitize_key( $params['theme'] ) : '';
-		if ( ! oddout_shop_set_theme( $uid, $theme ) ) {
-			return new WP_Error(
-				'oddout_invalid_theme',
-				__( 'Unknown ODD Shop theme.', 'odd-outlandish-desktop-decorator' ),
-				array( 'status' => 400 )
-			);
-		}
-		$out['theme'] = oddout_shop_get_theme( $uid );
-	}
-
-	if ( array_key_exists( 'chaosMode', $params ) ) {
-		$on = ! empty( $params['chaosMode'] );
-		update_user_meta( $uid, 'oddout_chaos', $on ? 1 : 0 );
-		$out['chaosMode'] = $on;
-	}
-
 	// Iris personality slice (Cut 3). All three are booleans, stored
 	// as 0/1 via the existing audioReactive pattern. Cast once here
 	// so anything downstream (JS store, REST GET) sees a strict bool.
@@ -313,25 +274,4 @@ function oddout_rest_prefs_post( WP_REST_Request $request ) {
 	}
 
 	return rest_ensure_response( $out );
-}
-
-function oddout_shop_theme_choices() {
-	return array( 'light', 'dark', 'auto' );
-}
-
-function oddout_shop_get_theme( $uid = 0 ) {
-	$uid   = $uid ? (int) $uid : get_current_user_id();
-	$value = $uid > 0 ? get_user_meta( $uid, 'oddout_shop_theme', true ) : '';
-	$value = is_string( $value ) ? sanitize_key( $value ) : '';
-	return in_array( $value, oddout_shop_theme_choices(), true ) ? $value : 'auto';
-}
-
-function oddout_shop_set_theme( $uid, $theme ) {
-	$uid   = (int) $uid;
-	$theme = is_string( $theme ) ? sanitize_key( $theme ) : '';
-	if ( $uid <= 0 || ! in_array( $theme, oddout_shop_theme_choices(), true ) ) {
-		return false;
-	}
-	update_user_meta( $uid, 'oddout_shop_theme', $theme );
-	return true;
 }

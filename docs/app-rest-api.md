@@ -44,6 +44,7 @@ Permission shorthand used below:
 | `DELETE` | `/bundles/{slug}`                            | admin         | Uninstall any bundle regardless of type.   |
 | `GET`    | `/bundles/catalog`                           | login         | Browse the remote catalog (installer fields redacted for non-admins). |
 | `POST`   | `/bundles/install-from-catalog`              | admin         | Install a catalog bundle by slug, verified via SHA256. |
+| `POST`   | `/bundles/catalog-check`                     | admin         | Check for newer remote catalog content without replacing local rows. |
 | `POST`   | `/bundles/refresh`                           | admin         | Force-refresh the remote catalog transient. |
 | `GET`    | `/bundles/catalog-meta`                      | admin         | Read local catalog source, hash, and failure diagnostics. |
 | `GET`    | `/starter`                                   | login         | Read the starter-pack runner state.        |
@@ -75,12 +76,9 @@ fresh server read can use the REST endpoint directly.
     "screensaver": {},
     "audioReactive": false,
     "shopTaskbar": false,
-    "shopDesktopPinned": false,
     "iconSet": "",
     "cursorSet": "",
     "cursorStylesheet": "",
-    "theme": "auto",
-    "chaosMode": false,
     "initiated": true,
     "mascotQuiet": false,
     "winkUnlocked": false,
@@ -104,9 +102,8 @@ same endpoint and keeps the localized client state in sync where possible.
 **Content-Type:** `application/json`
 
 Writable keys: `wallpaper`, `scene`, `favorites`, `recents`, `shuffle`,
-`screensaver`, `audioReactive`, `shopTaskbar`, `shopDesktopPinned`, `theme`,
-`chaosMode`, `initiated`, `mascotQuiet`, `winkUnlocked`, `appsPinned`,
-`iconSet`, and `cursorSet`.
+`screensaver`, `audioReactive`, `shopTaskbar`, `initiated`, `mascotQuiet`,
+`winkUnlocked`, `appsPinned`, `iconSet`, and `cursorSet`.
 
 `shopTaskbar` is a compatibility/default mirror. Current clients write the
 actual ODD Shop launcher placement through Desktop Mode's core
@@ -115,7 +112,6 @@ workspace export/import.
 
 ```json
 {
-    "theme": "dark",
     "shuffle": { "enabled": true, "minutes": 30 }
 }
 ```
@@ -423,7 +419,37 @@ reinstalling a newer catalog version over an installed row.
 
 Admin-only diagnostics for the current catalog source, HTTP status, bundle
 count, registry body hash, body byte count, stale/fallback availability, and
-the last fetch failure.
+the last fetch failure. It also includes the latest remote update check fields
+(`remote_update_available`, `remote_registry_sha256`, and `last_update_check`).
+
+### `POST /bundles/catalog-check`
+
+Check the remote registry and compare its verified body hash with the local
+catalog hash. This does not replace local catalog rows or install anything; it
+only updates catalog metadata so the Shop can show a **Refresh catalog** prompt
+when new content is available.
+
+**Auth:** admin
+
+**Body:**
+
+```json
+{ "force": false }
+```
+
+**Response** — `200 OK`:
+
+```json
+{
+    "checked": true,
+    "ok": true,
+    "update_available": true,
+    "local_registry_sha256": "old...",
+    "remote_registry_sha256": "new...",
+    "remote_bundle_count": 33,
+    "meta": { "remote_update_available": true }
+}
+```
 
 ---
 

@@ -144,7 +144,7 @@ diagnostics, reconciliation, and other privileged actions require
 |--------------|--------|-------|
 | `/odd/v1/prefs` | logged-in users with `read` | User-local wallpaper, icon, cursor, Shop, and app-pinned preferences. |
 | `/odd/v1/bundles/catalog` | logged-in users with `read` | Redacts installer-only fields for non-admins. |
-| `/odd/v1/bundles/install-from-catalog`, `/refresh`, `/catalog-meta`, `/catalog-rollback` | admins with `manage_options` | Installs files, refreshes remote state, or exposes catalog diagnostics. |
+| `/odd/v1/bundles/install-from-catalog`, `/catalog-check`, `/refresh`, `/catalog-meta`, `/catalog-rollback` | admins with `manage_options` | Installs files, checks or refreshes remote state, or exposes catalog diagnostics. |
 | `/odd/v1/apps`, `/apps/{slug}`, `/apps/store/*`, `/apps/runtime/errors` | logged-in users with `read` | User-local app listing and app storage. |
 | `/odd/v1/apps/upload`, `/apps/{slug}/toggle`, `/apps/{slug}` DELETE, `/apps/diag/{slug}` | admins with `manage_options` | Mutates app installs or exposes diagnostic filesystem context. |
 | `/odd/v1/apps/serve/{slug}/{path}` | logged-in users with the app capability | Serves confined app bundle files. |

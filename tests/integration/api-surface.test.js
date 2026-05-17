@@ -39,7 +39,6 @@ const NATIVE_GEOMETRY_STORAGE_KEY = 'desktop-mode-native-window-geometry';
 const EXPECTED_SDK_GROUPS = {
 	storage: [ 'get', 'set', 'state', 'subscribe' ],
 	preferences: [ 'get', 'save' ],
-	theme: [ 'choices', 'get', 'set' ],
 	diagnostics: [ 'summary', 'collect', 'collectMarkdown', 'copy', 'metrics' ],
 };
 
@@ -73,7 +72,6 @@ describe( 'window.__odd.api surface', () => {
 				restUrl: '/wp-json/odd/v1/prefs',
 				wallpaper: 'aurora',
 				scene: 'aurora',
-				theme: 'dark',
 				canInstall: true,
 				systemHealth: {
 					desktopMode: { baseline: true, commandScripts: true },
@@ -106,8 +104,8 @@ describe( 'window.__odd.api surface', () => {
 		expect( sdk.storage.get( 'user.wallpaper' ) ).toBe( 'aurora' );
 		expect( sdk.storage.set( { user: { wallpaper: 'flux' } } ) ).toBe( true );
 		expect( sdk.storage.get( 'user.wallpaper' ) ).toBe( 'flux' );
-		expect( sdk.preferences.get().theme ).toBe( 'dark' );
-		expect( sdk.theme.get() ).toBe( 'dark' );
+		expect( sdk.preferences.get().wallpaper ).toBe( 'flux' );
+		expect( sdk.theme ).toBeUndefined();
 		expect( sdk.capabilities().canInstall ).toBe( true );
 		expect( sdk.toast( 'Hello from ODD' ) ).toBe( true );
 		expect( showToast ).toHaveBeenCalledWith( expect.objectContaining( { message: 'Hello from ODD' } ) );

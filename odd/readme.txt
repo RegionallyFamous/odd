@@ -97,7 +97,7 @@ No. ODD does not send telemetry, analytics, license checks, or error reports. It
 
 ODD connects to the public ODD catalog at https://odd.regionallyfamous.com/catalog/v1/. This catalog is used to show items in the ODD Shop and download the wallpapers, icon sets, cursors, widgets, and apps you choose to install.
 
-When an administrator opens or refreshes the ODD Shop, runs the starter pack, installs catalog content, or repairs an installed item, the site makes normal HTTPS requests for static catalog files and assets. Those requests may include normal web request information such as the server IP address, user agent, requested URL, and timestamp.
+When an administrator opens or refreshes the ODD Shop, when WordPress cron checks whether new catalog content is available, when the starter pack runs, when catalog content is installed, or when an installed item is repaired, the site makes normal HTTPS requests for static catalog files and assets. Those requests may include normal web request information such as the server IP address, user agent, requested URL, and timestamp.
 
 ODD does not send site content, user account details, cookies, analytics events, license keys, or diagnostic reports to the catalog service.
 

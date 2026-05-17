@@ -4,7 +4,7 @@
   "label": "Desk Pet Oddling",
   "description": "A tiny Oddling that naps, watches the cursor, and reacts to Desktop Mode window activity.",
   "category": "ODD Originals",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Regionally Famous",
   "entry": "widget.js",
   "css": [

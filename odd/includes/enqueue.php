@@ -412,12 +412,12 @@ add_action(
 		}
 
 		$config = array(
-			'pluginUrl'         => ODDOUT_URL,
-			'version'           => ODDOUT_VERSION,
-			'schemaVersion'     => defined( 'ODDOUT_SCHEMA_VERSION' ) ? ODDOUT_SCHEMA_VERSION : 0,
-			'restUrl'           => esc_url_raw( oddout_https_rest_url( 'odd/v1/prefs' ) ),
-			'restNonce'         => wp_create_nonce( 'wp_rest' ),
-			'catalogBaseUrl'    => function_exists( 'oddout_catalog_base_url' )
+			'pluginUrl'        => ODDOUT_URL,
+			'version'          => ODDOUT_VERSION,
+			'schemaVersion'    => defined( 'ODDOUT_SCHEMA_VERSION' ) ? ODDOUT_SCHEMA_VERSION : 0,
+			'restUrl'          => esc_url_raw( oddout_https_rest_url( 'odd/v1/prefs' ) ),
+			'restNonce'        => wp_create_nonce( 'wp_rest' ),
+			'catalogBaseUrl'   => function_exists( 'oddout_catalog_base_url' )
 				? esc_url_raw( oddout_catalog_base_url() )
 				: '',
 
@@ -425,34 +425,31 @@ add_action(
 			// `sceneMap` is a slug→descriptor dict installed scene.js
 			// bundles read to resolve their `wallpaperUrl` + `previewUrl`
 			// without having to scan `scenes` on every frame.
-			'scenes'            => $scenes,
-			'sceneMap'          => array_column( $scenes, null, 'slug' ),
-			'scene'             => $active_scene,
-			'wallpaper'         => $active_scene,
-			'favorites'         => oddout_wallpaper_get_user_slug_list( $uid, 'oddout_favorites' ),
-			'recents'           => oddout_wallpaper_get_user_slug_list( $uid, 'oddout_recents' ),
-			'shuffle'           => oddout_wallpaper_get_user_shuffle( $uid ),
-			'screensaver'       => oddout_wallpaper_get_user_screensaver( $uid ),
-			'audioReactive'     => oddout_wallpaper_get_user_audio_reactive( $uid ),
-			'shopTaskbar'       => function_exists( 'oddout_shop_taskbar_enabled' ) ? oddout_shop_taskbar_enabled( $uid ) : false,
-			'shopDesktopPinned' => function_exists( 'oddout_shop_desktop_pinned' ) ? oddout_shop_desktop_pinned( $uid ) : false,
-			'shopV2'            => apply_filters( 'oddout_shop_v2', true ),
-			'theme'             => function_exists( 'oddout_shop_get_theme' ) ? oddout_shop_get_theme( $uid ) : 'auto',
-			'chaosMode'         => (bool) get_user_meta( $uid, 'oddout_chaos', true ),
+			'scenes'           => $scenes,
+			'sceneMap'         => array_column( $scenes, null, 'slug' ),
+			'scene'            => $active_scene,
+			'wallpaper'        => $active_scene,
+			'favorites'        => oddout_wallpaper_get_user_slug_list( $uid, 'oddout_favorites' ),
+			'recents'          => oddout_wallpaper_get_user_slug_list( $uid, 'oddout_recents' ),
+			'shuffle'          => oddout_wallpaper_get_user_shuffle( $uid ),
+			'screensaver'      => oddout_wallpaper_get_user_screensaver( $uid ),
+			'audioReactive'    => oddout_wallpaper_get_user_audio_reactive( $uid ),
+			'shopTaskbar'      => function_exists( 'oddout_shop_taskbar_enabled' ) ? oddout_shop_taskbar_enabled( $uid ) : false,
+			'shopV2'           => apply_filters( 'oddout_shop_v2', true ),
 
 			// Iris personality prefs.
-			'initiated'         => (bool) get_user_meta( $uid, 'oddout_initiated', true ),
-			'mascotQuiet'       => (bool) get_user_meta( $uid, 'oddout_mascot_quiet', true ),
-			'winkUnlocked'      => (bool) get_user_meta( $uid, 'oddout_wink_unlocked', true ),
+			'initiated'        => (bool) get_user_meta( $uid, 'oddout_initiated', true ),
+			'mascotQuiet'      => (bool) get_user_meta( $uid, 'oddout_mascot_quiet', true ),
+			'winkUnlocked'     => (bool) get_user_meta( $uid, 'oddout_wink_unlocked', true ),
 
 			// Icons.
-			'iconSets'          => $sets,
-			'iconSet'           => oddout_icons_get_active_slug( $uid ),
+			'iconSets'         => $sets,
+			'iconSet'          => oddout_icons_get_active_slug( $uid ),
 
 			// Cursors.
-			'cursorSets'        => $cursor_sets,
-			'cursorSet'         => oddout_cursors_get_active_slug( $uid ),
-			'cursorStylesheet'  => oddout_cursors_active_stylesheet_url(),
+			'cursorSets'       => $cursor_sets,
+			'cursorSet'        => oddout_cursors_get_active_slug( $uid ),
+			'cursorStylesheet' => oddout_cursors_active_stylesheet_url(),
 
 			// Registries for extension authors. Keys are *only* emitted
 			// when a third-party plugin has actually filtered them to
@@ -469,10 +466,10 @@ add_action(
 			// to pin, and which they've installed themselves. Both
 				// ship only when the apps feature is flag-enabled so the
 				// JS store stays empty when apps are disabled.
-			'appsEnabled'       => $apps_enabled,
-			'apps'              => ( $apps_enabled && $has_ext ) ? oddout_extensions_collect( 'apps' ) : array(),
-			'appServeUrls'      => $app_serve_urls,
-			'userApps'          => array(
+			'appsEnabled'      => $apps_enabled,
+			'apps'             => ( $apps_enabled && $has_ext ) ? oddout_extensions_collect( 'apps' ) : array(),
+			'appServeUrls'     => $app_serve_urls,
+			'userApps'         => array(
 				'installed' => $installed,
 				'pinned'    => (array) get_user_meta( $uid, 'oddout_apps_pinned', true ),
 			),
@@ -481,7 +478,7 @@ add_action(
 			// these to merge user-installed widgets into the catalog
 			// on the Widgets department. Empty when no widgets have
 			// been installed.
-			'installedWidgets'  => function_exists( 'oddout_widgets_index_load' ) ? array_values(
+			'installedWidgets' => function_exists( 'oddout_widgets_index_load' ) ? array_values(
 				array_map(
 					function ( $row ) {
 						return array(
@@ -499,11 +496,11 @@ add_action(
 
 			// Capability flags the Shop UI keys off when deciding
 			// whether to render install affordances.
-			'canInstall'        => current_user_can( 'manage_options' ),
-			'bundlesUploadUrl'  => esc_url_raw( oddout_https_rest_url( 'odd/v1/bundles/upload' ) ),
-			'bundleCatalogUrl'  => esc_url_raw( oddout_https_rest_url( 'odd/v1/bundles/catalog' ) ),
-			'bundleInstallUrl'  => esc_url_raw( oddout_https_rest_url( 'odd/v1/bundles/install-from-catalog' ) ),
-			'systemHealth'      => array(
+			'canInstall'       => current_user_can( 'manage_options' ),
+			'bundlesUploadUrl' => esc_url_raw( oddout_https_rest_url( 'odd/v1/bundles/upload' ) ),
+			'bundleCatalogUrl' => esc_url_raw( oddout_https_rest_url( 'odd/v1/bundles/catalog' ) ),
+			'bundleInstallUrl' => esc_url_raw( oddout_https_rest_url( 'odd/v1/bundles/install-from-catalog' ) ),
+			'systemHealth'     => array(
 				'catalog'     => function_exists( 'oddout_catalog_meta' ) ? oddout_catalog_meta() : array(),
 				'starter'     => function_exists( 'oddout_starter_get_state_for_rest' ) ? oddout_starter_get_state_for_rest() : array(),
 				'apps'        => array(
@@ -548,7 +545,7 @@ add_action(
 			// can render the catalog without a REST round-trip on
 			// first paint. The `installed` flag is annotated so the
 			// "Install" -> "Installed" state is decided server-side.
-			'bundleCatalog'     => function_exists( 'oddout_bundle_catalog' ) ? array(
+			'bundleCatalog'    => function_exists( 'oddout_bundle_catalog' ) ? array(
 				'scene'     => oddout_bundle_catalog_for_type( 'scene' ),
 				'iconSet'   => oddout_bundle_catalog_for_type( 'icon-set' ),
 				'cursorSet' => oddout_bundle_catalog_for_type( 'cursor-set' ),

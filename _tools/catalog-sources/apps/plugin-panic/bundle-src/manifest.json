@@ -4,7 +4,7 @@
 	"slug": "plugin-panic",
 	"name": "Plugin Panic",
 	"label": "Panic",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"author": "Regionally Famous",
 	"description": "A falling-block puzzle where plugin packages stack up, dependency conflicts loom, and every cleared line resolves one more update queue.",
 	"icon": "icon.webp",

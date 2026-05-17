@@ -317,16 +317,39 @@ describe( 'Desktop Mode integration source contracts', () => {
 
 		expect( src ).toMatch( /desktop_mode_register_icon\(\s*'odd'/ );
 		expect( src ).toMatch( /'pinned'\s*=>\s*false/ );
-		expect( src ).toContain( 'oddout_shop_desktop_pinned_position' );
+		expect( src ).toMatch( /'position'\s*=>\s*100/ );
+		expect( src ).not.toContain( 'oddout_shop_desktop_pinned' );
 	} );
 
-	it( 'keeps Shop chrome theme-aware instead of hard-coding the host accent', () => {
+	it( 'keeps app placement sync as a non-fatal Desktop Mode side effect', () => {
+		const src = readRel( 'odd/includes/apps/registry.php' );
+		const seed = src.slice(
+			src.indexOf( 'function oddout_apps_seed_core_item_visibility' ),
+			src.indexOf( 'function oddout_apps_remove_core_item_visibility' )
+		);
+		const remove = src.slice(
+			src.indexOf( 'function oddout_apps_remove_core_item_visibility' ),
+			src.indexOf( 'function oddout_apps_row_surfaces' )
+		);
+
+		for ( const block of [ seed, remove ] ) {
+			expect( block ).toContain( "function_exists( 'desktop_mode_get_os_settings' )" );
+			expect( block ).toContain( "function_exists( 'desktop_mode_save_os_settings' )" );
+			expect( block ).toContain( 'try {' );
+			expect( block ).toContain( 'catch ( Throwable $e )' );
+		}
+		expect( seed ).toContain( "function_exists( 'desktop_mode_default_os_settings' )" );
+	} );
+
+	it( 'keeps Shop chrome dark-only while inheriting the host accent', () => {
 		const css = readRel( 'odd/src/panel/styles.css' );
 
 		expect( css ).toContain( '--odd-desktop-accent' );
 		expect( css ).toContain( '--desktop-mode-accent' );
 		expect( css ).toContain( '--wp-admin-theme-color' );
-		expect( css ).toContain( '--wp-desktop-window-background' );
+		expect( css ).not.toContain( 'data-odd-theme' );
+		expect( css ).not.toContain( 'data-odd-chaos' );
+		expect( css ).not.toContain( '--wp-desktop-window-background' );
 	} );
 
 	it( 'publishes a creator mini-site for Desktop Mode extension authors', () => {

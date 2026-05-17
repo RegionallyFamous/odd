@@ -26,6 +26,7 @@ function oddout_bundle_rate_limit_check( $action ) {
 	$defaults = array(
 		'bundle_upload'          => 10,
 		'bundle_catalog_install' => 10,
+		'bundle_catalog_check'   => 12,
 		'bundle_catalog_refresh' => 6,
 		'starter_retry'          => 3,
 	);

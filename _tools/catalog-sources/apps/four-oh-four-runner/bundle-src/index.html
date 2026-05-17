@@ -11,7 +11,8 @@
 			<header class="topbar">
 				<div class="brand">
 					<span class="brand-mark" aria-hidden="true"></span>
-					<div>
+					<div class="brand-copy">
+						<span class="deck-pill">Permalink sprint</span>
 						<h1 id="app-title">404 Runner</h1>
 						<p id="status-line" class="status-line" aria-live="polite">Run the permalink gauntlet. Find a route home.</p>
 					</div>
@@ -24,21 +25,35 @@
 			</header>
 			<section class="game-layout runner-layout">
 				<div class="canvas-wrap wide">
-					<canvas id="game-canvas" width="900" height="480" aria-label="404 Runner arcade field"></canvas>
+					<div class="stage-shell" aria-label="404 Runner arcade field">
+						<div class="stage-glow" aria-hidden="true"></div>
+						<div class="stage-meter" aria-hidden="true"><span id="route-meter"></span></div>
+						<canvas id="game-canvas" width="960" height="540"></canvas>
+					</div>
 				</div>
 				<aside class="side-panel">
-					<div class="sprite-card" aria-hidden="true"></div>
-					<div class="mini-card">
-						<p class="panel-label">Route status</p>
-						<p id="route-line" class="readout">Temporary redirect detected.</p>
+					<div class="console-cap" aria-hidden="true">
+						<span>Route Deck</span>
+						<i></i>
 					</div>
-					<div class="button-grid runner-buttons">
-						<button type="button" data-action="jump">Jump</button>
-						<button type="button" data-action="duck">Duck</button>
-						<button type="button" data-action="pause">Pause</button>
+					<div class="route-card">
+						<div class="runner-portrait" aria-hidden="true"></div>
+						<div class="route-card__body">
+							<p class="panel-label">Route signal</p>
+							<p id="route-line" class="readout">Temporary redirect detected.</p>
+							<div class="signal-bars" aria-hidden="true">
+								<span></span><span></span><span></span><span></span><span></span>
+							</div>
+						</div>
 					</div>
-					<button id="reset-button" class="primary-button" type="button">New Route</button>
-					<p class="help-text">Keys: Space or Up jumps, Down ducks, P pauses.</p>
+					<div class="control-deck">
+						<div class="button-grid runner-buttons">
+							<button type="button" data-action="jump" aria-label="Jump">Jump</button>
+							<button type="button" data-action="duck" aria-label="Duck">Duck</button>
+							<button type="button" data-action="pause" aria-label="Pause">Pause</button>
+						</div>
+						<button id="reset-button" class="primary-button" type="button">New Route</button>
+					</div>
 				</aside>
 			</section>
 		</main>

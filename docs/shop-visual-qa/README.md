@@ -1,6 +1,6 @@
 # ODD Shop Visual QA
 
-The Luxe + Weird overhaul is checked at these breakpoints in both light and dark themes:
+The Luxe + Weird overhaul is checked at these breakpoints in the dark-only Shop chrome:
 
 - 420 x 520: native-window minimum width stress case.
 - 480 x 820: narrow portrait stress case.
@@ -13,8 +13,8 @@ The Luxe + Weird overhaul is checked at these breakpoints in both light and dark
 Acceptance notes:
 
 - Topbar search, rail, hero, editorial strip, cards, Settings, overlays, and flow toasts must fit without horizontal overflow.
-- Dark mode must flip every chrome and secondary surface while keeping ODD tints as accents.
-- Reduced-motion mode must disable live hero motion, card tilt, chaos cast, and looping hero flourishes.
+- Dark tokens must cover every chrome and secondary surface while keeping ODD tints as accents.
+- Reduced-motion mode must disable live hero motion, card tilt, and looping hero flourishes.
 - Focus rings must remain visible and unclipped on rail items, cards, buttons, and Settings controls.
 
-Screenshots should be captured before release and named `<theme>-<width>x<height>-<department>.png`.
+Screenshots should be captured before release and named `dark-<width>x<height>-<department>.png`.

@@ -89,10 +89,9 @@ add_action(
 				'title'    => __( 'ODD', 'odd-outlandish-desktop-decorator' ),
 				'icon'     => $icon_url,
 				'window'   => 'odd',
-				'position' => oddout_shop_desktop_pinned_position( $uid ),
+				'position' => 100,
 				// Desktop Mode `pinned` means a system-owned shortcut that
-				// skips user context menus. ODD's preference only controls
-				// whether the shop shortcut is promoted near the top.
+				// skips user context menus; ODD stays user-movable.
 				'pinned'   => false,
 			)
 		);
@@ -371,37 +370,4 @@ function oddout_shop_set_taskbar_enabled( $uid, $enabled ) {
 	update_user_meta( $uid, 'oddout_shop_taskbar', $enabled ? 1 : 0 );
 	oddout_shop_set_core_taskbar_enabled( $uid, $enabled );
 	return oddout_shop_taskbar_enabled( $uid );
-}
-
-/**
- * Desktop wallpaper shortcut: pin beside My WordPress (Desktop Mode ≥0.8 files layer).
- *
- * @param int $uid User ID.
- * @return bool
- */
-function oddout_shop_desktop_pinned( $uid = 0 ) {
-	$uid = $uid ? (int) $uid : get_current_user_id();
-	if ( $uid <= 0 ) {
-		return false;
-	}
-	return (bool) get_user_meta( $uid, 'oddout_shop_desktop_pinned', true );
-}
-
-function oddout_shop_set_desktop_pinned( $uid, $enabled ) {
-	$uid = (int) $uid;
-	if ( $uid <= 0 ) {
-		return false;
-	}
-	update_user_meta( $uid, 'oddout_shop_desktop_pinned', $enabled ? 1 : 0 );
-	return oddout_shop_desktop_pinned( $uid );
-}
-
-/**
- * Pinned launcher spots use `-1`; free icons keep a late sort slot.
- *
- * @param int $uid User ID.
- * @return int
- */
-function oddout_shop_desktop_pinned_position( $uid = 0 ) {
-	return oddout_shop_desktop_pinned( $uid ) ? -2 : 100;
 }

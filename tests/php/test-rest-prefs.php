@@ -39,9 +39,6 @@ class Test_REST_Prefs extends ODDOUT_REST_Test_Case {
 				'screensaver',
 				'audioReactive',
 				'shopTaskbar',
-				'shopDesktopPinned',
-				'theme',
-				'chaosMode',
 				'iconSet',
 				'scenes',
 				'sets',
@@ -68,9 +65,6 @@ class Test_REST_Prefs extends ODDOUT_REST_Test_Case {
 		$this->assertArrayHasKey( 'minutes', $data['screensaver'] );
 		$this->assertArrayHasKey( 'scene', $data['screensaver'] );
 		$this->assertTrue( $data['shopTaskbar'] );
-		$this->assertFalse( $data['shopDesktopPinned'] );
-		$this->assertSame( 'auto', $data['theme'] );
-		$this->assertFalse( $data['chaosMode'] );
 	}
 
 	public function test_post_accepts_valid_wallpaper() {
@@ -172,41 +166,6 @@ class Test_REST_Prefs extends ODDOUT_REST_Test_Case {
 		$this->assertSame( 200, $res->get_status() );
 		$this->assertFalse( $res->get_data()['shopTaskbar'] );
 		$this->assertSame( '0', get_user_meta( $this->admin_id, 'oddout_shop_taskbar', true ) );
-	}
-
-	public function test_post_updates_shop_desktop_pinned_preference() {
-		$this->login_as();
-
-		$res = $this->dispatch_json( 'POST', '/odd/v1/prefs', array( 'shopDesktopPinned' => true ) );
-		$this->assertSame( 200, $res->get_status() );
-		$this->assertTrue( $res->get_data()['shopDesktopPinned'] );
-		$this->assertSame( '1', get_user_meta( $this->admin_id, 'oddout_shop_desktop_pinned', true ) );
-
-		$res = $this->dispatch_json( 'POST', '/odd/v1/prefs', array( 'shopDesktopPinned' => false ) );
-		$this->assertSame( 200, $res->get_status() );
-		$this->assertFalse( $res->get_data()['shopDesktopPinned'] );
-		$this->assertSame( '0', get_user_meta( $this->admin_id, 'oddout_shop_desktop_pinned', true ) );
-	}
-
-	public function test_post_round_trips_shop_theme_preference() {
-		$this->login_as();
-
-		$res = $this->dispatch_json( 'POST', '/odd/v1/prefs', array( 'theme' => 'dark' ) );
-		$this->assertSame( 200, $res->get_status() );
-		$this->assertSame( 'dark', $res->get_data()['theme'] );
-		$this->assertSame( 'dark', get_user_meta( $this->admin_id, 'oddout_shop_theme', true ) );
-
-		$res = $this->dispatch_json( 'GET', '/odd/v1/prefs' );
-		$this->assertSame( 200, $res->get_status() );
-		$this->assertSame( 'dark', $res->get_data()['theme'] );
-	}
-
-	public function test_post_rejects_invalid_shop_theme_preference() {
-		$this->login_as();
-
-		$res = $this->dispatch_json( 'POST', '/odd/v1/prefs', array( 'theme' => 'sepia' ) );
-		$this->assertSame( 400, $res->get_status() );
-		$this->assertSame( 'oddout_invalid_theme', $res->get_data()['code'] );
 	}
 
 	public function test_post_caps_favorites_at_50() {

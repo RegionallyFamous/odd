@@ -170,6 +170,12 @@ oddout_catalog_install_entry( $row ); // download_url() + SHA256 + catalog/manif
 | `ODDOUT_CATALOG_URL`    | `https://odd.regionallyfamous.com/catalog/v1/registry.json` | `oddout_catalog_url` filter |
 | `oddout_catalog` transient | 12 hours                                                 | `delete_transient('oddout_catalog')` or `POST /odd/v1/bundles/refresh` |
 
+ODD also runs a lightweight update check against the signed remote registry.
+That check stores only comparison metadata (`remote_update_available` and the
+remote registry hash); it does not replace local catalog rows. The Shop uses it
+to tell admins when to press **Refresh catalog**, and WP-Cron repeats the check
+twice daily when WordPress cron is available.
+
 Downloads are HTTPS-only by default; SHA256 is compared against the
 registry entry before extraction, and the downloaded archive manifest
 must match the catalog row's `slug` and `type`. A mismatch aborts the

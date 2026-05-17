@@ -136,17 +136,6 @@
 			return url;
 		}
 
-		function normaliseShopTheme( value ) {
-			value = String( value || 'auto' ).toLowerCase();
-			return value === 'light' || value === 'dark' || value === 'auto' ? value : 'auto';
-		}
-
-		function applyShopTheme( target, theme ) {
-			theme = normaliseShopTheme( theme );
-			target.setAttribute( 'data-odd-theme', theme );
-			return theme;
-		}
-
 		function shopGlyph( id, label ) {
 			var svg = document.createElementNS( 'http://www.w3.org/2000/svg', 'svg' );
 			svg.setAttribute( 'class', 'odd-shop__rail-icon' );
@@ -164,8 +153,6 @@
 		injectStyles();
 		body.classList.add( 'odd-panel', 'odd-shop' );
 		body.setAttribute( 'data-odd-shop-v2', ( ! window.odd || window.odd.shopV2 !== false ) ? '1' : '0' );
-		body.setAttribute( 'data-odd-chaos', window.odd && window.odd.chaosMode ? '1' : '0' );
-		applyShopTheme( body, window.odd && window.odd.theme );
 		body.style.cssText = [
 			'display:grid',
 			'grid-template-rows:auto 1fr',
@@ -374,6 +361,7 @@
 			sortMode:      'featured',
 			shopSounds:    loadShopSoundsSetting(),
 			widgetHookNames: null,
+			catalogUpdateCheck: { checked: false, pending: false, disposed: false },
 			// When set, the Shop scheduled a full admin reload fallback.
 			// Catalog tiles show "Applying..." for the matching slug.
 			pendingAdminReload: null,
@@ -394,9 +382,6 @@
 		];
 		state.cfg.shopV2 = state.cfg.shopV2 !== false;
 		body.setAttribute( 'data-odd-shop-v2', state.cfg.shopV2 ? '1' : '0' );
-		state.cfg.theme = normaliseShopTheme( state.cfg.theme );
-		applyShopTheme( body, state.cfg.theme );
-		body.setAttribute( 'data-odd-chaos', state.cfg.chaosMode ? '1' : '0' );
 		var shopRowCache = {};
 		var buttons = {};
 		var productSheetClose = null;
@@ -1072,7 +1057,6 @@
 			if ( cfg.wallpaper || cfg.scene ) active++;
 			if ( cfg.iconSet && cfg.iconSet !== 'none' ) active++;
 			if ( cfg.cursorSet && cfg.cursorSet !== 'none' ) active++;
-			if ( cfg.shopDesktopPinned ) active++;
 			return installed + ' ' + __( 'installed' ) + ' · ' + active + ' ' + __( 'active' );
 		}
 
@@ -1138,7 +1122,7 @@
 		body.appendChild( content );
 		if ( window.__odd && window.__odd.shopCast && typeof window.__odd.shopCast.run === 'function' ) {
 			window.__odd.shopCast.run( body, {
-				chaos: !! state.cfg.chaosMode,
+				chaos: false,
 				pluginUrl: state.cfg.pluginUrl || '',
 			} );
 		}
@@ -1160,12 +1144,14 @@
 		}
 
 		renderSection( state.active );
+		maybeCheckCatalogUpdates();
 		stopPanelTimer( {
 			sections: SECTIONS.length,
 			cards:    content.querySelectorAll ? content.querySelectorAll( '[data-odd-shop-card]' ).length : 0,
 		} );
 
 		return function teardown() {
+			state.catalogUpdateCheck.disposed = true;
 			clearPendingAdminReload();
 			clearShopFlowToast();
 			body.classList.remove( 'odd-panel', 'odd-shop' );
@@ -2851,7 +2837,7 @@
 			if ( Object.prototype.hasOwnProperty.call( source, 'cursorStylesheet' ) ) {
 				state.cfg.cursorStylesheet = source.cursorStylesheet || '';
 			}
-			[ 'favorites', 'recents', 'shuffle', 'screensaver', 'audioReactive', 'shopTaskbar', 'shopDesktopPinned', 'theme', 'chaosMode' ].forEach( function ( key ) {
+			[ 'favorites', 'recents', 'shuffle', 'screensaver', 'audioReactive', 'shopTaskbar' ].forEach( function ( key ) {
 				if ( Object.prototype.hasOwnProperty.call( source, key ) ) state.cfg[ key ] = source[ key ];
 			} );
 			if ( Object.prototype.hasOwnProperty.call( source, 'appsPinned' ) ) {
@@ -2859,7 +2845,7 @@
 				state.cfg.userApps.pinned = Array.isArray( source.appsPinned ) ? source.appsPinned.slice() : [];
 			}
 			if ( window.odd && typeof window.odd === 'object' ) {
-				[ 'wallpaper', 'scene', 'iconSet', 'cursorSet', 'cursorStylesheet', 'shuffle', 'screensaver', 'audioReactive', 'shopTaskbar', 'shopDesktopPinned', 'theme', 'chaosMode' ].forEach( function ( key ) {
+				[ 'wallpaper', 'scene', 'iconSet', 'cursorSet', 'cursorStylesheet', 'shuffle', 'screensaver', 'audioReactive', 'shopTaskbar' ].forEach( function ( key ) {
 					if ( Object.prototype.hasOwnProperty.call( state.cfg, key ) ) window.odd[ key ] = state.cfg[ key ];
 				} );
 				if ( state.cfg.userApps ) window.odd.userApps = clone( state.cfg.userApps );
@@ -3460,144 +3446,20 @@
 		}
 
 		/**
-		 * Dedicated Settings department — Shuffle + Audio-reactive +
-		 * Screensaver used to sit on top of the Wallpapers shelf,
-		 * which cluttered scene browsing and hid preferences behind a
-		 * department that wasn't really about preferences. They all
-		 * live here now. All three continue to write through the same
-		 * /odd/v1/prefs endpoint (`shuffle`, `audioReactive`,
-		 * `screensaver`), so the REST contract is unchanged.
+		 * Dedicated Settings department.
+		 *
+		 * Keep this intentionally tiny: placement belongs to Desktop Mode,
+		 * and the only Shop-local preference is whether the panel chirps.
 		 */
 		function renderSettings() {
 			var wrap = el( 'div', { class: 'odd-shop__dept odd-shop__dept--settings' } );
 			wrap.appendChild( sectionHeader(
 				'Settings',
-				'Tune the desktop creature: rotate scenes, let sound wake the wallpaper, or dim everything into screensaver mode when you step away.',
+				'Two small switches for how ODD lives in Desktop Mode.',
 				{ eyebrow: 'ODD · Preferences' }
 			) );
-			wrap.appendChild( renderSystemHealth() );
 
-			var settings = el( 'div', { class: 'odd-wallpaper-settings' } );
-
-			var themeCard = el( 'div', { class: 'odd-setting-card odd-setting-card--appearance' } );
-			var themeRow = el( 'div', { class: 'odd-switch-row odd-switch-row--static' } );
-			var themeIcon = el( 'span', { class: 'odd-setting-card__icon', 'aria-hidden': 'true' } );
-			themeIcon.textContent = '◐';
-			var themeText = el( 'span', { class: 'odd-setting-card__text' } );
-			var themeLbl = el( 'strong' );
-			themeLbl.textContent = __( 'Appearance' );
-			var themeHint = el( 'span' );
-			themeHint.textContent = __( 'Choose sunny, midnight, or let your system steer.' );
-			themeText.appendChild( themeLbl );
-			themeText.appendChild( themeHint );
-			themeRow.appendChild( themeIcon );
-			themeRow.appendChild( themeText );
-			var themeControls = el( 'div', { class: 'odd-setting-card__controls odd-setting-card__controls--appearance' } );
-			var themeField = el( 'label', { class: 'odd-setting-field' } );
-			var themeFieldLabel = el( 'span' );
-			themeFieldLabel.textContent = __( 'Theme' );
-			var themeSelect = el( 'select', { class: 'odd-select', 'aria-label': __( 'ODD Shop theme' ) } );
-			[
-				{ value: 'auto',  label: __( 'Auto' ) },
-				{ value: 'light', label: __( 'Light' ) },
-				{ value: 'dark',  label: __( 'Dark' ) },
-			].forEach( function ( opt ) {
-				var o = el( 'option', { value: opt.value } );
-				o.textContent = opt.label;
-				themeSelect.appendChild( o );
-			} );
-			themeSelect.value = normaliseShopTheme( state.cfg.theme );
-			themeField.appendChild( themeFieldLabel );
-			themeField.appendChild( themeSelect );
-			themeControls.appendChild( themeField );
-			themeCard.appendChild( themeRow );
-			themeCard.appendChild( themeControls );
-			settings.appendChild( themeCard );
-			themeSelect.addEventListener( 'change', function () {
-				var nextTheme = normaliseShopTheme( themeSelect.value );
-				applyShopTheme( body, nextTheme );
-				savePrefs( { theme: nextTheme }, function ( data ) {
-					state.cfg.theme = normaliseShopTheme( data && data.theme ? data.theme : nextTheme );
-					themeSelect.value = state.cfg.theme;
-					applyShopTheme( body, state.cfg.theme );
-				} );
-			} );
-
-			// Shuffle — rotates the wallpaper every N minutes while
-			// the desktop window is open. `state.cfg.shuffle` is the
-			// committed value from REST; we mirror writes back onto
-			// it so a re-render stays in sync.
-			var shuffleCard = el( 'div', { class: 'odd-setting-card odd-setting-card--shuffle' } );
-			var shuffleRow = el( 'label', { class: 'odd-switch-row' } );
-			var shuffleBox = el( 'input', { type: 'checkbox' } );
-			shuffleBox.checked = !! ( state.cfg.shuffle && state.cfg.shuffle.enabled );
-			var shuffleKnob = el( 'span', { class: 'odd-switch' } );
-			var shuffleText = el( 'span', { class: 'odd-setting-card__text' } );
-			var shuffleLabel = el( 'strong' );
-			shuffleLabel.textContent = __( 'Shuffle every' );
-			var shuffleHint = el( 'span' );
-			shuffleHint.textContent = __( 'Let the wallpaper wander while the desktop is open.' );
-			shuffleText.appendChild( shuffleLabel );
-			shuffleText.appendChild( shuffleHint );
-			var minutes = el( 'input', {
-				type:         'number',
-				min:          '1',
-				max:          '240',
-				class:        'odd-minutes',
-				'aria-label': __( 'Shuffle interval (minutes)' ),
-			} );
-			minutes.value = String( ( state.cfg.shuffle && state.cfg.shuffle.minutes ) || 15 );
-			var shuffleControls = el( 'div', { class: 'odd-setting-card__controls' } );
-			var minutesPrefix = el( 'span' );
-			minutesPrefix.textContent = __( 'Every' );
-			var minutesSuffix = el( 'span' );
-			minutesSuffix.textContent = __( 'minutes' );
-			shuffleRow.appendChild( shuffleBox );
-			shuffleRow.appendChild( shuffleKnob );
-			shuffleRow.appendChild( shuffleText );
-			shuffleControls.appendChild( minutesPrefix );
-			shuffleControls.appendChild( minutes );
-			shuffleControls.appendChild( minutesSuffix );
-			shuffleCard.appendChild( shuffleRow );
-			shuffleCard.appendChild( shuffleControls );
-			settings.appendChild( shuffleCard );
-
-			function pushShuffle() {
-				var m = parseInt( minutes.value, 10 );
-				if ( isNaN( m ) ) { m = 15; }
-				if ( m < 1 ) m = 1;
-				if ( m > 240 ) m = 240;
-				minutes.value = String( m );
-				savePrefs( { shuffle: { enabled: shuffleBox.checked, minutes: m } }, function ( data ) {
-					if ( data && data.shuffle ) state.cfg.shuffle = data.shuffle;
-				} );
-			}
-			shuffleBox.addEventListener( 'change', pushShuffle );
-			minutes.addEventListener( 'change', pushShuffle );
-
-			// Audio-reactive — opt-in hook that lets scenes sample
-			// the system audio analyser in tick(). Off by default
-			// because mic/tab capture requires a user gesture.
-			var audioRow = el( 'label', { class: 'odd-setting-card odd-setting-card--audio odd-switch-row' } );
-			var audioBox = el( 'input', { type: 'checkbox' } );
-			audioBox.checked = !! state.cfg.audioReactive;
-			var audioKnob = el( 'span', { class: 'odd-switch' } );
-			var audioText = el( 'span', { class: 'odd-setting-card__text' } );
-			var audioLbl = el( 'strong' );
-			audioLbl.textContent = __( 'Audio-reactive' );
-			var audioHint = el( 'span' );
-			audioHint.textContent = __( 'Let supported scenes pulse along with nearby sound.' );
-			audioText.appendChild( audioLbl );
-			audioText.appendChild( audioHint );
-			audioRow.appendChild( audioBox );
-			audioRow.appendChild( audioKnob );
-			audioRow.appendChild( audioText );
-			settings.appendChild( audioRow );
-			audioBox.addEventListener( 'change', function () {
-				savePrefs( { audioReactive: audioBox.checked }, function ( data ) {
-					if ( data ) state.cfg.audioReactive = !! data.audioReactive;
-				} );
-			} );
+			var settings = el( 'div', { class: 'odd-wallpaper-settings odd-wallpaper-settings--compact' } );
 
 			// Shop sound effects — local browser preference for the
 			// tiny UI chimes generated by this panel. It intentionally
@@ -3608,7 +3470,7 @@
 			var sfxKnob = el( 'span', { class: 'odd-switch' } );
 			var sfxText = el( 'span', { class: 'odd-setting-card__text' } );
 			var sfxLbl = el( 'strong' );
-			sfxLbl.textContent = __( 'Shop sound effects' );
+			sfxLbl.textContent = __( 'Sound effects' );
 			var sfxHint = el( 'span' );
 			sfxHint.textContent = __( 'Play tiny clicks and velvet chimes while browsing.' );
 			sfxText.appendChild( sfxLbl );
@@ -3622,350 +3484,57 @@
 				if ( sfxBox.checked ) playShopSound( 'success' );
 			} );
 
-			var chaosRow = el( 'label', { class: 'odd-setting-card odd-setting-card--chaos odd-switch-row' } );
-			var chaosBox = el( 'input', { type: 'checkbox' } );
-			chaosBox.checked = !! state.cfg.chaosMode;
-			var chaosKnob = el( 'span', { class: 'odd-switch' } );
-			var chaosText = el( 'span', { class: 'odd-setting-card__text' } );
-			var chaosLbl = el( 'strong' );
-			chaosLbl.textContent = __( 'Chaos mode' );
-			var chaosHint = el( 'span' );
-			chaosHint.textContent = __( 'Turn up the color and invite more Oddlings into the aisles.' );
-			chaosText.appendChild( chaosLbl );
-			chaosText.appendChild( chaosHint );
-			chaosRow.appendChild( chaosBox );
-			chaosRow.appendChild( chaosKnob );
-			chaosRow.appendChild( chaosText );
-			settings.appendChild( chaosRow );
-			chaosBox.addEventListener( 'change', function () {
-				body.setAttribute( 'data-odd-chaos', chaosBox.checked ? '1' : '0' );
-				savePrefs( { chaosMode: chaosBox.checked }, function ( data ) {
-					state.cfg.chaosMode = !! ( data && data.chaosMode );
-					body.setAttribute( 'data-odd-chaos', state.cfg.chaosMode ? '1' : '0' );
-					if ( state.cfg.chaosMode && window.__odd && window.__odd.shopCast ) {
-						window.__odd.shopCast.run( body, { chaos: true, pluginUrl: state.cfg.pluginUrl || '' } );
-					}
-				} );
-			} );
-
-				// ODD Shop taskbar launcher. Desktop Mode owns live placement
-				// through itemVisibility. The ODD preference is kept as a
-				// compatibility/default mirror for older hosts and workspaces.
-				var dockRow = el( 'label', { class: 'odd-setting-card odd-setting-card--shop-taskbar odd-switch-row' } );
-				var dockBox = el( 'input', { type: 'checkbox' } );
-				dockBox.checked = readShopTaskbarState();
+			// ODD Shop taskbar launcher. Desktop Mode owns live placement
+			// through itemVisibility; the ODD preference is a server-side
+			// default mirror for hosts that cannot write OS settings.
+			var dockRow = el( 'label', { class: 'odd-setting-card odd-setting-card--shop-taskbar odd-switch-row' } );
+			var dockBox = el( 'input', { type: 'checkbox' } );
+			dockBox.checked = readShopTaskbarState();
 			var dockKnob = el( 'span', { class: 'odd-switch' } );
 			var dockText = el( 'span', { class: 'odd-setting-card__text' } );
 			var dockLbl = el( 'strong' );
-			dockLbl.textContent = __( 'Show ODD in Taskbar' );
+			dockLbl.textContent = __( 'Keep in taskbar' );
 			var dockHint = el( 'span' );
 			dockHint.textContent = __( 'Keep a quick ODD Shop portal in the Desktop Mode taskbar.' );
 			dockText.appendChild( dockLbl );
 			dockText.appendChild( dockHint );
 			dockRow.appendChild( dockBox );
 			dockRow.appendChild( dockKnob );
-				dockRow.appendChild( dockText );
-				settings.appendChild( dockRow );
-				dockBox.addEventListener( 'change', function () {
-					var nextTaskbar = !! dockBox.checked;
-					writeCoreShopTaskbarState( nextTaskbar ).then( function ( coreSaved ) {
-						if ( coreSaved ) {
-							state.cfg.shopTaskbar = nextTaskbar;
-							savePrefs( { shopTaskbar: nextTaskbar }, function ( data ) {
-								if ( data && Object.prototype.hasOwnProperty.call( data, 'shopTaskbar' ) ) {
-									state.cfg.shopTaskbar = !! data.shopTaskbar;
-									dockBox.checked = state.cfg.shopTaskbar;
-								}
-							} );
-							toast( __( 'Updated ODD taskbar setting.' ) );
-							return;
-						}
+			dockRow.appendChild( dockText );
+			settings.appendChild( dockRow );
+			dockBox.addEventListener( 'change', function () {
+				var nextTaskbar = !! dockBox.checked;
+				writeCoreShopTaskbarState( nextTaskbar ).then( function ( coreSaved ) {
+					if ( coreSaved ) {
+						state.cfg.shopTaskbar = nextTaskbar;
 						savePrefs( { shopTaskbar: nextTaskbar }, function ( data ) {
 							if ( data && Object.prototype.hasOwnProperty.call( data, 'shopTaskbar' ) ) {
 								state.cfg.shopTaskbar = !! data.shopTaskbar;
 								dockBox.checked = state.cfg.shopTaskbar;
 							}
-							scheduleAdminReload( {
-								delayMs: ODD_RELOAD_DELAY_MS_NATIVE_SURFACE,
-								slug: 'odd',
-								type: 'setting',
-								name: 'ODD taskbar setting',
-								toastMessage: __( 'Reloading Desktop Mode to update ODD taskbar setting…' ),
-							} );
+						} );
+						toast( __( 'Updated ODD taskbar setting.' ) );
+						return;
+					}
+					savePrefs( { shopTaskbar: nextTaskbar }, function ( data ) {
+						if ( data && Object.prototype.hasOwnProperty.call( data, 'shopTaskbar' ) ) {
+							state.cfg.shopTaskbar = !! data.shopTaskbar;
+							dockBox.checked = state.cfg.shopTaskbar;
+						}
+						scheduleAdminReload( {
+							delayMs: ODD_RELOAD_DELAY_MS_NATIVE_SURFACE,
+							slug: 'odd',
+							type: 'setting',
+							name: 'ODD taskbar setting',
+							toastMessage: __( 'Reloading Desktop Mode to update ODD taskbar setting…' ),
 						} );
 					} );
 				} );
-
-			var pinRow = el( 'label', { class: 'odd-setting-card odd-setting-card--shop-desktop-pin odd-switch-row' } );
-			var pinBox = el( 'input', { type: 'checkbox' } );
-			pinBox.checked = !! state.cfg.shopDesktopPinned;
-			var pinKnob = el( 'span', { class: 'odd-switch' } );
-			var pinText = el( 'span', { class: 'odd-setting-card__text' } );
-			var pinLbl = el( 'strong' );
-			pinLbl.textContent = __( 'Pin ODD to desktop wallpaper' );
-			var pinHint = el( 'span' );
-			pinHint.textContent = __( 'Keep the ODD Shop shortcut near the top of Desktop Mode\'s icon grid.' );
-			pinText.appendChild( pinLbl );
-			pinText.appendChild( pinHint );
-			pinRow.appendChild( pinBox );
-			pinRow.appendChild( pinKnob );
-			pinRow.appendChild( pinText );
-			settings.appendChild( pinRow );
-			pinBox.addEventListener( 'change', function () {
-				savePrefs( { shopDesktopPinned: pinBox.checked }, function ( data ) {
-					if ( data && Object.prototype.hasOwnProperty.call( data, 'shopDesktopPinned' ) ) {
-						state.cfg.shopDesktopPinned = !! data.shopDesktopPinned;
-					}
-					refreshDesktopModeMenu( 'settings.shopDesktopPinned' ).then( function () {
-						toast( __( 'Updated ODD wallpaper shortcut.' ) );
-					} );
-				} );
 			} );
 
-			// Screensaver — dims into a full-screen scene after N
-			// minutes of admin idleness. The scene selector reads
-			// the current scene list off state.cfg.scenes so it
-			// always reflects whatever is installed.
-			var ss = state.cfg.screensaver || { enabled: false, minutes: 5, scene: 'current' };
-			var ssRow = el( 'div', { class: 'odd-setting-card odd-setting-card--screensaver' } );
-
-			var ssToggle = el( 'label', { class: 'odd-switch-row' } );
-			var ssBox = el( 'input', { type: 'checkbox' } );
-			ssBox.checked = !! ss.enabled;
-			var ssKnob = el( 'span', { class: 'odd-switch' } );
-			var ssText = el( 'span', { class: 'odd-setting-card__text' } );
-			var ssLbl = el( 'strong' );
-			ssLbl.textContent = __( 'Screensaver after' );
-			var ssHint = el( 'span' );
-			ssHint.textContent = __( 'Let the desktop drift into a full-screen scene while you are away.' );
-			ssText.appendChild( ssLbl );
-			ssText.appendChild( ssHint );
-			var ssControls = el( 'div', { class: 'odd-setting-card__controls odd-setting-card__controls--screensaver' } );
-			var ssMins = el( 'input', {
-				type:         'number',
-				min:          '1',
-				max:          '120',
-				class:        'odd-minutes',
-				'aria-label': __( 'Screensaver idle timeout (minutes)' ),
-			} );
-			ssMins.value = String( Math.max( 1, Math.min( 120, ( ss.minutes | 0 ) || 5 ) ) );
-			var ssMinsLbl = el( 'span' );
-			ssMinsLbl.textContent = __( 'minutes idle' );
-			ssToggle.appendChild( ssBox );
-			ssToggle.appendChild( ssKnob );
-			ssToggle.appendChild( ssText );
-			ssRow.appendChild( ssToggle );
-			ssControls.appendChild( ssMins );
-			ssControls.appendChild( ssMinsLbl );
-
-			var ssSceneWrap = el( 'label', { class: 'odd-setting-field' } );
-			var ssSceneLbl = el( 'span' );
-			ssSceneLbl.textContent = __( 'Play' );
-			var ssSceneSel = el( 'select', { class: 'odd-select' } );
-			var ssChoices = [
-				{ value: 'current', label: __( 'current scene' ) },
-				{ value: 'random',  label: __( 'a random scene' ) },
-			];
-			( state.cfg.scenes || [] ).forEach( function ( s ) {
-				ssChoices.push( { value: s.slug, label: s.label || s.slug } );
-			} );
-			ssChoices.forEach( function ( opt ) {
-				var o = el( 'option', { value: opt.value } );
-				o.textContent = opt.label;
-				ssSceneSel.appendChild( o );
-			} );
-			ssSceneSel.value = ss.scene || 'current';
-			ssSceneWrap.appendChild( ssSceneLbl );
-			ssSceneWrap.appendChild( ssSceneSel );
-			ssControls.appendChild( ssSceneWrap );
-
-			var ssPreview = el( 'button', { type: 'button', class: 'odd-apps-btn odd-apps-btn--pill odd-setting-preview' } );
-			ssPreview.textContent = __( 'Preview' );
-			ssPreview.addEventListener( 'click', function () {
-				var ssApi = window.__odd && window.__odd.screensaver;
-				if ( ssApi && typeof ssApi.show === 'function' ) ssApi.show();
-			} );
-			ssControls.appendChild( ssPreview );
-			ssRow.appendChild( ssControls );
-
-			function pushScreensaver() {
-				var m = parseInt( ssMins.value, 10 );
-				if ( isNaN( m ) ) m = 5;
-				if ( m < 1 ) m = 1;
-				if ( m > 120 ) m = 120;
-				ssMins.value = String( m );
-				var patch = {
-					screensaver: {
-						enabled: ssBox.checked,
-						minutes: m,
-						scene:   ssSceneSel.value || 'current',
-					},
-				};
-				savePrefs( patch, function ( data ) {
-					if ( data && data.screensaver ) {
-						state.cfg.screensaver = data.screensaver;
-						var ssApi = window.__odd && window.__odd.screensaver;
-						if ( ssApi && typeof ssApi.applyPrefs === 'function' ) ssApi.applyPrefs( data.screensaver );
-						var events = window.__odd && window.__odd.events;
-						if ( events ) { try { events.emit( 'odd.screensaver-prefs-changed', data.screensaver ); } catch ( e ) {} }
-					}
-				} );
-			}
-			ssBox.addEventListener( 'change', pushScreensaver );
-			ssMins.addEventListener( 'change', pushScreensaver );
-			ssSceneSel.addEventListener( 'change', pushScreensaver );
-
-			settings.appendChild( ssRow );
 			wrap.appendChild( settings );
 
 			return wrap;
-		}
-
-		function renderSystemHealth() {
-			var health = state.cfg.systemHealth || {};
-			var catalog = health.catalog || {};
-			var starter = health.starter || {};
-			var apps = health.apps || {};
-			var source = catalog.source || 'unknown';
-			var sig = catalog.signature_status || 'unknown';
-			var badSig = catalogSignatureIsBad( sig );
-			var warning = source === 'fallback_file' || source === 'stale_option' || source === 'empty' || !! catalog.last_error_message || badSig;
-			var effectiveCount = catalog.effective_bundle_count || catalog.bundle_count || 0;
-			var rawCount = catalog.raw_bundle_count || effectiveCount;
-
-			var strip = el( 'section', {
-				class: 'odd-shop__health odd-shop__catalog-dashboard' + ( warning ? ' is-warning' : ' is-ok' ),
-				'aria-label': __( 'Catalog integrity status' ),
-			} );
-			var body = el( 'div', { class: 'odd-shop__health-body' } );
-			var header = el( 'div', { class: 'odd-shop__health-header' } );
-			var copy = el( 'div', { class: 'odd-shop__health-copy' } );
-			var eyebrow = el( 'span', { class: 'odd-shop__health-eyebrow' } );
-			eyebrow.textContent = warning ? __( 'Catalog check' ) : __( 'Catalog integrity' );
-			var title = el( 'strong', { class: 'odd-shop__health-title' } );
-			title.textContent = ! warning
-				? __( 'Signed catalog dashboard' )
-				: __( 'Catalog needs attention' );
-			var detail = el( 'span', { class: 'odd-shop__health-detail' } );
-			detail.textContent = warning
-				? __( 'ODD keeps a local fallback and previous snapshots so the Shop can fail closed instead of going blank.' )
-				: __( 'Remote catalog rows are signed, cached, hashed, and checked again before install.' );
-			copy.appendChild( eyebrow );
-			copy.appendChild( title );
-			copy.appendChild( detail );
-			header.appendChild( copy );
-
-			var actions = el( 'div', { class: 'odd-shop__health-actions' } );
-			var refreshBtn = el( 'button', { type: 'button', class: 'odd-apps-btn odd-apps-btn--pill odd-shop__health-action odd-shop__health-action--secondary' } );
-			refreshBtn.textContent = __( 'Refresh catalog' );
-			refreshBtn.addEventListener( 'click', function () {
-				refreshCatalog( refreshBtn, function () {
-					renderSection( 'settings', { keepQuery: true } );
-				} );
-			} );
-			actions.appendChild( refreshBtn );
-
-			if ( catalog.rollback_available ) {
-				var rollbackBtn = el( 'button', { type: 'button', class: 'odd-apps-btn odd-apps-btn--pill odd-shop__health-action odd-shop__health-action--secondary' } );
-				rollbackBtn.textContent = __( 'Restore previous' );
-				rollbackBtn.addEventListener( 'click', function () {
-					rollbackBtn.disabled = true;
-					rollbackBtn.textContent = __( 'Restoring…' );
-					fetch( catalogEndpoint( '/catalog-rollback' ), {
-						method: 'POST',
-						credentials: 'same-origin',
-						headers: {
-							'Content-Type': 'application/json',
-							'X-WP-Nonce': state.cfg.restNonce || '',
-						},
-						body: JSON.stringify( { index: 0 } ),
-					} ).then( function ( res ) {
-						return res.ok ? res.json() : null;
-					} ).then( function ( res ) {
-						if ( res && res.meta ) {
-							state.cfg.systemHealth = state.cfg.systemHealth || {};
-							state.cfg.systemHealth.catalog = res.meta;
-							toast( __( 'Previous catalog restored.' ) );
-						} else {
-							toast( __( 'Catalog restore failed.' ), 'error' );
-						}
-						renderSection( 'settings', { keepQuery: true } );
-					} ).catch( function ( err ) {
-						reportError( 'bundles.catalog-rollback', err );
-						toast( __( 'Catalog restore failed.' ), 'error' );
-					} ).finally( function () {
-						rollbackBtn.disabled = false;
-						rollbackBtn.textContent = __( 'Restore previous' );
-					} );
-				} );
-				actions.appendChild( rollbackBtn );
-			}
-
-			var copyBtn = el( 'button', { type: 'button', class: 'odd-apps-btn odd-apps-btn--primary odd-apps-btn--pill odd-shop__health-action odd-shop__health-action--primary' } );
-			copyBtn.textContent = __( 'Copy diagnostics' );
-			copyBtn.addEventListener( 'click', function () {
-				var d = window.__odd && window.__odd.diagnostics;
-				if ( d && typeof d.copy === 'function' ) {
-					copyBtn.disabled = true;
-					d.copy().then( function () {
-						copyBtn.textContent = __( 'Copied' );
-						setTimeout( function () {
-							copyBtn.disabled = false;
-							copyBtn.textContent = __( 'Copy diagnostics' );
-						}, 2000 );
-					} );
-				}
-			} );
-			actions.appendChild( copyBtn );
-			header.appendChild( actions );
-			body.appendChild( header );
-
-			var layout = el( 'div', { class: 'odd-shop__health-layout' } );
-			var signals = el( 'div', { class: 'odd-shop__health-signals', 'aria-label': __( 'Primary catalog checks' ) } );
-			var metrics = el( 'div', { class: 'odd-shop__health-grid', 'aria-label': __( 'Catalog security details' ) } );
-			function addMetric( target, label, value, modifier ) {
-				var metric = el( 'span', { class: 'odd-shop__health-metric odd-shop__health-metric--' + modifier } );
-				var key = el( 'b' );
-				key.textContent = label;
-				var val = el( 'span' );
-				val.textContent = String( value );
-				metric.appendChild( key );
-				metric.appendChild( val );
-				target.appendChild( metric );
-				return metric;
-			}
-			[
-				[ 'Source', catalogSourceLabel( source ), source === 'remote' || source === 'transient' ? 'ok' : 'watch' ],
-				[ 'Signature', catalogSignatureLabel( sig ), badSig ? 'watch' : 'ok' ],
-				[ 'Bundles', effectiveCount + ' effective / ' + rawCount + ' raw', effectiveCount ? 'ok' : 'watch' ],
-			].forEach( function ( pair ) {
-				addMetric( signals, pair[ 0 ], pair[ 1 ], pair[ 2 ] );
-			} );
-			[
-				[ 'Registry hash', formatShortHash( catalog.registry_sha256 ), 'hash' ],
-				[ 'Registry size', formatBytes( catalog.registry_bytes ), 'neutral' ],
-				[ 'Stale age', formatAge( catalog.stale_age ), 'neutral' ],
-				[ 'Starter', starter.status || 'unknown', starter.status === 'installed' ? 'ok' : 'neutral' ],
-				[ 'Apps', apps.installed || 0, 'neutral' ],
-			].forEach( function ( pair ) {
-				addMetric( metrics, pair[ 0 ], pair[ 1 ], pair[ 2 ] );
-			} );
-			var orbit = el( 'div', { class: 'odd-shop__health-orbit', 'aria-hidden': 'true' } );
-			orbit.appendChild( el( 'span', { class: 'odd-shop__health-orbit-ring' } ) );
-			orbit.appendChild( el( 'span', { class: 'odd-shop__health-orbit-core' } ) );
-			orbit.appendChild( el( 'span', { class: 'odd-shop__health-orbit-dot' } ) );
-			layout.appendChild( signals );
-			layout.appendChild( metrics );
-			layout.appendChild( orbit );
-			body.appendChild( layout );
-
-			if ( catalog.last_error_message ) {
-				var error = el( 'span', { class: 'odd-shop__health-error' } );
-				error.textContent = 'Last error: ' + catalog.last_error_message;
-				body.appendChild( error );
-			}
-			strip.appendChild( body );
-			return strip;
 		}
 
 		function appsBaseUrl() {
@@ -4261,6 +3830,16 @@
 					copy: lastError || 'ODD could not verify the newest catalog, so it is using a known local snapshot instead.',
 				};
 			}
+			if ( catalog.remote_update_available || catalog.update_available ) {
+				var checkedAt = parseInt( catalog.last_update_check || 0, 10 ) || 0;
+				return {
+					level: 'info',
+					title: 'New ODD stuff is available',
+					copy: checkedAt
+						? 'The remote shelf changed since this site last refreshed. Refresh catalog to pull the newest verified rows.'
+						: 'The remote shelf has newer verified rows. Refresh catalog to pull them into the Shop.',
+				};
+			}
 			if ( lastError ) {
 				return {
 					level: 'info',
@@ -4275,6 +3854,14 @@
 			var base = ( state.cfg.bundleCatalogUrl || '' ) ||
 				( ( state.cfg.restUrl || '' ).replace( /\/prefs\/?$/, '' ) + '/bundles/catalog' );
 			return base.replace( /\/catalog\/?$/, suffix );
+		}
+
+		function catalogFetch() {
+			if ( typeof window !== 'undefined' && typeof window.fetch === 'function' ) {
+				return window.fetch.bind( window );
+			}
+			if ( typeof fetch === 'function' ) return fetch;
+			return null;
 		}
 
 		function catalogKeyForType( type ) {
@@ -4306,11 +3893,13 @@
 
 		function refreshCatalog( button, onDone, opts ) {
 			opts = opts || {};
+			var fetchFn = catalogFetch();
+			if ( ! fetchFn ) return Promise.resolve( null );
 			if ( button ) {
 				button.disabled = true;
 				button.textContent = __( 'Refreshing…' );
 			}
-			return fetch( catalogEndpoint( '/refresh' ), {
+			return fetchFn( catalogEndpoint( '/refresh' ), {
 				method: 'POST',
 				credentials: 'same-origin',
 				headers: { 'X-WP-Nonce': state.cfg.restNonce || '' },
@@ -4320,6 +3909,10 @@
 				if ( res && res.meta ) {
 					state.cfg.systemHealth = state.cfg.systemHealth || {};
 					state.cfg.systemHealth.catalog = res.meta;
+					if ( window.odd ) {
+						window.odd.systemHealth = window.odd.systemHealth || {};
+						window.odd.systemHealth.catalog = clone( res.meta );
+					}
 				}
 				if ( res && Array.isArray( res.bundles ) ) {
 					replaceBundleCatalogRows( res.bundles );
@@ -4336,6 +3929,63 @@
 					button.disabled = false;
 					button.textContent = __( 'Refresh catalog' );
 				}
+			} );
+		}
+
+		function checkCatalogUpdates( opts ) {
+			opts = opts || {};
+			if ( ! state.cfg.canInstall ) return Promise.resolve( null );
+			var fetchFn = catalogFetch();
+			if ( ! fetchFn ) return Promise.resolve( null );
+			state.catalogUpdateCheck.pending = true;
+			return fetchFn( catalogEndpoint( '/catalog-check' ), {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-WP-Nonce': state.cfg.restNonce || '',
+				},
+				body: JSON.stringify( { force: !! opts.force } ),
+			} ).then( function ( res ) {
+				return res.ok ? res.json() : null;
+			} ).then( function ( res ) {
+				if ( res && res.meta ) {
+					state.cfg.systemHealth = state.cfg.systemHealth || {};
+					state.cfg.systemHealth.catalog = res.meta;
+					if ( window.odd ) {
+						window.odd.systemHealth = window.odd.systemHealth || {};
+						window.odd.systemHealth.catalog = clone( res.meta );
+					}
+				}
+				if ( res && res.update_available && ! opts.silent ) {
+					toast( __( 'New Shop content is available.' ) );
+				}
+				return res;
+			} ).catch( function ( err ) {
+				reportError( 'bundles.catalog-check', err );
+				if ( ! opts.silent ) toast( __( 'Catalog update check failed.' ), 'error' );
+				return null;
+			} ).finally( function () {
+				state.catalogUpdateCheck.pending = false;
+			} );
+		}
+
+		function maybeCheckCatalogUpdates() {
+			if ( ! state.cfg.canInstall || ! catalogFetch() ) return;
+			if ( state.catalogUpdateCheck.checked || state.catalogUpdateCheck.pending ) return;
+			state.catalogUpdateCheck.checked = true;
+			var timer = window.setTimeout( function () {
+				timer = 0;
+				if ( state.catalogUpdateCheck.disposed ) return;
+				checkCatalogUpdates( { silent: true } ).then( function ( res ) {
+					if ( state.catalogUpdateCheck.disposed ) return;
+					if ( res && res.update_available ) {
+						renderSection( state.active, { keepQuery: true } );
+					}
+				} );
+			}, 800 );
+			cleanupFns.push( function () {
+				if ( timer ) window.clearTimeout( timer );
 			} );
 		}
 
@@ -6110,7 +5760,7 @@
 				tags:          Array.isArray( raw.tags ) ? raw.tags : [],
 				previewUrl:    normaliseCatalogAssetUrl( raw.previewUrl || raw.preview_url || raw.preview || '', type, slug ),
 				wallpaperUrl:  normaliseCatalogAssetUrl( raw.wallpaperUrl || raw.wallpaper_url || raw.wallpaper || '', type, slug ),
-				iconUrl:       normaliseCatalogAssetUrl( raw.icon_url || raw.icon || '', type, slug ),
+				iconUrl:       normaliseCatalogAssetUrl( raw.icon_url || raw.iconUrl || raw.icon || '', type, slug ),
 				cardUrl:       normaliseCatalogAssetUrl( raw.card_url || raw.cardUrl || '', type, slug ),
 				downloadUrl:   raw.download_url || raw.downloadUrl || '',
 				sha256:        raw.sha256 || '',
@@ -6228,6 +5878,9 @@
 				ins.effects = cat.effects;
 			}
 			if ( cat.description && ! ins.description ) ins.description = cat.description;
+			if ( cat.updateAvailable || cat.update_available || cat.state === 'updateAvailable' ) {
+				ins.updateAvailable = true;
+			}
 
 			// Refresh subline copy when category arrives from catalog.
 			ins.subtitle = shopCardSubtitle( ins, ins.type );
@@ -6473,6 +6126,48 @@
 			return flow.trustProfile( row, { t: __ } );
 		}
 
+		function shopTitleCase( value ) {
+			value = String( value || '' ).trim();
+			return value ? value.charAt( 0 ).toUpperCase() + value.slice( 1 ) : '';
+		}
+
+		function detailVersionLabel( row ) {
+			if ( row && row.version ) return row.version;
+			return row && row.downloadUrl ? 'Catalog' : 'Installed';
+		}
+
+		function detailSourceLabel( row ) {
+			var category = String( ( row && row.category ) || '' ).trim();
+			var generic = row ? rowTypeLabel( row.type, false ) : '';
+			if ( category && category.toLowerCase() !== String( generic || '' ).toLowerCase() ) return category;
+			if ( row && row.builtin ) return 'Bundled';
+			return row && row.downloadUrl ? 'Catalog' : 'Installed';
+		}
+
+		function detailCompatibilityLabel( row ) {
+			if ( row && row.incompatible ) return row.incompatibilityReason || 'Needs update';
+			return 'Works here';
+		}
+
+		function detailIconSvg( kind ) {
+			if ( kind === 'safety' ) {
+				return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-2.8 8.5-7 10-4.2-1.5-7-5.5-7-10V6l7-3z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M8.8 12.2l2.1 2.1 4.5-4.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+			}
+			return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7L10 17l-5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+		}
+
+		function appendDetailFact( container, label, value, mod ) {
+			var fact = el( 'div', { class: 'odd-shop__detail-fact' + ( mod ? ' odd-shop__detail-fact--' + mod : '' ) } );
+			var key = el( 'span' );
+			key.textContent = label;
+			var strong = el( 'strong' );
+			strong.textContent = value || '-';
+			fact.appendChild( key );
+			fact.appendChild( strong );
+			container.appendChild( fact );
+			return fact;
+		}
+
 		function closeProductSheet() {
 			if ( productSheetClose ) productSheetClose();
 		}
@@ -6480,7 +6175,7 @@
 		function openProductSheet( row ) {
 			if ( ! row ) return;
 			closeProductSheet();
-			var normalised = normaliseShopRow( row.raw || row, row.type );
+			var normalised = normaliseShopRow( row, row.type );
 			if ( ! normalised ) normalised = row;
 			normalised.installed = row.installed;
 			normalised.updateAvailable = row.updateAvailable;
@@ -6488,6 +6183,9 @@
 			var isActive = shopCardIsActive( normalised );
 			var action = shopCardAction( normalised );
 			var trust = trustProfileFor( normalised );
+
+			var titleId = 'odd-shop-detail-title-' + String( normalised.slug || 'item' ).replace( /[^a-z0-9_-]+/gi, '-' );
+			var descId = titleId + '-desc';
 
 			var overlay = el( 'div', {
 				class: 'odd-shop__detail-overlay',
@@ -6497,7 +6195,8 @@
 				class: 'odd-shop__detail-sheet',
 				role: 'dialog',
 				'aria-modal': 'true',
-				'aria-label': normalised.name + ' details',
+				'aria-labelledby': titleId,
+				'aria-describedby': descId,
 			} );
 			var close = el( 'button', {
 				type: 'button',
@@ -6507,67 +6206,98 @@
 			close.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
 			sheet.appendChild( close );
 
+			var mediaWrap = el( 'div', { class: 'odd-shop__detail-media' } );
 			var artWrap = el( 'div', { class: 'odd-shop__detail-art' } );
 			artWrap.appendChild( renderShopCardArt( normalised ) );
-			sheet.appendChild( artWrap );
+			var mediaCaption = el( 'div', { class: 'odd-shop__detail-media-caption' } );
+			var mediaCaptionLabel = el( 'span' );
+			mediaCaptionLabel.textContent = 'Preview';
+			var mediaCaptionName = el( 'strong' );
+			mediaCaptionName.textContent = normalised.name;
+			mediaCaption.appendChild( mediaCaptionLabel );
+			mediaCaption.appendChild( mediaCaptionName );
+			mediaWrap.appendChild( artWrap );
+			mediaWrap.appendChild( mediaCaption );
+			sheet.appendChild( mediaWrap );
 
 			var bodyWrap = el( 'div', { class: 'odd-shop__detail-body' } );
+			var header = el( 'header', { class: 'odd-shop__detail-header' } );
 			var badges = el( 'div', { class: 'odd-shop__detail-badges' } );
 			shopStatusBadges( normalised, isActive ).forEach( function ( badge ) {
 				var chip = el( 'span', { class: 'odd-shop__status odd-shop__status--' + badge.mod } );
 				chip.textContent = badge.label;
 				badges.appendChild( chip );
 			} );
-			bodyWrap.appendChild( badges );
+			header.appendChild( badges );
 
-			var title = el( 'h2', { class: 'odd-shop__detail-title' } );
+			var title = el( 'h2', { class: 'odd-shop__detail-title', id: titleId } );
 			title.textContent = normalised.name;
 			var sub = el( 'p', { class: 'odd-shop__detail-sub' } );
 			sub.textContent = normalised.subtitle || rowTypeLabel( normalised.type, false );
-			var desc = el( 'p', { class: 'odd-shop__detail-desc' } );
+			var desc = el( 'p', { class: 'odd-shop__detail-desc', id: descId } );
 			desc.textContent = normalised.description || 'A little piece of desktop personality for your WordPress workspace.';
-			bodyWrap.appendChild( title );
-			bodyWrap.appendChild( sub );
-			bodyWrap.appendChild( desc );
+			header.appendChild( title );
+			header.appendChild( sub );
+			header.appendChild( desc );
+			bodyWrap.appendChild( header );
 
 			var facts = el( 'div', { class: 'odd-shop__detail-facts' } );
-			[
-				[ 'Type', rowTypeLabel( normalised.type, false ) ],
-				[ 'Style', normalised.category || 'ODD' ],
-				[ 'Version', normalised.version || 'Catalog' ],
-				[ 'Trust', trust.label ],
-			].forEach( function ( pair ) {
-				var fact = el( 'div', { class: 'odd-shop__detail-fact' } );
-				var key = el( 'span' );
-				key.textContent = pair[ 0 ];
-				var value = el( 'strong' );
-				value.textContent = pair[ 1 ];
-				fact.appendChild( key );
-				fact.appendChild( value );
-				facts.appendChild( fact );
-			} );
+			appendDetailFact( facts, 'Type', shopTitleCase( rowTypeLabel( normalised.type, false ) ), 'type' );
+			appendDetailFact( facts, 'Version', detailVersionLabel( normalised ), 'version' );
+			appendDetailFact( facts, 'Compatibility', detailCompatibilityLabel( normalised ), normalised.incompatible ? 'blocked' : 'ok' );
+			appendDetailFact( facts, 'Source', detailSourceLabel( normalised ), 'source' );
 			bodyWrap.appendChild( facts );
 
-			var changes = el( 'div', { class: 'odd-shop__detail-changes' } );
-			var changesTitle = el( 'h3' );
+			var changes = el( 'section', { class: 'odd-shop__detail-changes' } );
+			var changesTitle = el( 'h3', { class: 'odd-shop__detail-section-title' } );
 			changesTitle.textContent = 'What changes';
-			var list = el( 'ul' );
-			detailBulletsFor( normalised ).forEach( function ( text ) {
-				var item = el( 'li' );
-				item.textContent = text;
+			var list = el( 'div', { class: 'odd-shop__detail-change-list' } );
+			detailBulletsFor( normalised ).forEach( function ( text, idx ) {
+				var item = el( 'div', { class: 'odd-shop__detail-change' } );
+				var icon = el( 'span', {
+					class: 'odd-shop__detail-change-icon odd-shop__detail-change-icon--' + ( idx + 1 ),
+					'aria-hidden': 'true',
+				} );
+				icon.innerHTML = detailIconSvg( 'check' );
+				var copy = el( 'span', { class: 'odd-shop__detail-change-copy' } );
+				copy.textContent = text;
+				item.appendChild( icon );
+				item.appendChild( copy );
 				list.appendChild( item );
 			} );
 			changes.appendChild( changesTitle );
 			changes.appendChild( list );
-			var trustNote = el( 'p', { class: 'odd-shop__detail-trust odd-shop__detail-trust--' + trust.id } );
-			trustNote.textContent = trust.detail;
-			changes.appendChild( trustNote );
 			bodyWrap.appendChild( changes );
 
-			var actions = el( 'div', { class: 'odd-shop__detail-actions' } );
+			var safety = el( 'section', { class: 'odd-shop__detail-safety odd-shop__detail-safety--' + trust.id } );
+			var safetyIcon = el( 'span', { class: 'odd-shop__detail-safety-icon', 'aria-hidden': 'true' } );
+			safetyIcon.innerHTML = detailIconSvg( 'safety' );
+			var safetyCopy = el( 'div', { class: 'odd-shop__detail-safety-copy' } );
+			var safetyTitle = el( 'h3', { class: 'odd-shop__detail-section-title' } );
+			safetyTitle.textContent = 'Safety checks';
+			var trustNote = el( 'p', { class: 'odd-shop__detail-trust odd-shop__detail-trust--' + trust.id } );
+			trustNote.textContent = trust.detail;
+			safetyCopy.appendChild( safetyTitle );
+			safetyCopy.appendChild( trustNote );
+			safety.appendChild( safetyIcon );
+			safety.appendChild( safetyCopy );
+			bodyWrap.appendChild( safety );
+
+			sheet.appendChild( bodyWrap );
+
+			var actions = el( 'footer', { class: 'odd-shop__detail-actions' } );
+			var actionSummary = el( 'div', { class: 'odd-shop__detail-action-summary' } );
+			var actionState = el( 'strong' );
+			actionState.textContent = shopCardState( normalised, { isActive: isActive } ).statusLabel;
+			var actionHint = el( 'span' );
+			actionHint.textContent = normalised.incompatible ? detailCompatibilityLabel( normalised ) : detailSourceLabel( normalised ) + ' bundle';
+			actionSummary.appendChild( actionState );
+			actionSummary.appendChild( actionHint );
+			var actionControls = el( 'div', { class: 'odd-shop__detail-action-controls' } );
 			var primary = el( 'button', {
 				type: 'button',
-				class: 'odd-shop__detail-primary odd-shop__card-btn--' + action.kind,
+				class: 'odd-shop__detail-primary odd-shop__card-btn--' + action.kind + ( action.disabled ? ' odd-shop__detail-primary--disabled-state' : '' ),
+				'data-odd-card-action': action.kind,
 			} );
 			if ( action.progress ) {
 				primary.appendChild( el( 'span', { class: 'odd-shop__btn-spinner', 'aria-hidden': 'true' } ) );
@@ -6583,14 +6313,17 @@
 				if ( primary.disabled ) return;
 				dispatchShopAction( normalised, action.kind, primary );
 			} );
-			var secondary = el( 'button', { type: 'button', class: 'odd-shop__detail-secondary' } );
+			var secondary = el( 'button', {
+				type: 'button',
+				class: 'odd-shop__detail-secondary' + ( action.disabled ? ' odd-shop__detail-secondary--primary' : '' ),
+			} );
 			secondary.textContent = 'Done';
 			secondary.addEventListener( 'click', closeProductSheet );
-			actions.appendChild( primary );
-			actions.appendChild( secondary );
-			bodyWrap.appendChild( actions );
-
-			sheet.appendChild( bodyWrap );
+			actionControls.appendChild( primary );
+			actionControls.appendChild( secondary );
+			actions.appendChild( actionSummary );
+			actions.appendChild( actionControls );
+			sheet.appendChild( actions );
 			overlay.appendChild( sheet );
 			body.appendChild( overlay );
 
@@ -6608,7 +6341,7 @@
 			} );
 			close.addEventListener( 'click', closeProductSheet );
 			document.addEventListener( 'keydown', onKey );
-			try { close.focus(); } catch ( e ) {}
+			try { ( action.disabled ? secondary : primary ).focus(); } catch ( e ) {}
 		}
 
 		// Artwork region of the tile. Kept in its own script so the main

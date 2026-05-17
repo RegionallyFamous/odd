@@ -98,7 +98,6 @@ var sdk = window.__odd && window.__odd.sdk;
 if ( sdk ) {
     var prefs = sdk.preferences.get();
     sdk.preferences.save( { wallpaper: 'oddling-desktop' } );
-    sdk.theme.set( 'dark' );
     sdk.toast( 'ODD is ready.' );
 
     var wallpaper = sdk.storage.get( 'user.wallpaper' );
@@ -127,7 +126,6 @@ Useful groups:
 |---------------------------|---------------------------------------------------------------|
 | `sdk.storage`             | Safe wrappers for `store.get`, `store.set`, `getState`, and subscriptions. |
 | `sdk.preferences`         | Read the current user preference snapshot and save partial patches. |
-| `sdk.theme`               | Get or save the ODD Shop theme (`light`, `dark`, `auto`).     |
 | `sdk.capabilities()`      | Read localized install, Desktop Mode, toast, diagnostics, and storage capabilities. |
 | `sdk.diagnostics.summary()` | Small health object for Shop/UI status chips and troubleshooting affordances. |
 | `sdk.onTeardown()`        | Subscribe to the ODD teardown lifecycle.                      |

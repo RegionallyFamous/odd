@@ -105,11 +105,6 @@
 		};
 	}
 
-	function cleanTheme( value ) {
-		value = cleanString( value, 12 ).toLowerCase();
-		return value === 'light' || value === 'dark' ? value : 'auto';
-	}
-
 	function normalizeWidgetId( value ) {
 		value = cleanString( value, 96 );
 		value = value.replace( /^odd\//, '' );
@@ -176,11 +171,8 @@
 			var cursorSet = cleanSlug( input.cursorSet );
 			if ( cursorSet || input.cursorSet === '' ) out.cursorSet = cursorSet === 'none' ? '' : cursorSet;
 		}
-		if ( input.theme !== undefined ) out.theme = cleanTheme( input.theme );
-		if ( input.chaosMode !== undefined ) out.chaosMode = cleanBool( input.chaosMode );
 		if ( input.audioReactive !== undefined ) out.audioReactive = cleanBool( input.audioReactive );
 		if ( input.shopTaskbar !== undefined ) out.shopTaskbar = cleanBool( input.shopTaskbar );
-		if ( input.shopDesktopPinned !== undefined ) out.shopDesktopPinned = cleanBool( input.shopDesktopPinned );
 		if ( input.shuffle !== undefined ) {
 			var shuffle = cleanShuffle( input.shuffle );
 			if ( shuffle ) out.shuffle = shuffle;
@@ -216,13 +208,10 @@
 			wallpaper: stateValue( c, 'wallpaper', 'scene' ),
 			iconSet: c.iconSet || '',
 			cursorSet: c.cursorSet || '',
-			theme: c.theme || 'auto',
-			chaosMode: c.chaosMode,
 			shuffle: c.shuffle,
 			screensaver: c.screensaver,
 			audioReactive: c.audioReactive,
 			shopTaskbar: c.shopTaskbar,
-			shopDesktopPinned: c.shopDesktopPinned,
 			favorites: c.favorites,
 			recents: c.recents,
 			appsPinned: appsPinned,

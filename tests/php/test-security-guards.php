@@ -32,6 +32,9 @@ class Test_Security_REST_Permissions extends ODDOUT_REST_Test_Case {
 		$res = $this->dispatch_json( 'POST', '/odd/v1/bundles/refresh' );
 		$this->assertSame( 403, $res->get_status(), 'Subscribers cannot refresh the remote catalog.' );
 
+		$res = $this->dispatch_json( 'POST', '/odd/v1/bundles/catalog-check' );
+		$this->assertSame( 403, $res->get_status(), 'Subscribers cannot check privileged remote catalog metadata.' );
+
 		$res = $this->dispatch_json( 'GET', '/odd/v1/bundles/catalog-meta' );
 		$this->assertSame( 403, $res->get_status(), 'Subscribers cannot read catalog diagnostics metadata.' );
 

@@ -1,13 +1,13 @@
 {
-  "slug": "sine",
-  "name": "Sine",
-  "description": "A full synthesizer living inside your WordPress admin. Four waveforms, ADSR envelope, a resonant filter, and a step sequencer \u2014 all on pure Web Audio.",
-  "version": "1.0.0",
-  "author": "Regionally Famous",
-  "tags": [
-    "music",
-    "audio",
-    "synth",
-    "fun"
-  ]
+	"slug": "sine",
+	"name": "Sine",
+	"description": "A full synthesizer living inside your WordPress admin. Four waveforms, ADSR envelope, a resonant filter, and a step sequencer \u2014 all on pure Web Audio.",
+	"version": "1.0.1",
+	"author": "Regionally Famous",
+	"tags": [
+		"music",
+		"audio",
+		"synth",
+		"fun"
+	]
 }

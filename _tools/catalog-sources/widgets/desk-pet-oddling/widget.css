@@ -50,8 +50,8 @@
 }
 
 .odd-widget--desk-pet-oddling .odd-oddling__sprite {
-	width: min( 76%, 220px );
-	aspect-ratio: 3 / 2;
+	width: min( 78%, 260px );
+	aspect-ratio: 1 / 1;
 	background-image: url( "assets/oddling-sprites.webp" );
 	background-repeat: no-repeat;
 	background-size: 300% 200%;

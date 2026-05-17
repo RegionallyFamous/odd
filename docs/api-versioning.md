@@ -30,7 +30,7 @@ bundle or companion plugin might touch:
   `onIconSetChange`, `openPanel`, `openOsSettings`, `showAttention`,
   `setBadge`, `diagnosticsSnapshot`, and the `HOOK_SCENE` / `HOOK_ICONSET`
   / `TOAST_TONE` constants.
-- `window.__odd.sdk` — stable facade for storage, preferences, theme,
+- `window.__odd.sdk` — stable facade for storage, preferences,
   diagnostics, capabilities, toasts, and teardown subscriptions.
 - `window.__odd.diagnostics.{summary, collect, collectMarkdown, copy}` —
   zero-telemetry diagnostic bundle.

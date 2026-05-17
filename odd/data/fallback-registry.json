@@ -582,15 +582,15 @@
       "type": "widget",
       "slug": "desk-pet-oddling",
       "name": "Desk Pet Oddling",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": "Regionally Famous",
       "description": "A tiny Oddling that naps, watches the cursor, and reacts to Desktop Mode window activity.",
       "category": "ODD Originals",
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/widget-desk-pet-oddling.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/widget-desk-pet-oddling.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/widget-desk-pet-oddling.wp",
-      "sha256": "3618139ac0785a8129a6cab64188e09d838462215c3beddac95fb093f1fa0fce",
-      "size": 81422
+      "sha256": "5747ecec95b923c60ed93a92e1e6f56044106faf4de21f76680106ee1b799757",
+      "size": 140783
     },
     {
       "type": "widget",
@@ -699,7 +699,7 @@
       "type": "app",
       "slug": "cache-invaders",
       "name": "Cache Invaders",
-      "version": "1.0.0",
+      "version": "1.0.2",
       "author": "Regionally Famous",
       "description": "A neon arcade shooter where a purge cannon clears stale cache ghosts, CDN shields, CSS blobs, and one very stubborn browser cache.",
       "tags": [
@@ -711,8 +711,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/cache-invaders.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-cache-invaders.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/cache-invaders.wp",
-      "sha256": "2c33a1e56d826c0f428453f0be1a0486b97c66cf5999686340a959d3b6d5594d",
-      "size": 223962
+      "sha256": "ad0b9eeacc9fa352fc49fef882e84e60b910dd8b047e5faf831852dcacb14f3d",
+      "size": 357332
     },
     {
       "type": "app",
@@ -756,7 +756,7 @@
       "type": "app",
       "slug": "four-oh-four-runner",
       "name": "404 Runner",
-      "version": "1.0.0",
+      "version": "1.0.3",
       "author": "Regionally Famous",
       "description": "An endless runner where a missing page dashes through broken links, redirect rings, query rubble, and tiny uptime miracles.",
       "tags": [
@@ -768,8 +768,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/four-oh-four-runner.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-four-oh-four-runner.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/four-oh-four-runner.wp",
-      "sha256": "afa5ab6337e8d90c6ee25b6b52866a256b4493e6640093a5249b42f02994810b",
-      "size": 260164
+      "sha256": "61dbcb88ce18830bb7d85c254b964ee0ba323de19548d5002910f6864e22144e",
+      "size": 401903
     },
     {
       "type": "app",
@@ -813,7 +813,7 @@
       "type": "app",
       "slug": "plugin-panic",
       "name": "Plugin Panic",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": "Regionally Famous",
       "description": "A falling-block puzzle where plugin packages stack up, dependency conflicts loom, and every cleared line resolves one more update queue.",
       "tags": [
@@ -825,14 +825,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/plugin-panic.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-plugin-panic.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/plugin-panic.wp",
-      "sha256": "c6fee3eb80bec1b535f1f87010d6b4daa6510cafd3f3f50614823766fd27578b",
-      "size": 231914
+      "sha256": "cc454928000fec16decc57b4a0f7d263db159f007de87ba6895e87093a6f0266",
+      "size": 213254
     },
     {
       "type": "app",
       "slug": "sine",
       "name": "Sine",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": "Regionally Famous",
       "description": "A full synthesizer living inside your WordPress admin. Four waveforms, ADSR envelope, a resonant filter, and a step sequencer \u2014 all on pure Web Audio.",
       "tags": [
@@ -844,8 +844,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/sine.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-sine.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/sine.wp",
-      "sha256": "33e216a140dad5a06eb82855ee615985c2e67b8ed90af8877cbbf6874f258095",
-      "size": 198216
+      "sha256": "11faf759a950a1b4cb176d5027592fec844a6c7373add242c7810f70c29f2ae9",
+      "size": 176622
     },
     {
       "type": "app",

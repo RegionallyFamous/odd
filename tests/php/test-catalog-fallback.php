@@ -693,6 +693,58 @@ class Test_Catalog_Fallback extends WP_UnitTestCase {
 		$this->assertSame( 'remote', $data['meta']['source'] );
 	}
 
+	public function test_catalog_check_detects_remote_hash_without_replacing_rows() {
+		$local = oddout_catalog_normalise(
+			array(
+				'version' => 1,
+				'bundles' => array(
+					$this->catalog_row( 'old-widget' ),
+				),
+			)
+		);
+		set_transient( ODDOUT_CATALOG_TRANSIENT, $local, HOUR_IN_SECONDS );
+		oddout_catalog_record_source( 'transient', $local );
+
+		$remote = array(
+			'version' => 1,
+			'bundles' => array(
+				$this->catalog_row( 'new-widget' ),
+			),
+		);
+		add_filter(
+			'pre_http_request',
+			static function () use ( $remote ) {
+				return array(
+					'headers'  => array(),
+					'body'     => wp_json_encode( $remote ),
+					'response' => array(
+						'code'    => 200,
+						'message' => 'OK',
+					),
+				);
+			}
+		);
+
+		$user = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user );
+
+		global $wp_rest_server;
+		$wp_rest_server = new WP_REST_Server();
+		do_action( 'rest_api_init' );
+
+		$request  = new WP_REST_Request( 'POST', '/odd/v1/bundles/catalog-check' );
+		$response = $wp_rest_server->dispatch( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertTrue( $data['checked'] );
+		$this->assertTrue( $data['update_available'] );
+		$this->assertTrue( $data['meta']['remote_update_available'] );
+
+		$catalog = oddout_bundle_catalog();
+		$this->assertSame( 'old-widget', $catalog[0]['slug'], 'Checking must not replace the locally cached catalog.' );
+	}
+
 	public function test_remote_catalog_rejects_insecure_registry_url() {
 		$result = oddout_catalog_fetch_remote( 'http://example.com/catalog/v1/registry.json' );
 		$this->assertWPError( $result );
