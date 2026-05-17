@@ -1,0 +1,22 @@
+{
+  "slug": "fortune-terminal",
+  "id": "odd/fortune-terminal",
+  "label": "Fortune Terminal",
+  "description": "A tiny CRT that prints WordPress omens, fake logs, and mysterious admin wisdom.",
+  "category": "ODD Originals",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "entry": "widget.js",
+  "css": [
+    "widget.css"
+  ],
+  "icon": "dashicons-editor-code",
+  "movable": true,
+  "resizable": true,
+  "minWidth": 280,
+  "minHeight": 180,
+  "maxWidth": 500,
+  "maxHeight": 360,
+  "defaultWidth": 320,
+  "defaultHeight": 220
+}

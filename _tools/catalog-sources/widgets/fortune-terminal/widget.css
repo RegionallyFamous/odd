@@ -1,0 +1,190 @@
+.odd-widget--fortune-terminal {
+	box-sizing: border-box;
+	width: 100%;
+	height: 100%;
+	min-width: 0;
+	min-height: 0;
+	overflow: hidden;
+	border: 1px solid rgba( 110, 255, 224, 0.24 );
+	border-radius: 18px;
+	background:
+		radial-gradient( circle at 18% 12%, rgba( 110, 255, 224, 0.19 ), transparent 30% ),
+		radial-gradient( circle at 84% 82%, rgba( 255, 74, 164, 0.18 ), transparent 34% ),
+		linear-gradient( 145deg, #151322, #070911 );
+	box-shadow:
+		inset 0 1px 0 rgba( 255, 255, 255, 0.1 ),
+		0 18px 38px rgba( 0, 0, 0, 0.26 );
+	color: #d8ffe5;
+	font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+.odd-widget--fortune-terminal *,
+.odd-widget--fortune-terminal *::before,
+.odd-widget--fortune-terminal *::after {
+	box-sizing: border-box;
+}
+
+.odd-widget--fortune-terminal .odd-fortune {
+	position: relative;
+	display: grid;
+	grid-template-rows: auto 1fr auto;
+	width: 100%;
+	height: 100%;
+	padding: clamp( 10px, 4%, 16px );
+	gap: 8px;
+	isolation: isolate;
+}
+
+.odd-widget--fortune-terminal .odd-fortune::before {
+	position: absolute;
+	inset: 8px;
+	border: 1px solid rgba( 139, 255, 210, 0.18 );
+	border-radius: 15px;
+	background:
+		linear-gradient( rgba( 120, 255, 194, 0.04 ) 50%, rgba( 0, 0, 0, 0.18 ) 50% ),
+		radial-gradient( circle at 50% 45%, rgba( 64, 255, 172, 0.12 ), transparent 62% );
+	background-size: 100% 4px, 100% 100%;
+	content: "";
+	pointer-events: none;
+	z-index: -1;
+}
+
+.odd-widget--fortune-terminal .odd-fortune__header {
+	display: flex;
+	align-items: center;
+	min-width: 0;
+	padding: 0 2px;
+	gap: 6px;
+}
+
+.odd-widget--fortune-terminal .odd-fortune__light {
+	display: block;
+	width: 9px;
+	height: 9px;
+	border-radius: 50%;
+	box-shadow: 0 0 10px currentColor;
+}
+
+.odd-widget--fortune-terminal .odd-fortune__light--red { color: #ff5b8f; background: currentColor; }
+.odd-widget--fortune-terminal .odd-fortune__light--yellow { color: #ffd36a; background: currentColor; }
+.odd-widget--fortune-terminal .odd-fortune__light--green { color: #65ff9f; background: currentColor; }
+
+.odd-widget--fortune-terminal .odd-fortune__title {
+	overflow: hidden;
+	margin-left: auto;
+	color: rgba( 235, 229, 255, 0.72 );
+	font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	font-size: 10px;
+	font-weight: 900;
+	letter-spacing: 0;
+	line-height: 1;
+	text-overflow: ellipsis;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
+.odd-widget--fortune-terminal .odd-fortune__output {
+	min-height: 0;
+	overflow: hidden;
+	padding: 11px 12px;
+	border: 1px solid rgba( 119, 255, 183, 0.22 );
+	border-radius: 12px;
+	background: rgba( 3, 12, 15, 0.82 );
+	box-shadow: inset 0 0 28px rgba( 62, 255, 168, 0.1 );
+}
+
+.odd-widget--fortune-terminal .odd-fortune__line {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	min-width: 0;
+	margin: 0 0 6px;
+	gap: 6px;
+	color: #bfffd0;
+	font-size: clamp( 11px, 4.2cqi, 14px );
+	font-weight: 700;
+	line-height: 1.25;
+	text-shadow: 0 0 9px rgba( 88, 255, 173, 0.28 );
+}
+
+.odd-widget--fortune-terminal .odd-fortune__line:last-child {
+	margin-bottom: 0;
+}
+
+.odd-widget--fortune-terminal .odd-fortune__mark {
+	color: #62e6ff;
+}
+
+.odd-widget--fortune-terminal .odd-fortune__text {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.odd-widget--fortune-terminal .odd-fortune__line.is-typing .odd-fortune__text::after {
+	display: inline-block;
+	width: 0.65em;
+	margin-left: 2px;
+	background: #d8ffe5;
+	content: "";
+	vertical-align: -0.12em;
+	animation: odd-fortune-caret 0.8s steps( 1, end ) infinite;
+}
+
+.odd-widget--fortune-terminal .odd-fortune__prompt {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 0;
+	min-height: 34px;
+	padding: 7px 12px;
+	border: 1px solid rgba( 108, 245, 255, 0.34 );
+	border-radius: 999px;
+	background: rgba( 13, 27, 37, 0.78 );
+	box-shadow: 0 0 18px rgba( 85, 222, 255, 0.13 );
+	color: #effeff;
+	cursor: pointer;
+	font: inherit;
+	font-size: 12px;
+	font-weight: 900;
+	gap: 7px;
+	letter-spacing: 0;
+	line-height: 1;
+	text-transform: uppercase;
+}
+
+.odd-widget--fortune-terminal .odd-fortune__prompt:disabled {
+	cursor: default;
+	opacity: 0.64;
+}
+
+.odd-widget--fortune-terminal .odd-fortune__chevron {
+	color: #65ff9f;
+}
+
+.odd-widget--fortune-terminal .odd-fortune__scan {
+	position: absolute;
+	inset: 0;
+	border-radius: 18px;
+	background: linear-gradient( 180deg, transparent, rgba( 131, 255, 207, 0.08 ), transparent );
+	opacity: 0.5;
+	pointer-events: none;
+	transform: translateY( -100% );
+	animation: odd-fortune-scan 5s linear infinite;
+}
+
+@keyframes odd-fortune-caret {
+	0%,
+	49% { opacity: 1; }
+	50%,
+	100% { opacity: 0; }
+}
+
+@keyframes odd-fortune-scan {
+	to { transform: translateY( 100% ); }
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.odd-widget--fortune-terminal .odd-fortune__scan,
+	.odd-widget--fortune-terminal .odd-fortune__line.is-typing .odd-fortune__text::after {
+		animation: none;
+	}
+}

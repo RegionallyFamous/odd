@@ -2,7 +2,7 @@
  * widgets.test.js — smoke-test the stock ODD widget bundles.
  *
  * Widgets ship as separate catalog bundles under
- * `_tools/catalog-sources/widgets/sticky/` and `.../eight-ball/`.
+ * `_tools/catalog-sources/widgets/<slug>/`.
  * Each bundle exposes `window.desktopModeWidgets[id]`; metadata lives
  * in manifest.json and PHP hands it to Desktop Mode. This test loads
  * the bundle sources, asserts they do not self-register, then mounts
@@ -25,20 +25,32 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname( fileURLToPath( import.meta.url ) );
 const WIDGETS_ROOT = resolve( __dirname, '../../_tools/catalog-sources/widgets' );
-const STICKY_JS    = resolve( WIDGETS_ROOT, 'sticky/widget.js' );
-const STICKY_CSS   = resolve( WIDGETS_ROOT, 'sticky/widget.css' );
-const STICKY_BUNDLE = resolve( __dirname, '../../site/catalog/v1/bundles/widget-sticky.wp' );
-const EIGHTBALL_JS  = resolve( WIDGETS_ROOT, 'eight-ball/widget.js' );
-const EIGHTBALL_CSS = resolve( WIDGETS_ROOT, 'eight-ball/widget.css' );
+const CATALOG_BUNDLES_ROOT = resolve( __dirname, '../../site/catalog/v1/bundles' );
+const FIRST_PARTY_WIDGETS = [
+	{ slug: 'sticky', id: 'odd/sticky', cssRoot: '.odd-widget--sticky' },
+	{ slug: 'eight-ball', id: 'odd/eight-ball', cssRoot: '.odd-widget--eight', assets: [ 'assets/oracle-texture.webp' ] },
+	{ slug: 'spotify', id: 'odd/spotify', cssRoot: '.odd-widget--spotify' },
+	{ slug: 'desk-pet-oddling', id: 'odd/desk-pet-oddling', cssRoot: '.odd-widget--desk-pet-oddling', assets: [ 'assets/oddling-sprites.webp' ] },
+	{ slug: 'fortune-terminal', id: 'odd/fortune-terminal', cssRoot: '.odd-widget--fortune-terminal' },
+	{ slug: 'plugin-panic-button', id: 'odd/plugin-panic-button', cssRoot: '.odd-widget--plugin-panic-button' },
+	{ slug: 'tiny-aquarium', id: 'odd/tiny-aquarium', cssRoot: '.odd-widget--tiny-aquarium', assets: [ 'assets/aquarium-backdrop.webp', 'assets/fish-sprites.webp' ] },
+].map( ( widget ) => ( {
+	...widget,
+	js: resolve( WIDGETS_ROOT, `${ widget.slug }/widget.js` ),
+	css: resolve( WIDGETS_ROOT, `${ widget.slug }/widget.css` ),
+	manifest: resolve( WIDGETS_ROOT, `${ widget.slug }/manifest.json` ),
+	bundle: resolve( CATALOG_BUNDLES_ROOT, `widget-${ widget.slug }.wp` ),
+} ) );
+const WIDGET_MANIFESTS = FIRST_PARTY_WIDGETS.map( ( widget ) => widget.manifest );
+const STICKY_CSS = FIRST_PARTY_WIDGETS.find( ( widget ) => widget.slug === 'sticky' ).css;
+const EIGHTBALL_CSS = FIRST_PARTY_WIDGETS.find( ( widget ) => widget.slug === 'eight-ball' ).css;
 const EIGHTBALL_ASSET = resolve( WIDGETS_ROOT, 'eight-ball/assets/oracle-texture.webp' );
-const EIGHTBALL_BUNDLE = resolve( __dirname, '../../site/catalog/v1/bundles/widget-eight-ball.wp' );
-const SPOTIFY_JS    = resolve( WIDGETS_ROOT, 'spotify/widget.js' );
-const SPOTIFY_CSS   = resolve( WIDGETS_ROOT, 'spotify/widget.css' );
-const SPOTIFY_BUNDLE = resolve( __dirname, '../../site/catalog/v1/bundles/widget-spotify.wp' );
-const WIDGET_MANIFESTS = [
-	resolve( WIDGETS_ROOT, 'sticky/manifest.json' ),
-	resolve( WIDGETS_ROOT, 'eight-ball/manifest.json' ),
-	resolve( WIDGETS_ROOT, 'spotify/manifest.json' ),
+const EIGHTBALL_BUNDLE = FIRST_PARTY_WIDGETS.find( ( widget ) => widget.slug === 'eight-ball' ).bundle;
+const SPOTIFY_CSS = FIRST_PARTY_WIDGETS.find( ( widget ) => widget.slug === 'spotify' ).css;
+const DESK_PET_ASSET = resolve( WIDGETS_ROOT, 'desk-pet-oddling/assets/oddling-sprites.webp' );
+const TINY_AQUARIUM_ASSETS = [
+	resolve( WIDGETS_ROOT, 'tiny-aquarium/assets/aquarium-backdrop.webp' ),
+	resolve( WIDGETS_ROOT, 'tiny-aquarium/assets/fish-sprites.webp' ),
 ];
 
 function installWpDesktop() {
@@ -93,7 +105,8 @@ function widgetMount( id ) {
 }
 
 function injectWidgetStyles() {
-	const css = [ STICKY_CSS, EIGHTBALL_CSS, SPOTIFY_CSS ]
+	const css = FIRST_PARTY_WIDGETS
+		.map( ( widget ) => widget.css )
 		.map( ( file ) => readFileSync( file, 'utf8' ) )
 		.join( '\n' );
 	const style = document.createElement( 'style' );
@@ -103,15 +116,23 @@ function injectWidgetStyles() {
 }
 
 function loadWidgets() {
-	for ( const [ js, name ] of [
-		[ STICKY_JS,    'widgets/sticky/widget.js' ],
-		[ EIGHTBALL_JS, 'widgets/eight-ball/widget.js' ],
-		[ SPOTIFY_JS,   'widgets/spotify/widget.js' ],
-	] ) {
-		const src = readFileSync( js, 'utf8' );
-		const fn = new Function( `${ src }\n//# sourceURL=${ name }` );
+	for ( const widget of FIRST_PARTY_WIDGETS ) {
+		const src = readFileSync( widget.js, 'utf8' );
+		const fn = new Function( `${ src }\n//# sourceURL=widgets/${ widget.slug }/widget.js` );
 		fn.call( globalThis );
 	}
+}
+
+function zipListing( bundleFile ) {
+	return execFileSync(
+		'python3',
+		[
+			'-c',
+			'import sys, zipfile; print("\\n".join(zipfile.ZipFile(sys.argv[1]).namelist()))',
+			bundleFile,
+		],
+		{ encoding: 'utf8' }
+	);
 }
 
 describe( 'widgets registration', () => {
@@ -135,7 +156,7 @@ describe( 'widgets registration', () => {
 		expect( registerWidget ).not.toHaveBeenCalled();
 
 		const ids = Object.keys( window.desktopModeWidgets || {} ).sort();
-		expect( ids ).toEqual( [ 'odd/eight-ball', 'odd/spotify', 'odd/sticky' ] );
+		expect( ids ).toEqual( FIRST_PARTY_WIDGETS.map( ( widget ) => widget.id ).sort() );
 		for ( const id of ids ) {
 			expect( typeof window.desktopModeWidgets[ id ] ).toBe( 'function' );
 		}
@@ -147,6 +168,8 @@ describe( 'widgets registration', () => {
 			expect( typeof manifest.label ).toBe( 'string' );
 			expect( typeof manifest.icon ).toBe( 'string' );
 			expect( manifest.css ).toEqual( [ 'widget.css' ] );
+			expect( existsSync( resolve( dirname( file ), manifest.entry ) ) ).toBe( true );
+			expect( existsSync( resolve( dirname( file ), manifest.css[ 0 ] ) ) ).toBe( true );
 			expect( manifest.minWidth ).toBeGreaterThan( 0 );
 			expect( manifest.minHeight ).toBeGreaterThan( 0 );
 			expect( manifest.defaultWidth ).toBeGreaterThanOrEqual( manifest.minWidth );
@@ -298,58 +321,190 @@ describe( 'eight-ball widget', () => {
 		expect( css ).toContain( 'assets/oracle-texture.webp' );
 		expect( existsSync( EIGHTBALL_ASSET ) ).toBe( true );
 
-		const listing = execFileSync(
-			'python3',
-			[
-				'-c',
-				'import sys, zipfile; print("\\n".join(zipfile.ZipFile(sys.argv[1]).namelist()))',
-				EIGHTBALL_BUNDLE,
-			],
-			{ encoding: 'utf8' }
-		);
+		const listing = zipListing( EIGHTBALL_BUNDLE );
 		expect( listing ).toContain( 'assets/oracle-texture.webp' );
+	} );
+} );
+
+describe( 'new ODD Originals widgets', () => {
+	beforeEach( () => {
+		document.body.innerHTML = '';
+		clearStorage();
+		installWpDesktop();
+		injectWidgetStyles();
+		loadWidgets();
+	} );
+
+	afterEach( () => {
+		const s = document.getElementById( 'odd-widgets-style' );
+		if ( s ) s.remove();
+		vi.restoreAllMocks();
+		vi.useRealTimers();
+		delete window.__odd;
+	} );
+
+	it( 'desk pet watches the cursor, reacts to Desktop Mode events, and cleans up', () => {
+		const handlers = new Map();
+		window.__odd = {
+			events: {
+				on: vi.fn( ( name, fn ) => {
+					handlers.set( name, fn );
+					return () => handlers.delete( name );
+				} ),
+				emit: vi.fn(),
+			},
+		};
+
+		const mount = widgetMount( 'odd/desk-pet-oddling' );
+		const container = document.createElement( 'div' );
+		document.body.appendChild( container );
+
+		const cleanup = mount( container, {} );
+		expect( container.querySelector( '.odd-oddling__sprite' ) ).toBeTruthy();
+		expect( handlers.has( 'odd.window-bounds-changed' ) ).toBe( true );
+		expect( handlers.has( 'odd.window-focused' ) ).toBe( true );
+		expect( handlers.has( 'odd.desktop-layout-changed' ) ).toBe( true );
+
+		window.dispatchEvent( new MouseEvent( 'pointermove', { clientX: 24, clientY: 42 } ) );
+		expect( container.classList.contains( 'is-watching' ) ).toBe( true );
+		expect( container.style.getPropertyValue( '--oddling-look-x' ) ).not.toBe( '' );
+
+		handlers.get( 'odd.window-bounds-changed' )();
+		expect( container.getAttribute( 'data-mood' ) ).toBe( 'surprised' );
+		expect( container.classList.contains( 'is-surprised' ) ).toBe( true );
+
+		expect( typeof cleanup ).toBe( 'function' );
+		expect( () => cleanup() ).not.toThrow();
+		expect( () => cleanup() ).not.toThrow();
+		expect( handlers.size ).toBe( 0 );
+	} );
+
+	it( 'fortune terminal prints a new line and restores the last five lines', () => {
+		vi.useFakeTimers();
+		vi.spyOn( Math, 'random' ).mockReturnValue( 0.2 );
+
+		const mount = widgetMount( 'odd/fortune-terminal' );
+		const container = document.createElement( 'div' );
+		document.body.appendChild( container );
+		const { storage, values } = createCtxStorage();
+
+		const cleanup = mount( container, { storage } );
+		expect( container.querySelectorAll( '.odd-fortune__line' ).length ).toBe( 1 );
+
+		const prompt = container.querySelector( '.odd-fortune__prompt' );
+		prompt.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+		vi.advanceTimersByTime( 4000 );
+
+		const stored = values.get( 'lines' );
+		expect( Array.isArray( stored ) ).toBe( true );
+		expect( stored.length ).toBeGreaterThan( 1 );
+		expect( stored.length ).toBeLessThanOrEqual( 5 );
+		expect( container.querySelectorAll( '.odd-fortune__line' ).length ).toBe( stored.length );
+
+		cleanup();
+		container.innerHTML = '';
+		const cleanupAgain = mount( container, { storage } );
+		expect( container.querySelectorAll( '.odd-fortune__line' ).length ).toBe( stored.length );
+		cleanupAgain();
+	} );
+
+	it( 'plugin panic button settles into a checklist and persists checklist state', () => {
+		vi.useFakeTimers();
+
+		const mount = widgetMount( 'odd/plugin-panic-button' );
+		const container = document.createElement( 'div' );
+		document.body.appendChild( container );
+		const { storage, values } = createCtxStorage();
+
+		const cleanup = mount( container, { storage } );
+		const button = container.querySelector( '.odd-panic__button' );
+		button.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+
+		expect( container.classList.contains( 'is-running' ) ).toBe( true );
+		vi.advanceTimersByTime( 2000 );
+		expect( container.classList.contains( 'is-calm' ) ).toBe( true );
+		expect( container.querySelector( '.odd-panic__status' ).textContent ).toBe( 'Calm path found' );
+
+		const first = container.querySelector( '.odd-panic__item' );
+		first.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+		expect( values.get( 'checked' )[ 0 ] ).toBe( true );
+
+		cleanup();
+		container.innerHTML = '';
+		const cleanupAgain = mount( container, { storage } );
+		expect( container.querySelector( '.odd-panic__item' ).getAttribute( 'aria-pressed' ) ).toBe( 'true' );
+		cleanupAgain();
+	} );
+
+	it( 'tiny aquarium renders fish, adds a feed burst, and honors reduced motion', () => {
+		Object.defineProperty( window, 'matchMedia', {
+			value: vi.fn( ( query ) => ( {
+				matches: query.includes( 'prefers-reduced-motion' ),
+				media: query,
+				addEventListener: vi.fn(),
+				removeEventListener: vi.fn(),
+				addListener: vi.fn(),
+				removeListener: vi.fn(),
+				dispatchEvent: vi.fn(),
+			} ) ),
+			configurable: true,
+			writable: true,
+		} );
+
+		const mount = widgetMount( 'odd/tiny-aquarium' );
+		const container = document.createElement( 'div' );
+		document.body.appendChild( container );
+
+		const cleanup = mount( container, {} );
+		expect( container.classList.contains( 'is-reduced' ) ).toBe( true );
+		expect( container.querySelectorAll( '.odd-aquarium__fish' ).length ).toBe( 3 );
+
+		const tank = container.querySelector( '.odd-aquarium__tank' );
+		tank.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+		expect( container.querySelector( '.odd-aquarium__burst' ) ).toBeTruthy();
+		expect( container.querySelector( '.odd-aquarium__feed' ) ).toBeTruthy();
+		expect( container.querySelector( '.odd-aquarium__status' ).textContent ).toBe( 'Bubbles!' );
+
+		cleanup();
 	} );
 } );
 
 describe( 'widget stylesheet scoping', () => {
 	it( 'ships a source and bundled stylesheet for every first-party widget', () => {
-		for ( const [ manifestFile, cssFile, bundleFile ] of [
-			[ WIDGET_MANIFESTS[ 0 ], STICKY_CSS, STICKY_BUNDLE ],
-			[ WIDGET_MANIFESTS[ 1 ], EIGHTBALL_CSS, EIGHTBALL_BUNDLE ],
-			[ WIDGET_MANIFESTS[ 2 ], SPOTIFY_CSS, SPOTIFY_BUNDLE ],
-		] ) {
-			const manifest = JSON.parse( readFileSync( manifestFile, 'utf8' ) );
+		for ( const widget of FIRST_PARTY_WIDGETS ) {
+			const manifest = JSON.parse( readFileSync( widget.manifest, 'utf8' ) );
 			expect( manifest.css ).toEqual( [ 'widget.css' ] );
-			expect( existsSync( cssFile ) ).toBe( true );
+			expect( existsSync( widget.css ) ).toBe( true );
 
-			const listing = execFileSync(
-				'python3',
-				[
-					'-c',
-					'import sys, zipfile; print("\\n".join(zipfile.ZipFile(sys.argv[1]).namelist()))',
-					bundleFile,
-				],
-				{ encoding: 'utf8' }
-			);
+			const listing = zipListing( widget.bundle );
 			expect( listing ).toContain( 'widget.css' );
 		}
 	} );
 
-	it( 'keeps first-party widget CSS from styling sibling widgets', () => {
-		const stickyCss = readFileSync( STICKY_CSS, 'utf8' );
-		const eightCss = readFileSync( EIGHTBALL_CSS, 'utf8' );
-		const spotifyCss = readFileSync( SPOTIFY_CSS, 'utf8' );
+	it( 'ships runtime bitmap assets in source and built bundles', () => {
+		expect( existsSync( DESK_PET_ASSET ) ).toBe( true );
+		for ( const asset of TINY_AQUARIUM_ASSETS ) {
+			expect( existsSync( asset ) ).toBe( true );
+		}
 
-		expect( stickyCss ).toContain( '.odd-widget--sticky' );
-		expect( stickyCss ).not.toMatch( /(^|\n)\.odd-widget\s*\{/ );
-		expect( stickyCss ).not.toContain( 'odd-widget--eight' );
-		expect( stickyCss ).not.toContain( 'odd-eight__' );
-		expect( eightCss ).toContain( '.odd-widget--eight' );
-		expect( eightCss ).not.toContain( 'odd-widget--sticky' );
-		expect( eightCss ).not.toContain( 'odd-sticky__' );
-		expect( spotifyCss ).toContain( '.odd-widget--spotify' );
-		expect( spotifyCss ).not.toContain( 'odd-sticky__' );
-		expect( spotifyCss ).not.toContain( 'odd-eight__' );
+		for ( const widget of FIRST_PARTY_WIDGETS.filter( ( item ) => item.assets ) ) {
+			const listing = zipListing( widget.bundle );
+			for ( const asset of widget.assets ) {
+				expect( listing ).toContain( asset );
+			}
+		}
+	} );
+
+	it( 'keeps first-party widget CSS from styling sibling widgets', () => {
+		for ( const widget of FIRST_PARTY_WIDGETS ) {
+			const css = readFileSync( widget.css, 'utf8' );
+			expect( css ).toContain( widget.cssRoot );
+			expect( css ).not.toMatch( /(^|\n)\.odd-widget\s*\{/ );
+			for ( const sibling of FIRST_PARTY_WIDGETS ) {
+				if ( sibling.slug === widget.slug ) continue;
+				expect( css ).not.toContain( sibling.cssRoot.replace( '.', '' ) );
+			}
+		}
 	} );
 } );
 

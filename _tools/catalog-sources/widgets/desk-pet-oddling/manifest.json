@@ -1,0 +1,22 @@
+{
+  "slug": "desk-pet-oddling",
+  "id": "odd/desk-pet-oddling",
+  "label": "Desk Pet Oddling",
+  "description": "A tiny Oddling that naps, watches the cursor, and reacts to Desktop Mode window activity.",
+  "category": "ODD Originals",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "entry": "widget.js",
+  "css": [
+    "widget.css"
+  ],
+  "icon": "dashicons-pets",
+  "movable": true,
+  "resizable": true,
+  "minWidth": 200,
+  "minHeight": 200,
+  "maxWidth": 360,
+  "maxHeight": 380,
+  "defaultWidth": 240,
+  "defaultHeight": 240
+}

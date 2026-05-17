@@ -1,0 +1,250 @@
+.odd-widget--tiny-aquarium {
+	box-sizing: border-box;
+	width: 100%;
+	height: 100%;
+	min-width: 0;
+	min-height: 0;
+	overflow: hidden;
+	border: 1px solid rgba( 94, 225, 255, 0.3 );
+	border-radius: 18px;
+	background:
+		radial-gradient( circle at 16% 18%, rgba( 94, 225, 255, 0.22 ), transparent 30% ),
+		radial-gradient( circle at 86% 82%, rgba( 255, 79, 167, 0.14 ), transparent 32% ),
+		linear-gradient( 145deg, #101827, #070912 );
+	box-shadow:
+		inset 0 1px 0 rgba( 255, 255, 255, 0.1 ),
+		0 18px 38px rgba( 0, 0, 0, 0.26 );
+	color: #f7fdff;
+	font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.odd-widget--tiny-aquarium *,
+.odd-widget--tiny-aquarium *::before,
+.odd-widget--tiny-aquarium *::after {
+	box-sizing: border-box;
+}
+
+.odd-widget--tiny-aquarium .odd-aquarium {
+	display: grid;
+	grid-template-rows: 1fr auto;
+	width: 100%;
+	height: 100%;
+	padding: clamp( 10px, 4%, 16px );
+	gap: 8px;
+}
+
+.odd-widget--tiny-aquarium .odd-aquarium__tank {
+	position: relative;
+	display: block;
+	width: 100%;
+	min-width: 0;
+	min-height: 0;
+	overflow: hidden;
+	border: 1px solid rgba( 182, 255, 255, 0.32 );
+	border-radius: 16px;
+	background: #071421;
+	box-shadow:
+		inset 0 1px 0 rgba( 255, 255, 255, 0.16 ),
+		inset 0 -20px 42px rgba( 12, 68, 92, 0.42 );
+	cursor: pointer;
+	font: inherit;
+}
+
+.odd-widget--tiny-aquarium .odd-aquarium__backdrop {
+	position: absolute;
+	inset: 0;
+	background-image: url( "assets/aquarium-backdrop.webp" );
+	background-position: center;
+	background-size: cover;
+	opacity: 0.86;
+	transform: scale( 1.02 );
+}
+
+.odd-widget--tiny-aquarium .odd-aquarium__shimmer {
+	position: absolute;
+	inset: 0;
+	background:
+		linear-gradient( 105deg, transparent 0 20%, rgba( 255, 255, 255, 0.14 ) 24%, transparent 30% 100% ),
+		repeating-linear-gradient( 90deg, rgba( 255, 255, 255, 0.04 ) 0 1px, transparent 1px 22px );
+	mix-blend-mode: screen;
+	opacity: 0.55;
+	transform: translateX( -20% );
+	animation: odd-aquarium-shimmer 7s ease-in-out infinite;
+}
+
+.odd-widget--tiny-aquarium .odd-aquarium__plants {
+	position: absolute;
+	inset: auto 0 0;
+	height: 34%;
+	background:
+		radial-gradient( ellipse at 18% 100%, rgba( 73, 255, 170, 0.38 ), transparent 42% ),
+		radial-gradient( ellipse at 72% 100%, rgba( 49, 214, 146, 0.34 ), transparent 38% ),
+		linear-gradient( 180deg, transparent, rgba( 4, 32, 36, 0.62 ) );
+	pointer-events: none;
+}
+
+.odd-widget--tiny-aquarium .odd-aquarium__bubbles {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+.odd-widget--tiny-aquarium .odd-aquarium__bubbles::before,
+.odd-widget--tiny-aquarium .odd-aquarium__bubbles::after {
+	position: absolute;
+	bottom: 14%;
+	width: 8px;
+	height: 8px;
+	border: 1px solid rgba( 214, 255, 255, 0.74 );
+	border-radius: 50%;
+	box-shadow:
+		18px -22px 0 -2px rgba( 214, 255, 255, 0.52 ),
+		-12px -46px 0 -3px rgba( 214, 255, 255, 0.42 );
+	content: "";
+	opacity: 0.74;
+	animation: odd-aquarium-bubbles 5.4s ease-in-out infinite;
+}
+
+.odd-widget--tiny-aquarium .odd-aquarium__bubbles::before {
+	left: 20%;
+}
+
+.odd-widget--tiny-aquarium .odd-aquarium__bubbles::after {
+	right: 20%;
+	animation-delay: -2s;
+}
+
+.odd-widget--tiny-aquarium .odd-aquarium__fish {
+	position: absolute;
+	display: block;
+	width: min( 24%, 108px );
+	aspect-ratio: 72 / 44;
+	background-image: url( "assets/fish-sprites.webp" );
+	background-repeat: no-repeat;
+	background-size: 300% 100%;
+	filter: drop-shadow( 0 5px 7px rgba( 0, 0, 0, 0.35 ) );
+	pointer-events: none;
+}
+
+.odd-widget--tiny-aquarium .odd-aquarium__fish--one {
+	top: 30%;
+	left: -24%;
+	background-position: 0% 0%;
+	animation: odd-aquarium-swim-one 10s linear infinite;
+}
+
+.odd-widget--tiny-aquarium .odd-aquarium__fish--two {
+	top: 50%;
+	right: -22%;
+	width: min( 18%, 86px );
+	background-position: 50% 0%;
+	transform: scaleX( -1 );
+	animation: odd-aquarium-swim-two 13s linear infinite;
+}
+
+.odd-widget--tiny-aquarium .odd-aquarium__fish--three {
+	top: 18%;
+	left: -20%;
+	width: min( 15%, 72px );
+	background-position: 100% 0%;
+	animation: odd-aquarium-swim-three 16s linear infinite;
+}
+
+.odd-widget--tiny-aquarium .odd-aquarium__burst {
+	position: absolute;
+	left: 50%;
+	bottom: 22%;
+	width: 12px;
+	height: 12px;
+	border: 2px solid rgba( 222, 255, 255, 0.82 );
+	border-radius: 50%;
+	box-shadow:
+		-18px 10px 0 -3px rgba( 222, 255, 255, 0.78 ),
+		16px -8px 0 -4px rgba( 222, 255, 255, 0.68 ),
+		8px 16px 0 -5px rgba( 222, 255, 255, 0.56 );
+	pointer-events: none;
+	transform: translateX( -50% );
+	animation: odd-aquarium-burst 1.35s ease-out forwards;
+}
+
+.odd-widget--tiny-aquarium .odd-aquarium__feed {
+	position: absolute;
+	top: 18%;
+	left: 49%;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: #ffd36a;
+	box-shadow:
+		8px 8px 0 -1px #ff9f6a,
+		-7px 11px 0 -2px #fff0a3,
+		2px 18px 0 -2px #ffcf5a;
+	pointer-events: none;
+	animation: odd-aquarium-feed 1.45s ease-in forwards;
+}
+
+.odd-widget--tiny-aquarium .odd-aquarium__status {
+	overflow: hidden;
+	color: rgba( 247, 253, 255, 0.72 );
+	font-size: 11px;
+	font-weight: 900;
+	letter-spacing: 0;
+	line-height: 1.2;
+	text-align: center;
+	text-overflow: ellipsis;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
+@keyframes odd-aquarium-shimmer {
+	0%,
+	100% { transform: translateX( -26% ); }
+	50% { transform: translateX( 22% ); }
+}
+
+@keyframes odd-aquarium-bubbles {
+	0% { opacity: 0; transform: translateY( 18px ) scale( 0.75 ); }
+	25% { opacity: 0.78; }
+	100% { opacity: 0; transform: translateY( -64px ) scale( 1.18 ); }
+}
+
+@keyframes odd-aquarium-swim-one {
+	from { transform: translateX( 0 ) translateY( 0 ); }
+	48% { transform: translateX( 64vw ) translateY( -7px ); }
+	to { transform: translateX( 128vw ) translateY( 5px ); }
+}
+
+@keyframes odd-aquarium-swim-two {
+	from { transform: translateX( 0 ) scaleX( -1 ); }
+	52% { transform: translateX( -60vw ) translateY( 6px ) scaleX( -1 ); }
+	to { transform: translateX( -124vw ) translateY( -4px ) scaleX( -1 ); }
+}
+
+@keyframes odd-aquarium-swim-three {
+	from { transform: translateX( 0 ) translateY( 0 ); }
+	60% { transform: translateX( 68vw ) translateY( 8px ); }
+	to { transform: translateX( 132vw ) translateY( -3px ); }
+}
+
+@keyframes odd-aquarium-burst {
+	to { opacity: 0; transform: translateX( -50% ) translateY( -60px ) scale( 1.4 ); }
+}
+
+@keyframes odd-aquarium-feed {
+	to { opacity: 0; transform: translateY( 82px ) scale( 0.8 ); }
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.odd-widget--tiny-aquarium .odd-aquarium__shimmer,
+	.odd-widget--tiny-aquarium .odd-aquarium__bubbles::before,
+	.odd-widget--tiny-aquarium .odd-aquarium__bubbles::after,
+	.odd-widget--tiny-aquarium .odd-aquarium__fish,
+	.odd-widget--tiny-aquarium .odd-aquarium__burst,
+	.odd-widget--tiny-aquarium .odd-aquarium__feed {
+		animation: none;
+	}
+
+	.odd-widget--tiny-aquarium .odd-aquarium__fish--one { left: 18%; }
+	.odd-widget--tiny-aquarium .odd-aquarium__fish--two { right: 18%; }
+	.odd-widget--tiny-aquarium .odd-aquarium__fish--three { left: 52%; }
+}

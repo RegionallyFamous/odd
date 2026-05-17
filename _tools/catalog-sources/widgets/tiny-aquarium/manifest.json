@@ -1,0 +1,22 @@
+{
+  "slug": "tiny-aquarium",
+  "id": "odd/tiny-aquarium",
+  "label": "Tiny Aquarium",
+  "description": "A calm little desktop aquarium with drifting fish, bubbles, and a gentle water shimmer.",
+  "category": "ODD Originals",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "entry": "widget.js",
+  "css": [
+    "widget.css"
+  ],
+  "icon": "dashicons-palmtree",
+  "movable": true,
+  "resizable": true,
+  "minWidth": 280,
+  "minHeight": 190,
+  "maxWidth": 560,
+  "maxHeight": 380,
+  "defaultWidth": 340,
+  "defaultHeight": 230
+}

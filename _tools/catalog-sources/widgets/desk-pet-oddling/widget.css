@@ -1,0 +1,174 @@
+.odd-widget--desk-pet-oddling {
+	--oddling-look-x: 0;
+	--oddling-look-y: 0;
+	box-sizing: border-box;
+	width: 100%;
+	height: 100%;
+	min-width: 0;
+	min-height: 0;
+	overflow: hidden;
+	border: 1px solid rgba( 127, 255, 218, 0.26 );
+	border-radius: 18px;
+	background:
+		radial-gradient( circle at calc( 50% + ( var( --oddling-look-x ) * 20% ) ) 18%, rgba( 98, 224, 255, 0.24 ), transparent 32% ),
+		linear-gradient( 145deg, rgba( 18, 15, 31, 0.96 ), rgba( 8, 10, 19, 0.98 ) );
+	box-shadow:
+		inset 0 1px 0 rgba( 255, 255, 255, 0.09 ),
+		0 18px 38px rgba( 4, 6, 20, 0.28 );
+	color: #f8f6ff;
+	font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.odd-widget--desk-pet-oddling *,
+.odd-widget--desk-pet-oddling *::before,
+.odd-widget--desk-pet-oddling *::after {
+	box-sizing: border-box;
+}
+
+.odd-widget--desk-pet-oddling .odd-oddling {
+	position: relative;
+	display: grid;
+	width: 100%;
+	height: 100%;
+	place-items: center;
+	padding: clamp( 12px, 7%, 24px );
+	isolation: isolate;
+}
+
+.odd-widget--desk-pet-oddling .odd-oddling__glow {
+	position: absolute;
+	inset: 9%;
+	border-radius: 42% 58% 50% 46%;
+	background:
+		radial-gradient( circle at 38% 26%, rgba( 111, 255, 185, 0.2 ), transparent 28% ),
+		radial-gradient( circle at 66% 72%, rgba( 255, 88, 180, 0.2 ), transparent 30% ),
+		linear-gradient( 135deg, rgba( 89, 214, 255, 0.16 ), rgba( 151, 91, 255, 0.12 ) );
+	filter: blur( 1px );
+	opacity: 0.82;
+	animation: odd-oddling-glow 5.6s ease-in-out infinite;
+	z-index: 0;
+}
+
+.odd-widget--desk-pet-oddling .odd-oddling__sprite {
+	width: min( 76%, 220px );
+	aspect-ratio: 3 / 2;
+	background-image: url( "assets/oddling-sprites.webp" );
+	background-repeat: no-repeat;
+	background-size: 300% 200%;
+	background-position: 0% 0%;
+	filter: drop-shadow( 0 16px 18px rgba( 0, 0, 0, 0.38 ) );
+	transform:
+		translate3d( calc( var( --oddling-look-x ) * 5px ), calc( var( --oddling-look-y ) * 4px ), 0 )
+		scale( 1.05 );
+	transition: background-position 120ms steps( 1, end ), transform 180ms ease;
+	z-index: 2;
+	animation: odd-oddling-breathe 4.8s ease-in-out infinite;
+}
+
+.odd-widget--desk-pet-oddling .odd-oddling__shadow {
+	position: absolute;
+	left: 24%;
+	right: 24%;
+	bottom: 13%;
+	height: 9%;
+	border-radius: 999px;
+	background: radial-gradient( ellipse, rgba( 0, 0, 0, 0.42 ), transparent 68% );
+	z-index: 1;
+	animation: odd-oddling-shadow 4.8s ease-in-out infinite;
+}
+
+.odd-widget--desk-pet-oddling .odd-oddling__sign {
+	position: absolute;
+	top: 13%;
+	right: 9%;
+	max-width: 48%;
+	padding: 7px 9px;
+	border: 2px solid rgba( 255, 255, 255, 0.86 );
+	border-radius: 9px;
+	background: #fff8cf;
+	box-shadow: 0 8px 20px rgba( 0, 0, 0, 0.28 );
+	color: #2b2034;
+	font-size: clamp( 10px, 6.2cqi, 14px );
+	font-weight: 900;
+	letter-spacing: 0;
+	line-height: 1;
+	opacity: 0;
+	transform: translateY( 8px ) rotate( -3deg ) scale( 0.92 );
+	transition: opacity 160ms ease, transform 160ms ease;
+	z-index: 3;
+}
+
+.odd-widget--desk-pet-oddling .odd-oddling__sign::after {
+	position: absolute;
+	right: 18%;
+	bottom: -9px;
+	width: 10px;
+	height: 12px;
+	border-radius: 0 0 999px 999px;
+	background: #fff8cf;
+	content: "";
+}
+
+.odd-widget--desk-pet-oddling .odd-oddling__status {
+	position: absolute;
+	left: 12px;
+	right: 12px;
+	bottom: 10px;
+	overflow: hidden;
+	color: rgba( 248, 246, 255, 0.74 );
+	font-size: 11px;
+	font-weight: 800;
+	letter-spacing: 0;
+	line-height: 1.2;
+	text-align: center;
+	text-overflow: ellipsis;
+	text-transform: uppercase;
+	white-space: nowrap;
+	z-index: 4;
+}
+
+.odd-widget--desk-pet-oddling.is-holding-sign .odd-oddling__sign {
+	opacity: 1;
+	transform: translateY( 0 ) rotate( -3deg ) scale( 1 );
+}
+
+.odd-widget--desk-pet-oddling.is-surprised .odd-oddling__sprite {
+	transform:
+		translate3d( calc( var( --oddling-look-x ) * 6px ), calc( var( --oddling-look-y ) * 4px - 5px ), 0 )
+		scale( 1.1 );
+}
+
+.odd-widget--desk-pet-oddling.is-napping .odd-oddling__sprite {
+	transform: translateY( 8px ) scale( 1 );
+}
+
+.odd-widget--desk-pet-oddling.is-watching .odd-oddling__glow {
+	opacity: 1;
+}
+
+@keyframes odd-oddling-breathe {
+	0%,
+	100% { transform: translate3d( calc( var( --oddling-look-x ) * 5px ), calc( var( --oddling-look-y ) * 4px ), 0 ) scale( 1.05 ); }
+	50% { transform: translate3d( calc( var( --oddling-look-x ) * 5px ), calc( var( --oddling-look-y ) * 4px - 5px ), 0 ) scale( 1.07 ); }
+}
+
+@keyframes odd-oddling-shadow {
+	0%,
+	100% { opacity: 0.64; transform: scaleX( 1 ); }
+	50% { opacity: 0.46; transform: scaleX( 0.86 ); }
+}
+
+@keyframes odd-oddling-glow {
+	0%,
+	100% { transform: rotate( -3deg ) scale( 1 ); }
+	50% { transform: rotate( 3deg ) scale( 1.05 ); }
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.odd-widget--desk-pet-oddling .odd-oddling__sprite,
+	.odd-widget--desk-pet-oddling .odd-oddling__glow,
+	.odd-widget--desk-pet-oddling .odd-oddling__shadow {
+		animation: none;
+		transition-duration: 0.01ms;
+	}
+}

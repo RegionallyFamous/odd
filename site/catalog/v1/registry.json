@@ -580,6 +580,20 @@
     },
     {
       "type": "widget",
+      "slug": "desk-pet-oddling",
+      "name": "Desk Pet Oddling",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A tiny Oddling that naps, watches the cursor, and reacts to Desktop Mode window activity.",
+      "category": "ODD Originals",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/widget-desk-pet-oddling.svg",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/widget-desk-pet-oddling.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/widget-desk-pet-oddling.wp",
+      "sha256": "3618139ac0785a8129a6cab64188e09d838462215c3beddac95fb093f1fa0fce",
+      "size": 81422
+    },
+    {
+      "type": "widget",
       "slug": "eight-ball",
       "name": "Magic 8-Ball",
       "version": "1.0.1",
@@ -591,6 +605,34 @@
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/widget-eight-ball.wp",
       "sha256": "276c23b51ebfdbb2bb36cc955c21f44238a98f7c033a6cd215c47823bc720425",
       "size": 107535
+    },
+    {
+      "type": "widget",
+      "slug": "fortune-terminal",
+      "name": "Fortune Terminal",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A tiny CRT that prints WordPress omens, fake logs, and mysterious admin wisdom.",
+      "category": "ODD Originals",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/widget-fortune-terminal.svg",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/widget-fortune-terminal.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/widget-fortune-terminal.wp",
+      "sha256": "20477807c24ef29177a74d2a19858290bb4d836639789a7798c2079e6b6c57b8",
+      "size": 4456
+    },
+    {
+      "type": "widget",
+      "slug": "plugin-panic-button",
+      "name": "Plugin Panic Button",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A dramatic panic button that settles into a calm WordPress troubleshooting checklist.",
+      "category": "ODD Originals",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/widget-plugin-panic-button.svg",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/widget-plugin-panic-button.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/widget-plugin-panic-button.wp",
+      "sha256": "c1b5457aafb0d5730bab27c3ae238c9f32a4f968e71f5312c948a065792f3593",
+      "size": 4267
     },
     {
       "type": "widget",
@@ -619,6 +661,20 @@
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/widget-sticky.wp",
       "sha256": "8fa0cadbe53e1e1286cf51ee45b21efd0afb5a188c979c7b00da472dabb95912",
       "size": 3383
+    },
+    {
+      "type": "widget",
+      "slug": "tiny-aquarium",
+      "name": "Tiny Aquarium",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A calm little desktop aquarium with drifting fish, bubbles, and a gentle water shimmer.",
+      "category": "ODD Originals",
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/widget-tiny-aquarium.svg",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/widget-tiny-aquarium.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/widget-tiny-aquarium.wp",
+      "sha256": "c534ede119b896e431f99bbf9d3b9a726b6631e88457b1f3ebf7005a7e0e6c28",
+      "size": 50731
     },
     {
       "type": "app",

@@ -1,0 +1,22 @@
+{
+  "slug": "plugin-panic-button",
+  "id": "odd/plugin-panic-button",
+  "label": "Plugin Panic Button",
+  "description": "A dramatic panic button that settles into a calm WordPress troubleshooting checklist.",
+  "category": "ODD Originals",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "entry": "widget.js",
+  "css": [
+    "widget.css"
+  ],
+  "icon": "dashicons-warning",
+  "movable": true,
+  "resizable": true,
+  "minWidth": 260,
+  "minHeight": 180,
+  "maxWidth": 460,
+  "maxHeight": 340,
+  "defaultWidth": 300,
+  "defaultHeight": 220
+}
