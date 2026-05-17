@@ -68,6 +68,7 @@ ICON_IMAGE_MAX_BYTES = 768 * 1024
 ICON_IMAGE_EXTENSIONS = {"png": "PNG", "webp": "WEBP"}
 ICON_VISIBLE_ALPHA_THRESHOLD = 32
 ICON_VISIBLE_MIN_FILL = 0.80
+APP_ICON_TRANSPARENT_EDGE_MIN = 0.90
 CATALOG_CARD_SIZE = (1024, 576)
 SCENE_CARD_RMS_LIMIT = 10.0
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
@@ -145,6 +146,21 @@ def visible_alpha_fill_ratio(image: Image.Image) -> float | None:
     return max(width, height) / max(image.size)
 
 
+def transparent_edge_ratio(image: Image.Image) -> float:
+    alpha = image.getchannel("A")
+    width, height = image.size
+    edge = []
+    for x in range(width):
+        edge.append(alpha.getpixel((x, 0)))
+        edge.append(alpha.getpixel((x, height - 1)))
+    for y in range(height):
+        edge.append(alpha.getpixel((0, y)))
+        edge.append(alpha.getpixel((width - 1, y)))
+    if not edge:
+        return 0.0
+    return sum(1 for value in edge if value < ICON_VISIBLE_ALPHA_THRESHOLD) / len(edge)
+
+
 def validate_icon_image(slug: str, rel: str, data: bytes, problems: list[str]) -> None:
     ext = Path(rel).suffix.lower().lstrip(".")
     expected = ICON_IMAGE_EXTENSIONS.get(ext)
@@ -177,6 +193,46 @@ def validate_icon_image(slug: str, rel: str, data: bytes, problems: list[str]) -
         problems.append(
             f"icon-set {slug}: icon {rel!r} visible glyph fill {visible_fill:.3f} "
             f"below {ICON_VISIBLE_MIN_FILL:.2f}; normalize transparent padding"
+        )
+
+
+def validate_app_icon_image(slug: str, rel: str, data: bytes, problems: list[str]) -> None:
+    ext = Path(rel).suffix.lower().lstrip(".")
+    expected = ICON_IMAGE_EXTENSIONS.get(ext)
+    if expected is None:
+        return
+    if len(data) > ICON_IMAGE_MAX_BYTES:
+        problems.append(f"app {slug}: icon {rel!r} exceeds 768 KiB")
+        return
+    try:
+        with Image.open(io.BytesIO(data)) as img:
+            img.verify()
+        with Image.open(io.BytesIO(data)) as img:
+            fmt = img.format
+            width, height = img.size
+            rgba = img.convert("RGBA")
+    except Exception as exc:  # noqa: BLE001 - validation should report and continue.
+        problems.append(f"app {slug}: icon {rel!r} is not a valid image ({exc})")
+        return
+    if fmt != expected:
+        problems.append(f"app {slug}: icon {rel!r} extension does not match {fmt}")
+    if width != height:
+        problems.append(f"app {slug}: icon {rel!r} must be square, got {width}x{height}")
+    if width < 64 or height < 64 or width > 2048 or height > 2048:
+        problems.append(f"app {slug}: icon {rel!r} dimensions out of range: {width}x{height}")
+    visible_fill = visible_alpha_fill_ratio(rgba)
+    if visible_fill is None:
+        problems.append(f"app {slug}: icon {rel!r} has no visible alpha footprint")
+    elif visible_fill < ICON_VISIBLE_MIN_FILL:
+        problems.append(
+            f"app {slug}: icon {rel!r} visible glyph fill {visible_fill:.3f} "
+            f"below {ICON_VISIBLE_MIN_FILL:.2f}; normalize transparent padding"
+        )
+    transparent_edge = transparent_edge_ratio(rgba)
+    if transparent_edge < APP_ICON_TRANSPARENT_EDGE_MIN:
+        problems.append(
+            f"app {slug}: icon {rel!r} transparent edge ratio {transparent_edge:.3f} "
+            f"below {APP_ICON_TRANSPARENT_EDGE_MIN:.2f}; app icons should be transparent sticker art"
         )
 
 
@@ -324,6 +380,8 @@ def check_bundle_row(
             f"bundle[{idx}] ({slug}): icon_url does not resolve to a file "
             f"({row['icon_url']!r})"
         )
+    elif btype == "app" and icon_disk is not None and icon_disk.is_file():
+        validate_app_icon_image(slug, icon_disk.name, icon_disk.read_bytes(), problems)
     card_disk = resolve_to_disk(row.get("card_url", ""))
     if card_disk is None or not card_disk.is_file():
         problems.append(
@@ -418,6 +476,11 @@ def check_bundle_row(
                     problems.append(
                         f"bundle[{idx}] ({slug}): app manifest icon {icon!r} missing from archive"
                     )
+                elif (
+                    not icon.startswith(("http://", "https://"))
+                    and Path(icon).suffix.lower().lstrip(".") in ICON_IMAGE_EXTENSIONS
+                ):
+                    validate_app_icon_image(slug, icon, zf.read(icon), problems)
                 entry = manifest.get("entry") or "index.html"
                 if isinstance(entry, str):
                     try:

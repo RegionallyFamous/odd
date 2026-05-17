@@ -711,8 +711,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/cache-invaders.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-cache-invaders.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/cache-invaders.wp",
-      "sha256": "e08e00cbd7d93c2808d533a6d097126aef09012f2102e8e29686c97a335d29f1",
-      "size": 123354
+      "sha256": "2c33a1e56d826c0f428453f0be1a0486b97c66cf5999686340a959d3b6d5594d",
+      "size": 223962
     },
     {
       "type": "app",
@@ -768,8 +768,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/four-oh-four-runner.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-four-oh-four-runner.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/four-oh-four-runner.wp",
-      "sha256": "bf68bc00b86557a89c3d6fe33391fc7090948133678d9ad6d18c957b8399f4e3",
-      "size": 149409
+      "sha256": "afa5ab6337e8d90c6ee25b6b52866a256b4493e6640093a5249b42f02994810b",
+      "size": 260164
     },
     {
       "type": "app",
@@ -825,8 +825,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/plugin-panic.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-plugin-panic.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/plugin-panic.wp",
-      "sha256": "13827bb12e5d88a6d759b3ebabf3d81b60fedebc230483233e7afeccbb286192",
-      "size": 134282
+      "sha256": "c6fee3eb80bec1b535f1f87010d6b4daa6510cafd3f3f50614823766fd27578b",
+      "size": 231914
     },
     {
       "type": "app",

@@ -80,6 +80,7 @@ ICON_IMAGE_MAX_DIM = 2048
 ICON_IMAGE_EXTENSIONS = {"png": "PNG", "webp": "WEBP"}
 ICON_VISIBLE_ALPHA_THRESHOLD = 32
 ICON_VISIBLE_MIN_FILL = 0.80
+APP_ICON_TRANSPARENT_EDGE_MIN = 0.90
 CATALOG_CARD_SIZE = (1024, 576)
 ASSET_REL_PATH = re.compile(r"^[a-zA-Z0-9._-]+(/[a-zA-Z0-9._-]+)*$")
 BUNDLE_FORBIDDEN_EXTENSIONS = {
@@ -318,6 +319,21 @@ def _visible_alpha_fill_ratio(image: Image.Image) -> float | None:
     return max(width, height) / max(image.size)
 
 
+def _transparent_edge_ratio(image: Image.Image) -> float:
+    alpha = image.getchannel("A")
+    width, height = image.size
+    edge = []
+    for x in range(width):
+        edge.append(alpha.getpixel((x, 0)))
+        edge.append(alpha.getpixel((x, height - 1)))
+    for y in range(height):
+        edge.append(alpha.getpixel((0, y)))
+        edge.append(alpha.getpixel((width - 1, y)))
+    if not edge:
+        return 0.0
+    return sum(1 for value in edge if value < ICON_VISIBLE_ALPHA_THRESHOLD) / len(edge)
+
+
 def _validate_icon_raster(slug: str, rel: str, data: bytes, *, square: bool) -> None:
     label = f"icon-set {slug}: {rel}"
     ext = Path(rel).suffix.lower().lstrip(".")
@@ -359,6 +375,54 @@ def _validate_icon_raster(slug: str, rel: str, data: bytes, *, square: bool) -> 
                 f"{label}: visible glyph fill {visible_fill:.3f} below "
                 f"{ICON_VISIBLE_MIN_FILL:.2f}; normalize transparent padding"
             )
+
+
+def _validate_app_icon_raster(slug: str, rel: str, data: bytes) -> None:
+    label = f"app {slug}: {rel}"
+    ext = Path(rel).suffix.lower().lstrip(".")
+    expected = ICON_IMAGE_EXTENSIONS.get(ext)
+    if expected is None:
+        return
+    if len(data) > ICON_IMAGE_SIZE_BUDGET:
+        raise SystemExit(
+            f"{label}: {len(data)} bytes exceeds {ICON_IMAGE_SIZE_BUDGET} budget"
+        )
+    try:
+        with Image.open(io.BytesIO(data)) as img:
+            img.verify()
+        with Image.open(io.BytesIO(data)) as img:
+            fmt = img.format
+            width, height = img.size
+            rgba = img.convert("RGBA")
+    except Exception as exc:
+        raise SystemExit(f"{label}: invalid image data: {exc}") from exc
+    if fmt != expected:
+        raise SystemExit(f"{label}: extension .{ext} does not match {fmt}")
+    if width != height:
+        raise SystemExit(f"{label}: icon must be square, got {width}x{height}")
+    if (
+        width < ICON_IMAGE_MIN_DIM
+        or height < ICON_IMAGE_MIN_DIM
+        or width > ICON_IMAGE_MAX_DIM
+        or height > ICON_IMAGE_MAX_DIM
+    ):
+        raise SystemExit(
+            f"{label}: image dimensions must be {ICON_IMAGE_MIN_DIM}-{ICON_IMAGE_MAX_DIM}px, got {width}x{height}px"
+        )
+    visible_fill = _visible_alpha_fill_ratio(rgba)
+    if visible_fill is None:
+        raise SystemExit(f"{label}: icon has no visible alpha footprint")
+    if visible_fill < ICON_VISIBLE_MIN_FILL:
+        raise SystemExit(
+            f"{label}: visible glyph fill {visible_fill:.3f} below "
+            f"{ICON_VISIBLE_MIN_FILL:.2f}; normalize transparent padding"
+        )
+    transparent_edge = _transparent_edge_ratio(rgba)
+    if transparent_edge < APP_ICON_TRANSPARENT_EDGE_MIN:
+        raise SystemExit(
+            f"{label}: transparent edge ratio {transparent_edge:.3f} below "
+            f"{APP_ICON_TRANSPARENT_EDGE_MIN:.2f}; app icons should be transparent sticker art"
+        )
 
 
 def _validate_widget_preview_svg(slug: str, rel: str, data: bytes) -> None:
@@ -975,6 +1039,8 @@ def build_app(slug: str, src_dir: Path) -> dict:
     )
     if not bundle_src.is_file():
         raise SystemExit(f"app {slug}: missing bundle.wp")
+    if icon_src is not None and icon_src.suffix.lower().lstrip(".") in ICON_IMAGE_EXTENSIONS:
+        _validate_app_icon_raster(slug, icon_src.name, icon_src.read_bytes())
     with zipfile.ZipFile(bundle_src, "r") as zf:
         manifest = json.loads(zf.read("manifest.json"))
         icon = manifest.get("icon")
@@ -982,6 +1048,11 @@ def build_app(slug: str, src_dir: Path) -> dict:
             raise SystemExit(f"app {slug}: manifest.json must declare icon")
         if not icon.startswith(("http://", "https://")) and icon not in zf.namelist():
             raise SystemExit(f"app {slug}: manifest icon {icon!r} missing from bundle.wp")
+        if (
+            not icon.startswith(("http://", "https://"))
+            and Path(icon).suffix.lower().lstrip(".") in ICON_IMAGE_EXTENSIONS
+        ):
+            _validate_app_icon_raster(slug, icon, zf.read(icon))
 
     bundle_dest = OUT_BUNDLES / f"{slug}.wp"
     shutil.copy2(bundle_src, bundle_dest)
