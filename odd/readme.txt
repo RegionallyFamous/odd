@@ -5,7 +5,7 @@ Requires at least: 6.8
 Tested up to: 6.9
 Requires PHP: 8.1
 Requires Plugins: desktop-mode
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -120,6 +120,14 @@ Typical build commands:
 
 == Changelog ==
 
+= 1.1.2 =
+
+ODD 1.1.2 fixes first-install Desktop Mode refresh behavior so starter content becomes visible without requiring a browser refresh.
+
+* ODD's Desktop Mode wallpaper and Shop window now register through a small live bootstrap handle that can load the full ODD runtime during Desktop Mode's mid-session refresh.
+* The bootstrap applies the starter wallpaper, large dock, and ODD launcher visibility through Desktop Mode's native settings API when the current desktop is still on the default wallpaper.
+* The ODD Shop native window now advertises its stylesheet to Desktop Mode's lazy loader, so mid-session activation gets styled Shop chrome immediately.
+
 = 1.1.1 =
 
 ODD 1.1.1 is a stability release for catalog freshness, Shop teardown cleanup, and the current bundled catalog baseline.
@@ -148,6 +156,10 @@ ODD 1.1.0 makes the desktop experience feel more native, more polished, and more
 Welcome to ODD. The first public release brings living wallpapers, icon sets, cursor themes, desktop widgets, tiny apps, starter content, and the ODD Shop to WP Desktop Mode.
 
 == Upgrade Notice ==
+
+= 1.1.2 =
+
+First installs now apply the starter Desktop Mode experience immediately after activation without a manual browser refresh. Requires WP Desktop Mode v0.8.5 or newer.
 
 = 1.1.1 =
 

@@ -121,6 +121,22 @@ describe( 'v1 source guardrails', () => {
 		expect( cardArt ).toContain( "row.type === 'icon-set'" );
 	} );
 
+	it( 'registers Desktop Mode live surfaces through the bootstrap handle', () => {
+		const enqueue = readRel( 'odd/includes/enqueue.php' );
+		const nativeWindow = readRel( 'odd/includes/native-window.php' );
+		const bootstrap = readRel( 'odd/src/shared/live-bootstrap.js' );
+
+		expect( enqueue ).toContain( "'odd-live-bootstrap'" );
+		expect( enqueue ).toContain( "'liveScripts'" );
+		expect( enqueue ).toContain( "wp_localize_script( 'odd-live-bootstrap', 'oddout', $config )" );
+		expect( nativeWindow ).toMatch( /desktop_mode_register_wallpaper[\s\S]*'script'\s*=>\s*'odd-live-bootstrap'/ );
+		expect( nativeWindow ).toMatch( /desktop_mode_register_window[\s\S]*'script'\s*=>\s*'odd-live-bootstrap'/ );
+		expect( nativeWindow ).toContain( "'style'      => 'odd-panel-style'" );
+		expect( bootstrap ).toContain( 'window.desktopModeWallpapers.odd' );
+		expect( bootstrap ).toContain( 'window.desktopModeNativeWindows.odd' );
+		expect( bootstrap ).toContain( 'updateOsSettings' );
+	} );
+
 	it( 'keeps icon-set manifests raster-only with no runtime fun layer contract', () => {
 		const dir = resolve( ROOT, '_tools/catalog-sources/icon-sets' );
 		const expectedKeys = [

@@ -56,7 +56,7 @@ add_action(
 					'label'   => __( 'ODD', 'odd-outlandish-desktop-decorator' ),
 					'preview' => 'linear-gradient(135deg, #10121a 0%, #2b1b4a 58%, #352b11 100%)',
 					'type'    => 'canvas',
-					'script'  => 'odd',
+					'script'  => 'odd-live-bootstrap',
 				)
 			);
 		}
@@ -68,7 +68,8 @@ add_action(
 			array(
 				'title'      => __( 'ODD Shop', 'odd-outlandish-desktop-decorator' ),
 				'icon'       => $icon_url,
-				'script'     => 'odd-panel',
+				'script'     => 'odd-live-bootstrap',
+				'style'      => 'odd-panel-style',
 				'template'   => 'oddout_render_panel_template',
 				'x'          => (int) $geometry['x'],
 				'y'          => (int) $geometry['y'],

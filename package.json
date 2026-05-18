@@ -1,6 +1,6 @@
 {
   "name": "odd-integration-tests",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "private": true,
   "description": "Vitest harness for the ODD (Outlandish Desktop Decorator) foundation modules.",
   "scripts": {

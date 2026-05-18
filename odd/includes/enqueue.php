@@ -320,6 +320,67 @@ add_action(
 			true
 		);
 
+		$live_script_paths = array(
+			'odd-store'           => 'src/shared/store.js',
+			'odd-events'          => 'src/shared/events.js',
+			'odd-registries'      => 'src/shared/registries.js',
+			'odd-lifecycle'       => 'src/shared/lifecycle.js',
+			'odd-safecall'        => 'src/shared/safecall.js',
+			'odd-debug'           => 'src/shared/debug.js',
+			'odd-diagnostics'     => 'src/shared/diagnostics.js',
+			'odd-desktop-adapter' => 'src/shared/desktop-adapter.js',
+			'odd-api'             => 'src/shared/api.js',
+			'odd-sdk'             => 'src/shared/sdk.js',
+			'odd-workspace'       => 'src/shared/workspace.js',
+			'odd-shop-flow'       => 'src/panel/shop-flow.js',
+			'odd-panel-card-art'  => 'src/panel/card-art.js',
+			'odd-cursors'         => 'src/cursors/index.js',
+			'odd'                 => 'src/wallpaper/index.js',
+			'odd-panel'           => 'src/panel/index.js',
+			'odd-shop-cast'       => 'src/shop/cast.js',
+			'odd-commands'        => 'src/commands/index.js',
+			'odd-desktop-hooks'   => 'src/shared/desktop-hooks.js',
+			'odd-apps'            => 'src/apps/window-host.js',
+		);
+		$live_scripts      = array();
+		foreach ( $live_script_paths as $handle => $relative_path ) {
+			$live_scripts[ $handle ] = esc_url_raw(
+				add_query_arg(
+					'ver',
+					$asset_version( $relative_path ),
+					ODDOUT_URL . '/' . ltrim( $relative_path, '/' )
+				)
+			);
+		}
+
+		wp_register_script(
+			'odd-live-bootstrap',
+			ODDOUT_URL . '/src/shared/live-bootstrap.js',
+			array_values(
+				array_unique(
+					array_merge(
+						$foundation_deps,
+						array(
+							'odd-api',
+							'odd-sdk',
+							'odd-workspace',
+							'odd-shop-flow',
+							'odd-panel-card-art',
+							'odd-cursors',
+							'odd',
+							'odd-panel',
+							'odd-shop-cast',
+							'odd-commands',
+							'odd-desktop-hooks',
+							'odd-apps',
+						)
+					)
+				)
+			),
+			$asset_version( 'src/shared/live-bootstrap.js' ),
+			true
+		);
+
 		// ---- Iris personality ---- //
 		//
 		// Five small modules, each strict IIFE, each registering a
@@ -415,6 +476,7 @@ add_action(
 			'pluginUrl'        => ODDOUT_URL,
 			'version'          => ODDOUT_VERSION,
 			'schemaVersion'    => defined( 'ODDOUT_SCHEMA_VERSION' ) ? ODDOUT_SCHEMA_VERSION : 0,
+			'liveScripts'      => $live_scripts,
 			'restUrl'          => esc_url_raw( oddout_https_rest_url( 'odd/v1/prefs' ) ),
 			'restNonce'        => wp_create_nonce( 'wp_rest' ),
 			'catalogBaseUrl'   => function_exists( 'oddout_catalog_base_url' )
@@ -573,5 +635,7 @@ add_action(
 		// script chain so everything else sees a fully-populated
 		// config blob.
 		wp_localize_script( 'odd-store', 'oddout', $config );
-	}
+		wp_localize_script( 'odd-live-bootstrap', 'oddout', $config );
+	},
+	5
 );

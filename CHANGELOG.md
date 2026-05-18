@@ -13,6 +13,20 @@ notes to GitHub Releases.
 
 Nothing yet.
 
+<a id="v1.1.2"></a>
+## [1.1.2] — 2026-05-18
+
+### Fixed
+- First installs now apply the ODD starter Desktop Mode experience without
+  requiring a browser refresh. ODD registers its wallpaper and Shop through a
+  small live bootstrap handle that can load the full ODD runtime during
+  Desktop Mode's mid-session refresh.
+- The live bootstrap applies the starter wallpaper, large dock, and ODD
+  launcher visibility through Desktop Mode's native settings API when the
+  current desktop is still on the default wallpaper.
+- The ODD Shop native window now advertises its stylesheet to Desktop Mode's
+  lazy loader, so mid-session activation gets styled Shop chrome immediately.
+
 <a id="v1.1.1"></a>
 ## [1.1.1] — 2026-05-17
 
