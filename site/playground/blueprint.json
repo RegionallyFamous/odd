@@ -25,7 +25,7 @@
       "step": "installPlugin",
       "pluginData": {
         "resource": "url",
-        "url": "https://downloads.wordpress.org/plugin/odd-outlandish-desktop-decorator.1.1.1.zip"
+        "url": "https://downloads.wordpress.org/plugin/odd-outlandish-desktop-decorator.1.1.2.zip"
       },
       "options": {
         "activate": true,
