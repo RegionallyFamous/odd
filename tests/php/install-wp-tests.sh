@@ -23,11 +23,29 @@ TMP="${TMPDIR:-/tmp}"
 
 download() {
 	local src="$1" dest="$2"
-	if command -v curl >/dev/null 2>&1; then
-		curl -fSL -o "$dest" "$src"
-	else
-		wget -q -O "$dest" "$src"
-	fi
+	local attempt delay max_attempts
+	max_attempts=5
+	delay=2
+
+	for attempt in $(seq 1 "$max_attempts"); do
+		rm -f "$dest"
+		if command -v curl >/dev/null 2>&1; then
+			if curl --connect-timeout 20 --max-time 180 -fSL -o "$dest" "$src"; then
+				return 0
+			fi
+		elif wget --timeout=30 -q -O "$dest" "$src"; then
+			return 0
+		fi
+
+		if [ "$attempt" -lt "$max_attempts" ]; then
+			echo "-- download failed ($attempt/$max_attempts), retrying in ${delay}s: $src" >&2
+			sleep "$delay"
+			delay=$(( delay * 2 ))
+		fi
+	done
+
+	echo "-- download failed after $max_attempts attempts: $src" >&2
+	return 1
 }
 
 install_wp() {
