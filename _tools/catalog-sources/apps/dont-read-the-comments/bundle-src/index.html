@@ -8,51 +8,79 @@
 	</head>
 	<body>
 		<main class="app-shell" aria-labelledby="app-title">
-			<header class="topbar">
-				<div class="brand">
-					<span class="brand-mark" aria-hidden="true"></span>
-					<div>
-						<h1 id="app-title">Don't Read the Comments</h1>
-						<p id="status-line" class="status-line" aria-live="polite">Choose a tile. The thread is waiting.</p>
-					</div>
-				</div>
-				<div class="score-strip" aria-label="Game status">
-					<div class="score-item">
-						<span class="score-label">Comments</span>
-						<strong id="comments-left">0</strong>
-					</div>
-					<div class="score-item">
-						<span class="score-label">Time</span>
-						<strong id="timer">000</strong>
-					</div>
-					<div class="score-item">
-						<span class="score-label">Best</span>
-						<strong id="best-time">--</strong>
-					</div>
-				</div>
-			</header>
-
-			<section class="control-row" aria-label="Game controls">
-				<div id="difficulty-tabs" class="difficulty-tabs" role="tablist" aria-label="Difficulty">
-					<button class="difficulty-tab" type="button" role="tab" data-level="cozy">Cozy</button>
-					<button class="difficulty-tab" type="button" role="tab" data-level="spicy">Spicy</button>
-					<button class="difficulty-tab" type="button" role="tab" data-level="chaos">Chaos</button>
-				</div>
-				<button id="reset-button" class="reset-button" type="button">
-					<span class="reset-icon" aria-hidden="true"></span>
-					<span>New Thread</span>
-				</button>
-			</section>
-
 			<section class="play-surface">
-				<div class="board-wrap">
-					<div id="game-board" class="game-board" role="grid" aria-label="Comment field"></div>
+				<div class="stage-panel">
+					<div class="stage-rail" aria-hidden="true">
+						<span>Moderation field</span>
+						<i id="stage-size">Cozy / 9x9</i>
+					</div>
+					<div class="board-wrap">
+						<div id="game-board" class="game-board" role="grid" aria-label="Comment field"></div>
+					</div>
 				</div>
-				<aside id="comment-panel" class="comment-panel" aria-live="polite">
-					<div class="comment-avatar avatar-0" aria-hidden="true"></div>
-					<div>
-						<p class="comment-kicker">Latest reply</p>
-						<p id="comment-line" class="comment-line">No comments opened yet.</p>
+				<aside id="comment-panel" class="comment-panel side-panel" aria-live="polite">
+					<div class="game-identity">
+						<span class="brand-mark" aria-hidden="true"></span>
+						<div>
+							<p class="console-badge">Comment Sweep</p>
+							<h1 id="app-title">Don't Read the Comments</h1>
+							<p id="status-line" class="status-line" aria-live="polite">Choose a tile. The thread is waiting.</p>
+						</div>
+					</div>
+					<div class="score-strip" aria-label="Game status">
+						<div class="score-item">
+							<span class="score-label">Left</span>
+							<strong id="comments-left">0</strong>
+						</div>
+						<div class="score-item">
+							<span class="score-label">Time</span>
+							<strong id="timer">000</strong>
+						</div>
+						<div class="score-item">
+							<span class="score-label">Best</span>
+							<strong id="best-time">--</strong>
+						</div>
+					</div>
+					<div class="comment-card">
+						<div class="comment-avatar avatar-0" aria-hidden="true"></div>
+						<div>
+							<p class="comment-kicker">Latest reply</p>
+							<p id="comment-line" class="comment-line">No replies yet.</p>
+						</div>
+					</div>
+					<div class="mode-deck" aria-label="Tile action mode">
+						<button id="reveal-mode" class="mode-button is-active" type="button" data-mode="reveal" aria-pressed="true" aria-label="Open tiles" title="Open tiles" aria-keyshortcuts="O">
+							<span class="mode-icon mode-icon-read" aria-hidden="true"></span>
+							<span>Open</span>
+						</button>
+						<button id="flag-mode" class="mode-button" type="button" data-mode="flag" aria-pressed="false" aria-label="Mark comments for review" title="Mark comments for review" aria-keyshortcuts="F">
+							<span class="mode-icon mode-icon-flag" aria-hidden="true"></span>
+							<span>Mark</span>
+						</button>
+					</div>
+					<div class="thread-monitor" aria-label="Sweep status">
+						<div>
+							<p class="comment-kicker">Sweep status</p>
+							<p id="sweep-line" class="sweep-line">Open tiles to map the thread.</p>
+						</div>
+						<div class="progress-track" aria-hidden="true">
+							<span id="sweep-progress"></span>
+						</div>
+						<div class="mini-stats">
+							<span><strong id="opened-count">0</strong> Opened</span>
+							<span><strong id="flag-count">0</strong> Marked</span>
+						</div>
+					</div>
+					<div class="control-deck" aria-label="Game controls">
+						<div id="difficulty-tabs" class="difficulty-tabs" role="tablist" aria-label="Difficulty">
+							<button class="difficulty-tab" type="button" role="tab" data-level="cozy" aria-label="Cozy difficulty" title="Cozy difficulty" aria-keyshortcuts="1">Cozy</button>
+							<button class="difficulty-tab" type="button" role="tab" data-level="spicy" aria-label="Spicy difficulty" title="Spicy difficulty" aria-keyshortcuts="2">Spicy</button>
+							<button class="difficulty-tab" type="button" role="tab" data-level="chaos" aria-label="Chaos difficulty" title="Chaos difficulty" aria-keyshortcuts="3">Chaos</button>
+						</div>
+						<button id="reset-button" class="reset-button" type="button" aria-label="Start a new thread" title="Start a new thread" aria-keyshortcuts="R">
+							<span class="reset-icon" aria-hidden="true"></span>
+							<span>New Thread</span>
+						</button>
 					</div>
 				</aside>
 			</section>
@@ -64,7 +92,7 @@
 				<p class="comment-kicker">Comment opened</p>
 				<h2 id="reveal-title">Thread derailed</h2>
 				<p id="reveal-line" class="comment-line">This tile has notes.</p>
-				<button id="reveal-reset" class="reset-button" type="button">
+				<button id="reveal-reset" class="reset-button" type="button" aria-label="Start a new thread" title="Start a new thread" aria-keyshortcuts="R">
 					<span class="reset-icon" aria-hidden="true"></span>
 					<span>New Thread</span>
 				</button>

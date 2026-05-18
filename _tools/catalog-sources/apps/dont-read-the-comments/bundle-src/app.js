@@ -50,6 +50,11 @@
 	var commentsLeftEl = document.getElementById( 'comments-left' );
 	var timerEl = document.getElementById( 'timer' );
 	var bestEl = document.getElementById( 'best-time' );
+	var stageSizeEl = document.getElementById( 'stage-size' );
+	var openedCountEl = document.getElementById( 'opened-count' );
+	var flagCountEl = document.getElementById( 'flag-count' );
+	var sweepProgressEl = document.getElementById( 'sweep-progress' );
+	var sweepLineEl = document.getElementById( 'sweep-line' );
 	var commentPanel = document.getElementById( 'comment-panel' );
 	var commentLineEl = document.getElementById( 'comment-line' );
 	var resetButton = document.getElementById( 'reset-button' );
@@ -59,10 +64,12 @@
 	var revealAvatar = document.getElementById( 'reveal-avatar' );
 	var revealReset = document.getElementById( 'reveal-reset' );
 	var tabs = Array.prototype.slice.call( document.querySelectorAll( '.difficulty-tab' ) );
+	var modeButtons = Array.prototype.slice.call( document.querySelectorAll( '.mode-button' ) );
 
 	var state = {
 		levelKey: readPrefs().levelKey || 'cozy',
 		level: LEVELS.cozy,
+		actionMode: 'reveal',
 		cells: [],
 		firstMove: true,
 		startedAt: 0,
@@ -71,6 +78,7 @@
 		moves: 0,
 		status: 'ready',
 		lastComment: 0,
+		focusIndex: null,
 	};
 
 	function readJSON( key, fallback ) {
@@ -228,10 +236,37 @@
 	}
 
 	function updateCounters() {
-		commentsLeftEl.textContent = String( Math.max( 0, state.level.comments - flaggedCount() ) ).padStart( 2, '0' );
+		var flags = flaggedCount();
+		var opened = revealedSafeCount();
+		var safeCells = state.cells.length - state.level.comments;
+		var progress = safeCells ? Math.round( opened / safeCells * 100 ) : 0;
+		commentsLeftEl.textContent = String( Math.max( 0, state.level.comments - flags ) ).padStart( 2, '0' );
 		timerEl.textContent = formatTime( state.elapsed );
 		var best = readScores()[ state.levelKey ];
 		bestEl.textContent = best ? formatTime( best.seconds ) : '--';
+		if ( stageSizeEl ) {
+			stageSizeEl.textContent = state.level.label + ' / ' + state.level.rows + 'x' + state.level.cols;
+		}
+		if ( openedCountEl ) {
+			openedCountEl.textContent = String( opened );
+		}
+		if ( flagCountEl ) {
+			flagCountEl.textContent = String( flags );
+		}
+		if ( sweepProgressEl ) {
+			sweepProgressEl.style.width = Math.max( 0, Math.min( 100, progress ) ) + '%';
+		}
+		if ( sweepLineEl ) {
+			if ( state.status === 'won' ) {
+				sweepLineEl.textContent = 'Clean thread. No comments left hiding.';
+			} else if ( state.status === 'lost' ) {
+				sweepLineEl.textContent = 'A reply broke containment. Reset the thread.';
+			} else if ( opened > 0 ) {
+				sweepLineEl.textContent = progress + '% of safe tiles opened.';
+			} else {
+				sweepLineEl.textContent = 'Open tiles to map the thread.';
+			}
+		}
 	}
 
 	function updateTabs() {
@@ -240,6 +275,18 @@
 			tab.setAttribute( 'aria-selected', selected ? 'true' : 'false' );
 			tab.tabIndex = selected ? 0 : -1;
 		} );
+	}
+
+	function setActionMode( mode, silent ) {
+		state.actionMode = mode === 'flag' ? 'flag' : 'reveal';
+		modeButtons.forEach( function ( button ) {
+			var active = button.dataset.mode === state.actionMode;
+			button.classList.toggle( 'is-active', active );
+			button.setAttribute( 'aria-pressed', active ? 'true' : 'false' );
+		} );
+		if ( ! silent ) {
+			setStatus( state.actionMode === 'flag' ? 'Mark mode ready. Tap tiles to flag comments.' : 'Open mode ready. Tap tiles to read the board.' );
+		}
 	}
 
 	function revealFlood( startIndex ) {
@@ -305,6 +352,7 @@
 		showPanelComment( line );
 		setStatus( 'A comment got through. The thread needs a reset.' );
 		renderBoard();
+		updateCounters();
 		showReveal( line );
 	}
 
@@ -416,6 +464,42 @@
 		checkWin();
 	}
 
+	function focusCell( index ) {
+		var target = boardEl.querySelector( '[data-index="' + index + '"]' );
+		if ( target ) {
+			state.focusIndex = index;
+			target.focus();
+		}
+	}
+
+	function moveFocusFromCell( index, key ) {
+		var row = rowOf( index );
+		var col = colOf( index );
+		if ( key === 'ArrowUp' ) {
+			row = Math.max( 0, row - 1 );
+		} else if ( key === 'ArrowDown' ) {
+			row = Math.min( state.level.rows - 1, row + 1 );
+		} else if ( key === 'ArrowLeft' ) {
+			col = Math.max( 0, col - 1 );
+		} else if ( key === 'ArrowRight' ) {
+			col = Math.min( state.level.cols - 1, col + 1 );
+		}
+		focusCell( cellIndex( row, col ) );
+	}
+
+	function handleCellClick( index, event ) {
+		if ( event && ( event.shiftKey || event.altKey ) ) {
+			toggleFlag( index );
+			return;
+		}
+		var cell = state.cells[ index ];
+		if ( state.actionMode === 'flag' && cell && ! cell.revealed ) {
+			toggleFlag( index );
+			return;
+		}
+		revealCell( index );
+	}
+
 	function renderCell( cell, index ) {
 		var button = document.createElement( 'button' );
 		button.type = 'button';
@@ -423,6 +507,8 @@
 		button.dataset.index = String( index );
 		button.setAttribute( 'role', 'gridcell' );
 		button.setAttribute( 'aria-label', cellLabel( cell, index ) );
+		button.setAttribute( 'title', cellLabel( cell, index ) );
+		button.setAttribute( 'aria-keyshortcuts', 'Enter Space F C ArrowUp ArrowDown ArrowLeft ArrowRight' );
 		if ( cell.revealed ) {
 			button.classList.add( 'is-revealed' );
 		}
@@ -446,21 +532,52 @@
 			button.textContent = String( cell.adjacent );
 			button.dataset.count = String( cell.adjacent );
 		}
-		button.addEventListener( 'click', function ( event ) {
-			if ( event.shiftKey || event.altKey ) {
-				toggleFlag( index );
-			} else {
-				revealCell( index );
+		var longPressTimer = 0;
+		var longPressed = false;
+		button.addEventListener( 'focus', function () {
+			state.focusIndex = index;
+		} );
+		button.addEventListener( 'pointerdown', function ( event ) {
+			if ( event.pointerType === 'mouse' && event.button !== 0 ) {
+				return;
 			}
+			longPressed = false;
+			window.clearTimeout( longPressTimer );
+			longPressTimer = window.setTimeout( function () {
+				longPressed = true;
+				toggleFlag( index );
+			}, 420 );
+		} );
+		button.addEventListener( 'pointerup', function () {
+			window.clearTimeout( longPressTimer );
+		} );
+		button.addEventListener( 'pointercancel', function () {
+			window.clearTimeout( longPressTimer );
+		} );
+		button.addEventListener( 'click', function ( event ) {
+			if ( longPressed ) {
+				longPressed = false;
+				event.preventDefault();
+				return;
+			}
+			handleCellClick( index, event );
 		} );
 		button.addEventListener( 'contextmenu', function ( event ) {
 			event.preventDefault();
 			toggleFlag( index );
 		} );
 		button.addEventListener( 'keydown', function ( event ) {
+			if ( event.key.indexOf( 'Arrow' ) === 0 ) {
+				event.preventDefault();
+				moveFocusFromCell( index, event.key );
+			}
 			if ( event.key === 'f' || event.key === 'F' ) {
 				event.preventDefault();
 				toggleFlag( index );
+			}
+			if ( event.key === 'c' || event.key === 'C' ) {
+				event.preventDefault();
+				chordCell( index );
 			}
 		} );
 		return button;
@@ -485,12 +602,19 @@
 	}
 
 	function renderBoard() {
+		var shouldRestoreFocus = state.focusIndex !== null &&
+			document.activeElement &&
+			document.activeElement.classList &&
+			document.activeElement.classList.contains( 'cell' );
 		boardEl.innerHTML = '';
 		boardEl.style.setProperty( '--cols', String( state.level.cols ) );
 		state.cells.forEach( function ( cell, index ) {
 			boardEl.appendChild( renderCell( cell, index ) );
 		} );
 		sizeBoard();
+		if ( shouldRestoreFocus ) {
+			focusCell( state.focusIndex );
+		}
 	}
 
 	function sizeBoard() {
@@ -500,12 +624,9 @@
 		}
 		var narrow = window.matchMedia( '(max-width: 560px)' ).matches;
 		var gap = narrow ? 3 : 4;
-		var minSize = narrow ? 16 : 20;
-		var maxWidth = Math.max( 260, wrap.clientWidth - 40 );
-		var maxHeight = Math.max( 260, wrap.clientHeight - 40 );
-		if ( window.matchMedia( '(max-width: 760px)' ).matches ) {
-			maxHeight = Math.max( 260, window.innerHeight - 330 );
-		}
+		var minSize = narrow ? 3 : 6;
+		var maxWidth = Math.max( 80, wrap.clientWidth - 20 );
+		var maxHeight = Math.max( 80, wrap.clientHeight - 20 );
 		var byWidth = Math.floor( ( maxWidth - gap * ( state.level.cols - 1 ) - 16 ) / state.level.cols );
 		var byHeight = Math.floor( ( maxHeight - gap * ( state.level.rows - 1 ) - 16 ) / state.level.rows );
 		var size = Math.max( minSize, Math.min( 36, byWidth, byHeight ) );
@@ -527,12 +648,13 @@
 		state.moves = 0;
 		state.status = 'ready';
 		state.lastComment = 0;
+		state.focusIndex = null;
 		createBlankCells();
 		updateTabs();
 		updateCounters();
 		setStatus( 'Choose a tile. The thread is waiting.' );
 		commentPanel.querySelector( '.comment-avatar' ).className = 'comment-avatar avatar-0';
-		commentLineEl.textContent = 'No comments opened yet.';
+		commentLineEl.textContent = 'No replies yet.';
 		renderBoard();
 	}
 
@@ -553,6 +675,12 @@
 		} );
 	} );
 
+	modeButtons.forEach( function ( button ) {
+		button.addEventListener( 'click', function () {
+			setActionMode( button.dataset.mode );
+		} );
+	} );
+
 	resetButton.addEventListener( 'click', function () {
 		resetGame();
 	} );
@@ -567,7 +695,35 @@
 			hideReveal();
 			resetButton.focus();
 		}
+		if ( event.target && [ 'INPUT', 'TEXTAREA', 'SELECT' ].indexOf( event.target.tagName ) !== -1 ) {
+			return;
+		}
+		if ( event.key === 'r' || event.key === 'R' ) {
+			event.preventDefault();
+			resetGame();
+		}
+		if ( event.key === 'o' || event.key === 'O' ) {
+			event.preventDefault();
+			setActionMode( 'reveal' );
+		}
+		if ( event.key === '1' ) {
+			event.preventDefault();
+			resetGame( 'cozy' );
+		}
+		if ( event.key === '2' ) {
+			event.preventDefault();
+			resetGame( 'spicy' );
+		}
+		if ( event.key === '3' ) {
+			event.preventDefault();
+			resetGame( 'chaos' );
+		}
+		if ( ( event.key === 'f' || event.key === 'F' ) && ! ( event.target && event.target.classList && event.target.classList.contains( 'cell' ) ) ) {
+			event.preventDefault();
+			setActionMode( 'flag' );
+		}
 	} );
 
 	resetGame( state.levelKey );
+	setActionMode( state.actionMode, true );
 }() );

@@ -30,6 +30,7 @@ plugin. If it runs as a static site, it runs as an ODD app.
 Reference material:
 
 - [`.wp` Manifest Reference](wp-manifest.md) — every `manifest.json` field, every type.
+- [ODD Game Design Language](odd-game-design-language.md) — required cabinet layout, no-scroll behavior, and visual rules for game apps.
 - [Apps REST API](app-rest-api.md) — every endpoint (for tooling + CI).
 
 ---

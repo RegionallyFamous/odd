@@ -8,30 +8,33 @@
 	</head>
 	<body class="cache-invaders">
 		<main class="app-shell" aria-labelledby="app-title">
-			<header class="topbar">
-				<div class="brand">
-					<span class="brand-mark" aria-hidden="true"></span>
-					<div class="brand-copy">
-						<span class="deck-pill">Purge cannon armed</span>
-						<h1 id="app-title">Cache Invaders</h1>
-						<p id="status-line" class="status-line" aria-live="polite">Purge the stale layers before they hit production.</p>
-					</div>
-				</div>
-				<div class="score-strip" aria-label="Game status">
-					<div class="score-item"><span class="score-label">Score</span><strong id="score">0</strong></div>
-					<div class="score-item"><span class="score-label">Wave</span><strong id="level">1</strong></div>
-					<div class="score-item"><span class="score-label">Best</span><strong id="best">0</strong></div>
-				</div>
-			</header>
 			<section class="game-layout cache-layout">
-				<div class="canvas-wrap wide">
+				<section class="stage-cabinet" aria-label="Cache Invaders arcade field">
+					<div class="stage-rail" aria-hidden="true">
+						<span>Edge node 04</span>
+						<i></i>
+						<span>Live purge field</span>
+					</div>
 					<div class="stage-shell" aria-label="Cache Invaders arcade field">
 						<div class="stage-glow" aria-hidden="true"></div>
 						<div class="stage-meter" aria-hidden="true"><span id="purge-meter"></span></div>
 						<canvas id="game-canvas" width="900" height="600"></canvas>
 					</div>
-				</div>
-				<aside class="side-panel">
+				</section>
+				<aside class="side-panel" aria-label="Cache Invaders control console">
+					<div class="cabinet-brand">
+						<span class="brand-mark" aria-hidden="true"></span>
+						<div class="brand-copy">
+							<span class="deck-pill">Purge cannon armed</span>
+							<h1 id="app-title">Cache Invaders</h1>
+							<p id="status-line" class="status-line" aria-live="polite">Purge the stale layers before they hit production.</p>
+						</div>
+					</div>
+					<div class="score-strip" aria-label="Game status">
+						<div class="score-item"><span class="score-label">Score</span><strong id="score">0</strong></div>
+						<div class="score-item"><span class="score-label">Wave</span><strong id="level">1</strong></div>
+						<div class="score-item"><span class="score-label">Best</span><strong id="best">0</strong></div>
+					</div>
 					<div class="console-cap" aria-hidden="true">
 						<span>Purge Deck</span>
 						<i></i>
@@ -50,14 +53,24 @@
 						<p class="panel-label">Lives</p>
 						<p id="lives" class="readout">●●●</p>
 					</div>
-					<div class="control-deck">
-						<div class="button-grid cache-buttons">
-							<button type="button" data-action="left">Left</button>
-							<button type="button" data-action="fire">Purge</button>
-							<button type="button" data-action="right">Right</button>
-							<button type="button" data-action="pause">Pause</button>
+					<div class="control-deck" aria-label="Arcade touch controls">
+						<div class="control-pad cache-buttons">
+							<button class="control-button control-button--left" type="button" data-action="left" aria-label="Move left" aria-keyshortcuts="ArrowLeft" title="Move left">
+								<span aria-hidden="true">&larr;</span>
+							</button>
+							<button class="control-button control-button--fire" type="button" data-action="fire" aria-label="Purge" aria-keyshortcuts="Space" title="Purge">
+								<span aria-hidden="true">&#10022;</span>
+							</button>
+							<button class="control-button control-button--right" type="button" data-action="right" aria-label="Move right" aria-keyshortcuts="ArrowRight" title="Move right">
+								<span aria-hidden="true">&rarr;</span>
+							</button>
+							<button class="control-button control-button--pause" type="button" data-action="pause" aria-label="Pause" aria-keyshortcuts="P" aria-pressed="false" title="Pause">
+								<span aria-hidden="true">&#10074;&#10074;</span>
+							</button>
 						</div>
-						<button id="reset-button" class="primary-button" type="button">New Purge</button>
+						<button id="reset-button" class="primary-button" type="button" aria-label="Start a new purge" aria-keyshortcuts="R" title="New purge">
+							<span aria-hidden="true">&#8635;</span>
+						</button>
 					</div>
 				</aside>
 			</section>

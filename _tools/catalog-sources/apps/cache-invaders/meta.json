@@ -2,7 +2,7 @@
 	"slug": "cache-invaders",
 	"name": "Cache Invaders",
 	"description": "A neon arcade shooter where a purge cannon clears stale cache ghosts, CDN shields, CSS blobs, and one very stubborn browser cache.",
-	"version": "1.0.3",
+	"version": "1.0.6",
 	"author": "Regionally Famous",
 	"tags": [
 		"game",

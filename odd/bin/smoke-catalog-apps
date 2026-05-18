@@ -11,6 +11,8 @@
  *   6. fail on console/page errors, missing content, blank canvases,
  *      horizontal overflow, external network requests, or non-namespaced
  *      localStorage writes
+ *   7. for catalog games, also fail on document scroll, missing sidebars,
+ *      missing stage/canvas framing, or visible keyboard-instruction copy
  *
  * Usage:
  *   odd/bin/smoke-catalog-apps
@@ -35,6 +37,9 @@ const DEFAULT_SCREENSHOTS_DIR = path.join( REPO_ROOT, 'test-results', 'catalog-a
 const VIEWPORTS = [
 	{ name: 'desktop', width: 1000, height: 760 },
 	{ name: 'mobile', width: 390, height: 740 },
+];
+const GAME_EXTRA_VIEWPORTS = [
+	{ name: 'compact', width: 420, height: 500 },
 ];
 
 function usage() {
@@ -86,6 +91,19 @@ function listAllAppSlugs() {
 
 function unique( values ) {
 	return Array.from( new Set( values ) );
+}
+
+function readMetaTags( sourceDir ) {
+	const metaPath = path.join( sourceDir, 'meta.json' );
+	if ( ! fs.existsSync( metaPath ) ) {
+		return [];
+	}
+	try {
+		const meta = JSON.parse( fs.readFileSync( metaPath, 'utf8' ) );
+		return Array.isArray( meta.tags ) ? meta.tags : [];
+	} catch ( _error ) {
+		return [];
+	}
 }
 
 function contentTypeFor( filePath ) {
@@ -339,7 +357,8 @@ function extractBundle( slug, tempRoot ) {
 	if ( ! fs.existsSync( path.join( extractDir, entry ) ) ) {
 		throw new Error( `${ slug }: entry "${ entry }" missing from bundle.wp` );
 	}
-	return { slug, sourceDir, bundlePath, extractDir, manifest, entry };
+	const tags = readMetaTags( sourceDir );
+	return { slug, sourceDir, bundlePath, extractDir, manifest, entry, tags, isGame: tags.includes( 'game' ) };
 }
 
 async function exercisePage( page ) {
@@ -387,13 +406,84 @@ async function inspectPage( page ) {
 				nonblank,
 			};
 		}
+		const sidebarOverlap = Array.from( document.querySelectorAll( '.side-panel, aside[class*="panel"]' ) )
+			.map( ( panel ) => {
+				const panelBox = panel.getBoundingClientRect();
+				const children = Array.from( panel.children )
+					.map( ( child ) => {
+						const style = getComputedStyle( child );
+						const box = child.getBoundingClientRect();
+						return { box, style };
+					} )
+					.filter( ( item ) => {
+						return item.style.display !== 'none' &&
+							item.style.visibility !== 'hidden' &&
+							item.style.position !== 'absolute' &&
+							item.box.width > 1 &&
+							item.box.height > 1;
+					} )
+					.map( ( item ) => item.box )
+					.sort( ( a, b ) => a.top - b.top );
+				let overlap = 0;
+				let overflow = 0;
+				for ( let i = 1; i < children.length; i++ ) {
+					overlap = Math.max( overlap, children[ i - 1 ].bottom - children[ i ].top );
+				}
+				for ( const box of children ) {
+					overflow = Math.max(
+						overflow,
+						panelBox.top - box.top,
+						box.bottom - panelBox.bottom,
+						panelBox.left - box.left,
+						box.right - panelBox.right
+					);
+				}
+				return {
+					overlap: Math.max( 0, Math.round( overlap ) ),
+					overflow: Math.max( 0, Math.round( overflow ) ),
+				};
+			} )
+			.reduce( ( worst, current ) => {
+				return {
+					overlap: Math.max( worst.overlap, current.overlap ),
+					overflow: Math.max( worst.overflow, current.overflow ),
+				};
+			}, { overlap: 0, overflow: 0 } );
+		const coveredControls = Array.from( document.querySelectorAll( '.control-deck [data-action], .control-deck #reset-button' ) )
+			.map( ( control ) => {
+				const box = control.getBoundingClientRect();
+				const style = getComputedStyle( control );
+				const centerX = box.left + box.width / 2;
+				const centerY = box.top + box.height / 2;
+				const hit = document.elementFromPoint( centerX, centerY );
+				const name = control.getAttribute( 'data-action' ) || control.id || control.getAttribute( 'aria-label' ) || 'control';
+				return {
+					name,
+					width: Math.round( box.width ),
+					height: Math.round( box.height ),
+					hidden: style.display === 'none' || style.visibility === 'hidden',
+					covered: ! hit || ( hit !== control && ! control.contains( hit ) ),
+				};
+			} )
+			.filter( ( control ) => {
+				return control.hidden || control.covered || control.width < 20 || control.height < 20;
+			} );
 		return {
 			title: document.title,
 			bodyTextLength: ( document.body.innerText || '' ).trim().length,
+			bodyText: ( document.body.innerText || '' ).trim(),
 			canvas: canvasInfo,
 			actionButtons: document.querySelectorAll( '[data-action]' ).length,
+			sidePanels: document.querySelectorAll( '.side-panel, aside[class*="panel"]' ).length,
+			stageShells: document.querySelectorAll( '.stage-shell, .board-wrap, .canvas-wrap, #game-canvas' ).length,
 			storageKeys: Object.keys( localStorage ).sort(),
 			horizontalOverflow: Math.max( 0, document.documentElement.scrollWidth - window.innerWidth ),
+			verticalOverflow: Math.max( 0, document.documentElement.scrollHeight - window.innerHeight ),
+			bodyOverflowY: getComputedStyle( document.body ).overflowY,
+			documentOverflowY: getComputedStyle( document.documentElement ).overflowY,
+			sidebarChildOverlap: sidebarOverlap.overlap,
+			sidebarChildOverflow: sidebarOverlap.overflow,
+			coveredControls,
 		};
 	} );
 }
@@ -432,6 +522,32 @@ function assertPageMetrics( app, viewport, metrics, events ) {
 	}
 	if ( metrics.horizontalOverflow > 2 ) {
 		problems.push( `horizontal overflow ${ Math.ceil( metrics.horizontalOverflow ) }px` );
+	}
+	if ( app.isGame ) {
+		if ( metrics.verticalOverflow > 2 ) {
+			problems.push( `game document scrolls vertically by ${ Math.ceil( metrics.verticalOverflow ) }px` );
+		}
+		if ( metrics.bodyOverflowY !== 'hidden' && metrics.documentOverflowY !== 'hidden' ) {
+			problems.push( `game body/html overflow-y must be hidden (body=${ metrics.bodyOverflowY }, html=${ metrics.documentOverflowY })` );
+		}
+		if ( metrics.sidePanels < 1 ) {
+			problems.push( 'game is missing a sidebar/side panel' );
+		}
+		if ( metrics.stageShells < 1 ) {
+			problems.push( 'game is missing a stable stage/canvas shell' );
+		}
+		if ( metrics.sidebarChildOverlap > 2 ) {
+			problems.push( `game sidebar children overlap by ${ metrics.sidebarChildOverlap }px` );
+		}
+		if ( metrics.sidebarChildOverflow > 2 ) {
+			problems.push( `game sidebar clips children by ${ metrics.sidebarChildOverflow }px` );
+		}
+		if ( metrics.coveredControls.length ) {
+			problems.push( `game controls are not clickable: ${ metrics.coveredControls.map( ( control ) => `${ control.name }(${ control.width }x${ control.height })` ).join( ', ' ) }` );
+		}
+		if ( /\b(Keys?|Keyboard|Space|Arrow|Up rotates|Down ducks|P pauses|C holds)\b/i.test( metrics.bodyText ) ) {
+			problems.push( 'game exposes visible keyboard-instruction copy' );
+		}
 	}
 	if ( metrics.canvas && metrics.canvas.nonblank < 64 ) {
 		problems.push( `canvas appears blank (${ metrics.canvas.nonblank } nonblank samples)` );
@@ -513,7 +629,8 @@ async function run() {
 		console.log( `[smoke-catalog-apps] testing ${ apps.length } app bundle(s)` );
 		const results = [];
 		for ( const app of apps ) {
-			for ( const viewport of VIEWPORTS ) {
+			const viewports = app.isGame ? VIEWPORTS.concat( GAME_EXTRA_VIEWPORTS ) : VIEWPORTS;
+			for ( const viewport of viewports ) {
 				const result = await smokeOneViewport(
 					browser,
 					server,

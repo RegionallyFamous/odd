@@ -8,38 +8,42 @@
 	</head>
 	<body class="plugin-panic">
 		<main class="app-shell" aria-labelledby="app-title">
-			<header class="topbar">
-				<div class="brand">
-					<span class="brand-mark" aria-hidden="true"></span>
-					<div class="brand-copy">
-						<span class="deck-pill">Dependency stack</span>
-						<h1 id="app-title">Plugin Panic</h1>
-						<p id="status-line" class="status-line" aria-live="polite">Stack updates. Resolve dependencies. Do not panic.</p>
-					</div>
-				</div>
-				<div class="score-strip" aria-label="Game status">
-					<div class="score-item"><span class="score-label">Score</span><strong id="score">0</strong></div>
-					<div class="score-item"><span class="score-label">Level</span><strong id="level">1</strong></div>
-					<div class="score-item"><span class="score-label">Best</span><strong id="best">0</strong></div>
-				</div>
-			</header>
 			<section class="game-layout">
 				<div class="canvas-wrap">
-					<div class="stage-shell" aria-label="Plugin Panic falling-block board">
+					<div class="stage-shell" role="group" aria-label="Plugin Panic falling-block board">
 						<div class="stage-glow" aria-hidden="true"></div>
 						<div class="stage-meter" aria-hidden="true"><span id="queue-meter"></span></div>
-						<canvas id="game-canvas" width="360" height="720"></canvas>
+						<div class="board-frame">
+							<canvas id="game-canvas" width="360" height="720"></canvas>
+						</div>
 					</div>
 				</div>
 				<aside class="side-panel">
+					<div class="side-brand">
+						<div class="brand">
+							<span class="brand-mark" aria-hidden="true"></span>
+							<div class="brand-copy">
+								<span class="deck-pill">Dependency stack</span>
+								<h1 id="app-title">Plugin Panic</h1>
+								<p id="status-line" class="status-line" aria-live="polite">Stack updates. Resolve dependencies. Do not panic.</p>
+							</div>
+						</div>
+					</div>
+					<div class="score-strip" aria-label="Game status">
+						<div class="score-item"><span class="score-label">Score</span><strong id="score">0</strong></div>
+						<div class="score-item"><span class="score-label">Level</span><strong id="level">1</strong></div>
+						<div class="score-item"><span class="score-label">Best</span><strong id="best">0</strong></div>
+					</div>
 					<div class="console-cap" aria-hidden="true">
 						<span>Update Deck</span>
 						<i></i>
 					</div>
 					<div class="plugin-card">
-						<div class="plugin-portrait" aria-hidden="true"></div>
+						<div class="plugin-portrait" aria-hidden="true">
+							<img src="./assets/plugin-stack-sticker.webp" alt="">
+						</div>
 						<div class="plugin-card__body">
-							<p class="panel-label">Queue status</p>
+							<p class="panel-label">Queue</p>
 							<p id="queue-line" class="readout">Updates waiting.</p>
 							<div class="signal-bars" aria-hidden="true">
 								<span></span><span></span><span></span><span></span><span></span>
@@ -50,16 +54,19 @@
 						<div class="mini-card"><p class="panel-label">Next</p><canvas id="next-canvas" width="96" height="96"></canvas></div>
 						<div class="mini-card"><p class="panel-label">Hold</p><canvas id="hold-canvas" width="96" height="96"></canvas></div>
 					</div>
-					<div class="control-deck">
-						<div class="button-grid">
-							<button type="button" data-action="left" aria-label="Move left">Left</button>
-							<button type="button" data-action="rotate" aria-label="Rotate">Rotate</button>
-							<button type="button" data-action="right" aria-label="Move right">Right</button>
-							<button type="button" data-action="drop" aria-label="Drop">Drop</button>
-							<button type="button" data-action="hold" aria-label="Hold">Hold</button>
-							<button type="button" data-action="pause" aria-label="Pause">Pause</button>
+					<div class="control-deck" aria-label="Touch controls">
+						<div class="control-bank control-bank--move">
+							<button class="control-button pad-button pad-button--up" type="button" data-action="rotate" aria-label="Rotate" aria-keyshortcuts="ArrowUp" title="Rotate"><span class="control-icon control-icon--rotate" aria-hidden="true"></span></button>
+							<button class="control-button pad-button pad-button--left" type="button" data-action="left" aria-label="Move left" aria-keyshortcuts="ArrowLeft" title="Move left"><span class="control-icon control-icon--left" aria-hidden="true"></span></button>
+							<button class="control-button pad-button pad-button--down" type="button" data-action="drop" aria-label="Drop" aria-keyshortcuts="Space" title="Drop"><span class="control-icon control-icon--drop" aria-hidden="true"></span></button>
+							<button class="control-button pad-button pad-button--right" type="button" data-action="right" aria-label="Move right" aria-keyshortcuts="ArrowRight" title="Move right"><span class="control-icon control-icon--right" aria-hidden="true"></span></button>
 						</div>
-						<button id="reset-button" class="primary-button" type="button">New Stack</button>
+						<div class="control-bank control-bank--actions">
+							<button class="control-button action-button action-button--rotate" type="button" data-action="rotate" aria-label="Rotate" aria-keyshortcuts="ArrowUp" title="Rotate"><span class="control-icon control-icon--rotate" aria-hidden="true"></span></button>
+							<button class="control-button action-button action-button--hold" type="button" data-action="hold" aria-label="Hold" aria-keyshortcuts="C" title="Hold"><span class="control-icon control-icon--hold" aria-hidden="true"></span></button>
+							<button class="control-button action-button action-button--pause" type="button" data-action="pause" aria-label="Pause" aria-keyshortcuts="P" title="Pause"><span class="control-icon control-icon--pause" aria-hidden="true"></span></button>
+						</div>
+						<button id="reset-button" class="primary-button icon-primary" type="button" aria-label="New stack" title="New stack"><span class="control-icon control-icon--reset" aria-hidden="true"></span></button>
 					</div>
 				</aside>
 			</section>

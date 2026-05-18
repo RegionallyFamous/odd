@@ -8,23 +8,8 @@
 	</head>
 	<body class="four-oh-four-runner">
 		<main class="app-shell" aria-labelledby="app-title">
-			<header class="topbar">
-				<div class="brand">
-					<span class="brand-mark" aria-hidden="true"></span>
-					<div class="brand-copy">
-						<span class="deck-pill">Permalink sprint</span>
-						<h1 id="app-title">404 Runner</h1>
-						<p id="status-line" class="status-line" aria-live="polite">Run the permalink gauntlet. Find a route home.</p>
-					</div>
-				</div>
-				<div class="score-strip" aria-label="Game status">
-					<div class="score-item"><span class="score-label">Distance</span><strong id="score">0m</strong></div>
-					<div class="score-item"><span class="score-label">Canonical</span><strong id="level">0</strong></div>
-					<div class="score-item"><span class="score-label">Best</span><strong id="best">0m</strong></div>
-				</div>
-			</header>
 			<section class="game-layout runner-layout">
-				<div class="canvas-wrap wide">
+				<div class="stage-zone">
 					<div class="stage-shell" aria-label="404 Runner arcade field">
 						<div class="stage-glow" aria-hidden="true"></div>
 						<div class="stage-meter" aria-hidden="true"><span id="route-meter"></span></div>
@@ -33,11 +18,26 @@
 				</div>
 				<aside class="side-panel">
 					<div class="console-cap" aria-hidden="true">
-						<span>Route Deck</span>
+						<span>Route Console</span>
 						<i></i>
 					</div>
+					<div class="brand">
+						<span class="brand-mark" aria-hidden="true"></span>
+						<div class="brand-copy">
+							<span class="deck-pill">Permalink sprint</span>
+							<h1 id="app-title">404 Runner</h1>
+							<p id="status-line" class="status-line" aria-live="polite">Run the permalink gauntlet. Find a route home.</p>
+						</div>
+					</div>
+					<div class="score-strip" aria-label="Game status">
+						<div class="score-item"><span class="score-label">Dist</span><strong id="score">0m</strong></div>
+						<div class="score-item"><span class="score-label">Canon</span><strong id="level">0</strong></div>
+						<div class="score-item"><span class="score-label">Best</span><strong id="best">0m</strong></div>
+					</div>
 					<div class="route-card">
-						<div class="runner-portrait" aria-hidden="true"></div>
+						<div class="runner-portrait" aria-hidden="true">
+							<img src="./assets/runner-sticker.webp" alt="">
+						</div>
 						<div class="route-card__body">
 							<p class="panel-label">Route signal</p>
 							<p id="route-line" class="readout">Temporary redirect detected.</p>
@@ -46,13 +46,31 @@
 							</div>
 						</div>
 					</div>
-					<div class="control-deck">
+					<div class="route-strip" aria-hidden="true">
+						<span></span><span></span><span></span><span></span>
+					</div>
+					<div class="control-deck" aria-label="Touch controls">
 						<div class="button-grid runner-buttons">
-							<button type="button" data-action="jump" aria-label="Jump">Jump</button>
-							<button type="button" data-action="duck" aria-label="Duck">Duck</button>
-							<button type="button" data-action="pause" aria-label="Pause">Pause</button>
+							<button class="control-button control-button--jump" type="button" data-action="jump" aria-label="Jump" title="Jump" aria-keyshortcuts="Space ArrowUp">
+								<span class="control-icon control-icon--jump" aria-hidden="true"></span>
+								<span class="control-label">Jump</span>
+								<span class="control-hint">Hop gap</span>
+							</button>
+							<button class="control-button control-button--duck" type="button" data-action="duck" aria-label="Duck" title="Duck" aria-keyshortcuts="ArrowDown">
+								<span class="control-icon control-icon--duck" aria-hidden="true"></span>
+								<span class="control-label">Duck</span>
+								<span class="control-hint">Slip low</span>
+							</button>
+							<button class="control-button control-button--pause" type="button" data-action="pause" aria-label="Pause" title="Pause" aria-keyshortcuts="P" aria-pressed="false">
+								<span class="control-icon control-icon--pause" aria-hidden="true"></span>
+								<span class="control-label">Pause</span>
+								<span class="control-hint">Hold route</span>
+							</button>
 						</div>
-						<button id="reset-button" class="primary-button" type="button">New Route</button>
+						<button id="reset-button" class="primary-button" type="button" aria-label="New route" title="New route" aria-keyshortcuts="R">
+							<span class="control-icon control-icon--reset" aria-hidden="true"></span>
+							<span class="control-label">New Route</span>
+						</button>
 					</div>
 				</aside>
 			</section>

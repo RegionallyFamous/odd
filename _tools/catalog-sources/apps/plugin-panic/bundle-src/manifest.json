@@ -4,17 +4,17 @@
 	"slug": "plugin-panic",
 	"name": "Plugin Panic",
 	"label": "Panic",
-	"version": "1.0.2",
+	"version": "1.0.6",
 	"author": "Regionally Famous",
 	"description": "A falling-block puzzle where plugin packages stack up, dependency conflicts loom, and every cleared line resolves one more update queue.",
 	"icon": "icon.webp",
 	"entry": "index.html",
 	"capability": "manage_options",
 	"window": {
-		"width": 820,
-		"height": 640,
-		"minWidth": 420,
-		"minHeight": 500,
+		"width": 1080,
+		"height": 700,
+		"minWidth": 480,
+		"minHeight": 520,
 		"title": "Plugin Panic"
 	},
 	"surfaces": {

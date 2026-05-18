@@ -2,7 +2,7 @@
 	"slug": "plugin-panic",
 	"name": "Plugin Panic",
 	"description": "A falling-block puzzle where plugin packages stack up, dependency conflicts loom, and every cleared line resolves one more update queue.",
-	"version": "1.0.2",
+	"version": "1.0.6",
 	"author": "Regionally Famous",
 	"tags": [
 		"game",

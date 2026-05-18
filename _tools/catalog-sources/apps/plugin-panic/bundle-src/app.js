@@ -242,10 +242,35 @@
 		overlayReset.focus();
 	}
 
+	function queueSummary( text ) {
+		if ( text.indexOf( 'Stack updates' ) === 0 ) {
+			return 'Updates waiting.';
+		}
+		if ( text.indexOf( 'dependencies resolved' ) !== -1 ) {
+			return text.replace( ' at once', '' );
+		}
+		if ( text.indexOf( 'One dependency' ) === 0 ) {
+			return text;
+		}
+		if ( text.indexOf( 'held' ) !== -1 ) {
+			return 'Held for review.';
+		}
+		if ( text.indexOf( 'Paused' ) === 0 ) {
+			return 'Paused.';
+		}
+		if ( text.indexOf( 'Back' ) === 0 ) {
+			return 'Queue resumed.';
+		}
+		if ( text.indexOf( 'Dependency conflict' ) === 0 ) {
+			return 'Conflict found.';
+		}
+		return text;
+	}
+
 	function setStatus( text ) {
 		statusEl.textContent = text;
 		if ( queueEl ) {
-			queueEl.textContent = text;
+			queueEl.textContent = queueSummary( text );
 		}
 	}
 

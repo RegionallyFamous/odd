@@ -15,6 +15,8 @@
 	var overlayLine = document.getElementById( 'overlay-line' );
 	var resetButton = document.getElementById( 'reset-button' );
 	var overlayReset = document.getElementById( 'overlay-reset' );
+	var pauseButton = document.querySelector( '[data-action="pause"]' );
+	var pauseIcon = pauseButton ? pauseButton.querySelector( 'span' ) : null;
 	var cacheBg = new Image();
 	cacheBg.src = './assets/cache-purge-bay.webp';
 
@@ -63,6 +65,14 @@
 		}
 		if ( purgeMeterEl ) {
 			purgeMeterEl.style.width = Math.max( 4, Math.min( 100, progress * 100 ) ) + '%';
+		}
+		if ( pauseButton ) {
+			pauseButton.setAttribute( 'aria-pressed', state.paused ? 'true' : 'false' );
+			pauseButton.setAttribute( 'aria-label', state.paused ? 'Resume' : 'Pause' );
+			pauseButton.setAttribute( 'title', state.paused ? 'Resume' : 'Pause' );
+		}
+		if ( pauseIcon ) {
+			pauseIcon.innerHTML = state.paused ? '&#9654;' : '&#10074;&#10074;';
 		}
 	}
 
@@ -159,6 +169,7 @@
 		}
 		state.paused = ! state.paused;
 		setStatus( state.paused ? 'Paused with cache headers intact.' : 'Purge queue resumed.' );
+		updateHud();
 	}
 
 	function rectsHit( a, b ) {
@@ -702,26 +713,36 @@
 		if ( name === 'pause' && active !== false ) { togglePause(); }
 	}
 
+	function releaseMoveControls() {
+		keys.left = false;
+		keys.right = false;
+	}
+
 	window.addEventListener( 'keydown', function ( event ) {
 		if ( event.key === 'ArrowLeft' ) { event.preventDefault(); action( 'left', true ); }
 		if ( event.key === 'ArrowRight' ) { event.preventDefault(); action( 'right', true ); }
 		if ( event.key === ' ' ) { event.preventDefault(); action( 'fire', true ); }
 		if ( event.key === 'p' || event.key === 'P' ) { action( 'pause', true ); }
+		if ( event.key === 'r' || event.key === 'R' ) { newGame(); }
 	} );
 	window.addEventListener( 'keyup', function ( event ) {
 		if ( event.key === 'ArrowLeft' ) { action( 'left', false ); }
 		if ( event.key === 'ArrowRight' ) { action( 'right', false ); }
 	} );
 	document.querySelectorAll( '[data-action]' ).forEach( function ( button ) {
-		button.addEventListener( 'click', function () {
-			if ( button.dataset.action === 'fire' || button.dataset.action === 'pause' ) {
+		button.addEventListener( 'click', function ( event ) {
+			if ( event.detail === 0 ) {
 				action( button.dataset.action, true );
+				window.setTimeout( function () {
+					if ( button.dataset.action === 'left' || button.dataset.action === 'right' ) {
+						action( button.dataset.action, false );
+					}
+				}, 90 );
 			}
 		} );
-		button.addEventListener( 'pointerdown', function () {
-			if ( button.dataset.action === 'left' || button.dataset.action === 'right' ) {
-				action( button.dataset.action, true );
-			}
+		button.addEventListener( 'pointerdown', function ( event ) {
+			event.preventDefault();
+			action( button.dataset.action, true );
 		} );
 		button.addEventListener( 'pointerup', function () {
 			if ( button.dataset.action === 'left' || button.dataset.action === 'right' ) {
@@ -732,6 +753,15 @@
 			if ( button.dataset.action === 'left' || button.dataset.action === 'right' ) {
 				action( button.dataset.action, false );
 			}
+		} );
+		button.addEventListener( 'pointercancel', function () {
+			if ( button.dataset.action === 'left' || button.dataset.action === 'right' ) {
+				action( button.dataset.action, false );
+			}
+		} );
+		button.addEventListener( 'blur', releaseMoveControls );
+		button.addEventListener( 'contextmenu', function ( event ) {
+			event.preventDefault();
 		} );
 	} );
 	resetButton.addEventListener( 'click', newGame );

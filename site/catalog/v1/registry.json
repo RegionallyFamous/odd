@@ -699,7 +699,7 @@
       "type": "app",
       "slug": "cache-invaders",
       "name": "Cache Invaders",
-      "version": "1.0.3",
+      "version": "1.0.6",
       "author": "Regionally Famous",
       "description": "A neon arcade shooter where a purge cannon clears stale cache ghosts, CDN shields, CSS blobs, and one very stubborn browser cache.",
       "tags": [
@@ -711,14 +711,14 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/cache-invaders.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-cache-invaders.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/cache-invaders.wp",
-      "sha256": "f670ef43383c023ae01442fcea62b0770b11c62f8814cca342147172620bd01f",
-      "size": 863785
+      "sha256": "48c78b5aff39de8adcf0924d8be7670e0282e062c87b189adc4f46b76b2f1a7a",
+      "size": 865099
     },
     {
       "type": "app",
       "slug": "dont-read-the-comments",
       "name": "Don't Read the Comments",
-      "version": "1.0.1",
+      "version": "1.0.4",
       "author": "Regionally Famous",
       "description": "A crisp little Minesweeper-style puzzle where the dangerous squares reveal playful fake comment cards instead of explosions.",
       "tags": [
@@ -730,8 +730,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/dont-read-the-comments.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-dont-read-the-comments.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/dont-read-the-comments.wp",
-      "sha256": "6601fb21491e6526a37abc5d9c8c076a30d328aa8773202d7f760b94ef3621ef",
-      "size": 532865
+      "sha256": "71820dabd6acf8fdf10e613e4bfa1f3c314f66656ef5b97af71f67c299702b24",
+      "size": 536063
     },
     {
       "type": "app",
@@ -756,7 +756,7 @@
       "type": "app",
       "slug": "four-oh-four-runner",
       "name": "404 Runner",
-      "version": "1.0.4",
+      "version": "1.0.8",
       "author": "Regionally Famous",
       "description": "An endless runner where a missing page dashes through broken links, redirect rings, query rubble, and tiny uptime miracles.",
       "tags": [
@@ -768,8 +768,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/four-oh-four-runner.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-four-oh-four-runner.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/four-oh-four-runner.wp",
-      "sha256": "82cef5784026309371b8b78259d5f828296eebfa54681d77b172e3f777286ec1",
-      "size": 902778
+      "sha256": "3de0cdf9c4e9d9bc4bb6cac603df5c1f1a525c3cb4787e924fd4652d7b099503",
+      "size": 1502245
     },
     {
       "type": "app",
@@ -813,7 +813,7 @@
       "type": "app",
       "slug": "plugin-panic",
       "name": "Plugin Panic",
-      "version": "1.0.2",
+      "version": "1.0.6",
       "author": "Regionally Famous",
       "description": "A falling-block puzzle where plugin packages stack up, dependency conflicts loom, and every cleared line resolves one more update queue.",
       "tags": [
@@ -825,8 +825,8 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/plugin-panic.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-plugin-panic.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/plugin-panic.wp",
-      "sha256": "e99b479038df75064d0dfaa84033d2bb48af637795266aee5a3e5d30879ced65",
-      "size": 798454
+      "sha256": "70af3fcd20b8029046a48e219f79edf24020671ed8266c9df1e59d056cb04694",
+      "size": 865908
     },
     {
       "type": "app",

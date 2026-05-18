@@ -17,7 +17,7 @@
 	var overlayReset = document.getElementById( 'overlay-reset' );
 	var routeBg = new Image();
 	var runner = new Image();
-	routeBg.src = './assets/route-tunnel.webp';
+	routeBg.src = './assets/route-arcade-backdrop.webp';
 	runner.src = './assets/runner-sticker.webp';
 
 	var state = {};
@@ -77,6 +77,7 @@
 		setStatus( 'Run the permalink gauntlet. Find a route home.' );
 		routeEl.textContent = lines[ 0 ];
 		updateHud();
+		syncControlState();
 	}
 
 	function setStatus( text ) {
@@ -118,6 +119,13 @@
 		}
 		state.paused = ! state.paused;
 		setStatus( state.paused ? 'Paused at the rewrite rules.' : 'Back on the route.' );
+		syncControlState();
+	}
+
+	function syncControlState() {
+		document.querySelectorAll( '[data-action="pause"]' ).forEach( function ( button ) {
+			button.setAttribute( 'aria-pressed', state.paused ? 'true' : 'false' );
+		} );
 	}
 
 	function spawnObstacle() {
@@ -279,6 +287,7 @@
 			ctx.lineTo( canvas.width * 0.48 - i * 88, y - 146 - i * 4 );
 			ctx.stroke();
 		}
+		ctx.globalAlpha = 0.45;
 		for ( var s = 0; s < 22; s++ ) {
 			var x = ( s * 83 - state.distance * 3.8 ) % ( canvas.width + 180 ) - 90;
 			var y2 = 72 + ( s % 7 ) * 42;
@@ -479,26 +488,45 @@
 		if ( name === 'pause' ) { togglePause(); }
 	}
 
+	function quickDuck() {
+		action( 'duck', true );
+		window.setTimeout( function () {
+			action( 'duck', false );
+		}, 220 );
+	}
+
 	window.addEventListener( 'keydown', function ( event ) {
 		if ( event.key === ' ' || event.key === 'ArrowUp' ) { event.preventDefault(); action( 'jump' ); }
 		if ( event.key === 'ArrowDown' ) { event.preventDefault(); action( 'duck', true ); }
 		if ( event.key === 'p' || event.key === 'P' ) { action( 'pause' ); }
+		if ( event.key === 'r' || event.key === 'R' ) { newGame(); }
 	} );
 	window.addEventListener( 'keyup', function ( event ) {
 		if ( event.key === 'ArrowDown' ) { action( 'duck', false ); }
 	} );
 	document.querySelectorAll( '[data-action]' ).forEach( function ( button ) {
-		button.addEventListener( 'click', function () {
-			if ( button.dataset.action !== 'duck' ) {
-				action( button.dataset.action );
+		button.addEventListener( 'click', function ( event ) {
+			if ( button.dataset.action === 'duck' && event.detail === 0 ) {
+				quickDuck();
+				return;
 			}
-		} );
-		button.addEventListener( 'pointerdown', function () {
 			if ( button.dataset.action === 'duck' ) {
+				return;
+			}
+			action( button.dataset.action );
+		} );
+		button.addEventListener( 'pointerdown', function ( event ) {
+			if ( button.dataset.action === 'duck' ) {
+				event.preventDefault();
 				action( 'duck', true );
 			}
 		} );
 		button.addEventListener( 'pointerup', function () {
+			if ( button.dataset.action === 'duck' ) {
+				action( 'duck', false );
+			}
+		} );
+		button.addEventListener( 'pointercancel', function () {
 			if ( button.dataset.action === 'duck' ) {
 				action( 'duck', false );
 			}
