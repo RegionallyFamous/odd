@@ -2,7 +2,7 @@
 	"slug": "board",
 	"name": "Board",
 	"description": "Cards. Columns. Drag. Drop. Done. A no-nonsense project board that shows you exactly what's happening, what's stuck, and what you can finally move to \"done.\"",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"author": "Regionally Famous",
 	"tags": [
 		"productivity",

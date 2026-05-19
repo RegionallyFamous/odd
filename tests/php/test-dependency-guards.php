@@ -154,6 +154,11 @@ class Test_Dependency_Guards extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'ODD requires WP Desktop Mode 0.8.5 or newer', $buffer );
 	}
 
+	public function test_desktop_mode_optional_capability_groups_cover_rc_surfaces() {
+		$this->assertContains( 'desktop_mode_register_window_notice', oddout_desktop_mode_capability_functions( 'window_notices' ) );
+		$this->assertContains( 'desktop_mode_pwa_force_replace_sw', oddout_desktop_mode_capability_functions( 'pwa' ) );
+	}
+
 	public function test_init_hook_does_not_call_missing_host_apis() {
 		if ( oddout_desktop_mode_available() ) {
 			$this->markTestSkipped( 'Host Desktop Mode loaded; degraded-path test skipped.' );

@@ -70,6 +70,7 @@ ICON_VISIBLE_ALPHA_THRESHOLD = 32
 ICON_VISIBLE_MIN_FILL = 0.80
 APP_ICON_TRANSPARENT_EDGE_MIN = 0.90
 CATALOG_CARD_SIZE = (1024, 576)
+CATALOG_CARD_SIZE_BUDGET = 320 * 1024
 SCENE_CARD_RMS_LIMIT = 10.0
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 SEMVER_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$")
@@ -388,12 +389,17 @@ def check_bundle_row(
             f"bundle[{idx}] ({slug}): card_url does not resolve to a file "
             f"({row.get('card_url')!r})"
         )
-    elif card_disk.stat().st_size > 750 * 1024:
+    elif card_disk.stat().st_size > CATALOG_CARD_SIZE_BUDGET:
         problems.append(
             f"bundle[{idx}] ({slug}): card_url asset is too large "
-            f"({card_disk.stat().st_size} bytes > 750 KiB)"
+            f"({card_disk.stat().st_size} bytes > {CATALOG_CARD_SIZE_BUDGET} bytes)"
         )
     else:
+        if "card_bytes" in row and row.get("card_bytes") != card_disk.stat().st_size:
+            problems.append(
+                f"bundle[{idx}] ({slug}): card_bytes {row.get('card_bytes')} "
+                f"!= on-disk {card_disk.stat().st_size}"
+            )
         validate_catalog_card_size(f"bundle[{idx}] ({slug})", card_disk, problems)
 
     try:

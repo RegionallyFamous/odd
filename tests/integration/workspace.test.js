@@ -32,6 +32,7 @@ describe( 'ODD workspace files', () => {
 			screensaver: { enabled: true, minutes: 8, scene: 'flux' },
 			audioReactive: true,
 			shopTaskbar: true,
+			adminBarHidden: true,
 			favorites: [ 'aurora', 'flux' ],
 			recents: [ 'bad slug', 'circuit-garden' ],
 			userApps: { installed: [], pinned: [ 'sine' ] },
@@ -55,6 +56,7 @@ describe( 'ODD workspace files', () => {
 		expect( workspace.prefs.wallpaper ).toBe( 'aurora' );
 		expect( workspace.prefs.iconSet ).toBe( 'filament' );
 		expect( workspace.prefs.cursorSet ).toBe( 'spark' );
+		expect( workspace.prefs.adminBarHidden ).toBe( true );
 		expect( workspace.desktop.widgets.enabled ).toEqual( [ 'odd/sticky', 'odd/eight-ball' ] );
 		expect( workspace.content ).toEqual( expect.arrayContaining( [
 			{ type: 'scene', slug: 'aurora' },

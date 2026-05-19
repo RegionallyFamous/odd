@@ -96,8 +96,43 @@ add_action(
 				'pinned'   => false,
 			)
 		);
+
+		oddout_register_shop_window_notices();
 	}
 );
+
+/**
+ * Register Desktop Mode window notices for ODD-owned health states.
+ *
+ * Error details stay in local diagnostics; the notice itself uses only
+ * authored copy so Desktop Mode's HTML-capable message surface never receives
+ * catalog, network, or user-provided strings.
+ */
+function oddout_register_shop_window_notices() {
+	if (
+		! current_user_can( 'manage_options' ) ||
+		! oddout_desktop_mode_supports( 'window_notices' ) ||
+		! function_exists( 'oddout_catalog_meta' )
+	) {
+		return;
+	}
+
+	$meta = oddout_catalog_meta();
+	if ( empty( $meta['last_error_message'] ) && empty( $meta['last_error_code'] ) ) {
+		return;
+	}
+
+	desktop_mode_register_window_notice(
+		array(
+			'id'      => 'odd/catalog-health',
+			'tone'    => 'warning',
+			'icon'    => 'dashicons-warning',
+			'order'   => 35,
+			'message' => __( 'ODD is using its saved Shop catalog because the newest catalog could not be verified. Refresh the catalog from ODD Shop when you are ready.', 'odd-outlandish-desktop-decorator' ),
+			'match'   => array( 'window' => 'odd' ),
+		)
+	);
+}
 
 /**
  * Guarantee that the ODD Shop window advertises the intended size limits

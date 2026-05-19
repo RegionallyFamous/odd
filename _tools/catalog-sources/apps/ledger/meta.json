@@ -2,7 +2,7 @@
 	"slug": "ledger",
 	"name": "Ledger",
 	"description": "Get paid. Track clients, generate polished invoices, and log payments without ever leaving WordPress.",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"author": "Regionally Famous",
 	"tags": [
 		"business",

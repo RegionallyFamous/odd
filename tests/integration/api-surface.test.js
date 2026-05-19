@@ -29,12 +29,11 @@ const EXPECTED_METHODS = [
 	'savePrefs', 'setScene', 'setIconSet', 'setCursorSet',
 	'setShuffle', 'setAudioReactive', 'shuffle', 'mountWidget',
 	'tidyWidgets', 'openApp', 'resetDecorations',
-	'toast', 'openOsSettings', 'showAttention', 'setBadge',
+	'toast', 'notice', 'openOsSettings', 'showAttention', 'setBadge',
 	'diagnosticsSnapshot', 'onSceneChange', 'onIconSetChange', 'openPanel',
 ];
 
 const EXPECTED_CONSTANTS = [ 'HOOK_SCENE', 'HOOK_ICONSET', 'TOAST_TONE' ];
-const NATIVE_GEOMETRY_STORAGE_KEY = 'desktop-mode-native-window-geometry';
 
 const EXPECTED_SDK_GROUPS = {
 	storage: [ 'get', 'set', 'state', 'subscribe' ],
@@ -156,7 +155,7 @@ describe( 'window.__odd.api surface', () => {
 		} ) );
 	} );
 
-	it( 'normalizes saved ODD Shop placement before openWindow fallback opens it', () => {
+	it( 'opens the Shop through openWindow fallback with source metadata', () => {
 		loadFoundation( {
 			config: {
 				pluginUrl: 'https://example.invalid/wp-content/plugins/odd',
@@ -165,40 +164,13 @@ describe( 'window.__odd.api surface', () => {
 		window.desktopModeNativeWindows = {};
 		const openWindow = vi.fn();
 		window.wp.desktop = { openWindow };
-		window.localStorage.setItem(
-			NATIVE_GEOMETRY_STORAGE_KEY,
-			JSON.stringify( {
-				odd: {
-					width:  1040,
-					height: 640,
-					x:      123,
-					y:      260,
-					state:  'maximized',
-				},
-				other: {
-					width:  500,
-					height: 400,
-					x:      55,
-					y:      300,
-				},
-			} ),
-		);
 
 		execShared( 'api.js' );
 
 		expect( window.__odd.api.openPanel() ).toBe( true );
-		expect( openWindow ).toHaveBeenCalledWith( 'odd', undefined );
-
-		const stored = JSON.parse( window.localStorage.getItem( NATIVE_GEOMETRY_STORAGE_KEY ) );
-		expect( stored.odd ).toMatchObject( {
-			width:  1040,
-			height: 640,
-			x:      123,
-			y:      16,
-			state:  'maximized',
+		expect( openWindow ).toHaveBeenCalledWith( 'odd', {
+			source: 'odd.api.openPanel',
 		} );
-		expect( stored.other.y ).toBe( 300 );
-		window.localStorage.removeItem( NATIVE_GEOMETRY_STORAGE_KEY );
 	} );
 
 	it( 'opens installed apps through registerWindow without requiring openWindow', () => {

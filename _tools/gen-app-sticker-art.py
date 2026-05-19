@@ -15,6 +15,7 @@ from PIL import Image, ImageDraw, ImageFilter
 ROOT = Path(__file__).resolve().parents[1]
 APP_ROOT = ROOT / "_tools" / "catalog-sources" / "apps"
 SOURCE_SHEET = APP_ROOT / "source-app-icons-contact-sheet.png"
+SOURCE_MAP = APP_ROOT / "source-app-icons-map.json"
 ICON_SIZE = 1024
 ICON_CANVAS = (ICON_SIZE, ICON_SIZE)
 CARD_SIZE = (1024, 576)
@@ -185,8 +186,48 @@ def fit_to_canvas(crop: Image.Image, target: int) -> Image.Image:
 
 def normalize_icon(crop: Image.Image) -> Image.Image:
     icon = fit_to_canvas(crop, 870)
+    icon = remove_small_disconnected_artifacts(icon)
     icon = remove_edge_slivers(icon)
     return fit_to_canvas(icon, 870)
+
+
+def remove_small_disconnected_artifacts(icon: Image.Image) -> Image.Image:
+    alpha = icon.getchannel("A")
+    px = icon.load()
+    a_px = alpha.load()
+    width, height = icon.size
+    seen = [bytearray(width) for _ in range(height)]
+    components: list[list[tuple[int, int]]] = []
+
+    for y in range(height):
+        for x in range(width):
+            if seen[y][x] or a_px[x, y] <= 16:
+                continue
+            stack = [(x, y)]
+            seen[y][x] = 1
+            pixels: list[tuple[int, int]] = []
+            while stack:
+                cx, cy = stack.pop()
+                pixels.append((cx, cy))
+                for nx, ny in ((cx - 1, cy), (cx + 1, cy), (cx, cy - 1), (cx, cy + 1)):
+                    if nx < 0 or nx >= width or ny < 0 or ny >= height:
+                        continue
+                    if not seen[ny][nx] and a_px[nx, ny] > 16:
+                        seen[ny][nx] = 1
+                        stack.append((nx, ny))
+            components.append(pixels)
+
+    if len(components) <= 1:
+        return icon
+    largest_area = max(len(pixels) for pixels in components)
+    min_area = max(14000, round(largest_area * 0.035))
+    for pixels in components:
+        if len(pixels) >= min_area:
+            continue
+        for px_x, px_y in pixels:
+            r, g, b, _a = px[px_x, px_y]
+            px[px_x, px_y] = (r, g, b, 0)
+    return icon
 
 
 def remove_edge_slivers(icon: Image.Image) -> Image.Image:
@@ -236,6 +277,9 @@ def extract_icons() -> dict[str, Image.Image]:
         raise SystemExit(f"missing {SOURCE_SHEET}")
     source = Image.open(SOURCE_SHEET)
     alpha_sheet, mask = make_alpha_sheet(source)
+    if SOURCE_MAP.is_file():
+        return extract_icons_from_map(alpha_sheet)
+
     boxes = component_boxes(mask)
     if len(boxes) == len(APP_ORDER):
         sheet_order = APP_ORDER
@@ -265,6 +309,41 @@ def extract_icons() -> dict[str, Image.Image]:
     missing = [slug for slug in APP_ORDER if slug not in icons]
     if missing:
         raise SystemExit(f"missing app icons: {', '.join(missing)}")
+    return icons
+
+
+def extract_icons_from_map(alpha_sheet: Image.Image) -> dict[str, Image.Image]:
+    source_map = json.loads(SOURCE_MAP.read_text())
+    columns = int(source_map.get("columns", 0))
+    rows = int(source_map.get("rows", 0))
+    sheet_order = tuple(source_map.get("order", ()))
+    if columns <= 0 or rows <= 0:
+        raise SystemExit(f"{SOURCE_MAP}: rows and columns must be positive")
+    if len(sheet_order) != len(APP_ORDER):
+        raise SystemExit(f"{SOURCE_MAP}: expected {len(APP_ORDER)} entries, found {len(sheet_order)}")
+    unknown = sorted(set(sheet_order) - set(APP_ORDER))
+    missing = sorted(set(APP_ORDER) - set(sheet_order))
+    if unknown or missing:
+        raise SystemExit(f"{SOURCE_MAP}: unknown entries {unknown}; missing entries {missing}")
+
+    width, height = alpha_sheet.size
+    cell_w = width / columns
+    cell_h = height / rows
+    icons: dict[str, Image.Image] = {}
+    for index, slug in enumerate(sheet_order):
+        column = index % columns
+        row = index // columns
+        if row >= rows:
+            raise SystemExit(f"{SOURCE_MAP}: grid is too small for {slug}")
+        crop = alpha_sheet.crop(
+            (
+                round(column * cell_w),
+                round(row * cell_h),
+                round((column + 1) * cell_w),
+                round((row + 1) * cell_h),
+            )
+        )
+        icons[slug] = normalize_icon(crop)
     return icons
 
 

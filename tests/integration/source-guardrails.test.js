@@ -121,6 +121,88 @@ describe( 'v1 source guardrails', () => {
 		expect( cardArt ).toContain( "row.type === 'icon-set'" );
 	} );
 
+	it( 'keeps the Shop fast-paths wired into catalog and panel source', () => {
+		const panel = readRel( 'odd/src/panel/index.js' );
+		const catalog = readRel( '_tools/build-catalog.py' );
+		const validateCatalog = readRel( 'odd/bin/validate-catalog' );
+		const styles = readRel( 'odd/src/panel/styles.css' );
+
+		expect( catalog ).toContain( 'CATALOG_CARD_SIZE_BUDGET' );
+		expect( validateCatalog ).toContain( 'CATALOG_CARD_SIZE_BUDGET' );
+		expect( catalog ).toContain( 'def enrich_catalog_row' );
+		expect( catalog ).toContain( '"search_text"' );
+		expect( catalog ).toContain( '"search_tokens"' );
+		expect( panel ).toContain( 'SHOP_RENDER_INITIAL' );
+		expect( panel ).toContain( 'data-odd-virtualized' );
+		expect( panel ).toContain( 'appendCardsFragment' );
+		expect( panel ).toContain( 'primeShopSearchIndex' );
+		expect( panel ).toContain( 'new window.Worker' );
+		expect( panel ).toContain( 'preloadShopAssets' );
+		expect( panel ).toContain( 'wpd-progress-bar' );
+		expect( panel ).toContain( 'data-odd-performance-panel' );
+		expect( styles ).toContain( 'odd-shop__performance' );
+		expect( styles ).toContain( 'odd-shop__flow-progress' );
+	} );
+
+	it( 'keeps portal-only containment documented and guarded in source', () => {
+		const cursorInject = readRel( 'odd/includes/cursors/inject.php' );
+		const cursorCss = readRel( 'odd/includes/cursors/css-endpoint.php' );
+		const cursorRuntime = readRel( 'odd/src/cursors/index.js' );
+		const adminBar = readRel( 'odd/includes/admin-bar.php' );
+		const diagnostics = readRel( 'odd/src/shared/diagnostics.js' );
+		const boundaries = readRel( 'docs/desktop-mode-boundaries.md' );
+
+		expect( cursorInject ).toContain( 'Desktop Mode portal only' );
+		expect( cursorInject ).toContain( 'oddout_cursors_is_desktop_mode_runtime_request' );
+		expect( cursorInject ).toContain( 'oddout_cursors_should_enqueue_admin' );
+		expect( cursorInject ).toContain( 'oddout_cursors_should_enqueue_runtime' );
+		expect( cursorInject ).toContain( 'oddout_cursors_is_desktop_mode_portal_request' );
+		expect( cursorCss ).toContain( 'oddout_cursors_scope_selector_list' );
+		expect( cursorCss ).not.toContain( "$roots        = 'html, body" );
+		expect( cursorCss ).not.toContain( "$pointers . ' { cursor" );
+		expect( cursorRuntime ).toContain( 'if ( doc !== document ) markRoot( doc.body )' );
+		expect( adminBar ).toContain( 'classic wp-admin untouched' );
+		expect( adminBar ).toContain( 'oddout_should_hide_admin_bar_for_request' );
+		expect( adminBar ).toContain( 'show_admin_bar' );
+		expect( adminBar ).toContain( 'oddout_is_desktop_mode_portal_request' );
+		expect( diagnostics ).toContain( 'containmentSnapshot' );
+		expect( diagnostics ).toContain( 'containment.cursorBleed' );
+		expect( diagnostics ).toContain( 'containment.adminBarBleed' );
+		expect( diagnostics ).toContain( '## Containment' );
+		expect( boundaries ).toContain( 'Native First' );
+		expect( boundaries ).toContain( 'Cursor styles and cursor runtime load only inside Desktop Mode portal requests.' );
+		expect( boundaries ).toContain( 'CI guardrails should fail' );
+	} );
+
+	it( 'keeps Shop state, progress, and accessibility contracts explicit', () => {
+		const flow = readRel( 'odd/src/panel/shop-flow.js' );
+		const panel = readRel( 'odd/src/panel/index.js' );
+		const boundaries = readRel( 'docs/desktop-mode-boundaries.md' );
+
+		for ( const state of [
+			'blocked',
+			'working',
+			'available',
+			'attention',
+			'ready',
+			'active',
+			'installed',
+		] ) {
+			expect( flow ).toContain( `'${ state }'` );
+		}
+		expect( flow ).toContain( 'trustProfile' );
+		expect( flow ).toContain( 'Static images' );
+		expect( flow ).toContain( 'Sandboxed app' );
+		expect( panel ).toContain( 'aria-describedby' );
+		expect( panel ).toContain( "role: 'dialog'" );
+		expect( panel ).toContain( "'aria-modal': 'true'" );
+		expect( panel ).toContain( 'aria-busy' );
+		expect( panel ).toContain( 'data-odd-performance-panel' );
+		expect( panel ).toContain( 'wpd-progress-bar' );
+		expect( boundaries ).toContain( 'Install, update, repair, apply, add, and open states should be explicit' );
+		expect( boundaries ).toContain( 'favor delegated events when changing hot paths' );
+	} );
+
 	it( 'registers Desktop Mode live surfaces through the bootstrap handle', () => {
 		const enqueue = readRel( 'odd/includes/enqueue.php' );
 		const nativeWindow = readRel( 'odd/includes/native-window.php' );
@@ -265,8 +347,17 @@ describe( 'v1 source guardrails', () => {
 
 		expect( appSlugs ).toHaveLength( 11 );
 		expect( generator ).toContain( 'FRAME_COUNT = 6' );
+		expect( generator ).toContain( 'SOURCE_MAP' );
 		expect( generator ).toContain( 'source-icon.webp' );
 		expect( generator ).toContain( 'save_all=True' );
+
+		const sourceMap = JSON.parse(
+			readFileSync( join( appDir, 'source-app-icons-map.json' ), 'utf8' )
+		);
+		expect( sourceMap.columns ).toBeGreaterThanOrEqual( 4 );
+		expect( sourceMap.rows ).toBeGreaterThanOrEqual( 3 );
+		expect( [ ...sourceMap.order ].sort() ).toEqual( appSlugs );
+		expect( new Set( sourceMap.order ).size ).toBe( appSlugs.length );
 
 		for ( const slug of appSlugs ) {
 			const sourceIcon = readFileSync( join( appDir, slug, 'icon.webp' ) );
@@ -283,7 +374,7 @@ describe( 'v1 source guardrails', () => {
 } );
 
 describe( 'Desktop Mode integration source contracts', () => {
-	it( 'keeps Desktop Mode hook integration on 0.8.5 hook names', () => {
+	it( 'keeps Desktop Mode hook integration on current public hook names', () => {
 		const sources = [
 			'odd/includes/native-window.php',
 			'odd/includes/starter-pack.php',
@@ -315,6 +406,11 @@ describe( 'Desktop Mode integration source contracts', () => {
 		expect( sources ).not.toMatch( /addAction\(\s*['"]desktop-mode\.window\.attention/ );
 		expect( sources ).toContain( 'desktop_mode_shell_config' );
 		expect( sources ).toContain( 'desktop-mode.window.opened' );
+		expect( sources ).toContain( 'desktop-mode.window.geometry' );
+		expect( sources ).toContain( 'desktop-mode.drop.before-upload' );
+		expect( sources ).toContain( 'desktop-mode.my-wordpress.preview-actions' );
+		expect( sources ).toContain( 'registerWindowNotice' );
+		expect( sources ).toContain( 'widgets.redock' );
 		expect( sources ).toContain( "addFilter( 'desktop-mode.window.attention'" );
 	} );
 
@@ -354,10 +450,14 @@ describe( 'Desktop Mode integration source contracts', () => {
 
 	it( 'keeps Desktop Mode window geometry host-owned', () => {
 		const src = readRel( 'odd/src/shared/desktop-hooks.js' );
+		const api = readRel( 'odd/src/shared/api.js' );
 
 		expect( src ).not.toMatch( /\.style\.(?:top|left|right|bottom|width|height)\s*=/ );
 		expect( src ).not.toMatch( /\.config\.(?:x|y|width|height)\s*=/ );
 		expect( src ).not.toMatch( /\._emitChange\s*\(/ );
+		expect( src ).not.toContain( 'desktop-mode-native-window-geometry' );
+		expect( api ).not.toContain( 'desktop-mode-native-window-geometry' );
+		expect( src ).toContain( 'desktop-mode.window.geometry' );
 		expect( src ).toContain( 'requestMaximize' );
 	} );
 

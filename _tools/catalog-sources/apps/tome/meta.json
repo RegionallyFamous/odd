@@ -2,7 +2,7 @@
 	"slug": "tome",
 	"name": "Tome",
 	"description": "A fast internal wiki for your team. Write in markdown, organise into pages, find anything instantly.",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"author": "Regionally Famous",
 	"tags": [
 		"wiki",

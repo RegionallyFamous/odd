@@ -39,6 +39,7 @@ class Test_REST_Prefs extends ODDOUT_REST_Test_Case {
 				'screensaver',
 				'audioReactive',
 				'shopTaskbar',
+				'adminBarHidden',
 				'iconSet',
 				'scenes',
 				'sets',
@@ -65,6 +66,7 @@ class Test_REST_Prefs extends ODDOUT_REST_Test_Case {
 		$this->assertArrayHasKey( 'minutes', $data['screensaver'] );
 		$this->assertArrayHasKey( 'scene', $data['screensaver'] );
 		$this->assertTrue( $data['shopTaskbar'] );
+		$this->assertTrue( $data['adminBarHidden'] );
 	}
 
 	public function test_post_accepts_valid_wallpaper() {
@@ -166,6 +168,23 @@ class Test_REST_Prefs extends ODDOUT_REST_Test_Case {
 		$this->assertSame( 200, $res->get_status() );
 		$this->assertFalse( $res->get_data()['shopTaskbar'] );
 		$this->assertSame( '0', get_user_meta( $this->admin_id, 'oddout_shop_taskbar', true ) );
+	}
+
+	public function test_post_updates_admin_bar_preference() {
+		$this->login_as();
+
+		$this->assertTrue( oddout_admin_bar_hidden( $this->admin_id ) );
+
+		$res = $this->dispatch_json( 'POST', '/odd/v1/prefs', array( 'adminBarHidden' => true ) );
+		$this->assertSame( 200, $res->get_status() );
+		$this->assertTrue( $res->get_data()['adminBarHidden'] );
+		$this->assertSame( '1', get_user_meta( $this->admin_id, 'oddout_admin_bar_hidden', true ) );
+		$this->assertFalse( apply_filters( 'show_admin_bar', true ) );
+
+		$res = $this->dispatch_json( 'POST', '/odd/v1/prefs', array( 'adminBarHidden' => false ) );
+		$this->assertSame( 200, $res->get_status() );
+		$this->assertFalse( $res->get_data()['adminBarHidden'] );
+		$this->assertSame( '0', get_user_meta( $this->admin_id, 'oddout_admin_bar_hidden', true ) );
 	}
 
 	public function test_post_caps_favorites_at_50() {

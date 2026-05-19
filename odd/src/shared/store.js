@@ -15,7 +15,7 @@
  * Shape:
  *   user: {
  *     wallpaper, favorites[], recents[], shuffle:{enabled,minutes},
- *     audioReactive, iconSet, schemaVersion,
+ *     audioReactive, adminBarHidden, iconSet, schemaVersion,
  *   }
  *   registries: {
  *     scenes[], iconSets[], muses[], commands[], widgets[],
@@ -40,6 +40,7 @@
 			recents:       [],
 			shuffle:       { enabled: false, minutes: 15 },
 			audioReactive: false,
+			adminBarHidden: true,
 			iconSet:       '',
 			initiated:     false,
 			mascotQuiet:   false,
@@ -192,6 +193,7 @@
 					{ enabled: !! cfg.shuffle.enabled, minutes: cfg.shuffle.minutes || 15 } :
 					{ enabled: false, minutes: 15 },
 				audioReactive: !! cfg.audioReactive,
+				adminBarHidden: typeof cfg.adminBarHidden === 'boolean' ? cfg.adminBarHidden : true,
 				iconSet:       typeof cfg.iconSet === 'string' ? cfg.iconSet : '',
 				initiated:     !! cfg.initiated,
 				mascotQuiet:   !! cfg.mascotQuiet,
@@ -243,6 +245,7 @@
 					userPatch.shuffle = { enabled: !! resp.shuffle.enabled, minutes: resp.shuffle.minutes || 15 };
 				}
 				if ( typeof resp.audioReactive === 'boolean' ) userPatch.audioReactive = resp.audioReactive;
+				if ( typeof resp.adminBarHidden === 'boolean' ) userPatch.adminBarHidden = resp.adminBarHidden;
 				if ( typeof resp.initiated === 'boolean' )    userPatch.initiated    = resp.initiated;
 				if ( typeof resp.mascotQuiet === 'boolean' )  userPatch.mascotQuiet  = resp.mascotQuiet;
 				if ( typeof resp.winkUnlocked === 'boolean' ) userPatch.winkUnlocked = resp.winkUnlocked;

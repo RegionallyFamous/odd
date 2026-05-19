@@ -74,6 +74,7 @@ function seedConfig() {
 		shuffle:     { enabled: false, minutes: 15 },
 		screensaver: { enabled: false, minutes: 10, scene: 'current' },
 		audioReactive: false,
+		adminBarHidden: false,
 		appsEnabled: false,
 		apps:        [],
 		userApps:    { installed: [], pinned: [] },
@@ -197,6 +198,8 @@ describe( 'ODD Shop', () => {
 		delete globalThis.fetch;
 		delete window.__odd;
 		delete window.WebGLRenderingContext;
+		const liveAdminBarStyle = document.getElementById( 'oddout-admin-bar-hidden-live' );
+		if ( liveAdminBarStyle ) liveAdminBarStyle.remove();
 		document.body.classList.remove( 'desktop-mode-has-fullscreen-window' );
 	} );
 
@@ -766,7 +769,7 @@ describe( 'ODD Shop', () => {
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );
 
-	it( 'Settings only renders taskbar and sound effect controls', () => {
+	it( 'Settings only renders shell and sound effect controls', () => {
 		const { host, cleanup } = mountPanel();
 
 		const settingsTab = Array.from( host.querySelectorAll( '.odd-shop__rail-item' ) )
@@ -775,7 +778,8 @@ describe( 'ODD Shop', () => {
 
 		const labels = Array.from( host.querySelectorAll( '.odd-setting-card__text strong' ) )
 			.map( ( node ) => node.textContent.trim() );
-		expect( labels ).toEqual( [ 'Sound effects', 'Keep in taskbar' ] );
+		expect( labels ).toEqual( [ 'Sound effects', 'Keep in taskbar', 'Hide admin bar' ] );
+		expect( host.querySelector( '[data-odd-performance-panel]' ) ).not.toBeNull();
 		expect( host.querySelector( '.odd-shop__health' ) ).toBeNull();
 		expect( host.textContent ).not.toContain( 'Appearance' );
 		expect( host.textContent ).not.toContain( 'Shuffle every' );
@@ -834,6 +838,40 @@ describe( 'ODD Shop', () => {
 			itemVisibility: { odd: 'both' },
 		} );
 		expect( osSettings.itemVisibility.odd ).toBe( 'both' );
+
+		if ( typeof cleanup === 'function' ) cleanup();
+	} );
+
+	it( 'Settings admin bar toggle persists and applies a live portal style', async () => {
+		window.odd.adminBarHidden = false;
+		fetchMock.mockImplementation( ( _url, opts ) => {
+			const body = opts && opts.body ? JSON.parse( opts.body ) : {};
+			return Promise.resolve( {
+				ok:   true,
+				json: () => Promise.resolve( { adminBarHidden: !! body.adminBarHidden } ),
+			} );
+		} );
+
+		const { host, cleanup } = mountPanel();
+		const settingsTab = Array.from( host.querySelectorAll( '.odd-shop__rail-item' ) )
+			.find( ( b ) => b.querySelector( '.odd-shop__rail-label strong' )?.textContent.trim() === 'Settings' );
+		settingsTab.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
+
+		const adminBarBox = host.querySelector( '.odd-setting-card--admin-bar input[type="checkbox"]' );
+		expect( adminBarBox.checked ).toBe( false );
+		adminBarBox.checked = true;
+		adminBarBox.dispatchEvent( new Event( 'change', { bubbles: true } ) );
+		await new Promise( ( r ) => setTimeout( r, 0 ) );
+
+		expect( fetchMock ).toHaveBeenCalledWith(
+			'/wp-json/odd/v1/prefs',
+			expect.objectContaining( {
+				method: 'POST',
+				body:   JSON.stringify( { adminBarHidden: true } ),
+			} )
+		);
+		await vi.waitFor( () => expect( window.odd.adminBarHidden ).toBe( true ) );
+		expect( document.getElementById( 'oddout-admin-bar-hidden-live' ).textContent ).toContain( '#wpadminbar' );
 
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );

@@ -497,6 +497,7 @@ add_action(
 			'screensaver'      => oddout_wallpaper_get_user_screensaver( $uid ),
 			'audioReactive'    => oddout_wallpaper_get_user_audio_reactive( $uid ),
 			'shopTaskbar'      => function_exists( 'oddout_shop_taskbar_enabled' ) ? oddout_shop_taskbar_enabled( $uid ) : false,
+			'adminBarHidden'   => function_exists( 'oddout_admin_bar_hidden' ) ? oddout_admin_bar_hidden( $uid ) : false,
 			'shopV2'           => apply_filters( 'oddout_shop_v2', true ),
 
 			// Iris personality prefs.

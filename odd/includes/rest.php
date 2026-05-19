@@ -7,8 +7,8 @@
  *          full catalog of installed scenes, icon sets, and cursor sets so the panel
  *          can hydrate without re-fetching localized data.
  *   - POST accepts any subset of wallpaper/favorites/recents/shuffle/
- *          audioReactive/shopTaskbar/iconSet/cursorSet and writes each to its own user_meta
- *          key. Partial updates are fine.
+ *          audioReactive/shopTaskbar/adminBarHidden/iconSet/cursorSet and writes each
+ *          to its own user_meta key. Partial updates are fine.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -61,21 +61,22 @@ add_action(
 					},
 					'callback'            => 'oddout_rest_prefs_post',
 					'args'                => array(
-						'wallpaper'     => $slug_arg,
-						'scene'         => $slug_arg,
-						'favorites'     => $slug_list_arg,
-						'recents'       => $slug_list_arg,
-						'shuffle'       => $object_arg,
-						'screensaver'   => $object_arg,
-						'audioReactive' => $bool_arg,
-						'shopTaskbar'   => $bool_arg,
-						'shopDock'      => $bool_arg,
-						'initiated'     => $bool_arg,
-						'mascotQuiet'   => $bool_arg,
-						'winkUnlocked'  => $bool_arg,
-						'appsPinned'    => $slug_list_arg,
-						'iconSet'       => $slug_arg,
-						'cursorSet'     => $slug_arg,
+						'wallpaper'      => $slug_arg,
+						'scene'          => $slug_arg,
+						'favorites'      => $slug_list_arg,
+						'recents'        => $slug_list_arg,
+						'shuffle'        => $object_arg,
+						'screensaver'    => $object_arg,
+						'audioReactive'  => $bool_arg,
+						'shopTaskbar'    => $bool_arg,
+						'shopDock'       => $bool_arg,
+						'adminBarHidden' => $bool_arg,
+						'initiated'      => $bool_arg,
+						'mascotQuiet'    => $bool_arg,
+						'winkUnlocked'   => $bool_arg,
+						'appsPinned'     => $slug_list_arg,
+						'iconSet'        => $slug_arg,
+						'cursorSet'      => $slug_arg,
 					),
 				),
 			)
@@ -125,6 +126,7 @@ function oddout_rest_prefs_get() {
 			'screensaver'      => oddout_wallpaper_get_user_screensaver( $uid ),
 			'audioReactive'    => oddout_wallpaper_get_user_audio_reactive( $uid ),
 			'shopTaskbar'      => function_exists( 'oddout_shop_taskbar_enabled' ) ? oddout_shop_taskbar_enabled( $uid ) : false,
+			'adminBarHidden'   => function_exists( 'oddout_admin_bar_hidden' ) ? oddout_admin_bar_hidden( $uid ) : false,
 			'iconSet'          => oddout_icons_get_active_slug( $uid ),
 			'cursorSet'        => oddout_cursors_get_active_slug( $uid ),
 			'cursorStylesheet' => oddout_cursors_active_stylesheet_url(),
@@ -210,6 +212,16 @@ function oddout_rest_prefs_post( WP_REST_Request $request ) {
 		} else {
 			update_user_meta( $uid, 'oddout_shop_taskbar', $on ? 1 : 0 );
 			$out['shopTaskbar'] = $on;
+		}
+	}
+
+	if ( array_key_exists( 'adminBarHidden', $params ) ) {
+		$hidden = ! empty( $params['adminBarHidden'] );
+		if ( function_exists( 'oddout_set_admin_bar_hidden' ) ) {
+			$out['adminBarHidden'] = oddout_set_admin_bar_hidden( $uid, $hidden );
+		} else {
+			update_user_meta( $uid, 'oddout_admin_bar_hidden', $hidden ? 1 : 0 );
+			$out['adminBarHidden'] = $hidden;
 		}
 	}
 

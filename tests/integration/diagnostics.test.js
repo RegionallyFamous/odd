@@ -3,7 +3,10 @@ import { loadFoundation } from './harness.js';
 
 describe( 'ODD diagnostics metrics', () => {
 	beforeEach( () => {
+		window.history.replaceState( {}, '', '/wp-admin/index.php' );
+		document.head.innerHTML = '';
 		document.body.innerHTML = '';
+		document.body.className = '';
 		loadFoundation();
 		vi.restoreAllMocks();
 	} );
@@ -98,6 +101,71 @@ describe( 'ODD diagnostics metrics', () => {
 			'desktopMode.baseline',
 			'starter.failed',
 			'apps.iframeErrors',
+		] ) );
+	} );
+
+	it( 'reports portal-only containment state in local diagnostics', () => {
+		window.history.replaceState( {}, '', '/wp-admin/index.php?desktop_mode_portal=1' );
+		loadFoundation( {
+			config: {
+				adminBarHidden: true,
+				cursorSet: 'spark',
+				cursorStylesheet: '/wp-json/odd/v1/cursors/active.css',
+				systemHealth: {
+					cursors: { active: 'spark', stylesheet: '/wp-json/odd/v1/cursors/active.css', runtimeExpected: true },
+				},
+			},
+		} );
+		document.body.className = 'desktop-mode-active';
+		const cursorLink = document.createElement( 'link' );
+		cursorLink.id = 'odd-cursors-css';
+		cursorLink.href = '/wp-json/odd/v1/cursors/active.css';
+		document.head.appendChild( cursorLink );
+		const adminBarStyle = document.createElement( 'style' );
+		adminBarStyle.id = 'oddout-admin-bar-hidden';
+		document.head.appendChild( adminBarStyle );
+		const root = document.createElement( 'main' );
+		root.setAttribute( 'data-odd-cursor-root', 'true' );
+		document.body.appendChild( root );
+
+		const payload = window.__odd.diagnostics.collect();
+		expect( payload.state.user.adminBarHidden ).toBe( true );
+		expect( payload.containment ).toEqual( expect.objectContaining( {
+			desktopPortal: true,
+			adminBarHiddenPreference: true,
+			adminBarStyle: true,
+			cursorStylesheet: true,
+			cursorRoots: 1,
+		} ) );
+		expect( payload.health.ok.map( ( row ) => row.id ) ).toContain( 'containment.portal' );
+		expect( window.__odd.diagnostics.collectMarkdown() ).toContain( '## Containment' );
+	} );
+
+	it( 'flags cursor or admin-bar containment leaks outside the portal', () => {
+		window.history.replaceState( {}, '', '/wp-admin/plugins.php' );
+		loadFoundation( {
+			config: {
+				adminBarHidden: true,
+				cursorSet: 'spark',
+				cursorStylesheet: '/wp-json/odd/v1/cursors/active.css',
+			},
+		} );
+		const cursorLink = document.createElement( 'link' );
+		cursorLink.id = 'odd-cursors-css';
+		cursorLink.href = '/wp-json/odd/v1/cursors/active.css';
+		document.head.appendChild( cursorLink );
+		const liveCursor = document.createElement( 'div' );
+		liveCursor.id = 'odd-live-cursor';
+		document.body.appendChild( liveCursor );
+		const adminBarStyle = document.createElement( 'style' );
+		adminBarStyle.id = 'oddout-admin-bar-hidden';
+		document.head.appendChild( adminBarStyle );
+
+		const summary = window.__odd.diagnostics.summary();
+		expect( summary.status ).toBe( 'problems' );
+		expect( summary.problems.map( ( row ) => row.id ) ).toEqual( expect.arrayContaining( [
+			'containment.cursorBleed',
+			'containment.adminBarBleed',
 		] ) );
 	} );
 

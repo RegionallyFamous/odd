@@ -252,6 +252,7 @@ require_once ODDOUT_DIR . 'includes/icons/dock-filter.php';
 require_once ODDOUT_DIR . 'includes/cursors/registry.php';
 require_once ODDOUT_DIR . 'includes/cursors/css-endpoint.php';
 require_once ODDOUT_DIR . 'includes/cursors/inject.php';
+require_once ODDOUT_DIR . 'includes/admin-bar.php';
 require_once ODDOUT_DIR . 'includes/rest.php';
 require_once ODDOUT_DIR . 'includes/accents.php';
 require_once ODDOUT_DIR . 'includes/toasts.php';

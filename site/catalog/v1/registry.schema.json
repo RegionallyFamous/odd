@@ -99,7 +99,19 @@
           "category": {
             "type": "string"
           },
+          "department": {
+            "type": "string"
+          },
           "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "search_text": {
+            "type": "string"
+          },
+          "search_tokens": {
             "type": "array",
             "items": {
               "type": "string"
@@ -110,6 +122,10 @@
           },
           "card_url": {
             "type": "string"
+          },
+          "card_bytes": {
+            "type": "integer",
+            "minimum": 1
           },
           "download_url": {
             "type": "string"

@@ -173,6 +173,7 @@
 		}
 		if ( input.audioReactive !== undefined ) out.audioReactive = cleanBool( input.audioReactive );
 		if ( input.shopTaskbar !== undefined ) out.shopTaskbar = cleanBool( input.shopTaskbar );
+		if ( input.adminBarHidden !== undefined ) out.adminBarHidden = cleanBool( input.adminBarHidden );
 		if ( input.shuffle !== undefined ) {
 			var shuffle = cleanShuffle( input.shuffle );
 			if ( shuffle ) out.shuffle = shuffle;
@@ -212,6 +213,7 @@
 			screensaver: c.screensaver,
 			audioReactive: c.audioReactive,
 			shopTaskbar: c.shopTaskbar,
+			adminBarHidden: c.adminBarHidden,
 			favorites: c.favorites,
 			recents: c.recents,
 			appsPinned: appsPinned,

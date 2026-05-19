@@ -91,6 +91,9 @@
 
 	var renderPanel = function ( body ) {
 		var stopPanelTimer = diagTime( 'panel.render', { window: 'odd' } );
+		var panelPerfStart = ( window.performance && typeof window.performance.now === 'function' )
+			? window.performance.now()
+			: Date.now();
 		// Bundle-install lookup tables. Hoisted so nested
 		// render functions can use them regardless of file order.
 		var DEPT_FOR_TYPE = {
@@ -355,6 +358,10 @@
 			// Catalog tiles show "Applying..." for the matching slug.
 			pendingAdminReload: null,
 			installing: Object.create( null ),
+			preloadedImages: Object.create( null ),
+			assetsPreloaded: false,
+			searchIndexPrimed: false,
+			perf: Object.create( null ),
 		};
 		var STORE_VIEWS = [
 			{ id: 'all',       label: 'All' },
@@ -384,6 +391,45 @@
 
 		var ODD_RELOAD_DELAY_MS_DEFAULT = 400;
 		var ODD_RELOAD_DELAY_MS_NATIVE_SURFACE = 360;
+		var SHOP_RENDER_INITIAL = 18;
+		var SHOP_RENDER_CHUNK = 12;
+		var SHOP_RENDER_CHUNK_DELAY_MS = 24;
+		var SHOP_IMAGE_PRELOAD_LIMIT = 10;
+		var SHOP_PERF_BUDGETS = {
+			render: 180,
+			section: 140,
+			search: 85,
+			initialCards: SHOP_RENDER_INITIAL,
+		};
+
+		function perfNow() {
+			return ( window.performance && typeof window.performance.now === 'function' )
+				? window.performance.now()
+				: Date.now();
+		}
+
+		function noteShopPerfBudget( name, startedAt, budgetMs, meta ) {
+			var elapsed = Math.max( 0, perfNow() - startedAt );
+			state.perf = state.perf || {};
+			state.perf[ name ] = {
+				ms: elapsed,
+				budget: budgetMs,
+				at: Date.now(),
+				meta: meta || {},
+			};
+			if ( elapsed > budgetMs ) {
+				diagCount( 'panel.perf.budgetExceeded.' + name );
+				var d = diagnostics();
+				if ( d && typeof d.log === 'function' ) {
+					d.log( 'warn', 'panel.perf.budgetExceeded', Object.assign( {
+						name: name,
+						ms: Math.round( elapsed ),
+						budget: budgetMs,
+					}, meta || {} ) );
+				}
+			}
+			return elapsed;
+		}
 
 		function clearPendingAdminReload() {
 			if ( pendingAdminReloadTimer ) {
@@ -1211,7 +1257,13 @@
 
 		renderSection( state.active );
 		maybeCheckCatalogUpdates();
+		primeShopSearchIndex();
+		preloadShopAssets();
 		stopPanelTimer( {
+			sections: SECTIONS.length,
+			cards:    content.querySelectorAll ? content.querySelectorAll( '[data-odd-shop-card]' ).length : 0,
+		} );
+		noteShopPerfBudget( 'render', panelPerfStart, SHOP_PERF_BUDGETS.render, {
 			sections: SECTIONS.length,
 			cards:    content.querySelectorAll ? content.querySelectorAll( '[data-odd-shop-card]' ).length : 0,
 		} );
@@ -1247,6 +1299,7 @@
 
 		function renderSection( id, opts ) {
 			var stopSectionTimer = diagTime( 'panel.renderSection', { section: id || '' } );
+			var sectionPerfStart = perfNow();
 			opts = opts || {};
 			var scrollSnap = opts.skipScrollPreserve ? null : captureShopScrollTops();
 
@@ -1303,6 +1356,10 @@
 			// this department.
 			highlightJustInstalled();
 			stopSectionTimer( {
+				cards: content.querySelectorAll ? content.querySelectorAll( '[data-odd-shop-card]' ).length : 0,
+			} );
+			noteShopPerfBudget( 'section', sectionPerfStart, SHOP_PERF_BUDGETS.section, {
+				section: id || '',
 				cards: content.querySelectorAll ? content.querySelectorAll( '[data-odd-shop-card]' ).length : 0,
 			} );
 		}
@@ -1388,9 +1445,9 @@
 						gallery.appendChild( empty );
 						return;
 					}
-					rows.forEach( function ( row ) {
-						gallery.appendChild( renderCatalogCard( row, wrap ) );
-					} );
+					appendShelfCards( gallery, rows, function ( row ) {
+						return renderCatalogCard( row, wrap );
+					}, { scope: 'apps', initial: 16 } );
 				} );
 			} );
 		}
@@ -1405,9 +1462,9 @@
 				gallery.appendChild( empty );
 				return;
 			}
-			rows.forEach( function ( row ) {
-				gallery.appendChild( renderCatalogCard( row, wrap ) );
-			} );
+			appendShelfCards( gallery, rows, function ( row ) {
+				return renderCatalogCard( row, wrap );
+			}, { scope: 'apps', initial: 16 } );
 		}
 
 		// Apps catalog card — one unified tile for every row, whether
@@ -1837,7 +1894,11 @@
 		function installCatalogBundleViaBrowser( row, opts ) {
 			opts = opts || {};
 			diagCount( 'catalog.install.browserFallback' );
-			toast( 'Server download hiccuped. Retrying from your browser...' );
+			showShopFlowToast( 'Server download hiccuped. Retrying from your browser...', {
+				duration: 0,
+				progress: true,
+				progressLabel: 'Downloading bundle',
+			} );
 			return fetchCatalogBundleInBrowser( row ).then( function ( bundle ) {
 				return uploadBundleBlob( bundle.blob, catalogBundleFilename( row, bundle.url ), { allowUpdate: !! opts.allowUpdate } );
 			} ).then( function ( res ) {
@@ -1887,9 +1948,9 @@
 				gallery.appendChild( empty );
 				return;
 			}
-			apps.forEach( function ( app ) {
-				gallery.appendChild( renderAppCard( app, wrap ) );
-			} );
+			appendShelfCards( gallery, apps, function ( app ) {
+				return renderAppCard( app, wrap );
+			}, { scope: 'apps', initial: 16 } );
 		}
 
 		function renderAppCard( app, wrap ) {
@@ -2060,6 +2121,16 @@
 			var text = el( 'span', { class: 'odd-shop__flow-toast-text' } );
 			text.textContent = message || '';
 			node.appendChild( text );
+			if ( opts.progress ) {
+				var progress = el( 'wpd-progress-bar', {
+					class: 'odd-shop__flow-progress',
+					'aria-label': opts.progressLabel || message || 'Working',
+				} );
+				progress.setAttribute( 'indeterminate', 'true' );
+				progress.setAttribute( 'data-odd-progress', 'install' );
+				node.appendChild( progress );
+				diagCount( 'panel.install.progressSurface' );
+			}
 			if ( opts.actionLabel && typeof opts.onAction === 'function' ) {
 				var action = el( 'button', {
 					type: 'button',
@@ -2075,7 +2146,9 @@
 			}
 			body.appendChild( node );
 			flowToastNode = node;
-			flowToastTimer = setTimeout( clearShopFlowToast, opts.duration || 5200 );
+			if ( opts.duration !== 0 ) {
+				flowToastTimer = setTimeout( clearShopFlowToast, opts.duration || 5200 );
+			}
 		}
 
 		function shopInstallKey( row ) {
@@ -2764,6 +2837,7 @@
 				code = 'install_failed';
 			}
 			var message = errorCopy( code, data.message || ( res && res.message ) );
+			clearShopFlowToast();
 			playShopSound( 'error' );
 			toast( message );
 
@@ -2906,7 +2980,7 @@
 			if ( Object.prototype.hasOwnProperty.call( source, 'cursorStylesheet' ) ) {
 				state.cfg.cursorStylesheet = source.cursorStylesheet || '';
 			}
-			[ 'favorites', 'recents', 'shuffle', 'screensaver', 'audioReactive', 'shopTaskbar' ].forEach( function ( key ) {
+			[ 'favorites', 'recents', 'shuffle', 'screensaver', 'audioReactive', 'shopTaskbar', 'adminBarHidden' ].forEach( function ( key ) {
 				if ( Object.prototype.hasOwnProperty.call( source, key ) ) state.cfg[ key ] = source[ key ];
 			} );
 			if ( Object.prototype.hasOwnProperty.call( source, 'appsPinned' ) ) {
@@ -2914,7 +2988,7 @@
 				state.cfg.userApps.pinned = Array.isArray( source.appsPinned ) ? source.appsPinned.slice() : [];
 			}
 			if ( window.odd && typeof window.odd === 'object' ) {
-				[ 'wallpaper', 'scene', 'iconSet', 'cursorSet', 'cursorStylesheet', 'shuffle', 'screensaver', 'audioReactive', 'shopTaskbar' ].forEach( function ( key ) {
+				[ 'wallpaper', 'scene', 'iconSet', 'cursorSet', 'cursorStylesheet', 'shuffle', 'screensaver', 'audioReactive', 'shopTaskbar', 'adminBarHidden' ].forEach( function ( key ) {
 					if ( Object.prototype.hasOwnProperty.call( state.cfg, key ) ) window.odd[ key ] = state.cfg[ key ];
 				} );
 				if ( state.cfg.userApps ) window.odd.userApps = clone( state.cfg.userApps );
@@ -3288,7 +3362,11 @@
 				btn.setAttribute( 'aria-busy', 'true' );
 				btn.textContent = progress.label;
 			}
-			showShopFlowToast( progress.verb + ' ' + itemDisplayName( row ) + '…', { duration: 2400 } );
+			showShopFlowToast( progress.verb + ' ' + itemDisplayName( row ) + '…', {
+				duration: 0,
+				progress: true,
+				progressLabel: progress.label,
+			} );
 			renderSection( state.active, { keepQuery: true } );
 			return installCatalogRowData( row.raw || row, opts ).then( function ( data ) {
 				handleInstallSuccess( data );
@@ -3300,6 +3378,7 @@
 					onInstallFailure( err );
 				} else {
 					reportError( 'bundles.install-from-catalog', err );
+					clearShopFlowToast();
 					playShopSound( 'error' );
 					toast( ( err && err.message ) || 'Network error while installing.' );
 				}
@@ -3518,13 +3597,72 @@
 		 * Dedicated Settings department.
 		 *
 		 * Keep this intentionally tiny: placement belongs to Desktop Mode,
-		 * and the only Shop-local preference is whether the panel chirps.
+		 * and shell preferences stay per-user instead of global rewrites.
 		 */
+		function renderPerformancePanel() {
+			var panel = el( 'details', { class: 'odd-shop__performance', 'data-odd-performance-panel': '1' } );
+			var summary = el( 'summary', { class: 'odd-shop__performance-summary' } );
+			var title = el( 'span' );
+			title.textContent = __( 'Performance' );
+			var badge = el( 'b' );
+			var lastSection = state.perf && state.perf.section;
+			badge.textContent = lastSection ? Math.round( lastSection.ms ) + 'ms' : 'live';
+			summary.appendChild( title );
+			summary.appendChild( badge );
+			panel.appendChild( summary );
+
+			var grid = el( 'div', { class: 'odd-shop__performance-grid' } );
+			function addMetric( label, value, budget ) {
+				var item = el( 'span', { class: 'odd-shop__performance-metric' } );
+				var k = el( 'small' );
+				k.textContent = label;
+				var v = el( 'strong' );
+				v.textContent = String( value );
+				if ( budget && parseFloat( value ) > budget ) item.classList.add( 'is-warn' );
+				item.appendChild( k );
+				item.appendChild( v );
+				grid.appendChild( item );
+			}
+			addMetric( 'Render', state.perf && state.perf.render ? Math.round( state.perf.render.ms ) + 'ms' : '-', SHOP_PERF_BUDGETS.render );
+			addMetric( 'Section', lastSection ? Math.round( lastSection.ms ) + 'ms' : '-', SHOP_PERF_BUDGETS.section );
+			addMetric( 'Catalog rows', catalogTotalRows() );
+			addMetric( 'Cards drawn', content.querySelectorAll ? content.querySelectorAll( '[data-odd-shop-card]' ).length : 0 );
+			addMetric( 'Canvas count', document.querySelectorAll ? document.querySelectorAll( 'canvas' ).length : 0 );
+			addMetric( 'Preloaded art', Object.keys( state.preloadedImages || {} ).length );
+			panel.appendChild( grid );
+
+			var hint = el( 'p', { class: 'odd-shop__performance-hint' } );
+			hint.textContent = __( 'Local-only counters for slow shelves, leaked canvases, and heavy catalog rows.' );
+			panel.appendChild( hint );
+			return panel;
+		}
+
+		function syncAdminBarHiddenState( hidden ) {
+			var id = 'oddout-admin-bar-hidden-live';
+			var style = document.getElementById( id );
+			if ( hidden ) {
+				if ( ! style ) {
+					style = document.createElement( 'style' );
+					style.id = id;
+					style.textContent = '#wpadminbar{display:none!important}html.wp-toolbar{padding-top:0!important}body.admin-bar{padding-top:0!important}';
+					document.head.appendChild( style );
+				}
+				return;
+			}
+			var serverStyle = document.getElementById( 'oddout-admin-bar-hidden' );
+			if ( serverStyle && serverStyle.parentNode ) {
+				serverStyle.parentNode.removeChild( serverStyle );
+			}
+			if ( style && style.parentNode ) {
+				style.parentNode.removeChild( style );
+			}
+		}
+
 		function renderSettings() {
 			var wrap = el( 'div', { class: 'odd-shop__dept odd-shop__dept--settings' } );
 			wrap.appendChild( sectionHeader(
 				'Settings',
-				'Two small switches for how ODD lives in Desktop Mode.',
+				'Small switches for the desktop shell, plus a tiny local speed readout.',
 				{ eyebrow: 'ODD · Preferences' }
 			) );
 
@@ -3600,6 +3738,42 @@
 					} );
 				} );
 			} );
+
+			// WordPress admin bar. Front-end visibility uses the core
+			// `show_admin_bar` filter in PHP; the wp-admin portal needs a
+			// tiny live CSS bridge because WordPress does not expose an
+			// equivalent admin-screen switch.
+			var adminBarRow = el( 'label', { class: 'odd-setting-card odd-setting-card--admin-bar odd-switch-row' } );
+			var adminBarBox = el( 'input', { type: 'checkbox' } );
+			adminBarBox.checked = !! state.cfg.adminBarHidden;
+			var adminBarKnob = el( 'span', { class: 'odd-switch' } );
+			var adminBarText = el( 'span', { class: 'odd-setting-card__text' } );
+			var adminBarLbl = el( 'strong' );
+			adminBarLbl.textContent = __( 'Hide admin bar' );
+			var adminBarHint = el( 'span' );
+			adminBarHint.textContent = __( 'Give Desktop Mode the whole top edge while keeping classic admin normal.' );
+			adminBarText.appendChild( adminBarLbl );
+			adminBarText.appendChild( adminBarHint );
+			adminBarRow.appendChild( adminBarBox );
+			adminBarRow.appendChild( adminBarKnob );
+			adminBarRow.appendChild( adminBarText );
+			settings.appendChild( adminBarRow );
+			adminBarBox.addEventListener( 'change', function () {
+				var nextHidden = !! adminBarBox.checked;
+				state.cfg.adminBarHidden = nextHidden;
+				syncAdminBarHiddenState( nextHidden );
+				savePrefs( { adminBarHidden: nextHidden }, function ( data ) {
+					if ( data && Object.prototype.hasOwnProperty.call( data, 'adminBarHidden' ) ) {
+						state.cfg.adminBarHidden = !! data.adminBarHidden;
+						adminBarBox.checked = state.cfg.adminBarHidden;
+						syncAdminBarHiddenState( state.cfg.adminBarHidden );
+						if ( window.odd && typeof window.odd === 'object' ) window.odd.adminBarHidden = state.cfg.adminBarHidden;
+					}
+					toast( state.cfg.adminBarHidden ? __( 'Admin bar hidden in Desktop Mode.' ) : __( 'Admin bar restored.' ) );
+				} );
+			} );
+
+			settings.appendChild( renderPerformancePanel() );
 
 			wrap.appendChild( settings );
 
@@ -3957,6 +4131,10 @@
 			if ( window.odd ) {
 				window.odd.bundleCatalog = clone( next );
 			}
+			state.searchIndexPrimed = false;
+			state.assetsPreloaded = false;
+			primeShopSearchIndex();
+			preloadShopAssets();
 			return true;
 		}
 
@@ -4133,9 +4311,10 @@
 				shelf.appendChild( head );
 
 				var grid = el( 'div', { class: 'odd-shop__grid odd-shop__grid--search odd-shop__grid--' + group.type } );
-				rows.forEach( function ( row ) {
-					var card = renderSearchResultCard( row );
-					if ( card ) grid.appendChild( card );
+				appendShelfCards( grid, rows, renderSearchResultCard, {
+					scope: 'search',
+					initial: 24,
+					chunk: 16,
 				} );
 				shelf.appendChild( grid );
 				wrap.appendChild( shelf );
@@ -4274,9 +4453,17 @@
 		}
 
 		function applyStoreControls( rows, type ) {
+			var start = state.query || state.categoryFilter ? perfNow() : 0;
 			var list = filterByQuery( rows || [], state.query );
 			list = list.filter( storeViewAllows );
 			list.sort( compareShopRows );
+			if ( start ) {
+				noteShopPerfBudget( 'search', start, SHOP_PERF_BUDGETS.search, {
+					type: type || 'all',
+					rows: rows ? rows.length : 0,
+					results: list.length,
+				} );
+			}
 			return list;
 		}
 
@@ -4888,13 +5075,64 @@
 			return renderShelf( title, items, renderSceneCard, { scope: scope || 'wallpaper' } );
 		}
 
-		function appendShelfCards( track, items, cardFn ) {
+		function appendCardsFragment( track, items, cardFn, start, end ) {
 			var frag = document.createDocumentFragment();
-			( items || [] ).forEach( function ( item ) {
+			items = items || [];
+			start = Math.max( 0, start || 0 );
+			end = Math.min( items.length, typeof end === 'number' ? end : items.length );
+			for ( var i = start; i < end; i++ ) {
+				var item = items[ i ];
 				var card = cardFn( item );
 				if ( card ) frag.appendChild( card );
-			} );
+			}
 			track.appendChild( frag );
+			try {
+				track.dispatchEvent( new CustomEvent( 'odd-shop-cards-added', {
+					bubbles: false,
+					detail: { start: start, end: end, total: items.length },
+				} ) );
+			} catch ( e ) {}
+		}
+
+		function appendShelfCards( track, items, cardFn, opts ) {
+			opts = opts || {};
+			items = Array.isArray( items ) ? items : [];
+			if ( ! items.length ) return;
+			var initial = Math.min(
+				items.length,
+				typeof opts.initial === 'number' ? opts.initial : SHOP_RENDER_INITIAL
+			);
+			var chunk = Math.max( 1, typeof opts.chunk === 'number' ? opts.chunk : SHOP_RENDER_CHUNK );
+			var startedAt = perfNow();
+			track.setAttribute( 'data-odd-virtualized', items.length > initial ? '1' : '0' );
+			track.setAttribute( 'data-odd-render-total', String( items.length ) );
+			track.setAttribute( 'data-odd-rendered-count', String( initial ) );
+			appendCardsFragment( track, items, cardFn, 0, initial );
+			noteShopPerfBudget( 'cards.initial', startedAt, SHOP_PERF_BUDGETS.section, {
+				scope: opts.scope || '',
+				total: items.length,
+				initial: initial,
+			} );
+			if ( initial >= items.length ) return;
+
+			var index = initial;
+			var disposed = false;
+			addSectionCleanup( function () {
+				disposed = true;
+			} );
+			function renderNextChunk() {
+				if ( disposed || ! document.contains( track ) ) return;
+				var next = Math.min( items.length, index + chunk );
+				appendCardsFragment( track, items, cardFn, index, next );
+				index = next;
+				track.setAttribute( 'data-odd-rendered-count', String( index ) );
+				if ( index < items.length ) {
+					deferShopWork( renderNextChunk, SHOP_RENDER_CHUNK_DELAY_MS );
+				} else {
+					diagCount( 'panel.cards.virtual.complete' );
+				}
+			}
+			deferShopWork( renderNextChunk, SHOP_RENDER_CHUNK_DELAY_MS );
 		}
 
 		function deferShopWork( fn, delay ) {
@@ -4935,6 +5173,155 @@
 			} );
 		}
 
+		function deferPanelWork( fn, delay ) {
+			var done = false;
+			function run() {
+				if ( done ) return;
+				done = true;
+				fn();
+			}
+			if ( typeof delay === 'number' && delay > 0 && typeof window.setTimeout === 'function' ) {
+				var timer = window.setTimeout( run, delay );
+				cleanupFns.push( function () {
+					done = true;
+					window.clearTimeout( timer );
+				} );
+				return;
+			}
+			if ( typeof window.requestIdleCallback === 'function' ) {
+				var idle = window.requestIdleCallback( run, { timeout: 260 } );
+				cleanupFns.push( function () {
+					done = true;
+					if ( typeof window.cancelIdleCallback === 'function' ) window.cancelIdleCallback( idle );
+				} );
+				return;
+			}
+			var timerFallback = window.setTimeout( run, 0 );
+			cleanupFns.push( function () {
+				done = true;
+				window.clearTimeout( timerFallback );
+			} );
+		}
+
+		function rawCatalogRowsForIndex() {
+			var catalog = ( state.cfg && state.cfg.bundleCatalog ) || {};
+			var keys = [ 'scene', 'iconSet', 'cursorSet', 'widget', 'app' ];
+			var rows = [];
+			keys.forEach( function ( key ) {
+				if ( Array.isArray( catalog[ key ] ) ) {
+					rows = rows.concat( catalog[ key ] );
+				}
+			} );
+			return rows;
+		}
+
+		function fallbackRawSearchText( row ) {
+			if ( ! row || row.search_text ) return;
+			row.search_text = [
+				row.type,
+				row.slug,
+				row.name,
+				row.label,
+				row.author,
+				row.description,
+				row.category,
+				row.department,
+				row.version,
+				Array.isArray( row.tags ) ? row.tags.join( ' ' ) : '',
+			].filter( Boolean ).join( ' ' ).toLowerCase();
+			row.search_tokens = row.search_text.split( /\s+/ ).filter( Boolean ).slice( 0, 96 );
+		}
+
+		function primeShopSearchIndex() {
+			if ( state.searchIndexPrimed ) return;
+			state.searchIndexPrimed = true;
+			deferPanelWork( function () {
+				var rows = rawCatalogRowsForIndex();
+				if ( ! rows.length ) return;
+				if ( typeof window.Worker !== 'function' || typeof window.Blob !== 'function' || typeof window.URL === 'undefined' || typeof window.URL.createObjectURL !== 'function' ) {
+					rows.forEach( fallbackRawSearchText );
+					diagCount( 'panel.searchIndex.mainThread' );
+					return;
+				}
+				var workerUrl = '';
+				try {
+					var source = ''
+						+ 'self.onmessage=function(e){'
+						+ 'var rows=e.data||[];'
+						+ 'function words(v){if(!v)return[];if(Array.isArray(v)){return v.join(" ").toLowerCase().match(/[a-z0-9][a-z0-9-]*/g)||[]}return String(v).toLowerCase().match(/[a-z0-9][a-z0-9-]*/g)||[];}'
+						+ 'var out=rows.map(function(row,i){row=row||{};var parts=[row.type,row.slug,row.name,row.label,row.author,row.description,row.category,row.department,row.version];var text=parts.concat(words(row.tags)).filter(Boolean).join(" ").toLowerCase();var seen={};var tokens=(text.match(/[a-z0-9][a-z0-9-]*/g)||[]).filter(function(t){if(seen[t])return false;seen[t]=1;return true;}).slice(0,96);return{index:i,search_text:text,search_tokens:tokens};});'
+						+ 'self.postMessage(out);'
+						+ '};';
+					workerUrl = window.URL.createObjectURL( new window.Blob( [ source ], { type: 'application/javascript' } ) );
+					var worker = new window.Worker( workerUrl );
+					worker.onmessage = function ( e ) {
+						var out = Array.isArray( e.data ) ? e.data : [];
+						out.forEach( function ( result ) {
+							var row = rows[ result.index ];
+							if ( row && ! row.search_text ) {
+								row.search_text = result.search_text || '';
+								row.search_tokens = Array.isArray( result.search_tokens ) ? result.search_tokens : [];
+							}
+						} );
+						diagCount( 'panel.searchIndex.worker' );
+						try { worker.terminate(); } catch ( _term ) {}
+						if ( workerUrl ) {
+							try { window.URL.revokeObjectURL( workerUrl ); } catch ( _revoke ) {}
+						}
+					};
+					worker.onerror = function () {
+						rows.forEach( fallbackRawSearchText );
+						diagCount( 'panel.searchIndex.workerFallback' );
+						try { worker.terminate(); } catch ( _term2 ) {}
+						if ( workerUrl ) {
+							try { window.URL.revokeObjectURL( workerUrl ); } catch ( _revoke2 ) {}
+						}
+					};
+					cleanupFns.push( function () {
+						try { worker.terminate(); } catch ( _term3 ) {}
+						if ( workerUrl ) {
+							try { window.URL.revokeObjectURL( workerUrl ); } catch ( _revoke3 ) {}
+						}
+					} );
+					worker.postMessage( rows );
+				} catch ( err ) {
+					rows.forEach( fallbackRawSearchText );
+					diagCount( 'panel.searchIndex.fallback' );
+				}
+			}, 120 );
+		}
+
+		function preloadImageUrl( url ) {
+			url = String( url || '' );
+			if ( ! url || state.preloadedImages[ url ] ) return;
+			state.preloadedImages[ url ] = true;
+			try {
+				var img = new Image();
+				img.decoding = 'async';
+				img.loading = 'eager';
+				img.src = url;
+			} catch ( e ) {}
+		}
+
+		function preloadShopAssets() {
+			if ( state.assetsPreloaded ) return;
+			state.assetsPreloaded = true;
+			deferPanelWork( function () {
+				var rows = [];
+				[ 'scene', 'icon-set', 'cursor-set', 'widget', 'app' ].forEach( function ( type ) {
+					rows = rows.concat( shopRowsFor( type ) );
+				} );
+				rows = rows.filter( function ( row ) {
+					return row && ( row.featured || row.installed || shopCardIsActive( row ) );
+				} ).slice( 0, SHOP_IMAGE_PRELOAD_LIMIT );
+				rows.forEach( function ( row ) {
+					preloadImageUrl( row.cardUrl || row.previewUrl || row.iconUrl );
+					preloadImageUrl( row.iconUrl );
+				} );
+				diagCount( 'panel.assets.preloaded', rows.length );
+			}, 180 );
+		}
+
 		function renderShelf( category, items, cardFn, opts ) {
 			opts = opts || {};
 			var scope = opts.scope || 'wallpaper';
@@ -4966,7 +5353,11 @@
 				? 'odd-shop__shelf-track odd-shop__shelf-track--tiles'
 				: 'odd-shop__shelf-track odd-shop__shelf-track--list';
 			var track = el( 'div', { class: trackClass } );
-			appendShelfCards( track, items, cardFn );
+			appendShelfCards( track, items, cardFn, {
+				scope: scope,
+				initial: opts.initialCards,
+				chunk: opts.chunkCards,
+			} );
 
 			// Wrap the track in a slider shell so we can overlay
 			// prev/next pills. The native scroll still works for
@@ -5016,6 +5407,7 @@
 				slider.classList.toggle( 'is-overflowing', track.scrollWidth > track.clientWidth + 2 );
 			}
 			track.addEventListener( 'scroll', updateButtons, { passive: true } );
+			track.addEventListener( 'odd-shop-cards-added', updateButtons );
 			deferShopWork( updateButtons );
 			deferShopWork( updateButtons, 400 );
 			if ( typeof ResizeObserver !== 'undefined' ) {
@@ -5618,9 +6010,10 @@
 			}
 
 			var grid = el( 'div', { class: 'odd-shop__grid odd-shop__grid--widgets' } );
-			rows.forEach( function ( row ) {
-				var card = renderShopCard( row );
-				if ( card ) grid.appendChild( card );
+			appendShelfCards( grid, rows, renderShopCard, {
+				scope: 'widgets',
+				initial: 16,
+				chunk: 12,
 			} );
 			wrap.appendChild( grid );
 
@@ -5893,6 +6286,9 @@
 				raw.label || raw.name || '',
 				raw.category || '',
 				raw.description || '',
+				raw.search_text || raw.searchText || '',
+				Array.isArray( raw.search_tokens ) ? raw.search_tokens.join( ',' ) : '',
+				Array.isArray( raw.searchTokens ) ? raw.searchTokens.join( ',' ) : '',
 				raw.version || '',
 				raw.installed === undefined ? 'u' : ( raw.installed ? '1' : '0' ),
 				raw.enabled === false ? '0' : '1',
@@ -5907,9 +6303,7 @@
 				raw.download_url || raw.downloadUrl || '',
 				raw.sha256 || '',
 				raw.size || '',
-				raw.search_text || raw.searchText || '',
-				Array.isArray( raw.search_tokens ) ? raw.search_tokens.join( ',' ) : '',
-				Array.isArray( raw.searchTokens ) ? raw.searchTokens.join( ',' ) : '',
+				raw.card_bytes || raw.cardBytes || '',
 				raw.icons && typeof raw.icons === 'object' ? JSON.stringify( raw.icons ) : '',
 				raw.cursors && typeof raw.cursors === 'object' ? JSON.stringify( raw.cursors ) : '',
 				raw.effects && typeof raw.effects === 'object' ? JSON.stringify( raw.effects ) : '',
@@ -5929,7 +6323,10 @@
 				description:   raw.description || '',
 				version:       raw.version || '',
 				category:     raw.category || '',
+				department:    raw.department || DEPT_FOR_TYPE[ type ] || '',
 				tags:          Array.isArray( raw.tags ) ? raw.tags : [],
+				searchText:    raw.search_text || raw.searchText || '',
+				searchTokens:  Array.isArray( raw.search_tokens ) ? raw.search_tokens.slice() : ( Array.isArray( raw.searchTokens ) ? raw.searchTokens.slice() : [] ),
 				previewUrl:    normaliseCatalogAssetUrl( raw.previewUrl || raw.preview_url || raw.preview || '', type, slug ),
 				wallpaperUrl:  normaliseCatalogAssetUrl( raw.wallpaperUrl || raw.wallpaper_url || raw.wallpaper || '', type, slug ),
 				iconUrl:       normaliseCatalogAssetUrl( raw.icon_url || raw.iconUrl || raw.icon || '', type, slug ),
@@ -5937,6 +6334,7 @@
 				downloadUrl:   raw.download_url || raw.downloadUrl || '',
 				sha256:        raw.sha256 || '',
 				size:          raw.size || 0,
+				cardBytes:      raw.card_bytes || raw.cardBytes || 0,
 				icons:         raw.icons && typeof raw.icons === 'object' ? raw.icons : null,
 				cursors:       raw.cursors && typeof raw.cursors === 'object' ? raw.cursors : null,
 				effects:       raw.effects && typeof raw.effects === 'object' ? raw.effects : null,
@@ -5944,19 +6342,17 @@
 				accent:        raw.accent || '',
 				fallbackColor: raw.fallbackColor || '',
 				featured:      !! raw.featured,
-				searchText:    raw.search_text || raw.searchText || '',
-				searchTokens:  Array.isArray( raw.search_tokens ) ? raw.search_tokens.slice() : ( Array.isArray( raw.searchTokens ) ? raw.searchTokens.slice() : [] ),
 				builtin:       !! raw.builtin,
 				broken:        !! raw.broken || raw.state === 'broken' || raw.status === 'broken',
 				incompatible:  !! raw.incompatible || raw.state === 'incompatible' || raw.status === 'incompatible',
 				incompatibilityReason: raw.incompatibility_reason || raw.incompatibilityReason || '',
-					updateAvailable: !! raw.updateAvailable || !! raw.update_available || raw.state === 'updateAvailable',
-					requiresReload: !! raw.requiresReload,
-					installed:     raw.installed === undefined ? true : !! raw.installed,
-					enabled:       raw.enabled !== false,
-					surfaces:      raw.surfaces && typeof raw.surfaces === 'object' ? Object.assign( {}, raw.surfaces ) : null,
-					raw:           raw,
-				};
+				updateAvailable: !! raw.updateAvailable || !! raw.update_available || raw.state === 'updateAvailable',
+				requiresReload: !! raw.requiresReload,
+				installed:     raw.installed === undefined ? true : !! raw.installed,
+				enabled:       raw.enabled !== false,
+				surfaces:      raw.surfaces && typeof raw.surfaces === 'object' ? Object.assign( {}, raw.surfaces ) : null,
+				raw:           raw,
+			};
 			shopRowCache[ cacheKey ] = Object.assign( {}, row, { raw: null } );
 			return row;
 		}
@@ -6035,12 +6431,14 @@
 			takeIfEmpty( 'downloadUrl' );
 			takeIfEmpty( 'sha256' );
 			takeIfEmpty( 'size' );
+			takeIfEmpty( 'cardBytes' );
 			takeIfEmpty( 'category' );
+			takeIfEmpty( 'department' );
+			takeIfEmpty( 'searchText' );
 			takeIfEmpty( 'accent' );
 			takeIfEmpty( 'fallbackColor' );
 			takeIfEmpty( 'version' );
-			takeIfEmpty( 'searchText' );
-			if ( cat.searchTokens && Array.isArray( cat.searchTokens ) && cat.searchTokens.length && isEmptyTags( ins.searchTokens ) ) {
+			if ( Array.isArray( cat.searchTokens ) && cat.searchTokens.length && isEmptyTags( ins.searchTokens ) ) {
 				ins.searchTokens = cat.searchTokens.slice();
 			}
 			if ( cat.tags && Array.isArray( cat.tags ) && cat.tags.length && isEmptyTags( ins.tags ) ) {

@@ -76,6 +76,7 @@ fresh server read can use the REST endpoint directly.
     "screensaver": {},
     "audioReactive": false,
     "shopTaskbar": false,
+    "adminBarHidden": true,
     "iconSet": "",
     "cursorSet": "",
     "cursorStylesheet": "",
@@ -102,13 +103,19 @@ same endpoint and keeps the localized client state in sync where possible.
 **Content-Type:** `application/json`
 
 Writable keys: `wallpaper`, `scene`, `favorites`, `recents`, `shuffle`,
-`screensaver`, `audioReactive`, `shopTaskbar`, `initiated`, `mascotQuiet`,
-`winkUnlocked`, `appsPinned`, `iconSet`, and `cursorSet`.
+`screensaver`, `audioReactive`, `shopTaskbar`, `adminBarHidden`, `initiated`,
+`mascotQuiet`, `winkUnlocked`, `appsPinned`, `iconSet`, and `cursorSet`.
 
 `shopTaskbar` is a compatibility/default mirror. Current clients write the
 actual ODD Shop launcher placement through Desktop Mode's core
 `itemVisibility.odd` OS setting, then persist this value for older hosts and
 workspace export/import.
+
+`adminBarHidden` is an ODD-owned per-user preference and defaults to `true`
+for a cleaner Desktop Mode workspace. Front-end toolbar visibility uses
+WordPress' `show_admin_bar` filter; the wp-admin toolbar is only hidden inside
+the Desktop Mode portal so classic admin remains normal. Saving `false`
+restores the bar.
 
 ```json
 {

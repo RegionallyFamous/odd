@@ -82,6 +82,7 @@ ICON_VISIBLE_ALPHA_THRESHOLD = 32
 ICON_VISIBLE_MIN_FILL = 0.80
 APP_ICON_TRANSPARENT_EDGE_MIN = 0.90
 CATALOG_CARD_SIZE = (1024, 576)
+CATALOG_CARD_SIZE_BUDGET = 320 * 1024
 ASSET_REL_PATH = re.compile(r"^[a-zA-Z0-9._-]+(/[a-zA-Z0-9._-]+)*$")
 BUNDLE_FORBIDDEN_EXTENSIONS = {
     "php", "phtml", "phar", "php3", "php4", "php5", "php7",
@@ -466,6 +467,12 @@ def publish_card(src_dir: Path, type_prefix: str, slug: str) -> str:
                 f"{CATALOG_CARD_SIZE[0]}x{CATALOG_CARD_SIZE[1]}, "
                 f"got {img.size[0]}x{img.size[1]}"
             )
+    card_size = card.stat().st_size
+    if card_size > CATALOG_CARD_SIZE_BUDGET:
+        raise SystemExit(
+            f"{type_prefix}/{slug}: card.webp is too large "
+            f"({card_size} bytes > {CATALOG_CARD_SIZE_BUDGET} bytes)"
+        )
     name = f"{type_prefix}-{slug}.webp"
     shutil.copy2(card, OUT_CARDS / name)
     return f"{CATALOG_BASE}/cards/{name}"
@@ -482,8 +489,78 @@ def scene_card_from_wallpaper(wallpaper: bytes) -> bytes:
 
 def publish_scene_card(slug: str, wallpaper: bytes) -> str:
     name = f"scene-{slug}.webp"
-    (OUT_CARDS / name).write_bytes(scene_card_from_wallpaper(wallpaper))
+    card = scene_card_from_wallpaper(wallpaper)
+    if len(card) > CATALOG_CARD_SIZE_BUDGET:
+        raise SystemExit(
+            f"scene/{slug}: generated card is too large "
+            f"({len(card)} bytes > {CATALOG_CARD_SIZE_BUDGET} bytes)"
+        )
+    (OUT_CARDS / name).write_bytes(card)
     return f"{CATALOG_BASE}/cards/{name}"
+
+
+def _search_words(value) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, (list, tuple, set)):
+        out: list[str] = []
+        for item in value:
+            out.extend(_search_words(item))
+        return out
+    if isinstance(value, dict):
+        out = []
+        for item in value.values():
+            out.extend(_search_words(item))
+        return out
+    return re.findall(r"[a-z0-9][a-z0-9-]*", str(value).lower())
+
+
+def catalog_department(row: dict) -> str:
+    return {
+        "scene": "wallpaper",
+        "icon-set": "icons",
+        "cursor-set": "cursors",
+        "widget": "widgets",
+        "app": "apps",
+    }.get(str(row.get("type") or ""), "")
+
+
+def catalog_search_text(row: dict) -> str:
+    words: list[str] = []
+    for key in (
+        "type",
+        "slug",
+        "name",
+        "author",
+        "description",
+        "category",
+        "version",
+        "accent",
+    ):
+        words.extend(_search_words(row.get(key)))
+    words.extend(_search_words(row.get("tags")))
+    words.extend(_search_words(row.get("requires")))
+    words.extend(_search_words(catalog_department(row)))
+    seen: set[str] = set()
+    ordered = []
+    for word in words:
+        if word and word not in seen:
+            seen.add(word)
+            ordered.append(word)
+    return " ".join(ordered)
+
+
+def enrich_catalog_row(row: dict) -> dict:
+    row["department"] = catalog_department(row)
+    row["search_text"] = catalog_search_text(row)
+    row["search_tokens"] = row["search_text"].split(" ")[:96]
+    card_url = str(row.get("card_url") or "")
+    card_prefix = f"{CATALOG_BASE}/cards/"
+    if card_url.startswith(card_prefix):
+        card_path = OUT_CARDS / card_url[len(card_prefix):]
+        if card_path.is_file():
+            row["card_bytes"] = card_path.stat().st_size
+    return row
 
 
 # ---------------------------------------------------------------- #
@@ -1133,9 +1210,13 @@ SCHEMA = {
                     "author": {"type": "string"},
                     "description": {"type": "string"},
                     "category": {"type": "string"},
+                    "department": {"type": "string"},
                     "tags": {"type": "array", "items": {"type": "string"}},
+                    "search_text": {"type": "string"},
+                    "search_tokens": {"type": "array", "items": {"type": "string"}},
                     "icon_url": {"type": "string"},
                     "card_url": {"type": "string"},
+                    "card_bytes": {"type": "integer", "minimum": 1},
                     "download_url": {"type": "string"},
                     "sha256": {
                         "type": "string",
@@ -1216,6 +1297,8 @@ def main() -> int:
             if not folder.is_dir():
                 continue
             all_rows.append(build_app(folder.name, folder))
+
+    all_rows = [enrich_catalog_row(row) for row in all_rows]
 
     starter_path = SOURCES / "starter-pack.json"
     starter = json.loads(starter_path.read_text()) if starter_path.is_file() else {}

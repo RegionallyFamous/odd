@@ -2,7 +2,7 @@
 	"slug": "mosaic",
 	"name": "Mosaic",
 	"description": "Tiny art, big feelings. A pixel editor with drawing tools, fills, undo/redo, and PNG export when you're ready to share your 32x32 masterpiece.",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"author": "Regionally Famous",
 	"tags": [
 		"creative",

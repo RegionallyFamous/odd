@@ -370,7 +370,7 @@
 
 	function buttonLike( node ) {
 		var label = attr( node, 'aria-label' ).toLowerCase();
-		if ( matches( node, 'a[href], button, .button, .button-primary, .button-secondary, [role="button"], [role="menuitem"], [role="option"], summary, label[for], input[type="button"], input[type="submit"], input[type="reset"], select, option, .ab-item, .components-button, wpd-button, wpd-tab, wpd-context-menu-item, wpd-menu-item, [data-window-control], [data-window-action], [data-context-menu-item], .desktop-mode-icon, .desktop-mode-file, .desktop-mode-file-tile, .desktop-mode-file__tile, .desktop-mode-files__item, .desktop-mode-files__tile, .desktop-mode-folder, .desktop-mode-folder-tile, .desktop-mode-context-menu__item, .desktop-mode-dock__item, .desktop-mode-dock__button, .desktop-mode-window__btn, .desktop-mode-window__tab, .desktop-mode-window__control, .desktop-mode-plugins__row, .desktop-mode-plugins__action, .desktop-mode-heartbeat__button, .desktop-mode-widgets__card-redock, .desktop-mode-widgets__card-close, .desktop-mode-widgets__add, .wp-desktop-icon, .wp-desktop-file, .wp-desktop-file-tile, .wp-desktop-folder, .wp-desktop-folder-tile, .wp-desktop-dock__item, .wp-desktop-dock__item-primary, .wp-desktop-dock__item-new, .wp-desktop-window__btn, .wp-desktop-window__tab, .wp-desktop-window__meta-btn, .wp-desktop-window__menu-btn, .wp-desktop-window__menu-item, .wp-desktop-widgets__card-redock, .wp-desktop-widgets__card-close, .wp-desktop-widgets__add' ) ) {
+		if ( matches( node, 'a[href], button, .button, .button-primary, .button-secondary, [role="button"], [role="menuitem"], [role="option"], summary, label[for], input[type="button"], input[type="submit"], input[type="reset"], select, option, .ab-item, .components-button, wpd-button, wpd-tab, wpd-notice, wpd-tile, wpd-ribbon, wpd-progress-bar, wpd-context-menu-item, wpd-context-menu-option, wpd-menu-item, [data-window-control], [data-window-action], [data-context-menu-item], [data-desktop-mode-drop-target], .desktop-mode-drop-overlay, .desktop-mode-drop-zone, .desktop-mode-icon, .desktop-mode-file, .desktop-mode-file-tile, .desktop-mode-file__tile, .desktop-mode-files__item, .desktop-mode-files__tile, .desktop-mode-folder, .desktop-mode-folder-tile, .desktop-mode-context-menu__item, .desktop-mode-dock__item, .desktop-mode-dock__button, .desktop-mode-window__btn, .desktop-mode-window__tab, .desktop-mode-window__control, .desktop-mode-plugins__row, .desktop-mode-plugins__action, .desktop-mode-heartbeat__button, .desktop-mode-widgets__card-redock, .desktop-mode-widgets__card-close, .desktop-mode-widgets__add, .wp-desktop-icon, .wp-desktop-file, .wp-desktop-file-tile, .wp-desktop-folder, .wp-desktop-folder-tile, .wp-desktop-dock__item, .wp-desktop-dock__item-primary, .wp-desktop-dock__item-new, .wp-desktop-window__btn, .wp-desktop-window__tab, .wp-desktop-window__meta-btn, .wp-desktop-window__menu-btn, .wp-desktop-window__menu-item, .wp-desktop-widgets__card-redock, .wp-desktop-widgets__card-close, .wp-desktop-widgets__add' ) ) {
 			return true;
 		}
 		return label === 'close' || label === 'minimize' || label === 'maximize' || label === 'restore';
@@ -1089,12 +1089,21 @@
 			'.desktop-mode-plugins__row',
 			'.desktop-mode-plugins__action',
 			'.desktop-mode-heartbeat__button',
+			'.desktop-mode-drop-overlay',
+			'.desktop-mode-drop-zone',
+			'[data-desktop-mode-drop-target]',
 			'.desktop-mode-widgets__chrome',
 			'.desktop-mode-widgets__grip',
 			'.desktop-mode-widgets__resize',
 			'.desktop-mode-widget__resize-handle',
 			'wpd-tab',
+			'wpd-button',
+			'wpd-notice',
+			'wpd-tile',
+			'wpd-ribbon',
+			'wpd-progress-bar',
 			'wpd-context-menu-item',
+			'wpd-context-menu-option',
 			'wpd-menu-item',
 			'.desktop-mode-widgets__card-redock',
 			'.desktop-mode-widgets__card-close',
@@ -1172,6 +1181,7 @@
 		}
 		installListeners( doc );
 		if ( doc.body ) {
+			if ( doc !== document ) markRoot( doc.body );
 			observeSurface( doc.body, { source: 'document' } );
 			markDesktopSurfaces( doc.body );
 		}

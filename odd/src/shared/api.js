@@ -54,12 +54,10 @@
 	var TOAST_TONE    = 'odd-muse';
 	var SHOP_WINDOW_X = 96;
 	var SHOP_WINDOW_Y = 16;
-	var SHOP_WINDOW_MAX_Y = 24;
 	var SHOP_WINDOW_W = 1040;
 	var SHOP_WINDOW_H = 640;
 	var SHOP_MIN_W    = 420;
 	var SHOP_MIN_H    = 420;
-	var NATIVE_GEOMETRY_STORAGE_KEY = 'desktop-mode-native-window-geometry';
 
 	var store      = window.__odd.store      || null;
 	var events     = window.__odd.events     || null;
@@ -183,39 +181,11 @@
 		return null;
 	}
 
-	function normalizeOddShopSavedGeometry() {
-		var storage;
-		try {
-			storage = window.localStorage;
-		} catch ( _e ) {
-			return false;
-		}
-		if ( ! storage || typeof storage.getItem !== 'function' || typeof storage.setItem !== 'function' ) {
-			return false;
-		}
-		try {
-			var raw = storage.getItem( NATIVE_GEOMETRY_STORAGE_KEY );
-			if ( ! raw ) return false;
-			var map = JSON.parse( raw );
-			if ( ! map || typeof map !== 'object' || Array.isArray( map ) ) return false;
-			var entry = map.odd;
-			if ( ! entry || typeof entry !== 'object' || Array.isArray( entry ) ) return false;
-			var y = Number( entry.y );
-			if ( ! isFinite( y ) || y <= SHOP_WINDOW_MAX_Y ) return false;
-			map.odd = Object.assign( {}, entry, { y: SHOP_WINDOW_Y } );
-			storage.setItem( NATIVE_GEOMETRY_STORAGE_KEY, JSON.stringify( map ) );
-			return true;
-		} catch ( _e ) {
-			return false;
-		}
-	}
-
-	function openNativeWindow( id, fallback ) {
+	function openNativeWindow( id, fallback, source ) {
 		var d = desktop();
 		if ( ! d || ! id ) return false;
 		fallback = fallback || {};
 		return !! safeCall( function () {
-			if ( id === 'odd' ) normalizeOddShopSavedGeometry();
 			var entry = nativeRegistryEntry( id ) || {};
 			var render = nativeRenderCallback( id );
 			var entryMinWidth = typeof entry.minWidth === 'number' ? entry.minWidth : entry.min_width;
@@ -244,9 +214,9 @@
 			}
 			if ( typeof d.openWindow === 'function' ) {
 				if ( desktopAdapter && typeof desktopAdapter.openWindow === 'function' ) {
-					desktopAdapter.openWindow( id );
+					desktopAdapter.openWindow( id, { source: source || 'odd.api.openNativeWindow' } );
 				} else {
-					d.openWindow( id );
+					d.openWindow( id, { source: source || 'odd.api.openNativeWindow' } );
 				}
 				return true;
 			}
@@ -285,23 +255,32 @@
 		};
 	}
 
-		function toast( message, opts ) {
-			opts = opts || {};
-			if ( desktopAdapter && typeof desktopAdapter.showToast === 'function' ) {
-				desktopAdapter.showToast( message, opts );
-				return;
-			}
-			var d = desktop();
-			if ( ! ( d && typeof d.showToast === 'function' ) ) return;
-			safeCall( function () {
-				d.showToast( {
-					message: String( message || '' ),
+	function toast( message, opts ) {
+		opts = opts || {};
+		if ( desktopAdapter && typeof desktopAdapter.showToast === 'function' ) {
+			desktopAdapter.showToast( message, opts );
+			return;
+		}
+		var d = desktop();
+		if ( ! ( d && typeof d.showToast === 'function' ) ) return;
+		safeCall( function () {
+			d.showToast( {
+				message: String( message || '' ),
 				duration: typeof opts.duration === 'number' ? opts.duration : 2400,
 				source: opts.source || 'odd',
 				meta: opts.meta || { tone: opts.tone || TOAST_TONE },
 				action: opts.action,
 			} );
 		}, 'api.toast' );
+	}
+
+	function notice( id, message, opts ) {
+		opts = opts || {};
+		if ( desktopAdapter && typeof desktopAdapter.notify === 'function' ) {
+			return desktopAdapter.notify( id, message, opts );
+		}
+		toast( message, opts );
+		return false;
 	}
 
 	function openOsSettings() {
@@ -432,6 +411,9 @@
 						}
 						if ( typeof data.audioReactive === 'boolean' ) {
 							c.audioReactive = data.audioReactive;
+						}
+						if ( typeof data.adminBarHidden === 'boolean' ) {
+							c.adminBarHidden = data.adminBarHidden;
 						}
 					}
 					// Desktop Mode only lazy-loads Pixi and runs ODD's canvas mount when
@@ -653,7 +635,7 @@
 			height: 600,
 			minWidth: 420,
 			minHeight: 320,
-		} );
+		}, 'odd.api.openApp' );
 	}
 
 	function resetDecorations() {
@@ -740,7 +722,7 @@
 				minHeight: SHOP_MIN_H,
 				x: SHOP_WINDOW_X,
 				y: SHOP_WINDOW_Y,
-			} );
+			}, 'odd.api.openPanel' );
 			if ( ! opened ) return false;
 			if ( maximize ) requestMaximize( d );
 			return true;
@@ -784,6 +766,7 @@
 		openApp:         openApp,
 		resetDecorations: resetDecorations,
 		toast:           toast,
+		notice:          notice,
 		openOsSettings:  openOsSettings,
 		showAttention:   showAttention,
 		setBadge:        setBadge,

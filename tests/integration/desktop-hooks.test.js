@@ -6,7 +6,6 @@ import { loadFoundation } from './harness.js';
 
 const __dirname = dirname( fileURLToPath( import.meta.url ) );
 const SRC = resolve( __dirname, '../../odd/src/shared/desktop-hooks.js' );
-const NATIVE_GEOMETRY_STORAGE_KEY = 'desktop-mode-native-window-geometry';
 
 function loadDesktopHooks() {
 	const src = readFileSync( SRC, 'utf8' );
@@ -19,7 +18,6 @@ describe( 'Desktop Mode hook bridge', () => {
 		if ( window.__odd && window.__odd.desktopHooks && typeof window.__odd.desktopHooks.uninstall === 'function' ) {
 			try { window.__odd.desktopHooks.uninstall(); } catch ( e ) {}
 		}
-		window.localStorage.removeItem( NATIVE_GEOMETRY_STORAGE_KEY );
 		loadFoundation( {
 			config: {
 				version: 'test',
@@ -286,59 +284,44 @@ describe( 'Desktop Mode hook bridge', () => {
 		expect( window.__odd.diagnostics.recent().some( ( row ) => row.message.includes( 'odd.shop-window.host-placement-observed' ) ) ).toBe( true );
 	} );
 
-	it( 'normalizes saved ODD Shop placement before host open requests', () => {
-		const subscribers = {};
+	it( 'repairs impossible ODD Shop geometry through the native Desktop Mode geometry filter', () => {
 		window.wp.desktop = {
 			ready: ( cb ) => cb(),
-			activity: {
-				subscribe: vi.fn( ( channel, cb ) => {
-					subscribers[ channel ] = cb;
-					return () => {};
-				} ),
+			HOOKS: {
+				WINDOW_GEOMETRY: 'desktop-mode.window.geometry',
 			},
 		};
 
 		loadDesktopHooks();
-		window.localStorage.setItem(
-			NATIVE_GEOMETRY_STORAGE_KEY,
-			JSON.stringify( {
-				odd: { width: 1040, height: 640, x: 96, y: 260 },
-				notes: { width: 500, height: 400, x: 40, y: 320 },
-			} ),
+		const repaired = window.wp.hooks.applyFilters(
+			'desktop-mode.window.geometry',
+			{ x: 96, y: 260, width: 1040, height: 640, state: 'normal' },
+			{ windowId: 'odd', baseId: 'odd', hasSavedGeometry: true, callerPinned: true },
+		);
+		const untouched = window.wp.hooks.applyFilters(
+			'desktop-mode.window.geometry',
+			{ x: 12, y: 260, width: 500, height: 400, state: 'normal' },
+			{ windowId: 'notes', baseId: 'notes', hasSavedGeometry: true },
 		);
 
-		subscribers[ 'desktop-mode/open-requested' ]( { windowId: 'odd', source: 'icon' } );
-
-		const stored = JSON.parse( window.localStorage.getItem( NATIVE_GEOMETRY_STORAGE_KEY ) );
-		expect( stored.odd.y ).toBe( 16 );
-		expect( stored.notes.y ).toBe( 320 );
-		expect( window.__odd.diagnostics.recent().some( ( row ) => row.message.includes( 'odd.shop-window.saved-placement-normalized' ) ) ).toBe( true );
+		expect( repaired ).toMatchObject( { x: 96, y: 16, width: 1040, height: 640 } );
+		expect( untouched.y ).toBe( 260 );
+		expect( window.__odd.desktopState.supports.windowGeometry ).toBe( true );
+		expect( window.__odd.diagnostics.recent().some( ( row ) => row.message.includes( 'odd.shop-window.geometry-filtered' ) ) ).toBe( true );
 	} );
 
-	it( 'normalizes saved ODD Shop placement before fallback arrange opens', () => {
+	it( 'opens fallback Arrange Shop actions with source metadata', () => {
 		const openWindow = vi.fn();
 		window.wp.desktop = {
 			ready: ( cb ) => cb(),
 			openWindow,
 		};
 		loadDesktopHooks();
-		window.localStorage.setItem(
-			NATIVE_GEOMETRY_STORAGE_KEY,
-			JSON.stringify( {
-				odd: { width: 1040, height: 640, x: 96, y: 260, state: 'maximized' },
-			} ),
-		);
 
 		window.wp.hooks.doAction( 'desktop-mode.arrange.custom-action', { id: 'oddout-open-shop' } );
 
-		const stored = JSON.parse( window.localStorage.getItem( NATIVE_GEOMETRY_STORAGE_KEY ) );
-		expect( openWindow ).toHaveBeenCalledWith( 'odd', undefined );
-		expect( stored.odd ).toMatchObject( {
-			width: 1040,
-			height: 640,
-			x: 96,
-			y: 16,
-			state: 'maximized',
+		expect( openWindow ).toHaveBeenCalledWith( 'odd', {
+			source: 'odd.shop-window.fallback-open',
 		} );
 	} );
 
@@ -564,7 +547,11 @@ describe( 'Desktop Mode hook bridge', () => {
 		tile.className = 'desktop-mode-files__tile';
 
 		loadDesktopHooks();
-		window.wp.hooks.doAction( 'desktop-mode.desktop-icons.rendered', { ids: [ 'odd' ] } );
+		window.wp.hooks.doAction( 'desktop-mode.desktop-icons.rendered', {
+			ids: [ 'odd' ],
+			container: icons,
+			tiles: new Map( [ [ 'odd', icon ] ] ),
+		} );
 		window.wp.hooks.doAction( 'desktop-mode.files.tile-rendered', {
 			tile,
 			placement: { id: 'notes' },
@@ -574,6 +561,7 @@ describe( 'Desktop Mode hook bridge', () => {
 		expect( icon.getAttribute( 'data-odd-cursor' ) ).toBe( 'pointer' );
 		expect( tile.getAttribute( 'data-odd-cursor-root' ) ).toBe( 'true' );
 		expect( tile.getAttribute( 'data-odd-cursor' ) ).toBe( 'pointer' );
+		expect( window.__odd.diagnostics.recent().some( ( row ) => row.message.includes( '"structured":true' ) ) ).toBe( true );
 	} );
 
 	it( 'records Desktop Mode 0.8.5 file, presence, heartbeat, and arrange surfaces', () => {
@@ -786,7 +774,9 @@ describe( 'Desktop Mode hook bridge', () => {
 		expect( items.map( ( item ) => item.id ) ).toEqual( expect.arrayContaining( [ 'odd', 'odd-app-timer' ] ) );
 
 		items.find( ( item ) => item.id === 'odd-app-timer' ).open();
-		expect( openWindow ).toHaveBeenCalledWith( 'odd-app-timer', undefined );
+		expect( openWindow ).toHaveBeenCalledWith( 'odd-app-timer', {
+			source: 'desktop-mode.open-command.items',
+		} );
 	} );
 
 	it( 'adds ODD file and wallpaper context menu integrations', () => {
@@ -820,6 +810,92 @@ describe( 'Desktop Mode hook bridge', () => {
 		] ) );
 		wallpaperItems.find( ( item ) => item.id === 'oddout-shuffle-wallpaper' ).onSelect();
 		expect( shuffle ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'routes .wp and .odd OS file drops into ODD before Media Library upload', () => {
+		const openPanel = vi.fn( () => true );
+		window.wp.desktop = {
+			ready: ( cb ) => cb(),
+			HOOKS: {
+				FILE_DROP_FILES_DETECTED: 'desktop-mode.drop.files-detected',
+				FILE_DROP_BEFORE_UPLOAD: 'desktop-mode.drop.before-upload',
+			},
+		};
+		window.__odd.api = {
+			openPanel,
+		};
+		loadDesktopHooks();
+
+		const bundle = new File( [ 'bundle' ], 'sparkles.wp', { type: 'application/octet-stream' } );
+		const odd = new File( [ '{}' ], 'workspace.odd', { type: 'application/json' } );
+		const image = new File( [ 'png' ], 'photo.png', { type: 'image/png' } );
+
+		const keep = window.wp.hooks.applyFilters(
+			'desktop-mode.drop.files-detected',
+			[ bundle, image ],
+			{ surface: 'wallpaper' },
+		);
+		expect( keep ).toEqual( [ image ] );
+		expect( window.__odd.pendingDesktopFile.file.name ).toBe( 'sparkles.wp' );
+		expect( openPanel ).toHaveBeenCalledTimes( 1 );
+
+		const beforeUpload = window.wp.hooks.applyFilters(
+			'desktop-mode.drop.before-upload',
+			{ file: odd, mime: 'application/json', fields: {} },
+			{ surface: 'window', windowId: 'odd' },
+		);
+		expect( beforeUpload ).toBeNull();
+		expect( window.__odd.pendingDesktopFile.file.name ).toBe( 'workspace.odd' );
+		expect( window.__odd.desktopState.supports.fileDrop ).toBe( true );
+	} );
+
+	it( 'offers My WordPress preview actions for uploaded ODD bundles only', () => {
+		const openPanel = vi.fn( () => true );
+		window.wp.desktop = { ready: ( cb ) => cb() };
+		window.__odd.api = { openPanel };
+		loadDesktopHooks();
+
+		const regular = window.wp.hooks.applyFilters(
+			'desktop-mode.my-wordpress.preview-actions',
+			[],
+			{ kind: 'media', mime: 'image/png', item: { id: 1, source_url: 'https://example.test/photo.png' } },
+		);
+		const bundle = window.wp.hooks.applyFilters(
+			'desktop-mode.my-wordpress.preview-actions',
+			[],
+			{ kind: 'media', mime: 'application/zip', item: { id: 2, source_url: 'https://example.test/oddling.wp' } },
+		);
+
+		expect( regular ).toEqual( [] );
+		expect( bundle.map( ( action ) => action.id ) ).toContain( 'odd/open-media-bundle' );
+		bundle.find( ( action ) => action.id === 'odd/open-media-bundle' ).onSelect();
+		expect( window.__odd.pendingDesktopFile.file.name ).toBe( 'oddling.wp' );
+		expect( openPanel ).toHaveBeenCalledTimes( 1 );
+		expect( window.__odd.desktopState.supports.myWordPress ).toBe( true );
+	} );
+
+	it( 'bridges ODD runtime events to sanitized Desktop Mode window notices', () => {
+		const registerWindowNotice = vi.fn( () => () => {} );
+		window.wp.desktop = {
+			ready: ( cb ) => cb(),
+			registerWindowNotice,
+		};
+		loadDesktopHooks();
+
+		window.__odd.events.emit( 'odd.error', { message: '<img src=x onerror=alert(1)>' } );
+		window.__odd.events.emit( 'odd.bundle-installed', { slug: 'sparkles' } );
+
+		expect( registerWindowNotice ).toHaveBeenCalledWith( expect.objectContaining( {
+			id: 'odd/runtime-health',
+			tone: 'warning',
+			match: { window: 'odd' },
+		} ) );
+		expect( registerWindowNotice.mock.calls[ 0 ][ 0 ].message ).not.toContain( '<img' );
+		expect( registerWindowNotice ).toHaveBeenCalledWith( expect.objectContaining( {
+			id: 'odd/install-complete',
+			tone: 'success',
+		} ) );
+		expect( window.__odd.desktopState.supports.windowNotices ).toBe( true );
 	} );
 
 	it( 'tracks ODD app window lifecycle as local state', () => {

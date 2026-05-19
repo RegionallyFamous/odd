@@ -62,6 +62,23 @@ add_filter(
 );
 
 /**
+ * Desktop Mode 0.8.6 exposes a first-class switch for replacing foreign
+ * service workers. Playground's root worker is owned by playground.wordpress.net,
+ * so ODD explicitly keeps Desktop Mode polite there and relies on the targeted
+ * cleanup below for stale Desktop Mode registrations only.
+ */
+add_filter(
+	'desktop_mode_pwa_force_replace_sw',
+	static function ( $force_replace ) {
+		if ( function_exists( 'oddout_is_playground_host' ) && oddout_is_playground_host() ) {
+			return false;
+		}
+		return $force_replace;
+	},
+	20
+);
+
+/**
  * Remove stale Desktop Mode service workers from older Playground sessions.
  *
  * ODD already clears Desktop Mode's PWA URLs above so new sessions should not

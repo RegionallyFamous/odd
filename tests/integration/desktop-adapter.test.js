@@ -93,4 +93,40 @@ describe( 'ODD Desktop Mode adapter', () => {
 
 		expect( seen ).toEqual( [ 'fallback' ] );
 	} );
+
+	it( 'registers sanitized Desktop Mode window notices and falls back to toasts', () => {
+		const unregister = vi.fn();
+		const registerWindowNotice = vi.fn( () => unregister );
+		const dismissWindowNotice = vi.fn();
+		const showToast = vi.fn();
+		window.wp.desktop = {
+			registerWindowNotice,
+			dismissWindowNotice,
+			showToast,
+		};
+		const adapter = window.__odd.desktop;
+
+		expect( adapter.notify( 'catalog-error', '<strong>Bad</strong> & worse', {
+			windowId: 'odd',
+			tone: 'warning',
+			icon: 'dashicons-warning',
+		} ) ).toBe( true );
+
+		expect( registerWindowNotice ).toHaveBeenCalledWith( expect.objectContaining( {
+			id: 'odd/catalog-error',
+			message: '&lt;strong&gt;Bad&lt;/strong&gt; &amp; worse',
+			tone: 'warning',
+			icon: 'dashicons-warning',
+			match: { window: 'odd' },
+		} ) );
+
+		expect( adapter.dismissWindowNotice( 'catalog-error' ) ).toBe( true );
+		expect( dismissWindowNotice ).toHaveBeenCalledWith( 'odd/catalog-error' );
+
+		delete window.wp.desktop.registerWindowNotice;
+		expect( adapter.notify( 'fallback', 'Fallback toast' ) ).toBe( true );
+		expect( showToast ).toHaveBeenCalledWith( expect.objectContaining( {
+			message: 'Fallback toast',
+		} ) );
+	} );
 } );

@@ -2,7 +2,7 @@
 	"slug": "flow",
 	"name": "Flow",
 	"description": "Stop doomscrolling, start doing. A Pomodoro timer with ambient soundscapes, per-session task lists, and a heatmap so you can see exactly which days you crushed it.",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"author": "Regionally Famous",
 	"tags": [
 		"productivity",

@@ -840,10 +840,46 @@
 			if ( ! window.__odd.store ) return {};
 			var snap = window.__odd.store.getState();
 			if ( snap && snap.user ) {
-				return { user: { wallpaper: snap.user.wallpaper, iconSet: snap.user.iconSet, cursorSet: snap.user.cursorSet } };
+				return {
+					user: {
+						wallpaper: snap.user.wallpaper,
+						iconSet: snap.user.iconSet,
+						cursorSet: snap.user.cursorSet,
+						adminBarHidden: !! snap.user.adminBarHidden,
+					},
+				};
 			}
 			return {};
 		} catch ( _ ) { return {}; }
+	}
+
+	function containmentSnapshot() {
+		var cfg = window.odd || {};
+		var search = '';
+		var bodyClass = '';
+		try { search = window.location && window.location.search || ''; } catch ( _ ) {}
+		try { bodyClass = document.body && document.body.className || ''; } catch ( _ ) {}
+		var desktopPortal = /[?&]desktop_mode_portal=1(?:&|$)/.test( search ) ||
+			/\b(desktop-mode-active|wp-desktop-active|odd-desktop-active)\b/.test( bodyClass );
+		var cursorLink = false;
+		var liveCursorLayer = false;
+		var adminBarStyle = false;
+		var cursorRoots = 0;
+		try {
+			cursorLink = !! ( document.getElementById( 'odd-cursors-css' ) || document.querySelector( 'link[href*="/odd/v1/cursors/active.css"]' ) );
+			liveCursorLayer = !! document.getElementById( 'odd-live-cursor' );
+			adminBarStyle = !! ( document.getElementById( 'oddout-admin-bar-hidden' ) || document.getElementById( 'oddout-admin-bar-hidden-live' ) );
+			cursorRoots = document.querySelectorAll ? document.querySelectorAll( '[data-odd-cursor-root]' ).length : 0;
+		} catch ( _ ) {}
+		return {
+			desktopPortal: desktopPortal,
+			adminBarHiddenPreference: !! cfg.adminBarHidden,
+			adminBarStyle: adminBarStyle,
+			cursorStylesheet: cursorLink,
+			liveCursorLayer: liveCursorLayer,
+			cursorRoots: cursorRoots,
+			cursorRuntimeExpected: desktopPortal && !! ( cfg.cursorSet || cfg.cursorStylesheet || ( cfg.systemHealth && cfg.systemHealth.cursors && cfg.systemHealth.cursors.active ) ),
+		};
 	}
 
 	function systemHealthSnapshot() {
@@ -874,6 +910,7 @@
 		var system = payload.systemHealth || {};
 		var apps = payload.apps || {};
 		var metrics = payload.metrics || {};
+		var containment = payload.containment || {};
 		var recent = Array.isArray( payload.recentLog ) ? payload.recentLog : [];
 		var out = {
 			generatedAt: now(),
@@ -950,6 +987,14 @@
 		if ( cursors.active && cursors.runtimeExpected && ! cursors.stylesheet ) {
 			healthAdd( out, 'warn', 'cursors.stylesheetMissing', 'A cursor set is active but no cursor stylesheet is localized.' );
 		}
+		if ( ! containment.desktopPortal && ( containment.cursorStylesheet || containment.liveCursorLayer ) ) {
+			healthAdd( out, 'problems', 'containment.cursorBleed', 'ODD cursor runtime is present outside the Desktop Mode portal.' );
+		} else if ( containment.desktopPortal ) {
+			healthAdd( out, 'ok', 'containment.portal', 'ODD runtime is contained to the Desktop Mode portal.' );
+		}
+		if ( ! containment.desktopPortal && containment.adminBarStyle ) {
+			healthAdd( out, 'problems', 'containment.adminBarBleed', 'ODD admin-bar hiding styles are present outside the Desktop Mode portal.' );
+		}
 
 		if ( apps.iframeErrors && apps.iframeErrors.length ) {
 			healthAdd( out, 'problems', 'apps.iframeErrors', 'One or more ODD app iframes reported runtime errors.' );
@@ -995,6 +1040,7 @@
 			environment:   environment(),
 			registries:    registriesSnapshot(),
 			state:         storeSnapshot(),
+			containment:   containmentSnapshot(),
 			systemHealth:  systemHealthSnapshot(),
 			desktop:       desktopSnapshot(),
 			apps:          appsDiagnosticsSnapshot(),
@@ -1044,6 +1090,15 @@
 			'## State',
 			'- wallpaper: `' + ( p.state.user && p.state.user.wallpaper || '' ) + '`',
 			'- iconSet: `' + ( p.state.user && p.state.user.iconSet || '' ) + '`',
+			'- adminBarHidden: `' + ( p.state.user && p.state.user.adminBarHidden ? 'yes' : 'no' ) + '`',
+			'',
+			'## Containment',
+			'- Desktop Mode portal context: `' + ( p.containment && p.containment.desktopPortal ? 'yes' : 'no' ) + '`',
+			'- admin-bar hide preference: `' + ( p.containment && p.containment.adminBarHiddenPreference ? 'yes' : 'no' ) + '`',
+			'- admin-bar style present: `' + ( p.containment && p.containment.adminBarStyle ? 'yes' : 'no' ) + '`',
+			'- cursor stylesheet present: `' + ( p.containment && p.containment.cursorStylesheet ? 'yes' : 'no' ) + '`',
+			'- live cursor layer present: `' + ( p.containment && p.containment.liveCursorLayer ? 'yes' : 'no' ) + '`',
+			'- cursor roots: `' + ( p.containment && p.containment.cursorRoots || 0 ) + '`',
 			'',
 			'## System Health',
 			'- catalog source: `' + ( p.systemHealth.catalog && p.systemHealth.catalog.source || '' ) + '`',

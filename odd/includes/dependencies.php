@@ -52,6 +52,9 @@ function oddout_desktop_mode_capability_functions( $capability ) {
 		'titlebar'       => array(
 			'desktop_mode_register_titlebar_button_script',
 		),
+		'window_notices' => array(
+			'desktop_mode_register_window_notice',
+		),
 		'dock_rail'      => array(
 			'desktop_mode_register_dock_rail_renderer_script',
 		),
@@ -80,6 +83,9 @@ function oddout_desktop_mode_capability_functions( $capability ) {
 		),
 		'ai'             => array(
 			'desktop_mode_register_ai_tool',
+		),
+		'pwa'            => array(
+			'desktop_mode_pwa_force_replace_sw',
 		),
 		'window_chrome'  => array(
 			'desktop_mode_register_window_theme_script',

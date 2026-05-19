@@ -1,19 +1,38 @@
 <?php
 /**
- * ODD cursors — stylesheet injection for Desktop Mode and wp-admin.
+ * ODD cursors — stylesheet injection for the Desktop Mode portal only.
  */
 
 defined( 'ABSPATH' ) || exit;
 
+function oddout_cursors_is_desktop_mode_portal_request() {
+	if ( function_exists( 'oddout_is_desktop_mode_portal_request' ) ) {
+		return oddout_is_desktop_mode_portal_request();
+	}
+	if ( ! is_admin() ) {
+		return false;
+	}
+	return isset( $_GET['desktop_mode_portal'] ) && rest_sanitize_boolean( wp_unslash( $_GET['desktop_mode_portal'] ) );
+}
+
+function oddout_cursors_is_desktop_mode_runtime_request() {
+	return function_exists( 'oddout_desktop_mode_available' ) &&
+		oddout_desktop_mode_available() &&
+		oddout_cursors_is_desktop_mode_portal_request();
+}
+
 function oddout_cursors_should_enqueue_admin() {
 	if ( ! is_admin() || ! current_user_can( 'read' ) ) {
+		return false;
+	}
+	if ( ! oddout_cursors_is_desktop_mode_runtime_request() ) {
 		return false;
 	}
 	return '' !== oddout_cursors_get_active_slug();
 }
 
 function oddout_cursors_should_enqueue_runtime() {
-	return is_admin() && current_user_can( 'read' );
+	return is_admin() && current_user_can( 'read' ) && oddout_cursors_is_desktop_mode_runtime_request();
 }
 
 function oddout_cursors_enqueue_admin_stylesheet() {

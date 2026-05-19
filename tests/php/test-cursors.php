@@ -87,6 +87,28 @@ class Test_Cursors extends WP_UnitTestCase {
 		$this->assertFalse( oddout_cursors_set_active_slug( 'missing-cursors', $user_id ) );
 	}
 
+	public function test_cursor_admin_assets_wait_for_desktop_mode_portal() {
+		$this->add_fixture_cursor_set();
+		$user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+		oddout_cursors_set_active_slug( 'test-cursors', $user_id );
+
+		$get = $_GET;
+		try {
+			unset( $_GET['desktop_mode_portal'] );
+			$this->assertFalse( oddout_cursors_is_desktop_mode_portal_request() );
+			$this->assertFalse(
+				oddout_cursors_should_enqueue_admin(),
+				'Active custom cursors must not bleed into normal wp-admin screens.'
+			);
+
+			$_GET['desktop_mode_portal'] = '1';
+			$this->assertSame( is_admin(), oddout_cursors_is_desktop_mode_portal_request() );
+		} finally {
+			$_GET = $get;
+		}
+	}
+
 	public function test_css_builder_outputs_native_cursor_rules_and_effect_tokens() {
 		$this->add_fixture_cursor_set();
 		$css = oddout_cursors_build_css( oddout_cursors_get_set( 'test-cursors' ) );

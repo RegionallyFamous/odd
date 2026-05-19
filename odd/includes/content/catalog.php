@@ -1555,28 +1555,34 @@ function oddout_catalog_normalise( $data ) {
 			continue;
 		}
 		$row = array(
-			'type'         => $type,
-			'slug'         => sanitize_key( (string) $entry['slug'] ),
-			'name'         => sanitize_text_field( (string) $entry['name'] ),
-			'version'      => isset( $entry['version'] ) ? sanitize_text_field( (string) $entry['version'] ) : '',
-			'author'       => isset( $entry['author'] ) ? sanitize_text_field( (string) $entry['author'] ) : '',
-			'description'  => isset( $entry['description'] ) ? wp_kses_post( (string) $entry['description'] ) : '',
-			'category'     => isset( $entry['category'] ) ? sanitize_text_field( (string) $entry['category'] ) : '',
-			'icon_url'     => isset( $entry['icon_url'] )
+			'type'          => $type,
+			'slug'          => sanitize_key( (string) $entry['slug'] ),
+			'name'          => sanitize_text_field( (string) $entry['name'] ),
+			'version'       => isset( $entry['version'] ) ? sanitize_text_field( (string) $entry['version'] ) : '',
+			'author'        => isset( $entry['author'] ) ? sanitize_text_field( (string) $entry['author'] ) : '',
+			'description'   => isset( $entry['description'] ) ? wp_kses_post( (string) $entry['description'] ) : '',
+			'category'      => isset( $entry['category'] ) ? sanitize_text_field( (string) $entry['category'] ) : '',
+			'department'    => isset( $entry['department'] ) ? sanitize_key( (string) $entry['department'] ) : '',
+			'search_text'   => isset( $entry['search_text'] ) ? sanitize_text_field( (string) $entry['search_text'] ) : '',
+			'search_tokens' => isset( $entry['search_tokens'] ) && is_array( $entry['search_tokens'] )
+				? array_slice( array_values( array_filter( array_map( 'sanitize_text_field', $entry['search_tokens'] ) ) ), 0, 96 )
+				: array(),
+			'icon_url'      => isset( $entry['icon_url'] )
 				? oddout_url_current_scheme( esc_url_raw( (string) $entry['icon_url'] ) )
 				: '',
-			'card_url'     => isset( $entry['card_url'] )
+			'card_url'      => isset( $entry['card_url'] )
 				? oddout_url_current_scheme( esc_url_raw( (string) $entry['card_url'] ) )
 				: '',
-			'download_url' => isset( $entry['download_url'] )
+			'download_url'  => isset( $entry['download_url'] )
 				? oddout_url_current_scheme( esc_url_raw( (string) $entry['download_url'] ) )
 				: '',
-			'sha256'       => $sha,
-			'size'         => isset( $entry['size'] ) ? (int) $entry['size'] : 0,
-			'tags'         => isset( $entry['tags'] ) && is_array( $entry['tags'] )
+			'sha256'        => $sha,
+			'size'          => isset( $entry['size'] ) ? (int) $entry['size'] : 0,
+			'card_bytes'    => isset( $entry['card_bytes'] ) ? max( 0, (int) $entry['card_bytes'] ) : 0,
+			'tags'          => isset( $entry['tags'] ) && is_array( $entry['tags'] )
 				? array_values( array_filter( array_map( 'sanitize_text_field', $entry['tags'] ) ) )
 				: array(),
-			'accent'       => isset( $entry['accent'] ) ? sanitize_hex_color_no_hash( ltrim( (string) $entry['accent'], '#' ) ) : '',
+			'accent'        => isset( $entry['accent'] ) ? sanitize_hex_color_no_hash( ltrim( (string) $entry['accent'], '#' ) ) : '',
 		);
 		if ( isset( $entry['requires'] ) ) {
 			$requires = oddout_catalog_normalise_requires( $entry['requires'] );

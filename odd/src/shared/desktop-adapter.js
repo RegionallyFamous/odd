@@ -279,6 +279,139 @@
 		}
 	}
 
+	function escapeHtml( value ) {
+		return String( value == null ? '' : value )
+			.replace( /&/g, '&amp;' )
+			.replace( /</g, '&lt;' )
+			.replace( />/g, '&gt;' )
+			.replace( /"/g, '&quot;' )
+			.replace( /'/g, '&#039;' );
+	}
+
+	function cleanNoticeId( value ) {
+		return String( value || '' )
+			.toLowerCase()
+			.replace( /[^a-z0-9_/-]+/g, '-' )
+			.replace( /^[-/]+|[-/]+$/g, '' )
+			.slice( 0, 96 );
+	}
+
+	function cleanNoticeTone( value ) {
+		value = String( value || 'info' ).toLowerCase();
+		return [ 'info', 'success', 'warning', 'error', 'danger', 'neutral' ].indexOf( value ) === -1
+			? 'info'
+			: value;
+	}
+
+	function cleanDashicon( value ) {
+		value = String( value || '' ).toLowerCase();
+		return /^dashicons-[a-z0-9-]+$/.test( value ) ? value : '';
+	}
+
+	function oddNoticeId( value ) {
+		var id = cleanNoticeId( value );
+		return id.indexOf( 'odd/' ) === 0 ? id : 'odd/' + id;
+	}
+
+	function windowNoticeEntry( id, message, opts ) {
+		opts = opts || {};
+		var noticeId = oddNoticeId( id || opts.id || 'odd/notice' );
+		var entry = {
+			id: noticeId,
+			message: opts.trustedHtml ? String( message || '' ) : escapeHtml( message || '' ),
+			tone: cleanNoticeTone( opts.tone ),
+			dismissible: opts.dismissible !== false,
+			icon: cleanDashicon( opts.icon ),
+			order: typeof opts.order === 'number' ? opts.order : 80,
+			owner: 'odd',
+		};
+		if ( opts.windowId ) {
+			entry.match = { window: String( opts.windowId ) };
+		} else if ( Array.isArray( opts.windows ) ) {
+			entry.match = { windows: opts.windows.map( String ) };
+		} else if ( typeof opts.match === 'function' ) {
+			entry.match = opts.match;
+		} else if ( opts.match && typeof opts.match === 'object' ) {
+			entry.match = opts.match;
+		}
+		return entry;
+	}
+
+	function registerWindowNotice( id, message, opts ) {
+		var d = host();
+		if ( ! d || typeof d.registerWindowNotice !== 'function' ) return false;
+		try {
+			var entry = typeof id === 'object' && id
+				? windowNoticeEntry( id.id, id.message, id )
+				: windowNoticeEntry( id, message, opts );
+			var result = d.registerWindowNotice( entry );
+			rememberDisposer( result );
+			record( 'info', 'wp.desktop.registerWindowNotice', {
+				id: entry.id,
+				tone: entry.tone,
+			} );
+			return typeof result === 'undefined' ? true : result;
+		} catch ( err ) {
+			record( 'warn', 'wp.desktop.registerWindowNotice.failed', {
+				id: id && id.id || id || '',
+				message: err && err.message || '',
+			} );
+			return false;
+		}
+	}
+
+	function unregisterWindowNotice( id ) {
+		var d = host();
+		if ( ! d || typeof d.unregisterWindowNotice !== 'function' ) return false;
+		try {
+			d.unregisterWindowNotice( oddNoticeId( id ) );
+			return true;
+		} catch ( _ ) {
+			return false;
+		}
+	}
+
+	function dismissWindowNotice( id ) {
+		var d = host();
+		if ( ! d || typeof d.dismissWindowNotice !== 'function' ) return false;
+		try {
+			d.dismissWindowNotice( oddNoticeId( id ) );
+			return true;
+		} catch ( _ ) {
+			return false;
+		}
+	}
+
+	function undismissWindowNotice( id ) {
+		var d = host();
+		if ( ! d || typeof d.undismissWindowNotice !== 'function' ) return false;
+		try {
+			d.undismissWindowNotice( oddNoticeId( id ) );
+			return true;
+		} catch ( _ ) {
+			return false;
+		}
+	}
+
+	function listWindowNotices() {
+		var d = host();
+		if ( ! d || typeof d.listWindowNotices !== 'function' ) return [];
+		try {
+			var rows = d.listWindowNotices();
+			return Array.isArray( rows ) ? rows : [];
+		} catch ( _ ) {
+			return [];
+		}
+	}
+
+	function notify( id, message, opts ) {
+		opts = opts || {};
+		if ( registerWindowNotice( id, message, opts ) ) {
+			return true;
+		}
+		return showToast( message, opts );
+	}
+
 	function getWindow( id ) {
 		var d = host();
 		return d && d.windowManager && typeof d.windowManager.getById === 'function'
@@ -375,9 +508,16 @@
 			windowManager: !! ( d && d.windowManager ),
 			widgets: !! ( d && d.widgetLayer ),
 			widgetRedock: !! ( d && ( d.widgets && typeof d.widgets.redock === 'function' || d.widgetLayer && ( typeof d.widgetLayer.redock === 'function' || typeof d.widgetLayer.redockWidget === 'function' ) ) ),
+			windowNotices: !! ( d && typeof d.registerWindowNotice === 'function' ),
+			windowNoticeDismissal: !! ( d && typeof d.dismissWindowNotice === 'function' && typeof d.undismissWindowNotice === 'function' ),
+			windowGeometry: !! ( d && d.HOOKS && d.HOOKS.WINDOW_GEOMETRY ),
 			files: !! f,
 			fileTypes: !! ( f && typeof f.registerType === 'function' ),
 			fileOpeners: !! ( f && typeof f.registerOpener === 'function' ),
+			fileDrop: !! ( d && d.HOOKS && d.HOOKS.FILE_DROP_BEFORE_UPLOAD ),
+			fileDropProgress: !! ( d && d.HOOKS && d.HOOKS.FILE_DROP_UPLOAD_PROGRESS ),
+			myWordpress: !! ( d && d.myWordpress ),
+			webComponents: !! ( window.customElements && ( customElements.get( 'wpd-notice' ) || customElements.get( 'wpd-tile' ) || customElements.get( 'wpd-progress-bar' ) ) ),
 			fileTileMenus: !! hooks(),
 			wallpaperMenus: !! hooks(),
 			activity: !! ( d && d.activity && typeof d.activity.subscribe === 'function' ),
@@ -431,6 +571,12 @@
 		registerFileType: registerFileType,
 		registerFileOpener: registerFileOpener,
 		showToast: showToast,
+		notify: notify,
+		registerWindowNotice: registerWindowNotice,
+		unregisterWindowNotice: unregisterWindowNotice,
+		dismissWindowNotice: dismissWindowNotice,
+		undismissWindowNotice: undismissWindowNotice,
+		listWindowNotices: listWindowNotices,
 		openOsSettings: openOsSettings,
 		getWindow: getWindow,
 		mountWidget: mountWidget,

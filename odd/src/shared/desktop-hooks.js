@@ -155,6 +155,12 @@
 				windows: false,
 				wallpaperSurfaces: false,
 				activity: false,
+				windowGeometry: false,
+				windowNotices: false,
+				fileDrop: false,
+				fileDropProgress: false,
+				myWordPress: false,
+				pwaForceReplace: false,
 			},
 			document: {
 				hidden: typeof document !== 'undefined' ? !! document.hidden : false,
@@ -190,7 +196,6 @@
 	var warnedShopFullscreen = false;
 	var SHOP_TOP_Y = 16;
 	var SHOP_TOP_MAX_Y = 24;
-	var NATIVE_GEOMETRY_STORAGE_KEY = 'desktop-mode-native-window-geometry';
 	var ODD_ACTIONS = [
 		{
 			id: 'oddout-open-shop',
@@ -244,39 +249,6 @@
 	];
 	window.__odd.desktopState = desktopState;
 
-	function normalizeOddShopSavedGeometry( source ) {
-		var storage;
-		try {
-			storage = window.localStorage;
-		} catch ( _e ) {
-			return false;
-		}
-		if ( ! storage || typeof storage.getItem !== 'function' || typeof storage.setItem !== 'function' ) {
-			return false;
-		}
-		try {
-			var raw = storage.getItem( NATIVE_GEOMETRY_STORAGE_KEY );
-			if ( ! raw ) return false;
-			var map = JSON.parse( raw );
-			if ( ! map || typeof map !== 'object' || Array.isArray( map ) ) return false;
-			var entry = map.odd;
-			if ( ! entry || typeof entry !== 'object' || Array.isArray( entry ) ) return false;
-			var y = Number( entry.y );
-			if ( ! isFinite( y ) || y <= SHOP_TOP_MAX_Y ) return false;
-			map.odd = Object.assign( {}, entry, { y: SHOP_TOP_Y } );
-			storage.setItem( NATIVE_GEOMETRY_STORAGE_KEY, JSON.stringify( map ) );
-			record( 'info', 'odd.shop-window.saved-placement-normalized', {
-				source: source || '',
-				previousY: y,
-				y: SHOP_TOP_Y,
-				preferredMaxY: SHOP_TOP_MAX_Y,
-			} );
-			return true;
-		} catch ( _e ) {
-			return false;
-		}
-	}
-
 	function stateNow() {
 		return Date.now ? Date.now() : 0;
 	}
@@ -296,6 +268,81 @@
 	function numericOrNull( value ) {
 		var n = Number( value );
 		return isFinite( n ) ? n : null;
+	}
+
+	function sourceOpts( source ) {
+		return { source: source || 'odd.desktop-hooks' };
+	}
+
+	function isOddShopGeometryContext( ctx ) {
+		if ( ! ctx || typeof ctx !== 'object' ) return false;
+		return String( ctx.baseId || ctx.windowId || '' ) === 'odd';
+	}
+
+	function normalizeOddShopWindowGeometry( geometry, ctx ) {
+		if ( ! isOddShopGeometryContext( ctx ) || ! geometry || typeof geometry !== 'object' ) {
+			return geometry;
+		}
+		var y = numericOrNull( geometry.y );
+		if ( y !== null && y >= 0 && y <= SHOP_TOP_MAX_Y ) {
+			return geometry;
+		}
+		setDesktopSupport( 'windowGeometry' );
+		var next = Object.assign( {}, geometry, { y: SHOP_TOP_Y } );
+		record( 'info', 'odd.shop-window.geometry-filtered', {
+			windowId: ctx.windowId || '',
+			baseId: ctx.baseId || '',
+			hasSavedGeometry: !! ctx.hasSavedGeometry,
+			callerPinned: !! ctx.callerPinned,
+			previousY: y,
+			y: SHOP_TOP_Y,
+			preferredMaxY: SHOP_TOP_MAX_Y,
+		} );
+		return next;
+	}
+
+	function setupWindowGeometryFilter() {
+		addFilterFor( 'WINDOW_GEOMETRY', 'desktop-mode.window.geometry', normalizeOddShopWindowGeometry );
+	}
+
+	function setupWindowNoticeBridge() {
+		if ( ! adapter || typeof adapter.notify !== 'function' ) return;
+		function notice( id, message, opts ) {
+			var ok = adapter.notify( id, message, Object.assign( {
+				windowId: 'odd',
+				owner: 'odd',
+			}, opts || {} ) );
+			var caps = adapter && typeof adapter.capabilities === 'function' ? adapter.capabilities() : {};
+			if ( ok && caps.windowNotices ) setDesktopSupport( 'windowNotices' );
+			return ok;
+		}
+		function onOddError() {
+			notice(
+				'runtime-health',
+				'ODD needs attention. Copy diagnostics from the ODD settings tab if this keeps happening.',
+				{ tone: 'warning', icon: 'dashicons-warning', order: 30 }
+			);
+		}
+		function onBundleInstalled() {
+			notice(
+				'install-complete',
+				'Installed. You can apply it from the ODD Shop.',
+				{ tone: 'success', icon: 'dashicons-yes-alt', order: 70 }
+			);
+		}
+		function onDesktopFileOpened() {
+			notice(
+				'file-opened',
+				'ODD opened this file in the Shop.',
+				{ tone: 'info', icon: 'dashicons-media-archive', order: 60 }
+			);
+		}
+		var e = events();
+		if ( e && typeof e.on === 'function' ) {
+			INSTALLED.push( e.on( 'odd.error', onOddError ) );
+			INSTALLED.push( e.on( 'odd.bundle-installed', onBundleInstalled ) );
+			INSTALLED.push( e.on( 'odd.desktop-file-opened', onDesktopFileOpened ) );
+		}
 	}
 
 	function cssPxOrNull( value ) {
@@ -484,7 +531,7 @@
 		}
 		if ( ! node || ! node.querySelectorAll ) return 0;
 		var count = 0;
-		var nodes = node.querySelectorAll( 'a[href], button, [role="button"], [role="menuitem"], [role="option"], input, textarea, [contenteditable="true"], [contenteditable=""], select, [draggable="true"], [data-drag], [data-drag-handle], [data-file-drag-handle], [disabled], [aria-disabled="true"], [aria-busy="true"], .desktop-mode-file, .desktop-mode-file-tile, .desktop-mode-file__tile, .desktop-mode-files__item, .desktop-mode-files__tile, .desktop-mode-folder, .desktop-mode-folder-tile, .desktop-mode-context-menu__item, wpd-context-menu-item, wpd-menu-item' );
+		var nodes = node.querySelectorAll( 'a[href], button, [role="button"], [role="menuitem"], [role="option"], input, textarea, [contenteditable="true"], [contenteditable=""], select, [draggable="true"], [data-drag], [data-drag-handle], [data-file-drag-handle], [disabled], [aria-disabled="true"], [aria-busy="true"], .desktop-mode-file, .desktop-mode-file-tile, .desktop-mode-file__tile, .desktop-mode-files__item, .desktop-mode-files__tile, .desktop-mode-folder, .desktop-mode-folder-tile, .desktop-mode-context-menu__item, .desktop-mode-drop-overlay, .desktop-mode-drop-zone, [data-desktop-mode-drop-target], wpd-button, wpd-notice, wpd-tile, wpd-ribbon, wpd-progress-bar, wpd-context-menu-item, wpd-context-menu-option, wpd-menu-item' );
 		for ( var i = 0; i < nodes.length; i++ ) {
 			var el = nodes[ i ];
 			if ( el.hasAttribute && el.hasAttribute( 'data-odd-cursor' ) ) continue;
@@ -648,7 +695,7 @@
 	function markDesktopChrome( root ) {
 		if ( ! root || ! root.querySelectorAll ) return 0;
 		var count = markWindowChrome( root ) + markWidgetChrome( root );
-		var pointers = root.querySelectorAll( '.desktop-mode-icon, .desktop-mode-dock__item, .desktop-mode-dock__button, .desktop-mode-widgets__card-redock, .desktop-mode-widgets__card-close, .desktop-mode-widgets__add, .wp-desktop-icon, .wp-desktop-dock__item, .wp-desktop-dock__item-primary, .wp-desktop-dock__item-new, .wp-desktop-widgets__card-redock, .wp-desktop-widgets__card-close, .wp-desktop-widgets__add' );
+		var pointers = root.querySelectorAll( '.desktop-mode-icon, .desktop-mode-dock__item, .desktop-mode-dock__button, .desktop-mode-widgets__card-redock, .desktop-mode-widgets__card-close, .desktop-mode-widgets__add, .desktop-mode-drop-overlay, .desktop-mode-drop-zone, [data-desktop-mode-drop-target], .wp-desktop-icon, .wp-desktop-dock__item, .wp-desktop-dock__item-primary, .wp-desktop-dock__item-new, .wp-desktop-widgets__card-redock, .wp-desktop-widgets__card-close, .wp-desktop-widgets__add, wpd-button, wpd-notice, wpd-tile, wpd-ribbon, wpd-progress-bar' );
 		for ( var i = 0; i < pointers.length; i++ ) {
 			markCursor( pointers[ i ], 'pointer' );
 			count++;
@@ -1344,11 +1391,24 @@
 		}
 		function mapDesktopIconSurfaces( payload ) {
 			var count = 0;
-			var el = elementFromPayload( payload );
-			if ( el ) {
-				count += markDesktopIconSurface( el );
+			var usedStructuredPayload = false;
+			if ( payload && payload.container ) {
+				usedStructuredPayload = true;
+				count += markDesktopIconSurface( payload.container );
 			}
-			if ( ! el && typeof document !== 'undefined' && document.querySelectorAll ) {
+			if ( payload && payload.tiles && typeof payload.tiles.forEach === 'function' ) {
+				usedStructuredPayload = true;
+				payload.tiles.forEach( function ( tile ) {
+					count += markDesktopIconSurface( tile );
+				} );
+			}
+			if ( ! usedStructuredPayload ) {
+				var el = elementFromPayload( payload );
+				if ( el ) {
+					count += markDesktopIconSurface( el );
+				}
+			}
+			if ( ! usedStructuredPayload && count === 0 && typeof document !== 'undefined' && document.querySelectorAll ) {
 				var roots = document.querySelectorAll( '.desktop-mode-icons, #desktop-mode-icons, .wp-desktop-icons, #wp-desktop-icons' );
 				for ( var i = 0; i < roots.length; i++ ) {
 					count += markDesktopIconSurface( roots[ i ] );
@@ -1357,6 +1417,7 @@
 			record( 'info', 'odd.cursor.desktop-icons-mapped', {
 				count: count,
 				ids:   payload && payload.ids || [],
+				structured: usedStructuredPayload,
 			} );
 			return count > 0;
 		}
@@ -1455,12 +1516,12 @@
 								return;
 							}
 							if ( adapter && typeof adapter.openWindow === 'function' ) {
-								adapter.openWindow( 'odd-app-' + app.slug );
+								adapter.openWindow( 'odd-app-' + app.slug, sourceOpts( 'desktop-mode.open-command.items' ) );
 								return;
 							}
 							var d = desktop();
 							if ( d && typeof d.openWindow === 'function' ) {
-								d.openWindow( 'odd-app-' + app.slug );
+								d.openWindow( 'odd-app-' + app.slug, sourceOpts( 'desktop-mode.open-command.items' ) );
 							}
 						},
 					} );
@@ -1518,9 +1579,6 @@
 			'desktop-mode/presence-snapshot-applied',
 		].forEach( function ( channel ) {
 			addActivity( channel, function ( payload ) {
-				if ( channel === 'desktop-mode/open-requested' && payload && payload.windowId === 'odd' ) {
-					normalizeOddShopSavedGeometry( 'desktop-mode/open-requested' );
-				}
 				if ( channel.indexOf( 'presence' ) !== -1 ) pulseActivity( 'presence' );
 				else if ( channel.indexOf( 'window' ) !== -1 ) pulseActivity( 'window' );
 				else pulseActivity( 'dock' );
@@ -1589,9 +1647,6 @@
 			} );
 		} );
 		addActionFor( 'DESKTOP_ICON_CLICKED', 'desktop-mode.desktop-icon.clicked', function ( payload ) {
-			if ( payload && payload.id === 'odd' && ( ! payload.target || payload.target === 'window' ) ) {
-				normalizeOddShopSavedGeometry( 'desktop-mode.desktop-icon.clicked' );
-			}
 			record( 'info', 'desktop-mode.desktop-icon.clicked', payload || {} );
 			if ( payload && payload.id === 'odd' ) {
 				emit( 'odd.desktop-icon-clicked', payload );
@@ -1657,6 +1712,13 @@
 				refreshMenu:   typeof d.refreshMenu === 'function',
 				wallpaperSurfacesApi: typeof d.getWallpaperSurfaces === 'function',
 				modulesApi:    typeof d.registerModule === 'function' && typeof d.loadModules === 'function',
+				windowNotices: typeof d.registerWindowNotice === 'function',
+				windowGeometryApi: !! ( d.HOOKS && d.HOOKS.WINDOW_GEOMETRY ) || !! hooks(),
+				fileDropApi:   !! ( d.HOOKS && d.HOOKS.FILE_DROP_BEFORE_UPLOAD ),
+				fileDropProgressApi: !! ( d.HOOKS && d.HOOKS.FILE_DROP_UPLOAD_PROGRESS ),
+				myWordPressApi: !! d.myWordpress,
+				webComponents: !! ( window.customElements && ( customElements.get( 'wpd-notice' ) || customElements.get( 'wpd-tile' ) || customElements.get( 'wpd-progress-bar' ) ) ),
+				pwaForceReplace: !! ( d.config && d.config.pwa && d.config.pwa.forceReplaceSw ),
 				ai:            !! d.ai,
 				dragBridge:    !! d.dragBridge,
 			} );
@@ -1698,14 +1760,13 @@
 	}
 
 	function openShopWindowFallback() {
-		normalizeOddShopSavedGeometry( 'odd.shop-window.fallback-open' );
-		if ( adapter && typeof adapter.openWindow === 'function' && adapter.openWindow( 'odd' ) ) {
+		if ( adapter && typeof adapter.openWindow === 'function' && adapter.openWindow( 'odd', sourceOpts( 'odd.shop-window.fallback-open' ) ) ) {
 			return true;
 		}
 		var d = desktop();
 		if ( d && typeof d.openWindow === 'function' ) {
 			try {
-				d.openWindow( 'odd' );
+				d.openWindow( 'odd', sourceOpts( 'odd.shop-window.fallback-open' ) );
 				return true;
 			} catch ( _ ) {}
 		}
@@ -1952,6 +2013,25 @@
 		return /\.wp$/.test( name ) || /\.odd(?:\.json)?$/.test( name ) || /odd-catalog\.json$/.test( name );
 	}
 
+	function mediaFileUrl( item ) {
+		if ( ! item || typeof item !== 'object' ) return '';
+		return String(
+			item.source_url ||
+			item.url ||
+			( item.guid && item.guid.rendered ) ||
+			''
+		);
+	}
+
+	function mediaFileName( item ) {
+		if ( ! item || typeof item !== 'object' ) return '';
+		if ( item.filename ) return String( item.filename );
+		var url = mediaFileUrl( item );
+		if ( url ) return decodeURIComponent( url.split( '?' )[ 0 ].split( '/' ).pop() || '' );
+		if ( item.title && item.title.rendered ) return String( item.title.rendered );
+		return item.id ? 'media-' + String( item.id ) : '';
+	}
+
 	function openOddDesktopFile( file, ctx ) {
 		var payload = {
 			file: file || {},
@@ -1967,13 +2047,12 @@
 		if ( runOddSurfaceAction( 'oddout-open-shop', 'odd.desktop-file.open' ) ) {
 			return true;
 		}
-		normalizeOddShopSavedGeometry( 'odd.desktop-file.open' );
-		if ( adapter && typeof adapter.openWindow === 'function' && adapter.openWindow( 'odd' ) ) {
+		if ( adapter && typeof adapter.openWindow === 'function' && adapter.openWindow( 'odd', sourceOpts( 'odd.desktop-file.open' ) ) ) {
 			return true;
 		}
 		var d = desktop();
 		if ( d && typeof d.openWindow === 'function' ) {
-			try { d.openWindow( 'odd' ); return true; } catch ( _ ) {}
+			try { d.openWindow( 'odd', sourceOpts( 'odd.desktop-file.open' ) ); return true; } catch ( _ ) {}
 		}
 		return false;
 	}
@@ -2052,6 +2131,77 @@
 			return next;
 		}
 		addFilter( 'desktop-mode.wallpaper-context-menu', wallpaperMenuFilter );
+
+		addFilterFor( 'FILE_DROP_FILES_DETECTED', 'desktop-mode.drop.files-detected', function ( files, ctx ) {
+			if ( ! Array.isArray( files ) ) return files;
+			var keep = [];
+			files.forEach( function ( file ) {
+				if ( isOddDesktopFile( file ) ) {
+					setDesktopSupport( 'fileDrop' );
+					openOddDesktopFile( file, Object.assign( { source: 'desktop-mode.drop.files-detected' }, ctx || {} ) );
+					return;
+				}
+				keep.push( file );
+			} );
+			return keep;
+		} );
+
+		addFilterFor( 'FILE_DROP_BEFORE_UPLOAD', 'desktop-mode.drop.before-upload', function ( payload, ctx ) {
+			var file = payload && payload.file;
+			if ( ! isOddDesktopFile( file ) ) return payload;
+			setDesktopSupport( 'fileDrop' );
+			openOddDesktopFile( file, Object.assign( { source: 'desktop-mode.drop.before-upload' }, ctx || {} ) );
+			return null;
+		} );
+
+		[
+			[ 'FILE_DROP_UPLOAD_STARTED', 'desktop-mode.drop.upload-started' ],
+			[ 'FILE_DROP_UPLOAD_PROGRESS', 'desktop-mode.drop.upload-progress' ],
+			[ 'FILE_DROP_AFTER_UPLOAD', 'desktop-mode.drop.after-upload' ],
+			[ 'FILE_DROP_UPLOAD_FAILED', 'desktop-mode.drop.upload-failed' ],
+		].forEach( function ( row ) {
+			addActionFor( row[ 0 ], row[ 1 ], function ( payload ) {
+				setDesktopSupport( row[ 0 ] === 'FILE_DROP_UPLOAD_PROGRESS' ? 'fileDropProgress' : 'fileDrop' );
+				record( 'info', row[ 1 ], {
+					name: payload && payload.file ? desktopFileName( payload.file ) : '',
+					surface: payload && payload.context && payload.context.surface || '',
+				} );
+			} );
+		} );
+	}
+
+	function setupMyWordPressIntegration() {
+		addFilter( 'desktop-mode.my-wordpress.preview-actions', function ( actions, ctx ) {
+			setDesktopSupport( 'myWordPress' );
+			var next = Array.isArray( actions ) ? actions.slice() : [];
+			var item = ctx && ctx.item;
+			var file = {
+				name: mediaFileName( item ),
+				type: ctx && ctx.mime || '',
+				url:  mediaFileUrl( item ),
+				source: 'desktop-mode.my-wordpress',
+			};
+			if ( ! isOddDesktopFile( file ) ) return next;
+			next.push( {
+				id: 'odd/open-media-bundle',
+				label: 'Open in ODD',
+				icon: 'dashicons-cart',
+				onSelect: function ( currentCtx ) {
+					var currentItem = currentCtx && currentCtx.item || item;
+					openOddDesktopFile( {
+						name: mediaFileName( currentItem ),
+						type: ctx && ctx.mime || '',
+						url:  mediaFileUrl( currentItem ),
+						source: 'desktop-mode.my-wordpress',
+						meta: { openedBy: 'odd' },
+					}, {
+						source: 'desktop-mode.my-wordpress.preview-actions',
+						itemId: currentItem && currentItem.id || '',
+					} );
+				},
+			} );
+			return next;
+		} );
 	}
 
 	function setupAppWindowLifecycleEnhancements() {
@@ -2147,8 +2297,7 @@
 			}
 			var d = desktop();
 			if ( d && typeof d.openWindow === 'function' ) {
-				normalizeOddShopSavedGeometry( 'odd.cross-surface-link' );
-				d.openWindow( 'odd' );
+				d.openWindow( 'odd', sourceOpts( 'odd.cross-surface-link' ) );
 			}
 		}
 		document.body.addEventListener( 'click', onNavigate );
@@ -2159,7 +2308,8 @@
 		} );
 	}
 
-	normalizeOddShopSavedGeometry( 'odd.desktop-hooks.boot' );
+	setupWindowGeometryFilter();
+	setupWindowNoticeBridge();
 	setupCrossSurfaceOddLinks();
 	setupWindowDiagnostics();
 	setupIframeDiagnostics();
@@ -2174,6 +2324,7 @@
 	setupNamespaceRegistration();
 	setupModuleRegistration();
 	setupFileIntegration();
+	setupMyWordPressIntegration();
 	setupAppWindowLifecycleEnhancements();
 	setupArrangeActions();
 	setupTitlebarButton();

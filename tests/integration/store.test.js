@@ -21,6 +21,7 @@ describe( 'store — hydration + subscribe + set', () => {
 		expect( store.get( 'user.favorites' ) ).toEqual( [ 'flux' ] );
 		expect( store.get( 'user.shuffle.enabled' ) ).toBe( true );
 		expect( store.get( 'user.shuffle.minutes' ) ).toBe( 30 );
+		expect( store.get( 'user.adminBarHidden' ) ).toBe( true );
 		expect( store.get( 'user.schemaVersion' ) ).toBe( 1 );
 
 		const scenes = store.get( 'registries.scenes' );
