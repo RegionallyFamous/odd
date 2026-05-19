@@ -243,19 +243,8 @@
 			renderSection( state.active, { keepQuery: true } );
 		} );
 		searchTools.appendChild( allStylesChip );
-		var chipLabels = [ 'Generative', 'Atmosphere', 'Paper', 'ODD Originals', 'Community' ];
-		chipLabels.forEach( function ( label ) {
-			var chip = el( 'button', { type: 'button', class: 'odd-shop__search-chip' } );
-			chip.textContent = label;
-			chip.setAttribute( 'aria-pressed', 'false' );
-			chip.addEventListener( 'click', function () {
-				state.categoryFilter = state.categoryFilter === label ? '' : label;
-				updateSearchToolState();
-				renderSection( state.active, { keepQuery: true } );
-			} );
-			categoryChips[ label ] = chip;
-			searchTools.appendChild( chip );
-		} );
+		var categoryChipList = el( 'span', { class: 'odd-shop__search-chip-list', 'data-odd-search-chip-list': '1' } );
+		searchTools.appendChild( categoryChipList );
 		try {
 			var recentSearches = JSON.parse( window.localStorage.getItem( 'odd.shop.recent-searches' ) || '[]' );
 			if ( Array.isArray( recentSearches ) && recentSearches.length ) {
@@ -735,6 +724,8 @@
 
 		function updateSearchToolState() {
 			var active = String( state.categoryFilter || '' );
+			scopeToggle.textContent = state.searchScope === 'all' ? __( 'All departments' ) : __( 'This department' );
+			scopeToggle.setAttribute( 'aria-pressed', state.searchScope === 'all' ? 'true' : 'false' );
 			allStylesChip.classList.toggle( 'is-active', ! active );
 			allStylesChip.setAttribute( 'aria-pressed', active ? 'false' : 'true' );
 			Object.keys( categoryChips ).forEach( function ( label ) {
@@ -743,6 +734,81 @@
 				chip.classList.toggle( 'is-active', isActive );
 				chip.setAttribute( 'aria-pressed', isActive ? 'true' : 'false' );
 			} );
+		}
+
+		function searchTypeForSection( sectionId ) {
+			for ( var type in DEPT_FOR_TYPE ) {
+				if ( Object.prototype.hasOwnProperty.call( DEPT_FOR_TYPE, type ) && DEPT_FOR_TYPE[ type ] === sectionId ) {
+					return type;
+				}
+			}
+			return '';
+		}
+
+		function filterCategoryOf( item ) {
+			if ( ! item ) return '';
+			if ( item.type === 'scene' ) return categoryOf( item, 'wallpaper' );
+			if ( item.type === 'icon-set' ) return categoryOf( item, 'icons' );
+			if ( item.type === 'cursor-set' ) return categoryOf( item, 'cursors' );
+			var raw = ( item && item.raw ) || {};
+			return String( item.category || raw.category || rowTypeLabel( item.type, false ) || 'More' );
+		}
+
+		function searchChipRowsForActiveSection() {
+			if ( state.query && state.searchScope === 'all' ) {
+				return collectSearchRows();
+			}
+			var type = searchTypeForSection( state.active );
+			if ( type ) {
+				return shopRowsFor( type ).filter( function ( row ) {
+					return row && row.slug && row.slug !== 'none' && row.slug !== 'odd-pending';
+				} );
+			}
+			return collectSearchRows();
+		}
+
+		function filterCategoryStats( rows ) {
+			var counts = {};
+			var order = [];
+			( rows || [] ).forEach( function ( row ) {
+				var category = String( filterCategoryOf( row ) || '' ).trim();
+				if ( ! category ) return;
+				if ( ! Object.prototype.hasOwnProperty.call( counts, category ) ) {
+					counts[ category ] = 0;
+					order.push( category );
+				}
+				counts[ category ]++;
+			} );
+			order.sort( compareCategoryNames );
+			return { order: order, counts: counts };
+		}
+
+		function rebuildSearchChips() {
+			if ( ! categoryChipList || ! state ) return;
+			var stats = filterCategoryStats( searchChipRowsForActiveSection() );
+			var labels = stats.order.filter( function ( label ) {
+				return label && label !== 'More';
+			} ).slice( 0, 9 );
+			var active = String( state.categoryFilter || '' );
+			if ( active && labels.indexOf( active ) === -1 ) labels.unshift( active );
+			categoryChipList.innerHTML = '';
+			categoryChips = {};
+			labels.forEach( function ( label ) {
+				var chip = el( 'button', { type: 'button', class: 'odd-shop__search-chip' } );
+				var count = stats.counts[ label ] || 0;
+				chip.textContent = label;
+				chip.setAttribute( 'aria-pressed', 'false' );
+				chip.setAttribute( 'aria-label', count ? ( 'Filter by ' + label + ', ' + count + ' item' + ( count === 1 ? '' : 's' ) ) : ( 'Filter by ' + label ) );
+				if ( count ) chip.setAttribute( 'title', label + ' (' + count + ')' );
+				chip.addEventListener( 'click', function () {
+					state.categoryFilter = state.categoryFilter === label ? '' : label;
+					updateSearchToolState();
+					renderSection( state.active, { keepQuery: true } );
+				} );
+				categoryChips[ label ] = chip;
+				categoryChipList.appendChild( chip );
+			} );
+			updateSearchToolState();
 		}
 
 		function playShopSound( kind ) {
@@ -1189,11 +1255,13 @@
 			// the user with a stale "no results" state.
 			if ( state.active !== id && ! opts.keepQuery ) {
 				state.query = '';
+				state.categoryFilter = '';
 				var input = document.querySelector( '[data-odd-search]' );
 				if ( input && input.value ) input.value = '';
 			}
 
 			state.active = id;
+			rebuildSearchChips();
 			cleanupSection();
 			for ( var k in buttons ) {
 				if ( Object.prototype.hasOwnProperty.call( buttons, k ) ) {
@@ -4324,48 +4392,95 @@
 			return wrap;
 		}
 
+		function normalizeSearchText( value ) {
+			var text = String( value === undefined || value === null ? '' : value ).toLowerCase();
+			if ( typeof text.normalize === 'function' ) {
+				text = text.normalize( 'NFKD' ).replace( /[\u0300-\u036f]/g, '' );
+			}
+			return text.replace( /[^a-z0-9]+/g, ' ' ).replace( /^\s+|\s+$/g, '' );
+		}
+
+		function searchTerms( query ) {
+			var text = normalizeSearchText( query );
+			return text ? text.split( /\s+/ ).filter( Boolean ) : [];
+		}
+
+		function pushSearchPart( parts, value ) {
+			if ( value === undefined || value === null || value === false ) return;
+			if ( Array.isArray( value ) ) {
+				value.forEach( function ( item ) { pushSearchPart( parts, item ); } );
+				return;
+			}
+			parts.push( String( value ) );
+		}
+
+		function rowSearchTags( item ) {
+			var raw = ( item && item.raw ) || {};
+			var tags = [];
+			pushSearchPart( tags, item && item.tags );
+			pushSearchPart( tags, item && item.searchTokens );
+			pushSearchPart( tags, raw.tags );
+			pushSearchPart( tags, raw.search_tokens );
+			pushSearchPart( tags, raw.searchTokens );
+			return tags;
+		}
+
+		function rowSearchHaystack( item ) {
+			var raw = ( item && item.raw ) || {};
+			var parts = [];
+			pushSearchPart( parts, item && item.label );
+			pushSearchPart( parts, item && item.name );
+			pushSearchPart( parts, item && item.slug );
+			pushSearchPart( parts, item && item.slug && String( item.slug ).replace( /-/g, ' ' ) );
+			pushSearchPart( parts, item && item.type );
+			pushSearchPart( parts, item && rowTypeLabel( item.type, false ) );
+			pushSearchPart( parts, item && rowTypeLabel( item.type, true ) );
+			pushSearchPart( parts, item && item.subtitle );
+			pushSearchPart( parts, filterCategoryOf( item ) );
+			pushSearchPart( parts, item && item.category );
+			pushSearchPart( parts, item && item.description );
+			pushSearchPart( parts, item && item.version );
+			pushSearchPart( parts, item && item.searchText );
+			pushSearchPart( parts, rowSearchTags( item ) );
+			pushSearchPart( parts, raw.label );
+			pushSearchPart( parts, raw.name );
+			pushSearchPart( parts, raw.type );
+			pushSearchPart( parts, raw.category );
+			pushSearchPart( parts, raw.description );
+			pushSearchPart( parts, raw.author );
+			pushSearchPart( parts, raw.version );
+			pushSearchPart( parts, raw.search_text );
+			pushSearchPart( parts, raw.searchText );
+			return normalizeSearchText( parts.join( ' ' ) );
+		}
+
 		/**
 		 * Client-side filter used by the top-bar search pill. Matches
-		 * against label, slug, category, and any tag — everything the
-		 * user can actually see on a card.
+		 * all query terms against visible card copy plus catalog search
+		 * metadata, so "server room", "deep sea", or "cursor aura"
+		 * find the right shelf instead of needing exact card titles.
 		 */
 		function filterByQuery( items, query ) {
-			var category = String( state.categoryFilter || '' ).toLowerCase().trim();
-			if ( ! query && ! category ) return items;
-			var q = String( query ).toLowerCase().trim();
-			if ( ! q && ! category ) return items;
+			var category = normalizeSearchText( state.categoryFilter || '' );
+			var terms = searchTerms( query );
+			if ( ! terms.length && ! category ) return items;
 			return items.filter( function ( item ) {
 				if ( ! item ) return false;
 				if ( category ) {
-					var itemCategory = String( item.category || ( item.raw && item.raw.category ) || '' ).toLowerCase();
-					var tags = Array.isArray( item.tags ) ? item.tags : [];
-					var tagMatch = tags.some( function ( tag ) {
-						return String( tag || '' ).toLowerCase() === category;
+					var raw = item.raw || {};
+					var itemCategory = normalizeSearchText( filterCategoryOf( item ) );
+					var rawCategory = normalizeSearchText( item.category || raw.category || '' );
+					var tagMatch = rowSearchTags( item ).some( function ( tag ) {
+						return normalizeSearchText( tag ) === category;
 					} );
-					if ( itemCategory !== category && ! tagMatch ) return false;
+					if ( itemCategory !== category && rawCategory !== category && ! tagMatch ) return false;
 				}
-				if ( ! q ) return true;
-				var hay = [
-					item.label,
-					item.name,
-					item.slug,
-					item.type,
-					item.subtitle,
-					item.category,
-					item.description,
-					item.version,
-					item.raw && item.raw.label,
-					item.raw && item.raw.name,
-					item.raw && item.raw.type,
-					item.raw && item.raw.description,
-				].filter( Boolean ).join( ' ' ).toLowerCase();
-				if ( hay.indexOf( q ) >= 0 ) return true;
-				if ( Array.isArray( item.tags ) ) {
-					for ( var i = 0; i < item.tags.length; i++ ) {
-						if ( String( item.tags[ i ] || '' ).toLowerCase().indexOf( q ) >= 0 ) return true;
-					}
+				if ( ! terms.length ) return true;
+				var hay = rowSearchHaystack( item );
+				for ( var i = 0; i < terms.length; i++ ) {
+					if ( hay.indexOf( terms[ i ] ) < 0 ) return false;
 				}
-				return false;
+				return true;
 			} );
 		}
 
@@ -4378,9 +4493,10 @@
 		 * ordering — `categoryGradient` gets called during initial
 		 * render before sibling `var`-decl palettes would be assigned.
 		 *
-		 * Category names flow through it now (Skies / Wilds / Places / Forms /
-		 * Playful / Crafted / Technical / Cool / Default), with fallbacks for
-		 * any new catalog grouping.
+		 * Category names flow through it now (Skies / Wilds / Aquatic /
+		 * Places / Workshops / Forms / Oddities / Playful / Crafted /
+		 * Technical / Cool / Default), with fallbacks for any new
+		 * catalog grouping.
 		 */
 		/**
 		 * SVG artwork for each category tile. Each returns a compact
@@ -4406,16 +4522,34 @@
 					'<circle cx="210" cy="28" r="10" fill="#fff" opacity=".6"/>' +
 					'<path d="M140 98 L172 44 L192 72 L212 38 L244 98 Z" fill="#fff" opacity=".58"/>' +
 					'<path d="M108 98 L134 56 L150 82 L170 60 L198 98 Z" fill="#fff" opacity=".38"/>',
+				'Aquatic':
+					'<path d="M118 76 Q150 54 182 76 T246 76" fill="none" stroke="#fff" stroke-width="4" opacity=".58"/>' +
+					'<path d="M128 94 Q158 76 188 94 T246 94" fill="none" stroke="#fff" stroke-width="3" opacity=".36"/>' +
+					'<circle cx="190" cy="44" r="18" fill="#fff" opacity=".42"/>' +
+					'<circle cx="224" cy="34" r="8" fill="#fff" opacity=".62"/>' +
+					'<path d="M150 56 Q168 38 184 56 Q168 74 150 56 Z" fill="#fff" opacity=".62"/>',
 				'Places':
 					'<circle cx="200" cy="28" r="8" fill="#fff" opacity=".7"/>' +
 					'<rect x="138" y="60" width="22" height="42" fill="#fff" opacity=".5"/>' +
 					'<rect x="164" y="40" width="18" height="62" fill="#fff" opacity=".72"/>' +
 					'<rect x="186" y="52" width="24" height="50" fill="#fff" opacity=".48"/>' +
 					'<rect x="214" y="66" width="20" height="36" fill="#fff" opacity=".4"/>',
+				'Workshops':
+					'<rect x="138" y="72" width="94" height="14" rx="3" fill="#fff" opacity=".52"/>' +
+					'<rect x="154" y="42" width="18" height="30" rx="3" fill="#fff" opacity=".42"/>' +
+					'<rect x="184" y="30" width="16" height="42" rx="3" fill="#fff" opacity=".68"/>' +
+					'<circle cx="218" cy="52" r="14" fill="#fff" opacity=".5"/>' +
+					'<path d="M142 92 L232 92" stroke="#fff" stroke-width="4" opacity=".42"/>',
 				'Forms':
 					'<circle cx="180" cy="52" r="34" fill="#fff" opacity=".34"/>' +
 					'<rect x="150" y="46" width="48" height="48" rx="4" fill="#fff" opacity=".48" transform="rotate(12 174 70)"/>' +
 					'<path d="M204 30 L236 92 L172 92 Z" fill="#fff" opacity=".58"/>',
+				'Oddities':
+					'<ellipse cx="196" cy="60" rx="48" ry="28" fill="#fff" opacity=".38"/>' +
+					'<circle cx="184" cy="58" r="9" fill="#fff" opacity=".8"/>' +
+					'<circle cx="214" cy="58" r="9" fill="#fff" opacity=".62"/>' +
+					'<path d="M152 96 Q196 18 240 96" fill="none" stroke="#fff" stroke-width="3" opacity=".46"/>' +
+					'<circle cx="228" cy="32" r="5" fill="#fff" opacity=".72"/>',
 				'Playful':
 					'<path d="M194 20 L198 34 L212 34 L201 43 L206 58 L194 50 L182 58 L187 43 L176 34 L190 34 Z" fill="#fff" opacity=".75"/>' +
 					'<circle cx="148" cy="40" r="4" fill="#fff" opacity=".75"/>' +
@@ -4486,8 +4620,11 @@
 			var PALETTE = {
 				'Skies':            'linear-gradient(135deg,#1a4b8e 0%,#5dadec 60%,#a3d8f4 100%)',
 				'Wilds':            'linear-gradient(135deg,#0f6b3a 0%,#2fa970 60%,#a8dca0 100%)',
+				'Aquatic':          'linear-gradient(135deg,#053b4d 0%,#0fa3a6 58%,#98f1df 100%)',
 				'Places':           'linear-gradient(135deg,#b94a3b 0%,#f08e5b 60%,#ffd9a8 100%)',
+				'Workshops':        'linear-gradient(135deg,#5a366d 0%,#d06f4d 58%,#ffd27d 100%)',
 				'Forms':            'linear-gradient(135deg,#3a1a72 0%,#8a3fc8 60%,#e89cf0 100%)',
+				'Oddities':         'linear-gradient(135deg,#14112f 0%,#7b4dff 56%,#ff5da8 100%)',
 				'Playful':          'linear-gradient(135deg,#d6266d 0%,#ff7a3c 60%,#ffd56a 100%)',
 				'Crafted':          'linear-gradient(135deg,#a04a18 0%,#e0964c 60%,#f4dca4 100%)',
 				'Technical':        'linear-gradient(135deg,#0a3a4a 0%,#2596be 60%,#9ee0f0 100%)',
@@ -4534,26 +4671,48 @@
 			var SCENE_CATEGORY = {
 				'flux':                'Forms',
 				'origami':             'Forms',
+				'origami-harbor':      'Forms',
 				'terrazzo':            'Forms',
+				'sun-print':           'Forms',
 				'aurora':              'Skies',
 				'rainfall':            'Skies',
 				'big-sky':             'Skies',
 				'cloud-city':          'Skies',
-				'weather-factory':     'Skies',
+				'cloud-aquarium':      'Skies',
+				'desert-drive-in':     'Skies',
 				'circuit-garden':      'Wilds',
 				'tropical-greenhouse': 'Wilds',
 				'wildflower-meadow':   'Wilds',
-				'tide-pool':           'Wilds',
-				'abyssal-aquarium':    'Wilds',
-				'sun-print':           'Wilds',
-				'iris-observatory':    'Places',
-				'pocket-dimension':    'Places',
+				'mushroom-radio':      'Wilds',
+				'clockwork-orchard':   'Wilds',
+				'botanical-server-room': 'Wilds',
+				'tide-pool':           'Aquatic',
+				'abyssal-aquarium':    'Aquatic',
+				'kelp-cathedral':      'Aquatic',
+				'coral-arcade':        'Aquatic',
+				'fog-harbor':          'Aquatic',
 				'balcony-noon':        'Places',
 				'mercado':             'Places',
 				'beach-umbrellas':     'Places',
+				'neon-laundromat':     'Places',
+				'crystal-subway':      'Places',
+				'sticker-bomb-alley':  'Places',
+				'midnight-bakery':     'Places',
+				'archive-moon':        'Workshops',
+				'planetarium-kitchen': 'Workshops',
+				'miniature-volcano-lab': 'Workshops',
+				'snow-globe-workshop': 'Workshops',
+				'museum-of-weather':   'Workshops',
+				'rainbow-repair-shop': 'Workshops',
+				'weather-factory':     'Workshops',
+				'oddling-desktop':     'Oddities',
+				'iris-observatory':    'Oddities',
+				'pocket-dimension':    'Oddities',
+				'velvet-fossil-room':  'Oddities',
 			};
 			var ICON_SET_CATEGORY = {
 				'none':              'Default',
+				'odd-default-icons': 'Default',
 				'arcade-tokens':     'Playful',
 				'lemonade-stand':    'Playful',
 				'tiki':              'Playful',
@@ -4572,8 +4731,17 @@
 				'arctic':            'Cool',
 				'brutalist-stencil': 'Cool',
 			};
+			var CURSOR_SET_CATEGORY = {
+				'odd-default-cursors':     'Default',
+				'oddlings-cursors':        'Playful',
+				'gel-pop-cursors':         'Playful',
+				'paper-sparks-cursors':    'Crafted',
+				'signal-bloom-cursors':    'Technical',
+				'solar-orbit-cursors':     'Technical',
+				'moonlight-focus-cursors': 'Cool',
+			};
 			if ( ! item ) return 'More';
-			var table = kind === 'icons' ? ICON_SET_CATEGORY : SCENE_CATEGORY;
+			var table = kind === 'icons' ? ICON_SET_CATEGORY : ( kind === 'cursors' ? CURSOR_SET_CATEGORY : SCENE_CATEGORY );
 			if ( item.slug && table[ item.slug ] ) return table[ item.slug ];
 			return ( item.category && String( item.category ) ) || 'More';
 		}
@@ -4585,7 +4753,7 @@
 		 */
 		function compareCategoryNames( a, b ) {
 			var CATEGORY_ORDER = [
-				'Skies', 'Wilds', 'Places', 'Forms',
+				'Skies', 'Wilds', 'Aquatic', 'Places', 'Workshops', 'Forms', 'Oddities',
 				'Default', 'Playful', 'Crafted', 'Technical', 'Cool',
 			];
 			var ai = CATEGORY_ORDER.indexOf( a );
@@ -4602,7 +4770,7 @@
 		 * clicked. Purely navigational; no state changes.
 		 */
 		function renderCategoryQuilt( items, scope ) {
-			var kind = scope === 'icons' ? 'icons' : 'wallpaper';
+			var kind = scope === 'icons' ? 'icons' : ( scope === 'cursors' ? 'cursors' : 'wallpaper' );
 			var counts = {};
 			var seen = {};
 			items.forEach( function ( it ) {
@@ -5719,26 +5887,29 @@
 			if ( ! raw ) return null;
 			var slug = raw.slug || ( raw.id ? String( raw.id ).replace( /^odd\//, '' ) : '' );
 			if ( ! slug ) return null;
-				var cacheKey = [
-					type,
-					slug,
-					raw.label || raw.name || '',
-					raw.category || '',
-					raw.description || '',
-					raw.version || '',
-					raw.installed === undefined ? 'u' : ( raw.installed ? '1' : '0' ),
-					raw.enabled === false ? '0' : '1',
-					raw.state || '',
-					raw.status || '',
-					raw.updateAvailable || raw.update_available ? 'u' : '',
-					raw.requiresReload ? 'r' : '',
-					raw.surfaces && typeof raw.surfaces === 'object' ? JSON.stringify( raw.surfaces ) : '',
-					raw.card_url || raw.cardUrl || '',
+			var cacheKey = [
+				type,
+				slug,
+				raw.label || raw.name || '',
+				raw.category || '',
+				raw.description || '',
+				raw.version || '',
+				raw.installed === undefined ? 'u' : ( raw.installed ? '1' : '0' ),
+				raw.enabled === false ? '0' : '1',
+				raw.state || '',
+				raw.status || '',
+				raw.updateAvailable || raw.update_available ? 'u' : '',
+				raw.requiresReload ? 'r' : '',
+				raw.surfaces && typeof raw.surfaces === 'object' ? JSON.stringify( raw.surfaces ) : '',
+				raw.card_url || raw.cardUrl || '',
 				raw.icon_url || raw.iconUrl || raw.icon || '',
 				raw.previewUrl || raw.preview_url || raw.preview || '',
 				raw.download_url || raw.downloadUrl || '',
 				raw.sha256 || '',
 				raw.size || '',
+				raw.search_text || raw.searchText || '',
+				Array.isArray( raw.search_tokens ) ? raw.search_tokens.join( ',' ) : '',
+				Array.isArray( raw.searchTokens ) ? raw.searchTokens.join( ',' ) : '',
 				raw.icons && typeof raw.icons === 'object' ? JSON.stringify( raw.icons ) : '',
 				raw.cursors && typeof raw.cursors === 'object' ? JSON.stringify( raw.cursors ) : '',
 				raw.effects && typeof raw.effects === 'object' ? JSON.stringify( raw.effects ) : '',
@@ -5773,6 +5944,8 @@
 				accent:        raw.accent || '',
 				fallbackColor: raw.fallbackColor || '',
 				featured:      !! raw.featured,
+				searchText:    raw.search_text || raw.searchText || '',
+				searchTokens:  Array.isArray( raw.search_tokens ) ? raw.search_tokens.slice() : ( Array.isArray( raw.searchTokens ) ? raw.searchTokens.slice() : [] ),
 				builtin:       !! raw.builtin,
 				broken:        !! raw.broken || raw.state === 'broken' || raw.status === 'broken',
 				incompatible:  !! raw.incompatible || raw.state === 'incompatible' || raw.status === 'incompatible',
@@ -5866,6 +6039,10 @@
 			takeIfEmpty( 'accent' );
 			takeIfEmpty( 'fallbackColor' );
 			takeIfEmpty( 'version' );
+			takeIfEmpty( 'searchText' );
+			if ( cat.searchTokens && Array.isArray( cat.searchTokens ) && cat.searchTokens.length && isEmptyTags( ins.searchTokens ) ) {
+				ins.searchTokens = cat.searchTokens.slice();
+			}
 			if ( cat.tags && Array.isArray( cat.tags ) && cat.tags.length && isEmptyTags( ins.tags ) ) {
 				ins.tags = cat.tags.slice();
 			}

@@ -721,8 +721,12 @@ describe( 'ODD Shop', () => {
 	it( 'uses category chips as filters without filling the search field', () => {
 		const { host, cleanup } = mountPanel();
 
+		const labels = Array.from( host.querySelectorAll( '.odd-shop__search-chip' ) )
+			.map( ( node ) => node.textContent.trim() );
+		expect( labels ).toEqual( expect.arrayContaining( [ 'All styles', 'Forms', 'Skies', 'Wilds' ] ) );
+
 		const chip = Array.from( host.querySelectorAll( '.odd-shop__search-chip' ) )
-			.find( ( node ) => node.textContent.trim() === 'Generative' );
+			.find( ( node ) => node.textContent.trim() === 'Forms' );
 		expect( chip ).toBeTruthy();
 		chip.dispatchEvent( new MouseEvent( 'click', { bubbles: true, cancelable: true } ) );
 
@@ -731,6 +735,33 @@ describe( 'ODD Shop', () => {
 		const cards = Array.from( host.querySelectorAll( '.odd-card[data-slug]' ) )
 			.map( ( node ) => node.getAttribute( 'data-slug' ) );
 		expect( cards ).toEqual( [ 'flux' ] );
+
+		if ( typeof cleanup === 'function' ) cleanup();
+	} );
+
+	it( 'matches multi-word catalog search metadata', () => {
+		window.odd.bundleCatalog = {
+			scene: [
+				{
+					type: 'scene',
+					slug: 'server-room-moon',
+					name: 'Server Room Moon',
+					category: 'Community',
+					description: 'Quiet racks glow under a little desktop moon.',
+					tags: [ 'server-room', 'moonlit' ],
+					search_text: 'botanical data greenhouse racks',
+					search_tokens: [ 'server room', 'greenhouse' ],
+					installed: false,
+				},
+			],
+		};
+		const { host, cleanup } = mountPanel();
+
+		const search = host.querySelector( '[data-odd-search]' );
+		search.value = 'server room';
+		search.dispatchEvent( new Event( 'input', { bubbles: true } ) );
+
+		expect( host.querySelector( '[data-odd-shop-card][data-catalog-slug="server-room-moon"]' ) ).toBeTruthy();
 
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );
