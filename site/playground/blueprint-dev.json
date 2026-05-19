@@ -32,7 +32,7 @@
     {
       "step": "updateUserMeta",
       "userId": 1,
-      "meta": { "desktop_mode_mode": "1" }
+      "meta": { "desktop_mode_mode": "1", "oddout_admin_bar_hidden": "1" }
     }
   ]
 }
