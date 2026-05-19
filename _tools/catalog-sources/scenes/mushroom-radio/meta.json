@@ -1,0 +1,15 @@
+{
+  "slug": "mushroom-radio",
+  "label": "Mushroom Radio",
+  "tags": [
+    "gpt-image-2",
+    "mushroom",
+    "forest",
+    "radio",
+    "spores"
+  ],
+  "fallbackColor": "#122014",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A forest-floor mushroom radio station with warm copper wires and pulsing spore motes."
+}

@@ -1,0 +1,15 @@
+{
+  "slug": "planetarium-kitchen",
+  "label": "Planetarium Kitchen",
+  "tags": [
+    "gpt-image-2",
+    "kitchen",
+    "planetarium",
+    "stars",
+    "cozy"
+  ],
+  "fallbackColor": "#171423",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A cozy kitchen under a miniature galaxy, with steam wisps and slow orbiting crumbs."
+}

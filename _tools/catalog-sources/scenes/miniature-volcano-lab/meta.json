@@ -1,0 +1,15 @@
+{
+  "slug": "miniature-volcano-lab",
+  "label": "Miniature Volcano Lab",
+  "tags": [
+    "gpt-image-2",
+    "volcano",
+    "lab",
+    "diorama",
+    "glow"
+  ],
+  "fallbackColor": "#20120d",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A tiny glowing volcano diorama with ash motes, lava pulses, and paper-mountain shimmer."
+}

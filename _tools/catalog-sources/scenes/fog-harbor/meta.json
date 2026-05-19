@@ -1,0 +1,15 @@
+{
+  "slug": "fog-harbor",
+  "label": "Fog Harbor",
+  "tags": [
+    "gpt-image-2",
+    "harbor",
+    "fog",
+    "lanterns",
+    "boats"
+  ],
+  "fallbackColor": "#101820",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A quiet impossible harbor with lantern boats, layered fog, and a rare lighthouse pulse."
+}

@@ -1,0 +1,15 @@
+{
+  "slug": "museum-of-weather",
+  "label": "Museum of Weather",
+  "tags": [
+    "gpt-image-2",
+    "museum",
+    "weather",
+    "glass",
+    "storms"
+  ],
+  "fallbackColor": "#161723",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A surreal museum hall of bottled storms with glass glints and small lightning pulses."
+}

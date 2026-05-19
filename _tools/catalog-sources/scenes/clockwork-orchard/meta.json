@@ -1,0 +1,15 @@
+{
+  "slug": "clockwork-orchard",
+  "label": "Clockwork Orchard",
+  "tags": [
+    "gpt-image-2",
+    "orchard",
+    "clockwork",
+    "brass",
+    "leaves"
+  ],
+  "fallbackColor": "#1b180f",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A brass-and-apple orchard with slow leaves, tiny gear glints, and firefly ticks."
+}

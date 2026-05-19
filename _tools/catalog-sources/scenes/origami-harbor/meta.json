@@ -1,0 +1,15 @@
+{
+  "slug": "origami-harbor",
+  "label": "Origami Harbor",
+  "tags": [
+    "gpt-image-2",
+    "origami",
+    "harbor",
+    "paper",
+    "lanterns"
+  ],
+  "fallbackColor": "#1b1b29",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "Paper boats on an indoor sea with lantern shimmer and tiny crane drift."
+}

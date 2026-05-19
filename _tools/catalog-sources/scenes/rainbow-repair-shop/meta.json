@@ -1,0 +1,15 @@
+{
+  "slug": "rainbow-repair-shop",
+  "label": "Rainbow Repair Shop",
+  "tags": [
+    "gpt-image-2",
+    "rainbow",
+    "repair",
+    "prism",
+    "workbench"
+  ],
+  "fallbackColor": "#1f1822",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A prism repair bench with color sweeps, floating screws, and tiny rainbow shards."
+}

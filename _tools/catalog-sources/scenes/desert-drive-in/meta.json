@@ -1,0 +1,15 @@
+{
+  "slug": "desert-drive-in",
+  "label": "Desert Drive-In",
+  "tags": [
+    "gpt-image-2",
+    "desert",
+    "drive-in",
+    "stars",
+    "retro"
+  ],
+  "fallbackColor": "#21150f",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A retro desert drive-in under vast stars, with projector dust and rare comet motion."
+}

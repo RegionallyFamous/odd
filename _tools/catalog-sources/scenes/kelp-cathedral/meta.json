@@ -1,0 +1,15 @@
+{
+  "slug": "kelp-cathedral",
+  "label": "Kelp Cathedral",
+  "tags": [
+    "gpt-image-2",
+    "underwater",
+    "kelp",
+    "cathedral",
+    "caustics"
+  ],
+  "fallbackColor": "#071a22",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A sunken kelp cathedral with slow bubbles, glassy caustics, and drifting green silhouettes."
+}

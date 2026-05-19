@@ -1,0 +1,15 @@
+{
+  "slug": "crystal-subway",
+  "label": "Crystal Subway",
+  "tags": [
+    "gpt-image-2",
+    "subway",
+    "crystal",
+    "geode",
+    "underground"
+  ],
+  "fallbackColor": "#101526",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A subway platform inside a geode cavern with crystal glints and sweeping train light."
+}

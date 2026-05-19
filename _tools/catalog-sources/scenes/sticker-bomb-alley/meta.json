@@ -1,0 +1,15 @@
+{
+  "slug": "sticker-bomb-alley",
+  "label": "Sticker Bomb Alley",
+  "tags": [
+    "gpt-image-2",
+    "stickers",
+    "alley",
+    "posters",
+    "urban"
+  ],
+  "fallbackColor": "#16131b",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A layered sticker alley with peeling corners, sparkle flecks, and occasional sticker eyes."
+}

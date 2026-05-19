@@ -40,6 +40,28 @@
     },
     {
       "type": "scene",
+      "slug": "archive-moon",
+      "name": "Archive Moon",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A moonlit impossible archive with drifting catalog cards and soft paper-dust motion.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "archive",
+        "moon",
+        "library",
+        "dust"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-archive-moon.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-archive-moon.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-archive-moon.wp",
+      "sha256": "580d6a96448b0c260a69f1fb7b363ee45251df0ad6c64719dad97f9f8d683216",
+      "size": 192014
+    },
+    {
+      "type": "scene",
       "slug": "aurora",
       "name": "Aurora",
       "version": "1.0.0",
@@ -128,6 +150,28 @@
     },
     {
       "type": "scene",
+      "slug": "botanical-server-room",
+      "name": "Botanical Server Room",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "Server racks overgrown with vines, pollen motes, and pulsing data fireflies.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "server-room",
+        "plants",
+        "data",
+        "greenhouse"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-botanical-server-room.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-botanical-server-room.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-botanical-server-room.wp",
+      "sha256": "c0fcff7f7b6d6a79bfefefeb722d7ba7863d362a270fedda2d5502c4f5bdcd74",
+      "size": 291726
+    },
+    {
+      "type": "scene",
       "slug": "circuit-garden",
       "name": "Circuit Garden",
       "version": "1.0.0",
@@ -147,6 +191,50 @@
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-circuit-garden.wp",
       "sha256": "2db11368b6b0079ac524c23a72ce7a69ebb22ddb6563d16eee92c51f7433291c",
       "size": 459735
+    },
+    {
+      "type": "scene",
+      "slug": "clockwork-orchard",
+      "name": "Clockwork Orchard",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A brass-and-apple orchard with slow leaves, tiny gear glints, and firefly ticks.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "orchard",
+        "clockwork",
+        "brass",
+        "leaves"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-clockwork-orchard.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-clockwork-orchard.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-clockwork-orchard.wp",
+      "sha256": "aaa591bbc0ecf8dd7b2f722e8b133836f72717793eaf6003a7f17d5056af3d1c",
+      "size": 417887
+    },
+    {
+      "type": "scene",
+      "slug": "cloud-aquarium",
+      "name": "Cloud Aquarium",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A rooftop sky aquarium where cloud fish drift through soft light and air bubbles.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "clouds",
+        "aquarium",
+        "rooftop",
+        "sky"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-cloud-aquarium.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-cloud-aquarium.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-cloud-aquarium.wp",
+      "sha256": "afb5ba2513c414b841d451da3f3201fb65c8fa3e776686a3fcddf9629a946219",
+      "size": 173004
     },
     {
       "type": "scene",
@@ -172,6 +260,72 @@
     },
     {
       "type": "scene",
+      "slug": "coral-arcade",
+      "name": "Coral Arcade",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "An underwater coral arcade with pixel bubbles, soft cabinet glows, and shell drift.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "coral",
+        "arcade",
+        "underwater",
+        "glow"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-coral-arcade.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-coral-arcade.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-coral-arcade.wp",
+      "sha256": "185720ba51553b0eb7c99a8550c7c8201ed66439af7fbcbcfc2d4d1005dde13d",
+      "size": 322756
+    },
+    {
+      "type": "scene",
+      "slug": "crystal-subway",
+      "name": "Crystal Subway",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A subway platform inside a geode cavern with crystal glints and sweeping train light.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "subway",
+        "crystal",
+        "geode",
+        "underground"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-crystal-subway.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-crystal-subway.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-crystal-subway.wp",
+      "sha256": "f365fb137e5e0a2174160ab6270d7cd00dd44890fcbc570aa129381def8433c9",
+      "size": 356835
+    },
+    {
+      "type": "scene",
+      "slug": "desert-drive-in",
+      "name": "Desert Drive-In",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A retro desert drive-in under vast stars, with projector dust and rare comet motion.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "desert",
+        "drive-in",
+        "stars",
+        "retro"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-desert-drive-in.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-desert-drive-in.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-desert-drive-in.wp",
+      "sha256": "daaa6b3f0426c964c6a58006136bfb1a019c545fd38ac129a0595b00621bcd37",
+      "size": 179488
+    },
+    {
+      "type": "scene",
       "slug": "flux",
       "name": "Flux",
       "version": "1.0.0",
@@ -191,6 +345,28 @@
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-flux.wp",
       "sha256": "2f8454f0a5601b47eb49817f2ed3effb84030d454fabbfb47b67c93602a71f22",
       "size": 240253
+    },
+    {
+      "type": "scene",
+      "slug": "fog-harbor",
+      "name": "Fog Harbor",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A quiet impossible harbor with lantern boats, layered fog, and a rare lighthouse pulse.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "harbor",
+        "fog",
+        "lanterns",
+        "boats"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-fog-harbor.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-fog-harbor.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-fog-harbor.wp",
+      "sha256": "a54bc67ec30a9ad05c14f020b9461f220cb7895484b68ba3d8681df33e034747",
+      "size": 78792
     },
     {
       "type": "scene",
@@ -216,6 +392,28 @@
     },
     {
       "type": "scene",
+      "slug": "kelp-cathedral",
+      "name": "Kelp Cathedral",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A sunken kelp cathedral with slow bubbles, glassy caustics, and drifting green silhouettes.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "underwater",
+        "kelp",
+        "cathedral",
+        "caustics"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-kelp-cathedral.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-kelp-cathedral.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-kelp-cathedral.wp",
+      "sha256": "c29485df0bb959743e538e85d3149201a277efabcb209cfff84c6862c58634a0",
+      "size": 314298
+    },
+    {
+      "type": "scene",
       "slug": "mercado",
       "name": "Mercado",
       "version": "1.0.0",
@@ -235,6 +433,116 @@
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-mercado.wp",
       "sha256": "bd08b586969799feb42934ffb5453b0f6caf2a78f7b209e67084f86365714212",
       "size": 338734
+    },
+    {
+      "type": "scene",
+      "slug": "midnight-bakery",
+      "name": "Midnight Bakery",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A warm bakery after hours with flour dust, pastry steam, and sugar glints.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "bakery",
+        "midnight",
+        "warm",
+        "steam"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-midnight-bakery.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-midnight-bakery.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-midnight-bakery.wp",
+      "sha256": "b9b783057e4524420e9da495cacf8557428e9bda8c094ed4b1421e9fbfe128da",
+      "size": 174501
+    },
+    {
+      "type": "scene",
+      "slug": "miniature-volcano-lab",
+      "name": "Miniature Volcano Lab",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A tiny glowing volcano diorama with ash motes, lava pulses, and paper-mountain shimmer.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "volcano",
+        "lab",
+        "diorama",
+        "glow"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-miniature-volcano-lab.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-miniature-volcano-lab.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-miniature-volcano-lab.wp",
+      "sha256": "1f645d8c6f8e95344eb89d7fd6ff55c97b5b6b18ba49e762c660aad4d09abcec",
+      "size": 164062
+    },
+    {
+      "type": "scene",
+      "slug": "museum-of-weather",
+      "name": "Museum of Weather",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A surreal museum hall of bottled storms with glass glints and small lightning pulses.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "museum",
+        "weather",
+        "glass",
+        "storms"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-museum-of-weather.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-museum-of-weather.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-museum-of-weather.wp",
+      "sha256": "fcfa7bd9eb59986583ffa1239d783c79d8be5d5a4ab8098b4d3833b468aff550",
+      "size": 293924
+    },
+    {
+      "type": "scene",
+      "slug": "mushroom-radio",
+      "name": "Mushroom Radio",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A forest-floor mushroom radio station with warm copper wires and pulsing spore motes.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "mushroom",
+        "forest",
+        "radio",
+        "spores"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-mushroom-radio.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-mushroom-radio.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-mushroom-radio.wp",
+      "sha256": "e4b4daee90815d9b8b0a210d16f6fe8822f859d7a7e8cfe81cae1609f7beb1b2",
+      "size": 275597
+    },
+    {
+      "type": "scene",
+      "slug": "neon-laundromat",
+      "name": "Neon Laundromat",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A midnight laundromat glowing through rain with drifting lint motes and soap-bubble shimmer.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "laundromat",
+        "neon",
+        "rain",
+        "night"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-neon-laundromat.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-neon-laundromat.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-neon-laundromat.wp",
+      "sha256": "ba1050d9f804ba823536e3e9bbbc2a3b67156955c873477261980fe15a5e2155",
+      "size": 233988
     },
     {
       "type": "scene",
@@ -284,6 +592,50 @@
     },
     {
       "type": "scene",
+      "slug": "origami-harbor",
+      "name": "Origami Harbor",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "Paper boats on an indoor sea with lantern shimmer and tiny crane drift.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "origami",
+        "harbor",
+        "paper",
+        "lanterns"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-origami-harbor.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-origami-harbor.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-origami-harbor.wp",
+      "sha256": "bd9d23eb8168032727f9b99e17380de81cf3920bd9e99d825bf553cf84ba24e8",
+      "size": 152034
+    },
+    {
+      "type": "scene",
+      "slug": "planetarium-kitchen",
+      "name": "Planetarium Kitchen",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A cozy kitchen under a miniature galaxy, with steam wisps and slow orbiting crumbs.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "kitchen",
+        "planetarium",
+        "stars",
+        "cozy"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-planetarium-kitchen.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-planetarium-kitchen.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-planetarium-kitchen.wp",
+      "sha256": "3bbbd5af3bb504f7ab8708c0bfc0351ec01609cde2d69dad502d2b5d03499450",
+      "size": 197587
+    },
+    {
+      "type": "scene",
       "slug": "pocket-dimension",
       "name": "Pocket Dimension",
       "version": "1.0.0",
@@ -306,6 +658,28 @@
     },
     {
       "type": "scene",
+      "slug": "rainbow-repair-shop",
+      "name": "Rainbow Repair Shop",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A prism repair bench with color sweeps, floating screws, and tiny rainbow shards.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "rainbow",
+        "repair",
+        "prism",
+        "workbench"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-rainbow-repair-shop.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-rainbow-repair-shop.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-rainbow-repair-shop.wp",
+      "sha256": "8699abb30d2dd431bba12c317c5d3b4ec5360de34fc1a18b0d6a5ceee72de585",
+      "size": 206332
+    },
+    {
+      "type": "scene",
       "slug": "rainfall",
       "name": "Rainfall",
       "version": "1.0.0",
@@ -325,6 +699,50 @@
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-rainfall.wp",
       "sha256": "2b0455b61903b96cdbb6dbf0273ce6e1b4e17657eba2b2325fbb019f00f1a69f",
       "size": 233906
+    },
+    {
+      "type": "scene",
+      "slug": "snow-globe-workshop",
+      "name": "Snow Globe Workshop",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A workbench of tiny snow-globe worlds with glass sweeps and soft drifting snow.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "snow-globe",
+        "workshop",
+        "winter",
+        "glass"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-snow-globe-workshop.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-snow-globe-workshop.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-snow-globe-workshop.wp",
+      "sha256": "4b15478042b08c92c49efeab99f41338cc44ba44652695cd78d402a8eac37f42",
+      "size": 262582
+    },
+    {
+      "type": "scene",
+      "slug": "sticker-bomb-alley",
+      "name": "Sticker Bomb Alley",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A layered sticker alley with peeling corners, sparkle flecks, and occasional sticker eyes.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "stickers",
+        "alley",
+        "posters",
+        "urban"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-sticker-bomb-alley.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-sticker-bomb-alley.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-sticker-bomb-alley.wp",
+      "sha256": "ad019f00d26ce28495af1a9e711eeffc29690c0f13e3bba81dd19f0b7d21bae4",
+      "size": 193329
     },
     {
       "type": "scene",
@@ -413,6 +831,28 @@
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-tropical-greenhouse.wp",
       "sha256": "b14f7bc42d909e88dd8b222e5f3c123d1610783f402b48e65f2bc1841f315af2",
       "size": 561203
+    },
+    {
+      "type": "scene",
+      "slug": "velvet-fossil-room",
+      "name": "Velvet Fossil Room",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "A dark fossil room with amber motes, velvet cases, and glowing fossil-line shimmer.",
+      "category": "Community",
+      "tags": [
+        "gpt-image-2",
+        "fossils",
+        "museum",
+        "velvet",
+        "amber"
+      ],
+      "heroSafe": true,
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/scene-velvet-fossil-room.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/scene-velvet-fossil-room.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/scene-velvet-fossil-room.wp",
+      "sha256": "0467c016232c34a4c111f5061f646edbaebef3fb34e85db36f1ffcaef096dbe2",
+      "size": 181227
     },
     {
       "type": "scene",

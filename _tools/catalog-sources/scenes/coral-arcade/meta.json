@@ -1,0 +1,15 @@
+{
+  "slug": "coral-arcade",
+  "label": "Coral Arcade",
+  "tags": [
+    "gpt-image-2",
+    "coral",
+    "arcade",
+    "underwater",
+    "glow"
+  ],
+  "fallbackColor": "#071d24",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "An underwater coral arcade with pixel bubbles, soft cabinet glows, and shell drift."
+}

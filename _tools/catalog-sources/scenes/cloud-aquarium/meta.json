@@ -1,0 +1,15 @@
+{
+  "slug": "cloud-aquarium",
+  "label": "Cloud Aquarium",
+  "tags": [
+    "gpt-image-2",
+    "clouds",
+    "aquarium",
+    "rooftop",
+    "sky"
+  ],
+  "fallbackColor": "#d7ecf4",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A rooftop sky aquarium where cloud fish drift through soft light and air bubbles."
+}

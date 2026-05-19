@@ -1,0 +1,15 @@
+{
+  "slug": "botanical-server-room",
+  "label": "Botanical Server Room",
+  "tags": [
+    "gpt-image-2",
+    "server-room",
+    "plants",
+    "data",
+    "greenhouse"
+  ],
+  "fallbackColor": "#081917",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "Server racks overgrown with vines, pollen motes, and pulsing data fireflies."
+}

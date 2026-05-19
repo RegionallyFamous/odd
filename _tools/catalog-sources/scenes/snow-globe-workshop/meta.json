@@ -1,0 +1,15 @@
+{
+  "slug": "snow-globe-workshop",
+  "label": "Snow Globe Workshop",
+  "tags": [
+    "gpt-image-2",
+    "snow-globe",
+    "workshop",
+    "winter",
+    "glass"
+  ],
+  "fallbackColor": "#16202a",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A workbench of tiny snow-globe worlds with glass sweeps and soft drifting snow."
+}

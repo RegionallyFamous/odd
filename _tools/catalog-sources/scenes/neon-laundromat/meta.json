@@ -1,0 +1,15 @@
+{
+  "slug": "neon-laundromat",
+  "label": "Neon Laundromat",
+  "tags": [
+    "gpt-image-2",
+    "laundromat",
+    "neon",
+    "rain",
+    "night"
+  ],
+  "fallbackColor": "#101625",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A midnight laundromat glowing through rain with drifting lint motes and soap-bubble shimmer."
+}

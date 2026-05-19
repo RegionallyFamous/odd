@@ -1,0 +1,15 @@
+{
+  "slug": "velvet-fossil-room",
+  "label": "Velvet Fossil Room",
+  "tags": [
+    "gpt-image-2",
+    "fossils",
+    "museum",
+    "velvet",
+    "amber"
+  ],
+  "fallbackColor": "#17100d",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A dark fossil room with amber motes, velvet cases, and glowing fossil-line shimmer."
+}

@@ -1,0 +1,15 @@
+{
+  "slug": "archive-moon",
+  "label": "Archive Moon",
+  "tags": [
+    "gpt-image-2",
+    "archive",
+    "moon",
+    "library",
+    "dust"
+  ],
+  "fallbackColor": "#151126",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A moonlit impossible archive with drifting catalog cards and soft paper-dust motion."
+}

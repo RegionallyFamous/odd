@@ -1,0 +1,15 @@
+{
+  "slug": "midnight-bakery",
+  "label": "Midnight Bakery",
+  "tags": [
+    "gpt-image-2",
+    "bakery",
+    "midnight",
+    "warm",
+    "steam"
+  ],
+  "fallbackColor": "#201510",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A warm bakery after hours with flour dust, pastry steam, and sugar glints."
+}
