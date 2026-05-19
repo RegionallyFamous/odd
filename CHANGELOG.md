@@ -13,6 +13,28 @@ notes to GitHub Releases.
 
 Nothing yet.
 
+<a id="v1.1.3"></a>
+## [1.1.3] — 2026-05-19
+
+### Changed
+- Stable Playground links now install the WordPress.org ODD 1.1.3 package with
+  WP Desktop Mode 0.8.6 and fresh cache-busting keys.
+- The Sticky Note widget now uses Desktop Mode's native widget frame more
+  cleanly, with larger default sizing and tighter resize behavior.
+- ODD's docs and release notes now distinguish the 0.8.5 runtime floor from
+  the 0.8.6 Playground-pinned host.
+
+### Fixed
+- Hide-admin-bar now works against Desktop Mode 0.8.6's stronger admin-bar
+  shell CSS and removes the leftover top shell offset.
+- The dev Playground seeds the hidden admin-bar preference on first boot, so
+  testing starts in the intended full desktop shell.
+- Shop install progress no longer emits an unregistered `wpd-progress-bar`
+  custom element warning in Desktop Mode diagnostics.
+- ODD's service-worker guard stays out of Desktop Mode's way while preserving
+  Playground's root worker, reducing repeated worker-registration console
+  warnings during scoped Playground sessions.
+
 <a id="v1.1.2"></a>
 ## [1.1.2] — 2026-05-18
 

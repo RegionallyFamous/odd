@@ -1,6 +1,6 @@
 # ODD Release Runbook
 
-> Status: 1.0.0 baseline. Mirrored to the wiki after release.
+> Status: 1.1.x release process. Mirror the listed docs to the wiki after release.
 
 ## Cut A Plugin Release
 
@@ -11,7 +11,7 @@
 5. Tag `v<version>` and push `main` plus the tag.
 6. Confirm `.github/workflows/release-odd.yml` passes `quality-gates`, install smoke, Plugin Check, and publish.
 7. Verify `https://github.com/RegionallyFamous/odd/releases/latest/download/odd.zip` resolves to the new release.
-8. After the WordPress.org SVN tag exists and `https://downloads.wordpress.org/plugin/odd-outlandish-desktop-decorator.<version>.zip` returns 200, update the public stable Playground blueprint/cache-busting links from the previous public version to `<version>`.
+8. Keep the public stable Playground blueprint/cache-busting links on the release version. Before the WordPress.org SVN tag exists, `validate-blueprint` can still allow the previous public zip during prep; after SVN publish, the stable blueprint must point at `https://downloads.wordpress.org/plugin/odd-outlandish-desktop-decorator.<version>.zip`.
 
 ## Validation Suite
 
@@ -67,7 +67,7 @@ catalog-only changes.
 ## Playground Smoke
 
 1. Open `https://odd.regionallyfamous.com/go/` (stable: newest approved ODD + Desktop Mode releases from WordPress.org). For trunk, use [`/go/dev/`](https://odd.regionallyfamous.com/go/dev/) instead — **do not** use the stable URL to validate `main`.
-2. Confirm WordPress Playground loads Desktop Mode v0.8.5+ and ODD.
+2. Confirm WordPress Playground loads the pinned Desktop Mode release and ODD.
 3. Confirm the ODD Shop opens.
 4. Confirm the starter wallpaper, icon set, and cursor set install or show a
    visible retry state.

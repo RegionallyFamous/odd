@@ -5,7 +5,7 @@ Requires at least: 6.8
 Tested up to: 6.9
 Requires PHP: 8.1
 Requires Plugins: desktop-mode
-Stable tag: 1.1.2
+Stable tag: 1.1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,7 +55,7 @@ It works with Desktop Mode's own windows, dock, taskbar, desktop icons, and widg
 
 == Installation ==
 
-1. Install and activate [WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/) v0.8.5 or newer. WordPress will also show it as a required plugin dependency for ODD.
+1. Install and activate [WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/) v0.8.5 or newer. WordPress will also show it as a required plugin dependency for ODD. The public Playground demo pins Desktop Mode v0.8.6.
 2. Install and activate ODD.
 3. Enable Desktop Mode for your user.
 4. Open the ODD Shop from the desktop.
@@ -120,6 +120,17 @@ Typical build commands:
 
 == Changelog ==
 
+= 1.1.3 =
+
+ODD 1.1.3 tightens the current Desktop Mode integration path and refreshes the public release docs and Playground pins.
+
+* Hide-admin-bar now works with WP Desktop Mode 0.8.6's stronger shell CSS and removes the leftover top offset.
+* The dev Playground seeds the hidden admin-bar preference on first boot, matching the intended full desktop shell.
+* Stable Playground links now install ODD 1.1.3 with WP Desktop Mode 0.8.6 and fresh cache-busting keys.
+* Sticky Note uses Desktop Mode's native widget frame more cleanly, with larger default sizing and tighter resize behavior.
+* Shop install progress no longer emits an unregistered `wpd-progress-bar` custom element warning.
+* ODD keeps Playground's root service worker protected while letting Desktop Mode own normal service-worker behavior.
+
 = 1.1.2 =
 
 ODD 1.1.2 fixes first-install Desktop Mode refresh behavior so starter content becomes visible without requiring a browser refresh.
@@ -156,6 +167,10 @@ ODD 1.1.0 makes the desktop experience feel more native, more polished, and more
 Welcome to ODD. The first public release brings living wallpapers, icon sets, cursor themes, desktop widgets, tiny apps, starter content, and the ODD Shop to WP Desktop Mode.
 
 == Upgrade Notice ==
+
+= 1.1.3 =
+
+Polishes ODD's Desktop Mode 0.8.6 integration, Playground pins, sticky widget sizing, admin-bar hiding, and Shop install diagnostics. Requires WP Desktop Mode v0.8.5 or newer.
 
 = 1.1.2 =
 
