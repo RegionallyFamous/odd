@@ -1,14 +1,14 @@
 <?php
 /**
  * Plugin Name:       ODD — Outlandish Desktop Decorator
- * Plugin URI:        https://github.com/RegionallyFamous/odd
+ * Plugin URI:        https://weirdpress.com/odd
  * Description:       App store and decorator for WP Desktop Mode: install wallpapers, icons, cursors, widgets, and apps from a safe catalog.
  * Version:           1.1.2
  * Requires at least: 6.8
  * Requires PHP:      8.1
  * Requires Plugins:  desktop-mode
- * Author:            regionallyfamous
- * Author URI:        https://github.com/regionallyfamous
+ * Author:            Nick Hamze
+ * Author URI:        https://regionallyfamous.com
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       odd-outlandish-desktop-decorator
@@ -21,7 +21,7 @@ defined( 'ABSPATH' ) || exit;
 
 define( 'ODDOUT_VERSION', '1.1.2' );
 define( 'ODDOUT_DESKTOP_MODE_MIN_VERSION', '0.8.5' );
-define( 'ODDOUT_DESKTOP_MODE_PLAYGROUND_VERSION', '0.8.5' );
+define( 'ODDOUT_DESKTOP_MODE_PLAYGROUND_VERSION', '0.8.6' );
 define( 'ODDOUT_FILE', __FILE__ );
 define( 'ODDOUT_DIR', plugin_dir_path( __FILE__ ) );
 

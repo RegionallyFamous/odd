@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://odd.regionallyfamous.com/">
+  <a href="https://weirdpress.com/odd">
     <img src="https://odd.regionallyfamous.com/og.png" alt="ODD — the Luxe + Weird shop for WP Desktop Mode" width="840">
   </a>
 </p>
@@ -8,7 +8,8 @@
 
 <p align="center">
   <strong>The Luxe + Weird desktop shop for WP Desktop Mode.</strong><br>
-  Living wallpapers, icon costumes, pointer themes, draggable widgets, and tiny apps for the WordPress admin desktop.
+  Living wallpapers, icon costumes, pointer themes, draggable widgets, and tiny apps for the WordPress admin desktop.<br>
+  By <a href="https://regionallyfamous.com">Nick Hamze</a>.
 </p>
 
 <p align="center">
@@ -16,7 +17,7 @@
   ·
   <a href="https://github.com/RegionallyFamous/odd/releases/latest"><strong>Download ODD</strong></a>
   ·
-  <a href="https://odd.regionallyfamous.com/"><strong>Marketing site</strong></a>
+  <a href="https://weirdpress.com/odd"><strong>Marketing site</strong></a>
   ·
   <a href="https://github.com/RegionallyFamous/odd/wiki"><strong>Docs</strong></a>
 </p>
@@ -31,7 +32,7 @@
 
 [WP Desktop Mode](https://github.com/WordPress/desktop-mode) makes WordPress feel like a desktop. ODD gives that desktop a polished, updateable shop for visual themes and small tools. ODD works with Desktop Mode's native surfaces instead of replacing the desktop shell.
 
-The hosted [Playground blueprint](https://odd.regionallyfamous.com/playground/blueprint.json?oddbp=wporg-odd-1.1.2-dm-0.8.5) installs exact WordPress.org package zips for **[WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/)** `0.8.5` and the current public **[ODD](https://wordpress.org/plugins/odd-outlandish-desktop-decorator/)** release `1.1.2`. Raw GitHub copy: [`blueprint.json`](https://raw.githubusercontent.com/RegionallyFamous/odd/main/blueprint.json) (add `?oddbp=wporg-odd-1.1.2-dm-0.8.5` if Playground still loads a cached older file). **Production installs:** use [WordPress.org](https://wordpress.org/plugins/odd-outlandish-desktop-decorator/) or **`odd.zip`** on [Releases](https://github.com/RegionallyFamous/odd/releases/latest). **Bleeding edge:** use [`/go/dev`](https://odd.regionallyfamous.com/go/dev/) or [`site/playground/blueprint-dev.json`](https://odd.regionallyfamous.com/playground/blueprint-dev.json) (ODD `main` + pinned Desktop Mode 0.8.5; not tied to ODD releases).
+The hosted [Playground blueprint](https://odd.regionallyfamous.com/playground/blueprint.json?oddbp=wporg-odd-1.1.2-dm-0.8.5) installs exact WordPress.org package zips for **[WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/)** `0.8.5` and the current public **[ODD](https://wordpress.org/plugins/odd-outlandish-desktop-decorator/)** release `1.1.2`. Raw GitHub copy: [`blueprint.json`](https://raw.githubusercontent.com/RegionallyFamous/odd/main/blueprint.json) (add `?oddbp=wporg-odd-1.1.2-dm-0.8.5` if Playground still loads a cached older file). **Production installs:** use [WordPress.org](https://wordpress.org/plugins/odd-outlandish-desktop-decorator/) or **`odd.zip`** on [Releases](https://github.com/RegionallyFamous/odd/releases/latest). **Bleeding edge:** use [`/go/dev`](https://odd.regionallyfamous.com/go/dev/) or [`site/playground/blueprint-dev.json`](https://odd.regionallyfamous.com/playground/blueprint-dev.json) (ODD `main` + pinned Desktop Mode 0.8.6; not tied to ODD releases).
 
 ---
 
@@ -63,7 +64,7 @@ Wallpapers, icon sets, and cursor sets preview instantly. Try a scene, theme, or
 
 First load takes ~20–30 seconds while Playground boots the site and installs the plugin. Throwaway — close the tab and it's gone.
 
-**Short links (GitHub Pages — same host as the hosted blueprint):** [`/go/`](https://odd.regionallyfamous.com/go/) redirects to the pinned WordPress.org demo; [`/go/dev`](https://odd.regionallyfamous.com/go/dev/) opens a **dev** blueprint (pinned Desktop Mode 0.8.5 zip + ODD `main`). Full launcher pages: [`/playground/`](https://odd.regionallyfamous.com/playground/) and [`/playground/dev/`](https://odd.regionallyfamous.com/playground/dev/).
+**Short links (GitHub Pages — same host as the hosted blueprint):** [`/go/`](https://odd.regionallyfamous.com/go/) redirects to the pinned WordPress.org demo; [`/go/dev`](https://odd.regionallyfamous.com/go/dev/) opens a **dev** blueprint (pinned Desktop Mode 0.8.6 zip + ODD `main`). Full launcher pages: [`/playground/`](https://odd.regionallyfamous.com/playground/) and [`/playground/dev/`](https://odd.regionallyfamous.com/playground/dev/).
 
 ### A real WordPress install
 
@@ -96,7 +97,7 @@ Users can also export a lightweight `.odd` workspace from the Shop's Install tab
 
 - `odd/` — the plugin itself (what ships in `odd.zip`). The 1.0 runtime is intentionally lightweight; catalog content installs on demand.
 - `_tools/catalog-sources/` — source of truth for every bundle (scene / icon set / cursor set / widget / app). Rebuilt into `site/catalog/v1/` by `_tools/build-catalog.py`.
-- `site/` — the [odd.regionallyfamous.com](https://odd.regionallyfamous.com) marketing site **and the remote catalog** (`site/catalog/v1/registry.json` + `bundles/` + `icons/`), deployed to GitHub Pages.
+- `site/` — static site assets, Playground launchers, and the remote catalog (`site/catalog/v1/registry.json` + `bundles/` + `icons/`). The public marketing home is [weirdpress.com/odd](https://weirdpress.com/odd); catalog and Playground infrastructure still live under `odd.regionallyfamous.com`.
 - `docs/` — authoring guides and reference docs.
 - `ci/smoke/` — MU-plugin fixtures used by `install-smoke.yml` to test the starter-pack installer hermetically.
 - `bin/` → see `odd/bin/` — `validate-catalog`, `validate-blueprint`, `check-version`, `build-zip`, `make-pot`.
@@ -104,6 +105,7 @@ Users can also export a lightweight `.odd` workspace from the Shop's Install tab
 ## Useful Links
 
 - **Playground:** [Stable — short link `/go/`](https://odd.regionallyfamous.com/go/) (pinned WordPress.org ODD 1.1.2 + Desktop Mode 0.8.5) · [Trunk — `/go/dev`](https://odd.regionallyfamous.com/go/dev/) · [Launcher hub `/playground/`](https://odd.regionallyfamous.com/playground/) · [Trunk launcher `/playground/dev/`](https://odd.regionallyfamous.com/playground/dev/)
+- [Marketing site](https://weirdpress.com/odd)
 - [ODD Shop State Machine](docs/store-state-machine.md)
 - [Release Runbook](docs/release-runbook.md)
 - [Building on ODD](docs/building-on-odd.md)

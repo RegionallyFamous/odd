@@ -138,7 +138,8 @@ describe( 'v1 source guardrails', () => {
 		expect( panel ).toContain( 'primeShopSearchIndex' );
 		expect( panel ).toContain( 'new window.Worker' );
 		expect( panel ).toContain( 'preloadShopAssets' );
-		expect( panel ).toContain( 'wpd-progress-bar' );
+		expect( panel ).toContain( "role: 'progressbar'" );
+		expect( panel ).not.toContain( 'wpd-progress-bar' );
 		expect( panel ).toContain( 'data-odd-performance-panel' );
 		expect( styles ).toContain( 'odd-shop__performance' );
 		expect( styles ).toContain( 'odd-shop__flow-progress' );
@@ -198,7 +199,8 @@ describe( 'v1 source guardrails', () => {
 		expect( panel ).toContain( "'aria-modal': 'true'" );
 		expect( panel ).toContain( 'aria-busy' );
 		expect( panel ).toContain( 'data-odd-performance-panel' );
-		expect( panel ).toContain( 'wpd-progress-bar' );
+		expect( panel ).toContain( "role: 'progressbar'" );
+		expect( panel ).not.toContain( 'wpd-progress-bar' );
 		expect( boundaries ).toContain( 'Install, update, repair, apply, add, and open states should be explicit' );
 		expect( boundaries ).toContain( 'favor delegated events when changing hot paths' );
 	} );

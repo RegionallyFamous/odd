@@ -541,11 +541,11 @@ def main() -> int:
     if not PLUGIN_MAIN.is_file():
         print(f"error: missing {PLUGIN_MAIN}", file=sys.stderr)
         return 1
-    odd_version, _dm_min, dm_pin, requires_php = odd_php_constants()
+    odd_version, dm_min, dm_pin, requires_php = odd_php_constants()
     problems: list[str] = []
     total_steps = 0
     for path in (BLUEPRINT, SITE_BLUEPRINT):
-        file_problems, step_count = validate_file(path, odd_version, dm_pin, requires_php)
+        file_problems, step_count = validate_file(path, odd_version, dm_min, requires_php)
         problems.extend(file_problems)
         total_steps += step_count
 

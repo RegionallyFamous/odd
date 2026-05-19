@@ -2122,8 +2122,9 @@
 			text.textContent = message || '';
 			node.appendChild( text );
 			if ( opts.progress ) {
-				var progress = el( 'wpd-progress-bar', {
+				var progress = el( 'div', {
 					class: 'odd-shop__flow-progress',
+					role: 'progressbar',
 					'aria-label': opts.progressLabel || message || 'Working',
 				} );
 				progress.setAttribute( 'indeterminate', 'true' );
