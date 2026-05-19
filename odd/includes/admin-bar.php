@@ -97,6 +97,23 @@ function oddout_filter_show_admin_bar( $show ) {
 add_filter( 'show_admin_bar', 'oddout_filter_show_admin_bar', 20 );
 
 /**
+ * CSS used when the user wants the Desktop Mode portal to own the top edge.
+ *
+ * Desktop Mode intentionally pins its admin bar visible with a specific
+ * `body.desktop-mode-active #wpadminbar` rule so users keep an escape hatch.
+ * ODD's preference is explicit, portal-only, and reversible, so this style
+ * uses a higher-specificity selector and zeroes the shell offset as well.
+ *
+ * @return string
+ */
+function oddout_admin_bar_hidden_css() {
+	return 'html.wp-toolbar{padding-top:0!important;--wp-admin--admin-bar--height:0px!important;--wp-admin--admin-bar--position-offset:0px!important}'
+		. 'body.admin-bar{padding-top:0!important}'
+		. '#wpadminbar,html body.desktop-mode-active #wpadminbar{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}'
+		. 'html body.desktop-mode-active .desktop-mode-shell{inset-block-start:0!important}';
+}
+
+/**
  * Remove the wp-admin toolbar and its reserved top padding in Desktop Mode.
  *
  * @return void
@@ -106,8 +123,7 @@ function oddout_print_admin_bar_hidden_css() {
 		return;
 	}
 
-	$css = '#wpadminbar{display:none!important}html.wp-toolbar{padding-top:0!important}body.admin-bar{padding-top:0!important}';
-	printf( '<style id="oddout-admin-bar-hidden">%s</style>', esc_html( $css ) );
+	printf( '<style id="oddout-admin-bar-hidden">%s</style>', esc_html( oddout_admin_bar_hidden_css() ) );
 }
 add_action( 'admin_head', 'oddout_print_admin_bar_hidden_css', 1 );
 add_action( 'wp_head', 'oddout_print_admin_bar_hidden_css', 1 );

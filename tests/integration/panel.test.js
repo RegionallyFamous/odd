@@ -871,7 +871,10 @@ describe( 'ODD Shop', () => {
 			} )
 		);
 		await vi.waitFor( () => expect( window.odd.adminBarHidden ).toBe( true ) );
-		expect( document.getElementById( 'oddout-admin-bar-hidden-live' ).textContent ).toContain( '#wpadminbar' );
+		const liveStyle = document.getElementById( 'oddout-admin-bar-hidden-live' ).textContent;
+		expect( liveStyle ).toContain( 'html body.desktop-mode-active #wpadminbar' );
+		expect( liveStyle ).toContain( 'html body.desktop-mode-active .desktop-mode-shell' );
+		expect( liveStyle ).toContain( '--wp-admin--admin-bar--height:0px' );
 
 		if ( typeof cleanup === 'function' ) cleanup();
 	} );

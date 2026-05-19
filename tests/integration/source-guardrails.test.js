@@ -164,8 +164,11 @@ describe( 'v1 source guardrails', () => {
 		expect( cursorRuntime ).toContain( 'if ( doc !== document ) markRoot( doc.body )' );
 		expect( adminBar ).toContain( 'classic wp-admin untouched' );
 		expect( adminBar ).toContain( 'oddout_should_hide_admin_bar_for_request' );
+		expect( adminBar ).toContain( 'oddout_admin_bar_hidden_css' );
 		expect( adminBar ).toContain( 'show_admin_bar' );
 		expect( adminBar ).toContain( 'oddout_is_desktop_mode_portal_request' );
+		expect( adminBar ).toContain( 'html body.desktop-mode-active #wpadminbar' );
+		expect( adminBar ).toContain( 'html body.desktop-mode-active .desktop-mode-shell' );
 		expect( diagnostics ).toContain( 'containmentSnapshot' );
 		expect( diagnostics ).toContain( 'containment.cursorBleed' );
 		expect( diagnostics ).toContain( 'containment.adminBarBleed' );

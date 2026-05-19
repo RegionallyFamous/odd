@@ -3645,7 +3645,7 @@
 				if ( ! style ) {
 					style = document.createElement( 'style' );
 					style.id = id;
-					style.textContent = '#wpadminbar{display:none!important}html.wp-toolbar{padding-top:0!important}body.admin-bar{padding-top:0!important}';
+					style.textContent = 'html.wp-toolbar{padding-top:0!important;--wp-admin--admin-bar--height:0px!important;--wp-admin--admin-bar--position-offset:0px!important}body.admin-bar{padding-top:0!important}#wpadminbar,html body.desktop-mode-active #wpadminbar{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}html body.desktop-mode-active .desktop-mode-shell{inset-block-start:0!important}';
 					document.head.appendChild( style );
 				}
 				return;
