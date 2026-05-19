@@ -1,6 +1,6 @@
 # ODD Shop State Machine
 
-> Status: 1.0.0 baseline. Mirrored to the wiki after release.
+> Status: 1.1.x line. Mirrored to the wiki after release.
 
 The ODD Shop treats every catalog item as one durable store card, regardless
 of content type. Wallpapers, icon sets, cursor sets, widgets, and apps use the

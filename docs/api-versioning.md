@@ -6,7 +6,7 @@ the plugin you just installed — plugin releases and API releases
 evolve on their own SemVer tracks so a bug-fix plugin release never
 silently changes what third-party extensions can rely on.
 
-Today: **`2.4.0`** — current for the ODD 1.0.0 baseline. The 2.1 line
+Today: **`2.4.0`** — current for the ODD 1.1.x line. The 2.1 line
 added the `/odd/v1/bundles/*` REST surface and the `/odd/v1/starter`
 pair. The 2.2 line adds Desktop Mode v0.6 helpers for OS settings,
 window attention, dock badges, and diagnostics snapshots. The 2.3 line
