@@ -1,0 +1,21 @@
+{
+  "type": "cursor-set",
+  "slug": "prism-slip-cursors",
+  "name": "Prism Slip Cursor Effects",
+  "label": "Prism Slip",
+  "category": "ODD Effects",
+  "catalog_channel": "preview",
+  "accent": "#7cf7ff",
+  "preview": "preview.svg",
+  "description": "A native cursor with a thin chromatic afterimage, prismatic wake, and tiny refraction glints.",
+  "version": "0.1.0",
+  "author": "Regionally Famous",
+  "effects": {
+    "accent": "#7cf7ff",
+    "spark": "#ff4fd8",
+    "warm": "#ffe66d",
+    "ink": "#0c0f1f",
+    "recipe": "prism-slip"
+  },
+  "cursors": {}
+}

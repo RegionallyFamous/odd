@@ -1,0 +1,21 @@
+{
+  "type": "cursor-set",
+  "slug": "laser-ruler-cursors",
+  "name": "Laser Ruler Cursor Effects",
+  "label": "Laser Ruler",
+  "category": "ODD Effects",
+  "catalog_channel": "preview",
+  "accent": "#ff3b6b",
+  "preview": "preview.svg",
+  "description": "A native cursor with precision ticks, alignment marks, and a subtle snap ring for builder energy.",
+  "version": "0.1.0",
+  "author": "Regionally Famous",
+  "effects": {
+    "accent": "#ff3b6b",
+    "spark": "#55f7ff",
+    "warm": "#f5ff6b",
+    "ink": "#100b1f",
+    "recipe": "laser-ruler"
+  },
+  "cursors": {}
+}

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="Tiny Weather cursor effects preview">
+  <rect width="1024" height="1024" rx="160" fill="#0f172a"/>
+  <rect x="116" y="150" width="792" height="586" rx="56" fill="#111226" stroke="#9ad7ff" stroke-width="7" opacity=".88"/>
+  <path d="M172 248 H460 M172 312 H760 M172 374 H650" stroke="#9ad7ff" stroke-width="28" stroke-linecap="round" opacity=".16"/>
+  
+      <circle cx="410" cy="448" r="132" fill="none" stroke="#9ad7ff" stroke-width="8" opacity=".34"/>
+      <circle cx="410" cy="448" r="184" fill="none" stroke="#9ad7ff" stroke-width="4" opacity=".18"/>
+      <path d="M258 602 l-22 62 M330 628 l-18 52 M554 356 l-18 52" stroke="#9ad7ff" stroke-width="12" stroke-linecap="round" opacity=".66"/>
+      <circle cx="594" cy="312" r="20" fill="#ff8fab" opacity=".86"/>
+      <path d="M588 312 H600 M594 306 V318" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".8"/>
+  <g transform="translate(400 426) scale(5.4)" stroke-linejoin="round">
+    <path d="M0 0 L0 78 L22 57 L36 91 L55 83 L40 50 L70 50 Z" fill="#fff" stroke="#101010" stroke-width="4.2"/>
+  </g>
+  <text x="126" y="106" font-family="Inter, system-ui, sans-serif" font-size="72" font-weight="900" fill="#f7fff9">Tiny Weather</text>
+  <text x="130" y="148" font-family="Inter, system-ui, sans-serif" font-size="30" font-weight="800" fill="#9ad7ff">mist, rain flecks, and one warm spark</text>
+</svg>

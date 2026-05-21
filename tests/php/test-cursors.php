@@ -77,6 +77,12 @@ class Test_Cursors extends WP_UnitTestCase {
 		$this->assertSame( array(), $set['cursors'] );
 	}
 
+	public function test_cursor_recipes_include_preview_effect_families() {
+		$this->assertContains( 'prism-slip', oddout_cursors_allowed_recipes() );
+		$this->assertContains( 'terminal-static', oddout_cursors_allowed_recipes() );
+		$this->assertContains( 'confetti-gravity', oddout_cursors_allowed_recipes() );
+	}
+
 	public function test_active_cursor_set_is_per_user_and_validated() {
 		$this->add_fixture_cursor_set();
 		$user_id = self::factory()->user->create();

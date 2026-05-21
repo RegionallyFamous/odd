@@ -39,7 +39,7 @@ Create `_tools/catalog-sources/cursor-sets/<slug>/manifest.json`:
 | `spark` | no | Pointer sparkle, not-allowed slash, and high-energy states. |
 | `warm` | no | Busy orbit, grab/grabbing warmth, and pressure states. |
 | `ink` | no | Tiny eye/pupil dot in the aura layer. |
-| `recipe` | no | One of `signal-bloom`, `gel-pop`, `paper-sparks`, `solar-orbit`, or `moonlight-focus`. Chooses the aura shape/motion treatment. |
+| `recipe` | no | One of `signal-bloom`, `gel-pop`, `paper-sparks`, `solar-orbit`, `moonlight-focus`, `prism-slip`, `terminal-static`, `ink-magnet`, `tiny-weather`, `laser-ruler`, `arcade-afterimage`, `velvet-glow`, `circuit-pulse`, or `confetti-gravity`. Chooses the aura shape/motion treatment. |
 
 Color token values must be `#hex`. Keep the palette legible over light and dark admin surfaces; the layer is intentionally small and translucent.
 

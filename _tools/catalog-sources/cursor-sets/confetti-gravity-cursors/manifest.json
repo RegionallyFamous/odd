@@ -1,0 +1,21 @@
+{
+  "type": "cursor-set",
+  "slug": "confetti-gravity-cursors",
+  "name": "Confetti Gravity Cursor Effects",
+  "label": "Confetti Gravity",
+  "category": "ODD Effects",
+  "catalog_channel": "preview",
+  "accent": "#36c5ff",
+  "preview": "preview.svg",
+  "description": "A native cursor with flat confetti pieces that drift down from clicks and hover changes.",
+  "version": "0.1.0",
+  "author": "Regionally Famous",
+  "effects": {
+    "accent": "#36c5ff",
+    "spark": "#ff5a5f",
+    "warm": "#f8d64e",
+    "ink": "#141827",
+    "recipe": "confetti-gravity"
+  },
+  "cursors": {}
+}

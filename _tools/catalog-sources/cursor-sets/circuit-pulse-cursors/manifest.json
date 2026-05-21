@@ -1,0 +1,21 @@
+{
+  "type": "cursor-set",
+  "slug": "circuit-pulse-cursors",
+  "name": "Circuit Pulse Cursor Effects",
+  "label": "Circuit Pulse",
+  "category": "ODD Effects",
+  "catalog_channel": "preview",
+  "accent": "#5dffb3",
+  "preview": "preview.svg",
+  "description": "A native cursor with tiny circuit traces, pulsing nodes, and a clean technical wake.",
+  "version": "0.1.0",
+  "author": "Regionally Famous",
+  "effects": {
+    "accent": "#5dffb3",
+    "spark": "#56ccff",
+    "warm": "#ffea7a",
+    "ink": "#07151e",
+    "recipe": "circuit-pulse"
+  },
+  "cursors": {}
+}

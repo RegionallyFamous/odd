@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="Circuit Pulse cursor effects preview">
+  <rect width="1024" height="1024" rx="160" fill="#07151e"/>
+  <rect x="116" y="150" width="792" height="586" rx="56" fill="#111226" stroke="#5dffb3" stroke-width="7" opacity=".88"/>
+  <path d="M172 248 H460 M172 312 H760 M172 374 H650" stroke="#5dffb3" stroke-width="28" stroke-linecap="round" opacity=".16"/>
+  
+      <path d="M206 632 H330 V548 H430 V458 H552" fill="none" stroke="#5dffb3" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" opacity=".62"/>
+      <path d="M278 344 H386 V410 H492" fill="none" stroke="#56ccff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity=".58"/>
+      <circle cx="330" cy="548" r="24" fill="#ffea7a" opacity=".88"/>
+      <circle cx="552" cy="458" r="18" fill="#5dffb3" opacity=".9"/>
+      <rect x="336" y="354" width="176" height="176" rx="18" fill="none" stroke="#5dffb3" stroke-width="8" opacity=".38"/>
+  <g transform="translate(400 426) scale(5.4)" stroke-linejoin="round">
+    <path d="M0 0 L0 78 L22 57 L36 91 L55 83 L40 50 L70 50 Z" fill="#fff" stroke="#101010" stroke-width="4.2"/>
+  </g>
+  <text x="126" y="106" font-family="Inter, system-ui, sans-serif" font-size="72" font-weight="900" fill="#f7fff9">Circuit Pulse</text>
+  <text x="130" y="148" font-family="Inter, system-ui, sans-serif" font-size="30" font-weight="800" fill="#5dffb3">tiny circuit traces and pulsing nodes</text>
+</svg>

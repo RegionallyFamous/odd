@@ -1,0 +1,21 @@
+{
+  "type": "cursor-set",
+  "slug": "terminal-static-cursors",
+  "name": "Terminal Static Cursor Effects",
+  "label": "Terminal Static",
+  "category": "ODD Effects",
+  "catalog_channel": "preview",
+  "accent": "#65ff7a",
+  "preview": "preview.svg",
+  "description": "A native cursor with sparse green terminal pixels, amber flicker, and scan-caret text energy.",
+  "version": "0.1.0",
+  "author": "Regionally Famous",
+  "effects": {
+    "accent": "#65ff7a",
+    "spark": "#ffb000",
+    "warm": "#9dfcff",
+    "ink": "#06140b",
+    "recipe": "terminal-static"
+  },
+  "cursors": {}
+}

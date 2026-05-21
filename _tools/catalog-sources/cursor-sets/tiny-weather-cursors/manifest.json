@@ -1,0 +1,21 @@
+{
+  "type": "cursor-set",
+  "slug": "tiny-weather-cursors",
+  "name": "Tiny Weather Cursor Effects",
+  "label": "Tiny Weather",
+  "category": "ODD Effects",
+  "catalog_channel": "preview",
+  "accent": "#9ad7ff",
+  "preview": "preview.svg",
+  "description": "A native cursor with faint mist, tiny rain flecks, and an occasional warm spark.",
+  "version": "0.1.0",
+  "author": "Regionally Famous",
+  "effects": {
+    "accent": "#9ad7ff",
+    "spark": "#ffd166",
+    "warm": "#ff8fab",
+    "ink": "#0f172a",
+    "recipe": "tiny-weather"
+  },
+  "cursors": {}
+}

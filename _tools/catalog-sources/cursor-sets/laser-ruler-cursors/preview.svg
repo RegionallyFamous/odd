@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="Laser Ruler cursor effects preview">
+  <rect width="1024" height="1024" rx="160" fill="#100b1f"/>
+  <rect x="116" y="150" width="792" height="586" rx="56" fill="#111226" stroke="#ff3b6b" stroke-width="7" opacity=".88"/>
+  <path d="M172 248 H460 M172 312 H760 M172 374 H650" stroke="#ff3b6b" stroke-width="28" stroke-linecap="round" opacity=".16"/>
+  
+      <rect x="268" y="314" width="284" height="284" rx="18" fill="none" stroke="#ff3b6b" stroke-width="8" opacity=".7"/>
+      <path d="M410 262 V650 M216 456 H604" stroke="#55f7ff" stroke-width="6" stroke-linecap="round" opacity=".72"/>
+      <path d="M286 316 v38 M330 316 v24 M374 316 v38 M418 316 v24 M462 316 v38 M506 316 v24" stroke="#f5ff6b" stroke-width="6" stroke-linecap="round" opacity=".78"/>
+      <circle cx="410" cy="456" r="92" fill="none" stroke="#ff3b6b" stroke-width="5" opacity=".34"/>
+  <g transform="translate(400 426) scale(5.4)" stroke-linejoin="round">
+    <path d="M0 0 L0 78 L22 57 L36 91 L55 83 L40 50 L70 50 Z" fill="#fff" stroke="#101010" stroke-width="4.2"/>
+  </g>
+  <text x="126" y="106" font-family="Inter, system-ui, sans-serif" font-size="72" font-weight="900" fill="#f7fff9">Laser Ruler</text>
+  <text x="130" y="148" font-family="Inter, system-ui, sans-serif" font-size="30" font-weight="800" fill="#ff3b6b">precision ticks and alignment snap rings</text>
+</svg>

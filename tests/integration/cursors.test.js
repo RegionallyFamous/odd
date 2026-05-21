@@ -353,6 +353,8 @@ describe( 'ODD cursor runtime', () => {
 		expect( layer.style.getPropertyValue( '--odd-live-ink' ) ).toBe( '#101018' );
 		expect( icon.style.cursor ).toBe( 'pointer' );
 		expect( style.textContent ).toContain( '[data-recipe="gel-pop"]' );
+		expect( style.textContent ).toContain( '[data-recipe="prism-slip"]' );
+		expect( style.textContent ).toContain( '[data-recipe="confetti-gravity"]' );
 		expect( style.textContent ).toContain( 'width:28px' );
 		expect( style.textContent ).not.toMatch( /cursor\s*:\s*(none|url\()/ );
 		expect( style.textContent ).not.toContain( 'odd-live-cursor__shape' );
@@ -363,6 +365,23 @@ describe( 'ODD cursor runtime', () => {
 		expect( window.__odd.cursors.status().layer.recipe ).toBe( 'gel-pop' );
 		expect( window.__odd.cursors.status().layer.coalesced ).toBe( 1 );
 		expect( window.__odd.cursors.status().layer.predicted ).toBe( 0 );
+	} );
+
+	it( 'accepts preview cursor recipes without falling back to the default aura', () => {
+		window.odd.cursorSets[ 0 ].effects.recipe = 'prism-slip';
+		const shell = document.createElement( 'div' );
+		shell.className = 'desktop-mode-shell';
+		const icon = document.createElement( 'button' );
+		icon.className = 'desktop-mode-icon';
+		shell.appendChild( icon );
+		document.body.appendChild( shell );
+
+		loadRuntime();
+		icon.dispatchEvent( new window.MouseEvent( 'pointermove', { bubbles: true, composed: true, clientX: 44, clientY: 64 } ) );
+
+		const layer = document.getElementById( 'odd-live-cursor' );
+		expect( layer.getAttribute( 'data-recipe' ) ).toBe( 'prism-slip' );
+		expect( window.__odd.cursors.status().layer.recipe ).toBe( 'prism-slip' );
 	} );
 
 	it( 'shows the live cursor layer on ordinary resolved controls too', () => {

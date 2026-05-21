@@ -13,7 +13,22 @@ SRC = ROOT / "_tools" / "catalog-sources" / "cursor-sets"
 CTRL = re.compile(rb"[\x00-\x08\x0b\x0c\x0e-\x1f]")
 HEX = re.compile(r"^#[0-9A-Fa-f]{3,8}$")
 EFFECT_KEYS = {"accent", "spark", "warm", "ink", "recipe"}
-RECIPES = {"signal-bloom", "gel-pop", "paper-sparks", "solar-orbit", "moonlight-focus"}
+RECIPES = {
+    "signal-bloom",
+    "gel-pop",
+    "paper-sparks",
+    "solar-orbit",
+    "moonlight-focus",
+    "prism-slip",
+    "terminal-static",
+    "ink-magnet",
+    "tiny-weather",
+    "laser-ruler",
+    "arcade-afterimage",
+    "velvet-glow",
+    "circuit-pulse",
+    "confetti-gravity",
+}
 
 
 def fail(problems: list[str], msg: str) -> None:

@@ -4927,6 +4927,15 @@
 				'signal-bloom-cursors':    'Technical',
 				'solar-orbit-cursors':     'Technical',
 				'moonlight-focus-cursors': 'Cool',
+				'prism-slip-cursors':      'Cool',
+				'terminal-static-cursors': 'Technical',
+				'ink-magnet-cursors':      'Playful',
+				'tiny-weather-cursors':    'Cool',
+				'laser-ruler-cursors':     'Technical',
+				'arcade-afterimage-cursors': 'Playful',
+				'velvet-glow-cursors':     'Cool',
+				'circuit-pulse-cursors':   'Technical',
+				'confetti-gravity-cursors': 'Playful',
 			};
 			if ( ! item ) return 'More';
 			var table = kind === 'icons' ? ICON_SET_CATEGORY : ( kind === 'cursors' ? CURSOR_SET_CATEGORY : SCENE_CATEGORY );

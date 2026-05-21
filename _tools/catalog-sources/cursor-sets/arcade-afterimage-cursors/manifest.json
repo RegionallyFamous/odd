@@ -1,0 +1,21 @@
+{
+  "type": "cursor-set",
+  "slug": "arcade-afterimage-cursors",
+  "name": "Arcade Afterimage Cursor Effects",
+  "label": "Arcade Afterimage",
+  "category": "ODD Effects",
+  "catalog_channel": "preview",
+  "accent": "#00e5ff",
+  "preview": "preview.svg",
+  "description": "A native cursor with pixel-bright echo trails, coin-spark pops, and button-press motion.",
+  "version": "0.1.0",
+  "author": "Regionally Famous",
+  "effects": {
+    "accent": "#00e5ff",
+    "spark": "#ff2bd6",
+    "warm": "#ffd400",
+    "ink": "#0b1020",
+    "recipe": "arcade-afterimage"
+  },
+  "cursors": {}
+}

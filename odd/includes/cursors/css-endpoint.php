@@ -121,7 +121,7 @@ function oddout_cursors_effect_tokens( array $set ) {
 	$effects   = isset( $set['effects'] ) && is_array( $set['effects'] ) ? $set['effects'] : array();
 	$accent    = isset( $effects['accent'] ) ? (string) $effects['accent'] : ( isset( $set['accent'] ) ? (string) $set['accent'] : '' );
 	$recipe    = isset( $effects['recipe'] ) ? sanitize_key( (string) $effects['recipe'] ) : '';
-	$recipes   = function_exists( 'oddout_cursors_allowed_recipes' ) ? oddout_cursors_allowed_recipes() : array( 'signal-bloom', 'gel-pop', 'paper-sparks', 'solar-orbit', 'moonlight-focus' );
+	$recipes   = function_exists( 'oddout_cursors_allowed_recipes' ) ? oddout_cursors_allowed_recipes() : array( 'signal-bloom', 'gel-pop', 'paper-sparks', 'solar-orbit', 'moonlight-focus', 'prism-slip', 'terminal-static', 'ink-magnet', 'tiny-weather', 'laser-ruler', 'arcade-afterimage', 'velvet-glow', 'circuit-pulse', 'confetti-gravity' );
 	$out       = array(
 		'accent' => '' !== $accent ? $accent : '#42d9d2',
 		'spark'  => isset( $effects['spark'] ) ? (string) $effects['spark'] : '#ff4f8b',

@@ -44,7 +44,22 @@ function oddout_cursors_allowed_kinds() {
 }
 
 function oddout_cursors_allowed_recipes() {
-	return array( 'signal-bloom', 'gel-pop', 'paper-sparks', 'solar-orbit', 'moonlight-focus' );
+	return array(
+		'signal-bloom',
+		'gel-pop',
+		'paper-sparks',
+		'solar-orbit',
+		'moonlight-focus',
+		'prism-slip',
+		'terminal-static',
+		'ink-magnet',
+		'tiny-weather',
+		'laser-ruler',
+		'arcade-afterimage',
+		'velvet-glow',
+		'circuit-pulse',
+		'confetti-gravity',
+	);
 }
 
 function oddout_cursors_clean_effects( array $data ) {

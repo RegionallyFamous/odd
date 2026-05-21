@@ -1002,7 +1002,22 @@ def build_iconset(slug: str, src_dir: Path) -> dict:
 
 CURSOR_SIZE_BUDGET = 8192
 CURSOR_EFFECT_KEYS = {"accent", "spark", "warm", "ink", "recipe"}
-CURSOR_EFFECT_RECIPES = {"signal-bloom", "gel-pop", "paper-sparks", "solar-orbit", "moonlight-focus"}
+CURSOR_EFFECT_RECIPES = {
+    "signal-bloom",
+    "gel-pop",
+    "paper-sparks",
+    "solar-orbit",
+    "moonlight-focus",
+    "prism-slip",
+    "terminal-static",
+    "ink-magnet",
+    "tiny-weather",
+    "laser-ruler",
+    "arcade-afterimage",
+    "velvet-glow",
+    "circuit-pulse",
+    "confetti-gravity",
+}
 
 
 def _validate_cursor_preview_svg(slug: str, rel: str, data: bytes) -> None:
