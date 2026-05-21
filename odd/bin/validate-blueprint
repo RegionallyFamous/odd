@@ -8,6 +8,10 @@ are the source and hosted forms of the public Playground demo. The pair
 `blueprint-dev.json` / `site/playground/blueprint-dev.json` installs the
 pinned current Desktop Mode release from WordPress.org plus ODD **main** for
 throwaway trunk tests.
+The preview pair `blueprint-preview.json` /
+`site/playground/blueprint-preview.json` uses the same trunk plugin install
+but routes ODD to the non-live hosted preview catalog at
+`/catalog-preview/v1/`.
 Any step that depends on a
 browser-blocked URL, a wiggly `releases/latest/download` redirect, or
 an unexpected source install can turn the first-run experience into a
@@ -33,8 +37,9 @@ Release blueprint pins must agree with values in `odd/odd.php` (checklist #8).
 
 Checks (all emit bullets; any failure → exit code 1):
 
-  1. All four JSON files exist and parse (`blueprint.json`,
-     `blueprint-dev.json`, and each mirrored under `site/playground/`).
+  1. All six JSON files exist and parse (`blueprint.json`,
+     `blueprint-dev.json`, `blueprint-preview.json`, and each mirrored
+     under `site/playground/`).
   2. No `installPlugin` step uses GitHub release asset URLs.
      GitHub serves release assets without Playground-compatible CORS
      headers, even when the tag is pinned.
@@ -66,7 +71,9 @@ Checks (all emit bullets; any failure → exit code 1):
      `ODDOUT_DESKTOP_MODE_PLAYGROUND_VERSION` (targetFolderName desktop-mode);
      ODD from `git:directory` **branch** `main` on
      `RegionallyFamous/odd` with `path` `odd`.
- 11. Hosted Playground launchers must not pass `site-slug`; that asks
+ 11. Preview blueprints also write a must-use plugin that points ODD at
+     `https://odd.regionallyfamous.com/catalog-preview/v1/registry.json`.
+ 12. Hosted Playground launchers must not pass `site-slug`; that asks
      Playground for a named site and logs "The requested site was not found"
      before it creates the temporary site we wanted anyway.
 """
@@ -83,13 +90,18 @@ HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent.parent
 BLUEPRINT = REPO_ROOT / "blueprint.json"
 BLUEPRINT_DEV = REPO_ROOT / "blueprint-dev.json"
+BLUEPRINT_PREVIEW = REPO_ROOT / "blueprint-preview.json"
 SITE_BLUEPRINT = REPO_ROOT / "site" / "playground" / "blueprint.json"
 SITE_BLUEPRINT_DEV = REPO_ROOT / "site" / "playground" / "blueprint-dev.json"
+SITE_BLUEPRINT_PREVIEW = REPO_ROOT / "site" / "playground" / "blueprint-preview.json"
 SITE_PLAYGROUND_LAUNCHER = REPO_ROOT / "site" / "playground" / "index.html"
 SITE_GO_LAUNCHER = REPO_ROOT / "site" / "go" / "index.html"
 SITE_PLAYGROUND_DEV_LAUNCHER = REPO_ROOT / "site" / "playground" / "dev" / "index.html"
 SITE_GO_DEV_LAUNCHER = REPO_ROOT / "site" / "go" / "dev" / "index.html"
+SITE_PLAYGROUND_PREVIEW_LAUNCHER = REPO_ROOT / "site" / "playground" / "preview" / "index.html"
+SITE_GO_PREVIEW_LAUNCHER = REPO_ROOT / "site" / "go" / "preview" / "index.html"
 PLUGIN_MAIN = REPO_ROOT / "odd" / "odd.php"
+PREVIEW_CATALOG_URL = "https://odd.regionallyfamous.com/catalog-preview/v1/registry.json"
 
 
 ODD_CONST_RE = re.compile(
@@ -545,6 +557,159 @@ def validate_dev_file(path: Path, dm_min: str, requires_php: str) -> tuple[list[
     return problems, len(steps or [])
 
 
+def validate_preview_file(path: Path, dm_min: str, requires_php: str) -> tuple[list[str], int]:
+    """Lint the trunk + hosted-preview-catalog blueprint."""
+
+    problems: list[str] = []
+
+    if not path.exists():
+        return [f"{path.relative_to(REPO_ROOT)} not found — preview blueprint gate cannot run."], 0
+
+    try:
+        data = json.loads(path.read_text())
+    except json.JSONDecodeError as e:
+        return [f"{path.relative_to(REPO_ROOT)} did not parse as JSON: {e}"], 0
+
+    steps = data.get("steps")
+    if not isinstance(steps, list) or not steps:
+        problems.append("blueprint has no steps array")
+    problems.extend(validate_preferred_versions(data, path, requires_php))
+
+    allowed_ref_types = {"tag", "branch", "commit", "refname"}
+    pinned_dm_release = False
+    pinned_odd_trunk = False
+    preview_mu_plugin_dir = False
+    preview_mu_plugin = False
+    dm_zip_expected = desktop_mode_zip_url(dm_min)
+
+    for idx, step in enumerate(steps or []):
+        if not isinstance(step, dict):
+            problems.append(f"step[{idx}] is not an object")
+            continue
+
+        if step.get("step") == "mkdir":
+            if step.get("path") == "/wordpress/wp-content/mu-plugins":
+                preview_mu_plugin_dir = True
+            continue
+
+        if step.get("step") == "writeFile":
+            data_value = str(step.get("data", ""))
+            if step.get("path") == "/wordpress/wp-content/mu-plugins/odd-preview-catalog.php":
+                if (
+                    PREVIEW_CATALOG_URL in data_value
+                    and "oddout_catalog_url" in data_value
+                    and "oddout_catalog_signature_required" in data_value
+                ):
+                    preview_mu_plugin = True
+                else:
+                    problems.append(
+                        f"step[{idx}] preview mu-plugin must set oddout_catalog_url "
+                        f"to {PREVIEW_CATALOG_URL!r}"
+                    )
+            continue
+
+        if step.get("step") != "installPlugin":
+            continue
+        plugin = step.get("pluginData")
+        if not isinstance(plugin, dict):
+            problems.append(f"step[{idx}].pluginData is not an object")
+            continue
+
+        resource = plugin.get("resource", "")
+        options = step.get("options") or {}
+
+        if resource == "url":
+            url = str(plugin.get("url", ""))
+            if "github.com" in url and "/releases/" in url and "/download/" in url:
+                problems.append(
+                    f"step[{idx}] installs from a GitHub release asset — "
+                    "CORS-blocked from Playground; mirror the packaged zip to a CORS-safe static URL"
+                )
+            if not url.startswith("https://"):
+                problems.append(
+                    f"step[{idx}] resource=url must be https, got {url!r}"
+                )
+            if url == dm_zip_expected:
+                if options.get("targetFolderName") != "desktop-mode":
+                    problems.append(
+                        f"step[{idx}] Desktop Mode zip must use "
+                        'options.targetFolderName "desktop-mode"'
+                    )
+                else:
+                    pinned_dm_release = True
+
+        elif resource == "wordpress.org/plugins":
+            slug = plugin.get("slug")
+            if slug == "desktop-mode":
+                problems.append(
+                    f"step[{idx}] preview blueprint must install Desktop Mode via "
+                    f"resource=url → {dm_zip_expected!r} "
+                    "(wordpress.org/plugins slug installs cannot pin a version)"
+                )
+
+        elif resource == "git:directory":
+            url = str(plugin.get("url", ""))
+            if "github.com/WordPress/desktop-mode" in url:
+                problems.append(
+                    f"step[{idx}] installs WP Desktop Mode from git:directory — "
+                    "source archives miss compiled shell assets; use "
+                    "the downloads.wordpress.org zip URL"
+                )
+            if not plugin.get("ref"):
+                problems.append(
+                    f"step[{idx}] git:directory resource is missing `ref`"
+                )
+            ref_type = plugin.get("refType")
+            if ref_type not in allowed_ref_types:
+                problems.append(
+                    f"step[{idx}] git:directory resource has refType={ref_type!r}; "
+                    f"allowed: {sorted(allowed_ref_types)}"
+                )
+            if "path" not in plugin:
+                problems.append(
+                    f"step[{idx}] git:directory resource must specify `path`"
+                )
+            if not options.get("targetFolderName"):
+                problems.append(
+                    f"step[{idx}] git:directory installPlugin must set options.targetFolderName"
+                )
+            if "RegionallyFamous/odd" in url:
+                ref = str(plugin.get("ref", ""))
+                if ref_type != "branch" or ref != "main":
+                    problems.append(
+                        f"step[{idx}] preview ODD must use refType \"branch\" and "
+                        f'ref \"main\"; got {ref_type!r} {ref!r}'
+                    )
+                elif plugin.get("path") != "odd":
+                    problems.append(
+                        f"step[{idx}] preview ODD git:directory path must be \"odd\""
+                    )
+                else:
+                    pinned_odd_trunk = True
+
+    rel = path.relative_to(REPO_ROOT)
+    if not preview_mu_plugin_dir:
+        problems.append(
+            f"{rel}: preview blueprint must create /wordpress/wp-content/mu-plugins"
+        )
+    if not preview_mu_plugin:
+        problems.append(
+            f"{rel}: preview blueprint must write an odd-preview-catalog.php mu-plugin"
+        )
+    if not pinned_dm_release:
+        problems.append(
+            f"{rel}: preview blueprint must install Desktop Mode from "
+            f"{dm_zip_expected!r} (resource=url, targetFolderName=desktop-mode)"
+        )
+    if not pinned_odd_trunk:
+        problems.append(
+            f"{rel}: preview blueprint must install ODD from branch main "
+            "(git:directory → github.com/RegionallyFamous/odd, path odd)"
+        )
+
+    return problems, len(steps or [])
+
+
 def main() -> int:
     if not PLUGIN_MAIN.is_file():
         print(f"error: missing {PLUGIN_MAIN}", file=sys.stderr)
@@ -562,6 +727,11 @@ def main() -> int:
         problems.extend(file_problems)
         total_steps += step_count
 
+    for path in (BLUEPRINT_PREVIEW, SITE_BLUEPRINT_PREVIEW):
+        file_problems, step_count = validate_preview_file(path, dm_pin, requires_php)
+        problems.extend(file_problems)
+        total_steps += step_count
+
     stable_cache_key = f"wporg-odd-{odd_version}-dm-{dm_pin}"
     for path in (SITE_PLAYGROUND_LAUNCHER, SITE_GO_LAUNCHER):
         problems.extend(validate_playground_launcher(path, stable_cache_key))
@@ -570,13 +740,17 @@ def main() -> int:
     for path in (SITE_PLAYGROUND_DEV_LAUNCHER, SITE_GO_DEV_LAUNCHER):
         problems.extend(validate_playground_launcher(path, dev_cache_key_part))
 
+    preview_cache_key_part = f"preview-"
+    for path in (SITE_PLAYGROUND_PREVIEW_LAUNCHER, SITE_GO_PREVIEW_LAUNCHER):
+        problems.extend(validate_playground_launcher(path, preview_cache_key_part))
+
     if problems:
         fail(problems)
         return 1
 
     print(
         "blueprints ok: "
-        f"{total_steps} total steps across release + dev copies, "
+        f"{total_steps} total steps across release + dev + preview copies, "
         "no CORS-fragile or release-misconfigured installs"
     )
     return 0

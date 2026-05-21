@@ -25,8 +25,13 @@ new or updated bundles, widget card art, icon/cursor previews, metadata,
 starter-pack slugs, or other registry fields that older plugin versions
 already understand. Do **not** bump `ODDOUT_VERSION`, add a plugin
 `CHANGELOG.md` entry, or tag a GitHub plugin release for these changes.
-Merge to `main`; `.github/workflows/pages.yml` rebuilds and validates
-`site/catalog/v1/`, then publishes it to GitHub Pages.
+Before publishing, use [`catalog-preview.md`](catalog-preview.md) to
+build and validate a non-live preview catalog under
+`.odd/catalog-preview/v1/` or test the hosted preview lane at
+[`/go/preview/`](https://odd.regionallyfamous.com/go/preview/). Merge
+to `main` only when the candidate is ready; `.github/workflows/pages.yml`
+rebuilds and validates `site/catalog/v1/` plus the non-live
+`site/catalog-preview/v1/`, then publishes both to GitHub Pages.
 
 Installed sites read the remote registry through the Shop's catalog
 fetch. They may see the update after the 12-hour transient expires, or
@@ -106,7 +111,7 @@ git push origin main "v$next_version"
 
 The `.github/workflows/release-odd.yml` workflow fires on the tag: runs the reusable CI quality gates, checks plugin metadata, builds + validates the remote catalog (`python3 _tools/build-catalog.py && ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog`), validates the Playground blueprint, regenerates `odd/languages/odd-outlandish-desktop-decorator.pot`, runs `odd/bin/build-zip`, validates zip contents, runs Plugin Check, runs install-smoke, and `gh release create --latest=true` with a post-upload HTTP probe.
 
-The `.github/workflows/pages.yml` workflow runs independently on any push to `main` that touches `site/`, `_tools/catalog-sources/`, or `_tools/build-catalog.py` — it rebuilds the catalog, validates it, and publishes `site/` (marketing + catalog) to GitHub Pages. Content releases (a new scene / icon set / widget / app) ship through Pages, not through the plugin release flow.
+The `.github/workflows/pages.yml` workflow runs independently on any push to `main` that touches `site/`, `_tools/catalog-sources/`, `_tools/build-catalog.py`, or preview blueprint/catalog tooling — it rebuilds the live and preview catalogs, validates them, and publishes `site/` (marketing + catalogs) to GitHub Pages. Content releases (a new scene / icon set / widget / app) ship through Pages, not through the plugin release flow.
 
 Keep the public stable Playground blueprint on the newest WordPress.org zip
 that actually exists. During release prep, `odd.php`, `odd/readme.txt`,

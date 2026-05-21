@@ -55,21 +55,48 @@ from PIL import Image, ImageDraw, ImageFilter
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
-SOURCES = HERE / "catalog-sources"
-OUT_ROOT = REPO / "site" / "catalog" / "v1"
+
+
+def repo_path_from_env(name: str, default: Path) -> Path:
+    raw = (os.environ.get(name) or "").strip()
+    if not raw:
+        return default
+    path = Path(raw)
+    return path if path.is_absolute() else REPO / path
+
+
+def display_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(REPO))
+    except ValueError:
+        return str(path)
+
+
+SOURCES = repo_path_from_env("ODD_CATALOG_SOURCE_ROOT", HERE / "catalog-sources")
+OUT_ROOT = repo_path_from_env("ODD_CATALOG_OUT_ROOT", REPO / "site" / "catalog" / "v1")
 OUT_BUNDLES = OUT_ROOT / "bundles"
 OUT_ICONS = OUT_ROOT / "icons"
 OUT_CARDS = OUT_ROOT / "cards"
 REGISTRY_JSON = OUT_ROOT / "registry.json"
 REGISTRY_SIG = OUT_ROOT / "registry.json.sig"
+FALLBACK_REGISTRY = repo_path_from_env(
+    "ODD_CATALOG_FALLBACK_REGISTRY",
+    REPO / "odd" / "data" / "fallback-registry.json",
+)
+WRITE_FALLBACK = os.environ.get("ODD_CATALOG_WRITE_FALLBACK", "1") != "0"
+CATALOG_CHANNEL = (os.environ.get("ODD_CATALOG_CHANNEL") or "stable").strip().lower()
 
 FIXED_DATE = (2025, 1, 1, 0, 0, 0)
-CATALOG_BASE = "https://odd.regionallyfamous.com/catalog/v1"
+CATALOG_BASE = (
+    os.environ.get("ODD_CATALOG_BASE_URL")
+    or "https://odd.regionallyfamous.com/catalog/v1"
+).rstrip("/")
 SCHEMA_URL = f"{CATALOG_BASE}/registry.schema.json"
 FIRST_PARTY_ICON_KEYS = {
     "odd", "my-wordpress", "content-graph", "recycle-bin", "fallback",
 }
 REQUIRES_KEYS = {"odd", "desktopMode", "api"}
+CATALOG_CHANNELS = {"stable", "preview", "all"}
 SEMVER_RE = re.compile(
     r"^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$"
 )
@@ -105,10 +132,69 @@ def catalog_requires(meta: dict) -> dict:
 
 
 def with_requires(row: dict, meta: dict) -> dict:
+    channel = catalog_channel(meta)
+    if channel != "stable":
+        row["channel"] = channel
     requires = catalog_requires(meta)
     if requires:
         row["requires"] = requires
     return row
+
+
+def catalog_channel(meta: dict) -> str:
+    raw = ""
+    catalog_meta = meta.get("catalog")
+    if isinstance(catalog_meta, dict):
+        raw = str(catalog_meta.get("channel") or catalog_meta.get("status") or "")
+    raw = raw or str(
+        meta.get("catalog_channel")
+        or meta.get("catalog_status")
+        or meta.get("catalogStatus")
+        or meta.get("visibility")
+        or "stable"
+    )
+    raw = raw.strip().lower()
+    aliases = {
+        "": "stable",
+        "live": "stable",
+        "main": "stable",
+        "public": "stable",
+        "production": "stable",
+        "prod": "stable",
+        "stable": "stable",
+        "draft": "preview",
+        "test": "preview",
+        "testing": "preview",
+        "preview": "preview",
+    }
+    channel = aliases.get(raw)
+    if channel is None:
+        raise SystemExit(f"unsupported catalog channel {raw!r}; use stable or preview")
+    return channel
+
+
+def catalog_channel_included(channel: str) -> bool:
+    if CATALOG_CHANNEL not in CATALOG_CHANNELS:
+        raise SystemExit(
+            f"ODD_CATALOG_CHANNEL must be one of {sorted(CATALOG_CHANNELS)}, got {CATALOG_CHANNEL!r}"
+        )
+    if CATALOG_CHANNEL == "all":
+        return True
+    if CATALOG_CHANNEL == "preview":
+        return channel in {"stable", "preview"}
+    return channel == "stable"
+
+
+def source_metadata(kind: str, folder: Path) -> dict:
+    filename = "manifest.json" if kind in {"icon-set", "cursor-set", "widget"} else "meta.json"
+    path = folder / filename
+    if not path.is_file():
+        raise SystemExit(f"{kind} {folder.name}: missing {filename}")
+    return json.loads(path.read_text())
+
+
+def should_build_source(kind: str, folder: Path) -> bool:
+    return catalog_channel_included(catalog_channel(source_metadata(kind, folder)))
 
 
 def catalog_signing_key():
@@ -1210,6 +1296,7 @@ SCHEMA = {
                     "author": {"type": "string"},
                     "description": {"type": "string"},
                     "category": {"type": "string"},
+                    "channel": {"type": "string", "enum": ["preview"]},
                     "department": {"type": "string"},
                     "tags": {"type": "array", "items": {"type": "string"}},
                     "search_text": {"type": "string"},
@@ -1268,12 +1355,16 @@ def main() -> int:
         for folder in sorted(scenes_dir.iterdir()):
             if not folder.is_dir():
                 continue
+            if not should_build_source("scene", folder):
+                continue
             all_rows.append(build_scene(folder.name, folder))
 
     iconsets_dir = SOURCES / "icon-sets"
     if iconsets_dir.is_dir():
         for folder in sorted(iconsets_dir.iterdir()):
             if not folder.is_dir():
+                continue
+            if not should_build_source("icon-set", folder):
                 continue
             all_rows.append(build_iconset(folder.name, folder))
 
@@ -1282,6 +1373,8 @@ def main() -> int:
         for folder in sorted(cursorsets_dir.iterdir()):
             if not folder.is_dir():
                 continue
+            if not should_build_source("cursor-set", folder):
+                continue
             all_rows.append(build_cursorset(folder.name, folder))
 
     widgets_dir = SOURCES / "widgets"
@@ -1289,12 +1382,16 @@ def main() -> int:
         for folder in sorted(widgets_dir.iterdir()):
             if not folder.is_dir():
                 continue
+            if not should_build_source("widget", folder):
+                continue
             all_rows.append(build_widget(folder.name, folder))
 
     apps_dir = SOURCES / "apps"
     if apps_dir.is_dir():
         for folder in sorted(apps_dir.iterdir()):
             if not folder.is_dir():
+                continue
+            if not should_build_source("app", folder):
                 continue
             all_rows.append(build_app(folder.name, folder))
 
@@ -1325,17 +1422,15 @@ def main() -> int:
         json.dumps(SCHEMA, indent=2) + "\n"
     )
 
-    # Frozen in-plugin fallback. When the shipped plugin boots on a
-    # site with no network (Playground demo without outbound access,
-    # air-gapped WordPress, or a temporary catalog host outage), this
-    # file is the last-resort source for the registry. See
-    # odd/includes/content/catalog-fallback.php. Kept byte-identical
-    # to the published registry so determinism checks still pass.
-    FALLBACK_DIR = REPO / "odd" / "data"
-    FALLBACK_DIR.mkdir(parents=True, exist_ok=True)
-    (FALLBACK_DIR / "fallback-registry.json").write_text(
-        json.dumps(registry, indent=2) + "\n"
-    )
+    if WRITE_FALLBACK:
+        # Frozen in-plugin fallback. When the shipped plugin boots on a
+        # site with no network (Playground demo without outbound access,
+        # air-gapped WordPress, or a temporary catalog host outage), this
+        # file is the last-resort source for the registry. See
+        # odd/includes/content/catalog-fallback.php. Kept byte-identical
+        # to the published registry so determinism checks still pass.
+        FALLBACK_REGISTRY.parent.mkdir(parents=True, exist_ok=True)
+        FALLBACK_REGISTRY.write_text(json.dumps(registry, indent=2) + "\n")
 
     # Summary.
     types: dict[str, int] = {}
@@ -1347,9 +1442,12 @@ def main() -> int:
     for t, n in sorted(types.items()):
         print(f"  {t:<10} {n}")
     print(f"  bundles    {len(all_rows)}")
+    print(f"  channel    {CATALOG_CHANNEL}")
     print(f"  total size {total_size:,} bytes "
           f"({total_size / (1024 * 1024):.1f} MB)")
-    print(f"  out:       {OUT_ROOT.relative_to(REPO)}")
+    print(f"  out:       {display_path(OUT_ROOT)}")
+    if not WRITE_FALLBACK:
+        print("  fallback:  skipped")
     return 0
 
 

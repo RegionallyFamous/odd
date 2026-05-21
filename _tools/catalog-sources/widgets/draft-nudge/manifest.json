@@ -1,0 +1,26 @@
+{
+  "slug": "draft-nudge",
+  "id": "odd/draft-nudge",
+  "label": "Draft Nudge",
+  "description": "Shows your most recent draft and gives it a gentle push back into the light.",
+  "category": "ODD Originals",
+  "catalog_channel": "preview",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "entry": "widget.js",
+  "css": [
+    "widget.css"
+  ],
+  "icon": "dashicons-edit-page",
+  "movable": true,
+  "resizable": true,
+  "minWidth": 260,
+  "minHeight": 180,
+  "maxWidth": 520,
+  "maxHeight": 360,
+  "defaultWidth": 320,
+  "defaultHeight": 220,
+  "capabilities": [
+    "edit_posts"
+  ]
+}

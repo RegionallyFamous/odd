@@ -15,6 +15,7 @@
     "e2e:docker:down": "docker compose -f docker-compose.e2e.yml down",
     "e2e:local:provision": "bash bin/e2e-local.sh provision",
     "build:previews": "node odd/bin/build-previews",
+    "catalog:preview": "odd/bin/build-catalog-preview",
     "prepare": "husky"
   },
   "lint-staged": {

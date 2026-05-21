@@ -5,8 +5,10 @@ on:
     branches: [main]
     paths:
       - 'site/**'
+      - 'blueprint-preview.json'
       - '_tools/catalog-sources/**'
       - '_tools/build-catalog.py'
+      - 'odd/bin/build-catalog-preview'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -46,10 +48,15 @@ jobs:
           ODD_CATALOG_REQUIRE_SIGNATURE: '1'
         run: |
           python3 _tools/build-catalog.py
+          odd/bin/build-catalog-preview --hosted
           ls -la site/catalog/v1/
+          ls -la site/catalog-preview/v1/
           echo 'catalog bundles:' && ls site/catalog/v1/bundles/ | wc -l
+          echo 'preview catalog bundles:' && ls site/catalog-preview/v1/bundles/ | wc -l
           echo "registry_sha256=$(sha256sum site/catalog/v1/registry.json | awk '{print $1}')" >> "$GITHUB_OUTPUT"
           echo "registry_signature_sha256=$(sha256sum site/catalog/v1/registry.json.sig | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "preview_registry_sha256=$(sha256sum site/catalog-preview/v1/registry.json | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "preview_registry_signature_sha256=$(sha256sum site/catalog-preview/v1/registry.json.sig | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
       - name: Validate catalog before publishing
         env:
@@ -73,6 +80,8 @@ jobs:
         env:
           EXPECTED_REGISTRY_SHA256: ${{ steps.catalog.outputs.registry_sha256 }}
           EXPECTED_REGISTRY_SIGNATURE_SHA256: ${{ steps.catalog.outputs.registry_signature_sha256 }}
+          EXPECTED_PREVIEW_REGISTRY_SHA256: ${{ steps.catalog.outputs.preview_registry_sha256 }}
+          EXPECTED_PREVIEW_REGISTRY_SIGNATURE_SHA256: ${{ steps.catalog.outputs.preview_registry_signature_sha256 }}
           ODD_CATALOG_PUBLIC_KEY: '2aIvGPQMF//a9ciDvQ8GST7Q8QhfVsM6h1HB3/Td5Gk='
         run: |
           python3 - <<'PY'
@@ -200,5 +209,51 @@ jobs:
                   raise SystemExit(f"{slug}: bundle size mismatch in published catalog")
               if row.get("sha256") and hashlib.sha256(bundle_body).hexdigest() != row["sha256"]:
                   raise SystemExit(f"{slug}: bundle sha256 mismatch in published catalog")
+
+          preview_registry_url = "https://odd.regionallyfamous.com/catalog-preview/v1/registry.json"
+          preview_signature_url = "https://odd.regionallyfamous.com/catalog-preview/v1/registry.json.sig"
+          expected_preview_registry_sha = os.environ.get("EXPECTED_PREVIEW_REGISTRY_SHA256", "")
+          expected_preview_signature_sha = os.environ.get("EXPECTED_PREVIEW_REGISTRY_SIGNATURE_SHA256", "")
+          preview_registry_body = b""
+          preview_signature_body = b""
+          for attempt in range(12):
+              preview_registry_body = fetch(preview_registry_url)
+              preview_signature_body = fetch(preview_signature_url)
+              actual_sha = hashlib.sha256(preview_registry_body).hexdigest()
+              actual_sig_sha = hashlib.sha256(preview_signature_body).hexdigest()
+              fresh_registry = not expected_preview_registry_sha or actual_sha == expected_preview_registry_sha
+              fresh_signature = not expected_preview_signature_sha or actual_sig_sha == expected_preview_signature_sha
+              if fresh_registry and fresh_signature:
+                  break
+              print(
+                  f"published preview catalog not fresh yet on attempt {attempt + 1}: "
+                  f"registry={actual_sha} signature={actual_sig_sha}"
+              )
+              time.sleep(5)
+          else:
+              raise SystemExit(
+                  "published preview registry/signature sha256 did not match the just-built preview catalog"
+              )
+
+          try:
+              VerifyKey(public_key).verify(
+                  preview_registry_body,
+                  base64.b64decode(preview_signature_body.strip(), validate=True),
+              )
+          except BadSignatureError as exc:
+              raise SystemExit("published preview registry signature did not verify") from exc
+
+          preview_registry = json.loads(preview_registry_body)
+          preview_bundles = preview_registry.get("bundles", [])
+          if not preview_bundles:
+              raise SystemExit("published preview registry has no bundles")
+          preview_base = "https://odd.regionallyfamous.com/catalog-preview/v1/"
+          for row in preview_bundles:
+              for field in ("download_url", "icon_url", "card_url"):
+                  value = row.get(field, "")
+                  if not isinstance(value, str) or not value.startswith(preview_base):
+                      raise SystemExit(
+                          f"preview row {row.get('slug')}: {field} is not under {preview_base}"
+                      )
           print("published catalog artifacts ok")
           PY

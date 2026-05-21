@@ -20,8 +20,10 @@
  *                                the download_url entries in registry.json.
  *
  * Matching is by URL path suffix so the real `ODDOUT_CATALOG_URL` doesn't need
- * to be overridden — any GET to `/catalog/v1/registry.json` or
- * `/catalog/v1/bundles/<file>.wp` on any host resolves to the local file.
+ * to be overridden for production-shaped smoke tests — any GET to
+ * `/catalog/v1/registry.json` or `/catalog/v1/bundles/<file>.wp` on any host
+ * resolves to the local file. Define `ODD_SMOKE_CATALOG_URL` when testing a
+ * preview catalog whose registry rows intentionally use a non-production host.
  *
  * @package ODD_Smoke
  */
@@ -33,6 +35,19 @@ if ( ! defined( 'ODD_SMOKE_FIXTURE_ROOT' ) ) {
 	// workflow env still finds the fixture — `site/catalog/v1/` is a
 	// byte-identical superset of the prod registry on every branch.
 	define( 'ODD_SMOKE_FIXTURE_ROOT', WP_CONTENT_DIR . '/odd-smoke-fixture' );
+}
+
+if (
+	defined( 'ODD_SMOKE_CATALOG_URL' )
+	&& is_string( ODD_SMOKE_CATALOG_URL )
+	&& '' !== ODD_SMOKE_CATALOG_URL
+) {
+	add_filter(
+		'oddout_catalog_url',
+		static function () {
+			return ODD_SMOKE_CATALOG_URL;
+		}
+	);
 }
 
 /**

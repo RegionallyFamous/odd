@@ -59,3 +59,6 @@ odd/bin/validate-catalog
 ```
 
 The builder emits `site/catalog/v1/bundles/cursor-set-<slug>.wp`, a Shop tile under `site/catalog/v1/icons/`, and the corresponding registry entry.
+Use [`npm run catalog:preview`](catalog-preview.md) when you want to
+exercise the same catalog row and installer checks without publishing
+the cursor set to the live catalog.

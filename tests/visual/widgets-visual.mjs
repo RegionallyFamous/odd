@@ -58,6 +58,18 @@ const EXERCISES = {
 		await clickIfPresent( page, '.odd-aquarium__tank' );
 		await page.waitForTimeout( 300 );
 	},
+	'draft-nudge': async ( page ) => {
+		await clickIfPresent( page, '.odd-draft__refresh' );
+		await page.waitForTimeout( 250 );
+	},
+	'comment-radar': async ( page ) => {
+		await clickIfPresent( page, '.odd-radar__refresh' );
+		await page.waitForTimeout( 250 );
+	},
+	'update-whisper': async ( page ) => {
+		await clickIfPresent( page, '.odd-whisper__refresh' );
+		await page.waitForTimeout( 250 );
+	},
 };
 
 const MIME = new Map( [
@@ -117,6 +129,46 @@ function discoverWidgets() {
 function startServer() {
 	const server = createServer( ( req, res ) => {
 		const url = new URL( req.url || '/', 'http://127.0.0.1' );
+		if ( url.pathname === '/wp-json/odd/v1/site-summary' ) {
+			if ( req.method === 'OPTIONS' ) {
+				res.writeHead( 204, {
+					'access-control-allow-headers': 'X-WP-Nonce, Content-Type',
+					'access-control-allow-methods': 'GET, OPTIONS',
+					'access-control-allow-origin': '*',
+					'x-content-type-options': 'nosniff',
+				} );
+				res.end();
+				return;
+			}
+			res.writeHead( 200, {
+				'access-control-allow-origin': '*',
+				'content-type': 'application/json; charset=utf-8',
+				'x-content-type-options': 'nosniff',
+			} );
+			res.end( JSON.stringify( {
+				generatedAt: 1,
+				draft: {
+					available: true,
+					count: 2,
+					id: 42,
+					title: 'Launch notes',
+					human: '2 minutes ago',
+					editUrl: '/wp-admin/post.php?post=42&action=edit',
+				},
+				comments: {
+					available: true,
+					pending: 3,
+					moderateUrl: '/wp-admin/edit-comments.php?comment_status=moderated',
+				},
+				updates: {
+					available: true,
+					plugins: 4,
+					human: 'checked 5 minutes ago',
+					updatesUrl: '/wp-admin/plugins.php?plugin_status=upgrade',
+				},
+			} ) );
+			return;
+		}
 		const requested = decodeURIComponent( url.pathname ).replace( /^\/+/, '' );
 		const file = resolve( WIDGETS_ROOT, requested );
 		if ( ! file.startsWith( WIDGETS_ROOT ) || ! existsSync( file ) ) {
@@ -206,6 +258,10 @@ function pageMarkup( widget, size, port ) {
 					window.__oddEmitted.push( { name: name, payload: payload } );
 				}
 			}
+		};
+		window.odd = {
+			siteSummaryUrl: '/wp-json/odd/v1/site-summary',
+			restNonce: 'visual-nonce'
 		};
 	</script>
 	<script src="widget.js"></script>

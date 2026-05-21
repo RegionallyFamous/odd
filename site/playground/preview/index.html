@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="robots" content="noindex">
+	<title>Launching ODD preview catalog Playground...</title>
+	<link rel="canonical" href="https://odd.regionallyfamous.com/playground/preview/">
+	<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="stylesheet" href="/styles.css?v=4">
+	<script>
+		( function () {
+			'use strict';
+			var blueprintBase = 'https://odd.regionallyfamous.com/playground/blueprint-preview.json';
+			var desktopModeVersion = '0.8.6';
+			var fallbackKey = 'preview-live-' + Date.now() + '-dm-' + desktopModeVersion;
+			var done = false;
+			function launch( key ) {
+				if ( done ) {
+					return;
+				}
+				done = true;
+				window.clearTimeout( timer );
+				var blueprint = blueprintBase + '?oddbp=' + encodeURIComponent( key );
+				var target = 'https://playground.wordpress.net/?mode=seamless&blueprint-url=' + encodeURIComponent( blueprint );
+				window.location.replace( target );
+			}
+			var timer = window.setTimeout( function () {
+				launch( fallbackKey );
+			}, 2200 );
+			if ( ! window.fetch ) {
+				launch( fallbackKey );
+				return;
+			}
+			window.fetch( 'https://api.github.com/repos/RegionallyFamous/odd/commits/main', {
+				cache: 'no-store',
+				headers: { 'Accept': 'application/vnd.github+json' }
+			} )
+				.then( function ( response ) {
+					if ( ! response.ok ) {
+						throw new Error( 'commit lookup failed' );
+					}
+					return response.json();
+				} )
+				.then( function ( data ) {
+					var sha = data && typeof data.sha === 'string' && /^[0-9a-f]{40}$/i.test( data.sha )
+						? data.sha.slice( 0, 7 )
+						: '';
+					launch( sha ? 'preview-' + sha + '-dm-' + desktopModeVersion : fallbackKey );
+				} )
+				.catch( function () {
+					launch( fallbackKey );
+				} );
+		} )();
+	</script>
+	<noscript>
+			<meta http-equiv="refresh" content="0; url=https://playground.wordpress.net/?mode=seamless&blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-preview.json%3Foddbp%3Dpreview-noscript-dm-0.8.6">
+	</noscript>
+</head>
+<body>
+	<main class="shell hero">
+		<div>
+			<div class="kicker">Preview catalog</div>
+			<h1>Opening ODD <code>main</code> with the non-live catalog preview.</h1>
+			<p class="lede">Ephemeral; tests <code>/catalog-preview/v1/</code> instead of the public Shop catalog.</p>
+			<div class="actions">
+				<a class="button primary" href="https://playground.wordpress.net/?mode=seamless&blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-preview.json%3Foddbp%3Dpreview-manual-dm-0.8.6">Open Playground</a>
+				<a class="button" href="/playground/dev/">Trunk preview</a>
+				<a class="button" href="/playground/">Stable demo</a>
+				<a class="button" href="/">Back to ODD</a>
+			</div>
+		</div>
+	</main>
+</body>
+</html>

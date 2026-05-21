@@ -1,0 +1,26 @@
+{
+  "slug": "comment-radar",
+  "id": "odd/comment-radar",
+  "label": "Comment Radar",
+  "description": "Keeps an eye on pending comments with a calm little signal pulse.",
+  "category": "ODD Originals",
+  "catalog_channel": "preview",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "entry": "widget.js",
+  "css": [
+    "widget.css"
+  ],
+  "icon": "dashicons-admin-comments",
+  "movable": true,
+  "resizable": true,
+  "minWidth": 250,
+  "minHeight": 180,
+  "maxWidth": 500,
+  "maxHeight": 340,
+  "defaultWidth": 300,
+  "defaultHeight": 210,
+  "capabilities": [
+    "moderate_comments"
+  ]
+}

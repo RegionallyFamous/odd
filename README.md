@@ -32,7 +32,7 @@
 
 [WP Desktop Mode](https://github.com/WordPress/desktop-mode) makes WordPress feel like a desktop. ODD gives that desktop a polished, updateable shop for visual themes and small tools. ODD works with Desktop Mode's native surfaces instead of replacing the desktop shell.
 
-The hosted [Playground blueprint](https://odd.regionallyfamous.com/playground/blueprint.json?oddbp=wporg-odd-1.1.3-dm-0.8.6) installs exact WordPress.org package zips for **[WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/)** `0.8.6` and the current public **[ODD](https://wordpress.org/plugins/odd-outlandish-desktop-decorator/)** release `1.1.3`. Raw GitHub copy: [`blueprint.json`](https://raw.githubusercontent.com/RegionallyFamous/odd/main/blueprint.json) (add `?oddbp=wporg-odd-1.1.3-dm-0.8.6` if Playground still loads a cached older file). **Production installs:** use [WordPress.org](https://wordpress.org/plugins/odd-outlandish-desktop-decorator/) or **`odd.zip`** on [Releases](https://github.com/RegionallyFamous/odd/releases/latest). **Bleeding edge:** use [`/go/dev`](https://odd.regionallyfamous.com/go/dev/) or [`site/playground/blueprint-dev.json`](https://odd.regionallyfamous.com/playground/blueprint-dev.json) (ODD `main` + pinned Desktop Mode 0.8.6; not tied to ODD releases).
+The hosted [Playground blueprint](https://odd.regionallyfamous.com/playground/blueprint.json?oddbp=wporg-odd-1.1.3-dm-0.8.6) installs exact WordPress.org package zips for **[WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/)** `0.8.6` and the current public **[ODD](https://wordpress.org/plugins/odd-outlandish-desktop-decorator/)** release `1.1.3`. Raw GitHub copy: [`blueprint.json`](https://raw.githubusercontent.com/RegionallyFamous/odd/main/blueprint.json) (add `?oddbp=wporg-odd-1.1.3-dm-0.8.6` if Playground still loads a cached older file). **Production installs:** use [WordPress.org](https://wordpress.org/plugins/odd-outlandish-desktop-decorator/) or **`odd.zip`** on [Releases](https://github.com/RegionallyFamous/odd/releases/latest). **Bleeding edge:** use [`/go/dev`](https://odd.regionallyfamous.com/go/dev/) or [`site/playground/blueprint-dev.json`](https://odd.regionallyfamous.com/playground/blueprint-dev.json) (ODD `main` + pinned Desktop Mode 0.8.6; not tied to ODD releases). **Catalog preview:** use [`/go/preview`](https://odd.regionallyfamous.com/go/preview/) to run ODD `main` against the hosted non-live preview catalog.
 
 ---
 
@@ -64,7 +64,7 @@ Wallpapers, icon sets, and cursor sets preview instantly. Try a scene, theme, or
 
 First load takes ~20–30 seconds while Playground boots the site and installs the plugin. Throwaway — close the tab and it's gone.
 
-**Short links (GitHub Pages — same host as the hosted blueprint):** [`/go/`](https://odd.regionallyfamous.com/go/) redirects to the pinned WordPress.org demo; [`/go/dev`](https://odd.regionallyfamous.com/go/dev/) opens a **dev** blueprint (pinned Desktop Mode 0.8.6 zip + ODD `main`). Full launcher pages: [`/playground/`](https://odd.regionallyfamous.com/playground/) and [`/playground/dev/`](https://odd.regionallyfamous.com/playground/dev/).
+**Short links (GitHub Pages — same host as the hosted blueprint):** [`/go/`](https://odd.regionallyfamous.com/go/) redirects to the pinned WordPress.org demo; [`/go/dev`](https://odd.regionallyfamous.com/go/dev/) opens a **dev** blueprint (pinned Desktop Mode 0.8.6 zip + ODD `main`); [`/go/preview`](https://odd.regionallyfamous.com/go/preview/) opens ODD `main` with the hosted preview catalog. Full launcher pages: [`/playground/`](https://odd.regionallyfamous.com/playground/), [`/playground/dev/`](https://odd.regionallyfamous.com/playground/dev/), and [`/playground/preview/`](https://odd.regionallyfamous.com/playground/preview/).
 
 ### A real WordPress install
 
@@ -79,7 +79,7 @@ First load takes ~20–30 seconds while Playground boots the site and installs t
 
 ## Build Your Own
 
-Anyone can ship a scene, icon set, cursor set, widget, or app as a single `.wp` file. ODD validates the archive, checks catalog downloads against SHA256, and keeps app files behind authenticated serve paths. First-party content lives under `_tools/catalog-sources/` and publishes to the remote catalog through GitHub Pages; plugin releases are only for runtime/API changes.
+Anyone can ship a scene, icon set, cursor set, widget, or app as a single `.wp` file. ODD validates the archive, checks catalog downloads against SHA256, and keeps app files behind authenticated serve paths. First-party content lives under `_tools/catalog-sources/`, can be tested through the non-live [Catalog Preview Workflow](docs/catalog-preview.md), and publishes to the remote catalog through GitHub Pages; plugin releases are only for runtime/API changes.
 
 Users can also export a lightweight `.odd` workspace from the Shop's Install tab. A `.odd` file is a JSON preset for wallpaper, icons, cursors, widgets, apps, and preferences; it never contains executable bundle code.
 
@@ -90,6 +90,7 @@ Users can also export a lightweight `.odd` workspace from the Shop's Install tab
 | [Building an Icon Set](docs/building-an-icon-set.md) | Ship a themed PNG/WebP icon feed for Desktop Mode chrome. |
 | [Building a Cursor Set](docs/building-a-cursor-set.md) | Add custom pointer roles and cursor assets. |
 | [Building a Widget](docs/building-a-widget.md) | Register a small draggable desktop widget. |
+| [Catalog Preview Workflow](docs/catalog-preview.md) | Test catalog rows and install paths without publishing them live. |
 | [Shareable `.odd` Workspaces](docs/shareable-workspaces.md) | Export/import a whole desktop mood as a safe preset. |
 | [`.wp` Manifest Reference](docs/wp-manifest.md) | Validate bundle metadata and file contracts. |
 
@@ -97,6 +98,8 @@ Users can also export a lightweight `.odd` workspace from the Shop's Install tab
 
 - `odd/` — the plugin itself (what ships in `odd.zip`). The 1.0 runtime is intentionally lightweight; catalog content installs on demand.
 - `_tools/catalog-sources/` — source of truth for every bundle (scene / icon set / cursor set / widget / app). Rebuilt into `site/catalog/v1/` by `_tools/build-catalog.py`.
+- `.odd/catalog-preview/v1/` — ignored local output from `npm run catalog:preview` for testing catalog content without publishing it.
+- `site/catalog-preview/v1/` — ignored Pages deploy output generated by `pages.yml` for the explicit preview Playground lane.
 - `site/` — static site assets, Playground launchers, and the remote catalog (`site/catalog/v1/registry.json` + `bundles/` + `icons/`). The public marketing home is [weirdpress.com/odd](https://weirdpress.com/odd); catalog and Playground infrastructure still live under `odd.regionallyfamous.com`.
 - `docs/` — authoring guides and reference docs.
 - `ci/smoke/` — MU-plugin fixtures used by `install-smoke.yml` to test the starter-pack installer hermetically.
@@ -104,7 +107,7 @@ Users can also export a lightweight `.odd` workspace from the Shop's Install tab
 
 ## Useful Links
 
-- **Playground:** [Stable — short link `/go/`](https://odd.regionallyfamous.com/go/) (pinned WordPress.org ODD 1.1.3 + Desktop Mode 0.8.6) · [Trunk — `/go/dev`](https://odd.regionallyfamous.com/go/dev/) · [Launcher hub `/playground/`](https://odd.regionallyfamous.com/playground/) · [Trunk launcher `/playground/dev/`](https://odd.regionallyfamous.com/playground/dev/)
+- **Playground:** [Stable — short link `/go/`](https://odd.regionallyfamous.com/go/) (pinned WordPress.org ODD 1.1.3 + Desktop Mode 0.8.6) · [Trunk — `/go/dev`](https://odd.regionallyfamous.com/go/dev/) · [Preview catalog — `/go/preview`](https://odd.regionallyfamous.com/go/preview/) · [Launcher hub `/playground/`](https://odd.regionallyfamous.com/playground/)
 - [Marketing site](https://weirdpress.com/odd)
 - [ODD Shop State Machine](docs/store-state-machine.md)
 - [Release Runbook](docs/release-runbook.md)

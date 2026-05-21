@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$repo_root"
+
+if [[ "${1:-}" == "--hosted" ]]; then
+	: "${ODD_CATALOG_OUT_ROOT:=site/catalog-preview/v1}"
+	: "${ODD_CATALOG_BASE_URL:=https://odd.regionallyfamous.com/catalog-preview/v1}"
+elif [[ "${1:-}" != "" ]]; then
+	echo "usage: odd/bin/build-catalog-preview [--hosted]" >&2
+	exit 2
+else
+	: "${ODD_CATALOG_OUT_ROOT:=.odd/catalog-preview/v1}"
+	: "${ODD_CATALOG_BASE_URL:=https://odd-catalog-preview.invalid/catalog/v1}"
+fi
+
+export ODD_CATALOG_OUT_ROOT
+export ODD_CATALOG_BASE_URL
+export ODD_CATALOG_CHANNEL=preview
+export ODD_CATALOG_WRITE_FALLBACK=0
+export ODD_VALIDATE_FALLBACK_REGISTRY=0
+
+python3 _tools/build-catalog.py
+ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog
+
+cat <<EOF
+
+Catalog preview ready:
+  output: $ODD_CATALOG_OUT_ROOT
+  base:   $ODD_CATALOG_BASE_URL
+
+Local previews are intentionally outside site/ and will not publish
+through GitHub Pages. Hosted previews use /catalog-preview/v1/ and are
+only reachable from explicit preview links. Use ci/smoke/odd-smoke-fixture.php with:
+
+  define( 'ODD_SMOKE_FIXTURE_ROOT', '$repo_root/$ODD_CATALOG_OUT_ROOT' );
+  define( 'ODD_SMOKE_CATALOG_URL', '$ODD_CATALOG_BASE_URL/registry.json' );
+
+EOF

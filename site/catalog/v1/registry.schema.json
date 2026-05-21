@@ -99,6 +99,12 @@
           "category": {
             "type": "string"
           },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "preview"
+            ]
+          },
           "department": {
             "type": "string"
           },

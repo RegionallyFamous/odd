@@ -1,0 +1,58 @@
+name: catalog-preview
+
+on:
+  pull_request:
+    paths:
+      - '_tools/catalog-sources/**'
+      - '_tools/build-catalog.py'
+      - 'odd/bin/validate-catalog'
+      - 'odd/bin/build-catalog-preview'
+      - '.github/workflows/catalog-preview.yml'
+  workflow_dispatch:
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install Python catalog dependencies
+        run: python -m pip install --quiet -r requirements-catalog.txt
+
+      - name: Build non-published preview catalog
+        run: odd/bin/build-catalog-preview
+
+      - name: Summarize preview catalog
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          registry = json.loads(Path(".odd/catalog-preview/v1/registry.json").read_text())
+          counts = {}
+          for row in registry.get("bundles", []):
+              counts[row["type"]] = counts.get(row["type"], 0) + 1
+
+          with Path("catalog-preview-summary.md").open("w") as fh:
+              fh.write("## ODD Catalog Preview\n\n")
+              fh.write("This artifact is not deployed to GitHub Pages.\n\n")
+              fh.write(f"- Bundles: {len(registry.get('bundles', []))}\n")
+              fh.write("- Base URL: `https://odd-catalog-preview.invalid/catalog/v1`\n")
+              for key in sorted(counts):
+                  fh.write(f"- {key}: {counts[key]}\n")
+          print(Path("catalog-preview-summary.md").read_text())
+          PY
+          rm -rf catalog-preview
+          mkdir -p catalog-preview
+          cp -R .odd/catalog-preview/v1 catalog-preview/v1
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: odd-catalog-preview
+          path: |
+            catalog-preview/v1
+            catalog-preview-summary.md
+          retention-days: 7

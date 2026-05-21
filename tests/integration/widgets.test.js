@@ -26,6 +26,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname( fileURLToPath( import.meta.url ) );
 const WIDGETS_ROOT = resolve( __dirname, '../../_tools/catalog-sources/widgets' );
 const CATALOG_BUNDLES_ROOT = resolve( __dirname, '../../site/catalog/v1/bundles' );
+const PREVIEW_CATALOG_BUNDLES_ROOT = resolve( __dirname, '../../.odd/catalog-preview/v1/bundles' );
 const FIRST_PARTY_WIDGETS = [
 	{ slug: 'sticky', id: 'odd/sticky', cssRoot: '.odd-widget--sticky' },
 	{ slug: 'eight-ball', id: 'odd/eight-ball', cssRoot: '.odd-widget--eight', assets: [ 'assets/oracle-texture.webp' ] },
@@ -34,12 +35,16 @@ const FIRST_PARTY_WIDGETS = [
 	{ slug: 'fortune-terminal', id: 'odd/fortune-terminal', cssRoot: '.odd-widget--fortune-terminal' },
 	{ slug: 'plugin-panic-button', id: 'odd/plugin-panic-button', cssRoot: '.odd-widget--plugin-panic-button' },
 	{ slug: 'tiny-aquarium', id: 'odd/tiny-aquarium', cssRoot: '.odd-widget--tiny-aquarium', assets: [ 'assets/aquarium-backdrop.webp', 'assets/fish-sprites.webp' ] },
+	{ slug: 'draft-nudge', id: 'odd/draft-nudge', cssRoot: '.odd-widget--draft-nudge' },
+	{ slug: 'comment-radar', id: 'odd/comment-radar', cssRoot: '.odd-widget--comment-radar' },
+	{ slug: 'update-whisper', id: 'odd/update-whisper', cssRoot: '.odd-widget--update-whisper' },
 ].map( ( widget ) => ( {
 	...widget,
 	js: resolve( WIDGETS_ROOT, `${ widget.slug }/widget.js` ),
 	css: resolve( WIDGETS_ROOT, `${ widget.slug }/widget.css` ),
 	manifest: resolve( WIDGETS_ROOT, `${ widget.slug }/manifest.json` ),
 	bundle: resolve( CATALOG_BUNDLES_ROOT, `widget-${ widget.slug }.wp` ),
+	previewBundle: resolve( PREVIEW_CATALOG_BUNDLES_ROOT, `widget-${ widget.slug }.wp` ),
 } ) );
 const WIDGET_MANIFESTS = FIRST_PARTY_WIDGETS.map( ( widget ) => widget.manifest );
 const STICKY_CSS = FIRST_PARTY_WIDGETS.find( ( widget ) => widget.slug === 'sticky' ).css;
@@ -141,6 +146,30 @@ function loadWidgets() {
 	}
 }
 
+function mockSiteSummary( summary ) {
+	window.odd = {
+		siteSummaryUrl: '/wp-json/odd/v1/site-summary',
+		restNonce: 'test-nonce',
+	};
+	const fetchMock = vi.fn( () => Promise.resolve( {
+		ok: true,
+		json: () => Promise.resolve( summary ),
+	} ) );
+	Object.defineProperty( window, 'fetch', {
+		value: fetchMock,
+		configurable: true,
+		writable: true,
+	} );
+	vi.stubGlobal( 'fetch', fetchMock );
+}
+
+async function flushPromises() {
+	await Promise.resolve();
+	await Promise.resolve();
+	await Promise.resolve();
+	await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+}
+
 function zipListing( bundleFile ) {
 	return execFileSync(
 		'python3',
@@ -151,6 +180,17 @@ function zipListing( bundleFile ) {
 		],
 		{ encoding: 'utf8' }
 	);
+}
+
+function catalogChannel( manifest ) {
+	if ( manifest.catalog && typeof manifest.catalog === 'object' && manifest.catalog.channel ) {
+		return manifest.catalog.channel;
+	}
+	return manifest.catalog_channel || manifest.catalog_status || manifest.catalogStatus || manifest.visibility || 'stable';
+}
+
+function widgetBundleForManifest( widget, manifest ) {
+	return catalogChannel( manifest ) === 'preview' ? widget.previewBundle : widget.bundle;
 }
 
 describe( 'widgets registration', () => {
@@ -391,8 +431,10 @@ describe( 'new ODD Originals widgets', () => {
 		const s = document.getElementById( 'odd-widgets-style' );
 		if ( s ) s.remove();
 		vi.restoreAllMocks();
+		vi.unstubAllGlobals();
 		vi.useRealTimers();
 		delete window.__odd;
+		delete window.odd;
 	} );
 
 	it( 'desk pet watches the cursor, reacts to Desktop Mode events, and cleans up', () => {
@@ -524,6 +566,101 @@ describe( 'new ODD Originals widgets', () => {
 
 		cleanup();
 	} );
+
+	it( 'draft nudge fetches the site summary, shows the latest draft, and cleans up', async () => {
+		mockSiteSummary( {
+			draft: {
+				available: true,
+				count: 3,
+				id: 42,
+				title: 'Launch notes',
+				human: '2 minutes ago',
+				editUrl: '/wp-admin/post.php?post=42&action=edit',
+			},
+			comments: { available: true, pending: 0, moderateUrl: '/wp-admin/edit-comments.php?comment_status=moderated' },
+			updates: { available: true, plugins: 0, human: 'checked 1 hour ago', updatesUrl: '/wp-admin/plugins.php?plugin_status=upgrade' },
+		} );
+
+		const mount = widgetMount( 'odd/draft-nudge' );
+		const container = document.createElement( 'div' );
+		document.body.appendChild( container );
+		const { storage, values } = createCtxStorage();
+
+		const cleanup = mount( container, { storage } );
+		await flushPromises();
+
+		expect( window.fetch ).toHaveBeenCalledWith(
+			'/wp-json/odd/v1/site-summary',
+			expect.objectContaining( {
+				credentials: 'same-origin',
+				headers: expect.objectContaining( { 'X-WP-Nonce': 'test-nonce' } ),
+			} )
+		);
+		expect( container.getAttribute( 'data-state' ) ).toBe( 'ready' );
+		expect( container.querySelector( '.odd-draft__count' ).textContent ).toBe( '3' );
+		expect( container.querySelector( '.odd-draft__title' ).textContent ).toBe( 'Launch notes' );
+		expect( container.querySelector( '.odd-draft__action' ).getAttribute( 'href' ) ).toBe( '/wp-admin/post.php?post=42&action=edit' );
+		expect( values.get( 'summary' ).draft.id ).toBe( 42 );
+
+		expect( () => cleanup() ).not.toThrow();
+		expect( () => cleanup() ).not.toThrow();
+	} );
+
+	it( 'comment radar shows pending comment counts with a live review link', async () => {
+		mockSiteSummary( {
+			draft: { available: true, count: 0 },
+			comments: {
+				available: true,
+				pending: 2,
+				moderateUrl: '/wp-admin/edit-comments.php?comment_status=moderated',
+			},
+			updates: { available: true, plugins: 0 },
+		} );
+
+		const mount = widgetMount( 'odd/comment-radar' );
+		const container = document.createElement( 'div' );
+		document.body.appendChild( container );
+
+		const { storage } = createCtxStorage();
+		const cleanup = mount( container, { storage } );
+		await flushPromises();
+
+		expect( container.getAttribute( 'data-state' ) ).toBe( 'ping' );
+		expect( container.querySelector( '.odd-radar__count' ).textContent ).toBe( '2' );
+		expect( container.querySelector( '.odd-radar__label' ).textContent ).toContain( 'comments waiting' );
+		expect( container.querySelector( '.odd-radar__action' ).getAttribute( 'href' ) ).toBe( '/wp-admin/edit-comments.php?comment_status=moderated' );
+
+		cleanup();
+	} );
+
+	it( 'update whisper shows real plugin update counts from the summary endpoint', async () => {
+		mockSiteSummary( {
+			draft: { available: true, count: 0 },
+			comments: { available: true, pending: 0 },
+			updates: {
+				available: true,
+				plugins: 4,
+				human: 'checked 5 minutes ago',
+				updatesUrl: '/wp-admin/plugins.php?plugin_status=upgrade',
+			},
+		} );
+
+		const mount = widgetMount( 'odd/update-whisper' );
+		const container = document.createElement( 'div' );
+		document.body.appendChild( container );
+
+		const { storage } = createCtxStorage();
+		const cleanup = mount( container, { storage } );
+		await flushPromises();
+
+		expect( container.getAttribute( 'data-state' ) ).toBe( 'murmur' );
+		expect( container.querySelector( '.odd-whisper__count' ).textContent ).toBe( '4' );
+		expect( container.querySelector( '.odd-whisper__label' ).textContent ).toContain( 'plugins are murmuring' );
+		expect( container.querySelector( '.odd-whisper__meta' ).textContent ).toBe( 'checked 5 minutes ago' );
+		expect( container.querySelector( '.odd-whisper__action' ).getAttribute( 'href' ) ).toBe( '/wp-admin/plugins.php?plugin_status=upgrade' );
+
+		cleanup();
+	} );
 } );
 
 describe( 'widget stylesheet scoping', () => {
@@ -533,7 +670,11 @@ describe( 'widget stylesheet scoping', () => {
 			expect( manifest.css ).toEqual( [ 'widget.css' ] );
 			expect( existsSync( widget.css ) ).toBe( true );
 
-			const listing = zipListing( widget.bundle );
+			const bundle = widgetBundleForManifest( widget, manifest );
+			if ( catalogChannel( manifest ) === 'preview' && ! existsSync( bundle ) ) {
+				continue;
+			}
+			const listing = zipListing( bundle );
 			expect( listing ).toContain( 'widget.css' );
 		}
 	} );
@@ -545,7 +686,12 @@ describe( 'widget stylesheet scoping', () => {
 		}
 
 		for ( const widget of FIRST_PARTY_WIDGETS.filter( ( item ) => item.assets ) ) {
-			const listing = zipListing( widget.bundle );
+			const manifest = JSON.parse( readFileSync( widget.manifest, 'utf8' ) );
+			const bundle = widgetBundleForManifest( widget, manifest );
+			if ( catalogChannel( manifest ) === 'preview' && ! existsSync( bundle ) ) {
+				continue;
+			}
+			const listing = zipListing( bundle );
 			for ( const asset of widget.assets ) {
 				expect( listing ).toContain( asset );
 			}

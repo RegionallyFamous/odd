@@ -81,8 +81,125 @@ add_action(
 				),
 			)
 		);
+		register_rest_route(
+			'odd/v1',
+			'/site-summary',
+			array(
+				'methods'             => 'GET',
+				'permission_callback' => function () {
+					return current_user_can( 'read' );
+				},
+				'callback'            => 'oddout_rest_site_summary_get',
+			)
+		);
 	}
 );
+
+function oddout_rest_site_summary_get() {
+	return rest_ensure_response(
+		array(
+			'generatedAt' => time(),
+			'draft'       => oddout_rest_site_summary_draft(),
+			'comments'    => oddout_rest_site_summary_comments(),
+			'updates'     => oddout_rest_site_summary_plugin_updates(),
+		)
+	);
+}
+
+function oddout_rest_site_summary_draft() {
+	$out = array(
+		'available' => current_user_can( 'edit_posts' ),
+		'count'     => 0,
+		'id'        => 0,
+		'title'     => '',
+		'modified'  => '',
+		'human'     => '',
+		'editUrl'   => '',
+	);
+	if ( ! $out['available'] ) {
+		return $out;
+	}
+
+	$args = array(
+		'post_type'           => 'post',
+		'post_status'         => 'draft',
+		'posts_per_page'      => 1,
+		'orderby'             => 'modified',
+		'order'               => 'DESC',
+		'ignore_sticky_posts' => true,
+		'no_found_rows'       => false,
+	);
+	if ( ! current_user_can( 'edit_others_posts' ) ) {
+		$args['author'] = get_current_user_id();
+	}
+
+	$query        = new WP_Query( $args );
+	$out['count'] = isset( $query->found_posts ) ? (int) $query->found_posts : 0;
+	$post         = ! empty( $query->posts ) && $query->posts[0] instanceof WP_Post ? $query->posts[0] : null;
+	if ( $post && current_user_can( 'edit_post', $post->ID ) ) {
+		$title           = get_the_title( $post );
+		$modified        = get_post_modified_time( 'U', true, $post );
+		$out['id']       = (int) $post->ID;
+		$out['title']    = '' !== $title ? wp_strip_all_tags( $title ) : __( 'Untitled draft', 'odd-outlandish-desktop-decorator' );
+		$out['modified'] = get_post_modified_time( DATE_RFC3339, true, $post );
+		$out['human']    = $modified
+			? sprintf(
+				/* translators: %s: human-readable time difference. */
+				__( '%s ago', 'odd-outlandish-desktop-decorator' ),
+				human_time_diff( (int) $modified, time() )
+			)
+			: '';
+		$edit_url       = get_edit_post_link( $post->ID, 'raw' );
+		$out['editUrl'] = is_string( $edit_url ) ? $edit_url : '';
+	}
+	wp_reset_postdata();
+
+	return $out;
+}
+
+function oddout_rest_site_summary_comments() {
+	$out = array(
+		'available'   => current_user_can( 'moderate_comments' ),
+		'pending'     => 0,
+		'moderateUrl' => '',
+	);
+	if ( ! $out['available'] ) {
+		return $out;
+	}
+	$count              = wp_count_comments();
+	$out['pending']     = isset( $count->moderated ) ? (int) $count->moderated : 0;
+	$out['moderateUrl'] = admin_url( 'edit-comments.php?comment_status=moderated' );
+	return $out;
+}
+
+function oddout_rest_site_summary_plugin_updates() {
+	$out = array(
+		'available'   => current_user_can( 'update_plugins' ),
+		'plugins'     => 0,
+		'lastChecked' => 0,
+		'human'       => '',
+		'updatesUrl'  => '',
+	);
+	if ( ! $out['available'] ) {
+		return $out;
+	}
+
+	$updates            = get_site_transient( 'update_plugins' );
+	$response           = is_object( $updates ) && isset( $updates->response ) && is_array( $updates->response ) ? $updates->response : array();
+	$last_checked       = is_object( $updates ) && isset( $updates->last_checked ) ? (int) $updates->last_checked : 0;
+	$out['plugins']     = count( $response );
+	$out['lastChecked'] = $last_checked;
+	$out['human']       = $last_checked
+		? sprintf(
+			/* translators: %s: human-readable time difference. */
+			__( 'checked %s ago', 'odd-outlandish-desktop-decorator' ),
+			human_time_diff( $last_checked, time() )
+		)
+		: __( 'not checked yet', 'odd-outlandish-desktop-decorator' );
+	$out['updatesUrl'] = self_admin_url( 'plugins.php?plugin_status=upgrade' );
+
+	return $out;
+}
 
 function oddout_rest_prefs_get() {
 	$uid = get_current_user_id();

@@ -178,7 +178,9 @@ Double-click to open.
 If you want your app discoverable from every ODD install world-wide,
 open a PR against the plugin repo with your source folder dropped
 into `_tools/catalog-sources/apps/<slug>/` (plus a prebuilt `.wp`
-committed into that folder). The next GitHub Pages deploy publishes
+committed into that folder). Run
+[`npm run catalog:preview`](catalog-preview.md) to test the catalog row
+and installer without publishing it live. The next GitHub Pages deploy publishes
 it at `https://odd.regionallyfamous.com/catalog/v1/` and the Shop's
 Apps department lists it on next refresh — no plugin release required.
 

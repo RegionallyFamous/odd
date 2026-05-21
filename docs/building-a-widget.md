@@ -186,7 +186,9 @@ need to integrate cleanly:
 2. Open the ODD Shop → **Upload** (or drop the `.wp` anywhere on the
    Shop). To ship it to every ODD install world-wide, open a PR that
    adds your source folder at
-   `_tools/catalog-sources/widgets/<slug>/` — the next Pages deploy
+   `_tools/catalog-sources/widgets/<slug>/`. Run
+   [`npm run catalog:preview`](catalog-preview.md) to test the catalog
+   row and installer without publishing it live; the next Pages deploy
    publishes the bundle at
    `https://odd.regionallyfamous.com/catalog/v1/`, where the Widgets
    department picks it up on next refresh.

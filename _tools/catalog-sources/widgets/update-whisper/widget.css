@@ -1,0 +1,244 @@
+.odd-widget--update-whisper {
+	--odd-whisper-ink: #fbf8ff;
+	--odd-whisper-muted: rgba(251, 248, 255, 0.68);
+	--odd-whisper-border: rgba(188, 132, 255, 0.30);
+	--odd-whisper-accent: #c084fc;
+	--odd-whisper-good: #6ee7b7;
+	box-sizing: border-box;
+	width: 100%;
+	height: 100%;
+	min-width: 0;
+	min-height: 0;
+	overflow: hidden;
+	color: var(--odd-whisper-ink);
+	container-type: size;
+}
+
+.odd-widget--update-whisper *,
+.odd-widget--update-whisper *::before,
+.odd-widget--update-whisper *::after {
+	box-sizing: border-box;
+}
+
+.odd-widget--update-whisper .odd-whisper {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	width: 100%;
+	height: 100%;
+	min-height: 0;
+	padding: 16px;
+	border: 1px solid var(--odd-whisper-border);
+	border-radius: 24px;
+	background:
+		radial-gradient(circle at 20% 12%, rgba(192, 132, 252, 0.22), transparent 34%),
+		radial-gradient(circle at 92% 86%, rgba(110, 231, 183, 0.16), transparent 38%),
+		linear-gradient(145deg, rgba(23, 17, 36, 0.98), rgba(8, 8, 18, 0.98));
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 20px 44px rgba(0, 0, 0, 0.28);
+	overflow: hidden;
+}
+
+.odd-widget--update-whisper .odd-whisper__top,
+.odd-widget--update-whisper .odd-whisper__body,
+.odd-widget--update-whisper .odd-whisper__action {
+	position: relative;
+	z-index: 1;
+}
+
+.odd-widget--update-whisper .odd-whisper__top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.odd-widget--update-whisper .odd-whisper__eyebrow {
+	color: var(--odd-whisper-muted);
+	font-size: 12px;
+	font-weight: 900;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+}
+
+.odd-widget--update-whisper .odd-whisper__refresh {
+	display: grid;
+	place-items: center;
+	position: relative;
+	width: 34px;
+	height: 34px;
+	border: 1px solid rgba(255, 255, 255, 0.14);
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.08);
+	color: var(--odd-whisper-ink);
+	cursor: pointer;
+}
+
+.odd-widget--update-whisper .odd-whisper__refresh::before {
+	content: "";
+	width: 14px;
+	height: 14px;
+	border: 2px solid currentColor;
+	border-left-color: transparent;
+	border-radius: 999px;
+}
+
+.odd-widget--update-whisper .odd-whisper__refresh::after {
+	content: "";
+	position: absolute;
+	right: 9px;
+	top: 10px;
+	width: 6px;
+	height: 6px;
+	border-top: 2px solid currentColor;
+	border-right: 2px solid currentColor;
+	transform: rotate(42deg);
+}
+
+.odd-widget--update-whisper .odd-whisper__refresh:disabled {
+	opacity: 0.55;
+	cursor: wait;
+}
+
+.odd-widget--update-whisper .odd-whisper__body {
+	display: grid;
+	grid-template-columns: minmax(78px, 32%) minmax(0, 1fr);
+	gap: 14px;
+	align-items: center;
+	min-height: 0;
+	flex: 1 1 auto;
+}
+
+.odd-widget--update-whisper .odd-whisper__meter {
+	display: flex;
+	align-items: end;
+	justify-content: center;
+	gap: 8px;
+	min-width: 76px;
+	height: 86px;
+	padding: 12px;
+	border: 2px solid rgba(12, 14, 26, 0.92);
+	border-radius: 22px;
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.035));
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.10), 0 14px 30px rgba(0, 0, 0, 0.22);
+}
+
+.odd-widget--update-whisper .odd-whisper__bar {
+	width: 12px;
+	border-radius: 999px;
+	background: linear-gradient(180deg, #f0abfc, #8b5cf6);
+	box-shadow: 0 0 18px rgba(192, 132, 252, 0.38);
+	transform-origin: bottom center;
+}
+
+.odd-widget--update-whisper .odd-whisper__bar--one {
+	height: 34px;
+}
+
+.odd-widget--update-whisper .odd-whisper__bar--two {
+	height: 56px;
+}
+
+.odd-widget--update-whisper .odd-whisper__bar--three {
+	height: 42px;
+}
+
+.odd-widget--update-whisper[data-state="murmur"] .odd-whisper__bar {
+	animation: odd-whisper-bars 1.7s ease-in-out infinite;
+}
+
+.odd-widget--update-whisper[data-state="murmur"] .odd-whisper__bar--two {
+	animation-delay: 0.16s;
+}
+
+.odd-widget--update-whisper[data-state="murmur"] .odd-whisper__bar--three {
+	animation-delay: 0.32s;
+}
+
+.odd-widget--update-whisper[data-state="quiet"] .odd-whisper__bar {
+	background: linear-gradient(180deg, #a7f3d0, #34d399);
+	box-shadow: 0 0 18px rgba(52, 211, 153, 0.28);
+}
+
+.odd-widget--update-whisper .odd-whisper__copy {
+	min-width: 0;
+}
+
+.odd-widget--update-whisper .odd-whisper__count {
+	font-size: clamp(40px, 23cqi, 66px);
+	line-height: 0.9;
+	font-weight: 950;
+	color: var(--odd-whisper-accent);
+	text-shadow: 0 0 22px rgba(192, 132, 252, 0.26);
+}
+
+.odd-widget--update-whisper .odd-whisper__label {
+	margin-top: 8px;
+	font-size: clamp(16px, 7cqi, 21px);
+	line-height: 1.05;
+	font-weight: 900;
+}
+
+.odd-widget--update-whisper .odd-whisper__meta {
+	margin-top: 7px;
+	color: var(--odd-whisper-muted);
+	font-size: 12px;
+	font-weight: 750;
+	line-height: 1.25;
+	overflow-wrap: anywhere;
+}
+
+.odd-widget--update-whisper .odd-whisper__action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 38px;
+	padding: 0 16px;
+	border: 1px solid rgba(192, 132, 252, 0.52);
+	border-radius: 999px;
+	background: rgba(192, 132, 252, 0.14);
+	color: var(--odd-whisper-ink);
+	text-decoration: none;
+	font-size: 13px;
+	font-weight: 900;
+}
+
+.odd-widget--update-whisper .odd-whisper__action[aria-disabled="true"] {
+	opacity: 0.48;
+	pointer-events: none;
+}
+
+@keyframes odd-whisper-bars {
+	0%,
+	100% { transform: scaleY(0.78); opacity: 0.74; }
+	50% { transform: scaleY(1.08); opacity: 1; }
+}
+
+.odd-widget--update-whisper.is-reduced .odd-whisper__bar {
+	animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.odd-widget--update-whisper .odd-whisper__bar {
+		animation: none;
+	}
+}
+
+@container (max-width: 285px) {
+	.odd-widget--update-whisper .odd-whisper {
+		padding: 13px;
+		border-radius: 20px;
+	}
+
+	.odd-widget--update-whisper .odd-whisper__body {
+		grid-template-columns: 68px minmax(0, 1fr);
+		gap: 10px;
+	}
+
+	.odd-widget--update-whisper .odd-whisper__meter {
+		min-width: 66px;
+		height: 78px;
+		padding: 10px;
+		gap: 6px;
+	}
+}

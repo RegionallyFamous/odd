@@ -51,10 +51,14 @@ Use a catalog-only update when the change is limited to first-party content
 under `_tools/catalog-sources/` or generated files under `site/catalog/v1/`.
 
 1. Edit catalog source files.
-2. Run `python3 _tools/build-catalog.py`.
-3. Run `ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog`.
-4. Commit and push to `main`.
-5. Confirm `.github/workflows/pages.yml` publishes the catalog.
+2. Run `npm run catalog:preview` to build and validate a non-live candidate.
+3. Open [`/go/preview/`](https://odd.regionallyfamous.com/go/preview/) after
+   Pages deploys the preview catalog, or test locally with the smoke fixture.
+4. Run `python3 _tools/build-catalog.py`.
+5. Run `ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog`.
+6. Commit and push to `main`.
+7. Confirm `.github/workflows/pages.yml` publishes both `/catalog/v1/` and
+   `/catalog-preview/v1/`.
 
 `validate-catalog` also checks that every bundle has a published `card_url` and
 that card assets stay small enough for Shop use. If it fails on card size,
@@ -66,7 +70,7 @@ catalog-only changes.
 
 ## Playground Smoke
 
-1. Open `https://odd.regionallyfamous.com/go/` (stable: newest approved ODD + Desktop Mode releases from WordPress.org). For trunk, use [`/go/dev/`](https://odd.regionallyfamous.com/go/dev/) instead — **do not** use the stable URL to validate `main`.
+1. Open `https://odd.regionallyfamous.com/go/` (stable: newest approved ODD + Desktop Mode releases from WordPress.org). For trunk, use [`/go/dev/`](https://odd.regionallyfamous.com/go/dev/) instead. For catalog candidates, use [`/go/preview/`](https://odd.regionallyfamous.com/go/preview/) so the Shop reads `/catalog-preview/v1/` — **do not** use the stable URL to validate `main` or preview catalog work.
 2. Confirm WordPress Playground loads the pinned Desktop Mode release and ODD.
 3. Confirm the ODD Shop opens.
 4. Confirm the starter wallpaper, icon set, and cursor set install or show a

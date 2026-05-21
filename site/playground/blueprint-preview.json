@@ -1,0 +1,47 @@
+{
+  "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+  "landingPage": "/wp-admin/index.php?desktop_mode_portal=1",
+  "preferredVersions": {
+    "php": "8.1",
+    "wp": "6.9"
+  },
+  "features": {
+    "networking": true
+  },
+  "login": true,
+  "steps": [
+    {
+      "step": "mkdir",
+      "path": "/wordpress/wp-content/mu-plugins"
+    },
+    {
+      "step": "writeFile",
+      "path": "/wordpress/wp-content/mu-plugins/odd-preview-catalog.php",
+      "data": "<?php\n/**\n * Route this Playground build to ODD's non-live preview catalog.\n */\nadd_filter(\n\t'oddout_catalog_url',\n\tstatic function () {\n\t\treturn 'https://odd.regionallyfamous.com/catalog-preview/v1/registry.json';\n\t}\n);\nadd_filter(\n\t'oddout_catalog_signature_required',\n\tstatic function ( $required, $catalog_url ) {\n\t\tif ( 0 === strpos( (string) $catalog_url, 'https://odd.regionallyfamous.com/catalog-preview/v1/' ) ) {\n\t\t\treturn false;\n\t\t}\n\t\treturn $required;\n\t},\n\t10,\n\t2\n);\n"
+    },
+    {
+      "step": "installPlugin",
+      "pluginData": {
+        "resource": "url",
+        "url": "https://downloads.wordpress.org/plugin/desktop-mode.0.8.6.zip"
+      },
+      "options": { "activate": true, "targetFolderName": "desktop-mode" }
+    },
+    {
+      "step": "installPlugin",
+      "pluginData": {
+        "resource": "git:directory",
+        "url": "https://github.com/RegionallyFamous/odd",
+        "ref": "main",
+        "refType": "branch",
+        "path": "odd"
+      },
+      "options": { "activate": true, "targetFolderName": "odd" }
+    },
+    {
+      "step": "updateUserMeta",
+      "userId": 1,
+      "meta": { "desktop_mode_mode": "1", "oddout_admin_bar_hidden": "1" }
+    }
+  ]
+}

@@ -480,6 +480,7 @@ add_action(
 			'liveScripts'      => $live_scripts,
 			'restUrl'          => esc_url_raw( oddout_https_rest_url( 'odd/v1/prefs' ) ),
 			'restNonce'        => wp_create_nonce( 'wp_rest' ),
+			'siteSummaryUrl'   => esc_url_raw( oddout_https_rest_url( 'odd/v1/site-summary' ) ),
 			'catalogBaseUrl'   => function_exists( 'oddout_catalog_base_url' )
 				? esc_url_raw( oddout_catalog_base_url() )
 				: '',

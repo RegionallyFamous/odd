@@ -51,16 +51,43 @@ from PIL import Image, ImageChops, ImageStat
 HERE = Path(__file__).resolve().parent
 PLUGIN_DIR = HERE.parent
 REPO_ROOT = PLUGIN_DIR.parent
-CATALOG_DIR = REPO_ROOT / "site" / "catalog" / "v1"
+
+
+def repo_path_from_env(name: str, default: Path) -> Path:
+    raw = (os.environ.get(name) or "").strip()
+    if not raw:
+        return default
+    path = Path(raw)
+    return path if path.is_absolute() else REPO_ROOT / path
+
+
+def display_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path)
+
+
+CATALOG_DIR = repo_path_from_env("ODD_CATALOG_OUT_ROOT", REPO_ROOT / "site" / "catalog" / "v1")
 REGISTRY = CATALOG_DIR / "registry.json"
 REGISTRY_SIG = CATALOG_DIR / "registry.json.sig"
 SCHEMA = CATALOG_DIR / "registry.schema.json"
-FALLBACK_REGISTRY = REPO_ROOT / "odd" / "data" / "fallback-registry.json"
+FALLBACK_REGISTRY = repo_path_from_env(
+    "ODD_CATALOG_FALLBACK_REGISTRY",
+    REPO_ROOT / "odd" / "data" / "fallback-registry.json",
+)
+VALIDATE_FALLBACK_REGISTRY = os.environ.get("ODD_VALIDATE_FALLBACK_REGISTRY", "1") != "0"
 DEFAULT_CATALOG_PUBLIC_KEY = "2aIvGPQMF//a9ciDvQ8GST7Q8QhfVsM6h1HB3/Td5Gk="
 
 # If a bundle's icon_url / download_url starts with this prefix, strip
 # it to resolve against the on-disk catalog.
-PUBLIC_PREFIX = "https://odd.regionallyfamous.com/catalog/v1/"
+PUBLIC_PREFIX = (
+    os.environ.get("ODD_CATALOG_PUBLIC_PREFIX")
+    or (
+        (os.environ.get("ODD_CATALOG_BASE_URL") or "https://odd.regionallyfamous.com/catalog/v1").rstrip("/")
+        + "/"
+    )
+)
 FIRST_PARTY_ICON_KEYS = {
     "odd", "my-wordpress", "content-graph", "recycle-bin", "fallback",
 }
@@ -334,6 +361,10 @@ def check_bundle_row(
     if not isinstance(version, str) or not SEMVER_RE.match(version):
         problems.append(f"bundle[{idx}] ({slug}): invalid version {version!r}")
 
+    channel = row.get("channel")
+    if channel is not None and channel != "preview":
+        problems.append(f"bundle[{idx}] ({slug}): unsupported catalog channel {channel!r}")
+
     requires = row.get("requires")
     if requires is not None:
         if not isinstance(requires, dict):
@@ -536,23 +567,27 @@ def catalog_artifact_paths() -> list[Path]:
         list((CATALOG_DIR / "bundles").glob("*.wp"))
         + list((CATALOG_DIR / "icons").glob("*"))
         + list((CATALOG_DIR / "cards").glob("*"))
-        + [REGISTRY, SCHEMA, FALLBACK_REGISTRY]
+        + [REGISTRY, SCHEMA]
     )
+    if VALIDATE_FALLBACK_REGISTRY:
+        paths.append(FALLBACK_REGISTRY)
     if REGISTRY_SIG.is_file():
         paths.append(REGISTRY_SIG)
     return sorted(p for p in paths if p.is_file())
 
 
 def check_fallback_registry(problems: list[str]) -> None:
+    if not VALIDATE_FALLBACK_REGISTRY:
+        return
     if not FALLBACK_REGISTRY.is_file():
         problems.append(
-            f"{FALLBACK_REGISTRY.relative_to(REPO_ROOT)} is missing"
+            f"{display_path(FALLBACK_REGISTRY)} is missing"
         )
         return
     if sha256_file(FALLBACK_REGISTRY) != sha256_file(REGISTRY):
         problems.append(
-            f"{FALLBACK_REGISTRY.relative_to(REPO_ROOT)} differs from "
-            f"{REGISTRY.relative_to(REPO_ROOT)}"
+            f"{display_path(FALLBACK_REGISTRY)} differs from "
+            f"{display_path(REGISTRY)}"
         )
 
 
@@ -583,13 +618,13 @@ def check_deterministic_rebuild(problems: list[str]) -> None:
     paths = catalog_artifact_paths()
     after = {p: sha256_file(p) for p in paths}
     if set(before) != set(after):
-        diffs = sorted(str(p.relative_to(REPO_ROOT)) for p in set(before) ^ set(after))
+        diffs = sorted(display_path(p) for p in set(before) ^ set(after))
         problems.append(f"rebuild changed file set: {diffs}")
         return
     for p in paths:
         if before[p] != after[p]:
             problems.append(
-                f"rebuild changed {p.relative_to(REPO_ROOT)} — builder is non-deterministic"
+                f"rebuild changed {display_path(p)} — builder is non-deterministic"
             )
 
 
@@ -598,7 +633,7 @@ def main() -> int:
 
     if not REGISTRY.is_file():
         print(
-            f"error: {REGISTRY.relative_to(REPO_ROOT)} not found. "
+            f"error: {display_path(REGISTRY)} not found. "
             f"Run `python3 _tools/build-catalog.py` first.",
             file=sys.stderr,
         )

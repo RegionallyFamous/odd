@@ -198,7 +198,9 @@ the first declared icon stands in. A preview image usually works best as:
 2. Open the ODD Shop → **Upload** (or drop the `.wp` anywhere on the
    Shop). Or submit it to the first-party catalog by opening a PR
    that drops your source folder into
-   `_tools/catalog-sources/icon-sets/<slug>/` — the next Pages deploy
+   `_tools/catalog-sources/icon-sets/<slug>/`. Run
+   [`npm run catalog:preview`](catalog-preview.md) to test the catalog
+   row and installer without publishing it live; the next Pages deploy
    publishes it to `https://odd.regionallyfamous.com/catalog/v1/`
    where every ODD install can install it from Discover.
 3. The Shop jumps to Icon Sets and flashes your new set's tile.

@@ -57,8 +57,10 @@ Every card also carries a plain-language trust label:
   model.
 - New first-party store items do not require a plugin release when older
   clients already understand the row schema: edit `_tools/catalog-sources/`,
-  run `python3 _tools/build-catalog.py`, run
-  `ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog`, then push `main` so
+  run `npm run catalog:preview` to validate a non-live candidate, use
+  `/go/preview/` when you need a hosted Playground smoke against
+  `/catalog-preview/v1/`, then run `python3 _tools/build-catalog.py` and
+  `ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog` before pushing `main` so
   GitHub Pages publishes `site/catalog/v1/`.
 - The old app-specific catalog/install REST routes are removed in the 1.0
   baseline. Apps still keep app-specific open/toggle/delete routes because
