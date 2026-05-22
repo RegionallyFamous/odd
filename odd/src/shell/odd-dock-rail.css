@@ -8,6 +8,7 @@
 	flex-direction: row;
 	gap: 0;
 	overflow-x: hidden;
+	overflow-y: hidden;
 }
 
 .odd-dock-rail-mount__menu,
@@ -19,25 +20,54 @@
 	min-height: 0;
 	min-width: 0;
 	max-width: 100%;
-	flex-flow: row wrap;
+	flex-flow: row nowrap;
 	justify-content: flex-start;
+}
+
+.odd-dock-rail-mount__menu {
+	overflow-x: auto;
+	overflow-y: hidden;
+	overscroll-behavior-x: contain;
+	overscroll-behavior-y: none;
+	scrollbar-width: none;
+	touch-action: pan-x;
+}
+
+.odd-dock-rail-mount__menu::-webkit-scrollbar {
+	width: 0;
+	height: 0;
+	display: none;
+}
+
+.odd-dock-rail-mount__system {
+	flex: 0 0 auto;
 }
 
 .desktop-mode-dock.desktop-mode-shell__dock--orientation-left .odd-dock-rail-mount,
 .desktop-mode-dock.desktop-mode-shell__dock--orientation-right .odd-dock-rail-mount {
 	flex-direction: column;
 	overflow-x: hidden;
-	overflow-y: visible;
+	overflow-y: hidden;
 	touch-action: pan-y;
 }
 
 .desktop-mode-dock.desktop-mode-shell__dock--orientation-left .odd-dock-rail-mount__menu,
-.desktop-mode-dock.desktop-mode-shell__dock--orientation-right .odd-dock-rail-mount__menu,
+.desktop-mode-dock.desktop-mode-shell__dock--orientation-right .odd-dock-rail-mount__menu {
+	flex-direction: column;
+	align-items: center;
+	overflow-x: hidden;
+	overflow-y: auto;
+	overscroll-behavior-x: none;
+	overscroll-behavior-y: contain;
+	touch-action: pan-y;
+}
+
 .desktop-mode-dock.desktop-mode-shell__dock--orientation-left .odd-dock-rail-mount__system,
 .desktop-mode-dock.desktop-mode-shell__dock--orientation-right .odd-dock-rail-mount__system {
 	flex-direction: column;
 	align-items: center;
 	overflow-x: hidden;
+	overflow-y: hidden;
 }
 
 .odd-dock-rail-mount__divider {
@@ -82,6 +112,61 @@ button.odd-dock-rail-mount__tile:focus-visible {
 
 button.odd-dock-rail-mount__tile:hover {
 	background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+button.odd-dock-rail-mount__tile > .desktop-mode-dock__badge {
+	top: -3px;
+	inset-inline-end: -3px;
+}
+
+button.odd-dock-rail-mount__tile:hover > .desktop-mode-dock__badge {
+	top: -4px;
+}
+
+button.odd-dock-rail-mount__tile--attention-pulse {
+	animation: wpd-dock-attention-pulse 1.4s ease-in-out infinite;
+}
+
+button.odd-dock-rail-mount__tile--attention-shake {
+	animation: wpd-dock-attention-shake 0.8s ease-in-out infinite;
+}
+
+button.odd-dock-rail-mount__tile--attention-bounce {
+	animation: wpd-dock-attention-bounce 1.2s ease-in-out infinite;
+}
+
+button.odd-dock-rail-mount__tile--intensity-strong.odd-dock-rail-mount__tile--attention-pulse {
+	animation-duration: 1s;
+}
+
+button.odd-dock-rail-mount__tile--intensity-strong.odd-dock-rail-mount__tile--attention-shake {
+	animation-duration: 0.6s;
+}
+
+button.odd-dock-rail-mount__tile--intensity-strong.odd-dock-rail-mount__tile--attention-bounce {
+	animation-duration: 0.9s;
+}
+
+button.odd-dock-rail-mount__tile--intensity-subtle.odd-dock-rail-mount__tile--attention-pulse {
+	animation-duration: 1.8s;
+}
+
+button.odd-dock-rail-mount__tile--intensity-subtle.odd-dock-rail-mount__tile--attention-shake {
+	animation-duration: 1s;
+}
+
+button.odd-dock-rail-mount__tile--intensity-subtle.odd-dock-rail-mount__tile--attention-bounce {
+	animation-duration: 1.6s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	button.odd-dock-rail-mount__tile--attention-pulse,
+	button.odd-dock-rail-mount__tile--attention-shake,
+	button.odd-dock-rail-mount__tile--attention-bounce {
+		animation: none;
+		outline: 2px solid currentColor;
+		outline-offset: 2px;
+	}
 }
 
 button.odd-dock-rail-mount__tile img {

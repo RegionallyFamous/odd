@@ -36,9 +36,17 @@ describe( 'Desktop Mode dock rail CSS contract', () => {
 
 		expect( css ).toContain( 'max-width: 100%;' );
 		expect( css ).toContain( 'overflow-x: hidden;' );
+		expect( css ).toContain( 'overflow-y: hidden;' );
+		expect( css ).toContain( '.odd-dock-rail-mount__menu {' );
+		expect( css ).toContain( 'overflow-x: auto;' );
+		expect( css ).toContain( 'overscroll-behavior-x: contain;' );
+		expect( css ).toContain( '.odd-dock-rail-mount__system {' );
+		expect( css ).toContain( 'flex: 0 0 auto;' );
 		expect( css ).toContain( 'touch-action: pan-y;' );
 		expect( css ).toContain( '.desktop-mode-dock.desktop-mode-shell__dock--orientation-left .odd-dock-rail-mount__menu,' );
 		expect( css ).toContain( 'align-items: center;' );
+		expect( css ).toContain( 'button.odd-dock-rail-mount__tile--attention-pulse {' );
+		expect( css ).toContain( 'button.odd-dock-rail-mount__tile > .desktop-mode-dock__badge {' );
 		expect( css ).toContain( 'button.odd-dock-rail-mount__tile img {' );
 		expect( css ).toContain( 'width: calc(100% - 8px);' );
 		expect( css ).toContain( 'height: calc(100% - 8px);' );

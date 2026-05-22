@@ -172,8 +172,155 @@
 		} );
 	}
 
-	function rebuildMenuTiles( deps, menuRow ) {
+	function uniquePush( list, value ) {
+		value = value == null ? '' : String( value );
+		if ( value && list.indexOf( value ) === -1 ) {
+			list.push( value );
+		}
+	}
+
+	function tileIdsForItem( item ) {
+		var ids = [];
+		if ( ! item || typeof item !== 'object' ) {
+			return ids;
+		}
+		uniquePush( ids, itemId( item ) );
+		uniquePush( ids, item.id );
+		uniquePush( ids, item.windowId );
+		uniquePush( ids, item.baseId );
+		uniquePush( ids, item.slug );
+		uniquePush( ids, dockKeyUrl( item ) );
+		return ids;
+	}
+
+	function safeBadgeCount( count ) {
+		return Math.max( 0, Math.floor( Number( count ) || 0 ) );
+	}
+
+	function badgeLabel( count ) {
+		return count === 1 ? '1 notification' : count + ' notifications';
+	}
+
+	function applyBadgeNode( tile, count ) {
+		if ( ! tile || typeof tile.querySelector !== 'function' ) {
+			return;
+		}
+		var existing = tile.querySelector( ':scope > .desktop-mode-dock__badge' );
+		if ( count <= 0 ) {
+			if ( existing && existing.parentNode ) {
+				existing.parentNode.removeChild( existing );
+			}
+			return;
+		}
+		var display = count > 99 ? '99+' : String( count );
+		if ( existing ) {
+			existing.textContent = display;
+			existing.setAttribute( 'aria-label', badgeLabel( count ) );
+			return;
+		}
+		var badge = document.createElement( 'span' );
+		badge.className = 'desktop-mode-dock__badge';
+		badge.textContent = display;
+		badge.setAttribute( 'aria-label', badgeLabel( count ) );
+		tile.appendChild( badge );
+	}
+
+	var ATTENTION_MODES = [ 'pulse', 'shake', 'bounce' ];
+	var ATTENTION_CLASSES = [
+		'odd-dock-rail-mount__tile--attention-pulse',
+		'odd-dock-rail-mount__tile--attention-shake',
+		'odd-dock-rail-mount__tile--attention-bounce',
+		'odd-dock-rail-mount__tile--intensity-subtle',
+		'odd-dock-rail-mount__tile--intensity-normal',
+		'odd-dock-rail-mount__tile--intensity-strong',
+	];
+
+	function cleanAttention( mode, opts ) {
+		if ( mode == null ) {
+			return null;
+		}
+		mode = String( mode || 'pulse' );
+		if ( ATTENTION_MODES.indexOf( mode ) === -1 ) {
+			mode = 'pulse';
+		}
+		opts = opts || {};
+		var intensity = String( opts.intensity || 'normal' );
+		if ( [ 'subtle', 'normal', 'strong' ].indexOf( intensity ) === -1 ) {
+			intensity = 'normal';
+		}
+		return {
+			mode: mode,
+			intensity: intensity,
+		};
+	}
+
+	function applyAttentionNode( tile, attention ) {
+		if ( ! tile || ! tile.classList ) {
+			return;
+		}
+		ATTENTION_CLASSES.forEach( function ( klass ) {
+			tile.classList.remove( klass );
+		} );
+		if ( ! attention ) {
+			return;
+		}
+		tile.classList.add( 'odd-dock-rail-mount__tile--attention-' + attention.mode );
+		tile.classList.add( 'odd-dock-rail-mount__tile--intensity-' + attention.intensity );
+	}
+
+	function storeTile( state, bucket, item, tile ) {
+		var ids = tileIdsForItem( item );
+		tile.__oddDockIds = ids;
+		ids.forEach( function ( id ) {
+			state[ bucket ][ id ] = tile;
+		} );
+		return ids;
+	}
+
+	function tileForId( state, id ) {
+		var key = String( id || '' );
+		return key ? ( state.menuById[ key ] || state.sysById[ key ] || null ) : null;
+	}
+
+	function applyStoredTileState( state, item, tile ) {
+		var ids = tileIdsForItem( item );
+		for ( var i = 0; i < ids.length; i++ ) {
+			if ( Object.prototype.hasOwnProperty.call( state.badges, ids[ i ] ) ) {
+				applyBadgeNode( tile, state.badges[ ids[ i ] ] );
+				break;
+			}
+		}
+		for ( var j = 0; j < ids.length; j++ ) {
+			if ( Object.prototype.hasOwnProperty.call( state.attention, ids[ j ] ) ) {
+				applyAttentionNode( tile, state.attention[ ids[ j ] ] );
+				break;
+			}
+		}
+	}
+
+	function publishRailController( controller ) {
+		window.__odd = window.__odd || {};
+		var rails = Array.isArray( window.__odd.dockRails ) ? window.__odd.dockRails : [];
+		if ( rails.indexOf( controller ) === -1 ) {
+			rails.push( controller );
+		}
+		window.__odd.dockRails = rails;
+		window.__odd.dockRail = controller;
+		return function () {
+			var list = Array.isArray( window.__odd && window.__odd.dockRails ) ? window.__odd.dockRails : [];
+			var index = list.indexOf( controller );
+			if ( index !== -1 ) {
+				list.splice( index, 1 );
+			}
+			if ( window.__odd && window.__odd.dockRail === controller ) {
+				window.__odd.dockRail = list[ 0 ] || null;
+			}
+		};
+	}
+
+	function rebuildMenuTiles( deps, menuRow, state ) {
 		var frag = document.createDocumentFragment();
+		state.menuById = {};
 		( deps.items || [] ).forEach(
 			function ( item ) {
 				var btn = document.createElement( 'button' );
@@ -187,6 +334,8 @@
 					openMenuTile( deps, item );
 				} );
 				attachOddDockMenu( btn, item );
+				storeTile( state, 'menuById', item, btn );
+				applyStoredTileState( state, item, btn );
 				frag.appendChild( btn );
 			}
 		);
@@ -229,9 +378,15 @@
 				}
 			}
 			applyOrientation( deps.orientation );
-			rebuildMenuTiles( deps, menuRow );
 
-			var sysById = {};
+			var state = {
+				menuById: {},
+				sysById: {},
+				badges: {},
+				attention: {},
+				attentionTimers: {},
+			};
+			rebuildMenuTiles( deps, menuRow, state );
 
 			function makeSystemBtn( item ) {
 				var idRaw = '';
@@ -247,7 +402,6 @@
 				btn.setAttribute( 'data-odd-kind', 'system' );
 				if ( idRaw ) {
 					btn.setAttribute( 'data-odd-system-id', idRaw );
-					sysById[ idRaw ] = btn;
 				}
 				btn.setAttribute(
 					'aria-label',
@@ -270,36 +424,86 @@
 					}
 				);
 				attachOddDockMenu( btn, item );
+				storeTile( state, 'sysById', item, btn );
+				applyStoredTileState( state, item, btn );
 				return btn;
 			}
 
-			return {
+			var unregisterLocalRail = function () {};
+			var controller = {
 				replaceItems: function ( items ) {
 					deps.items = Array.isArray( items ) ? items : [];
-					rebuildMenuTiles( deps, menuRow );
+					rebuildMenuTiles( deps, menuRow, state );
 				},
 				appendSystemItem: function ( wrapped ) {
 					sysRow.appendChild( makeSystemBtn( wrapped ) );
 				},
 				removeSystemItem: function ( id ) {
 					var key = String( id );
-					var el = sysById[ key ];
+					var el = state.sysById[ key ];
 					if ( el && el.parentNode ) {
 						el.parentNode.removeChild( el );
 					}
-					delete sysById[ key ];
+					if ( el && Array.isArray( el.__oddDockIds ) ) {
+						el.__oddDockIds.forEach( function ( tileId ) {
+							delete state.sysById[ tileId ];
+						} );
+					} else {
+						delete state.sysById[ key ];
+					}
 				},
-				setBadge: function () {
+				setBadge: function ( id, count ) {
+					var key = String( id || '' );
+					if ( ! key ) {
+						return;
+					}
+					var safe = safeBadgeCount( count );
+					if ( safe > 0 ) {
+						state.badges[ key ] = safe;
+					} else {
+						delete state.badges[ key ];
+					}
+					applyBadgeNode( tileForId( state, key ), safe );
 				},
-				setAttention: function () {
+				setAttention: function ( id, mode, opts ) {
+					var key = String( id || '' );
+					if ( ! key ) {
+						return;
+					}
+					if ( state.attentionTimers[ key ] ) {
+						window.clearTimeout( state.attentionTimers[ key ] );
+						delete state.attentionTimers[ key ];
+					}
+					var attention = cleanAttention( mode, opts );
+					if ( attention ) {
+						state.attention[ key ] = attention;
+					} else {
+						delete state.attention[ key ];
+					}
+					applyAttentionNode( tileForId( state, key ), attention );
+					var duration = opts && typeof opts.durationMs === 'number' ? opts.durationMs : 4000;
+					if ( attention && duration > 0 ) {
+						state.attentionTimers[ key ] = window.setTimeout( function () {
+							delete state.attentionTimers[ key ];
+							delete state.attention[ key ];
+							applyAttentionNode( tileForId( state, key ), null );
+						}, duration );
+					}
 				},
 				setOrientation: function ( next ) {
 					applyOrientation( next );
 				},
 				destroy: function () {
+					unregisterLocalRail();
+					Object.keys( state.attentionTimers ).forEach( function ( key ) {
+						window.clearTimeout( state.attentionTimers[ key ] );
+					} );
+					state.attentionTimers = {};
 					wrapper.innerHTML = '';
 				},
 			};
+			unregisterLocalRail = publishRailController( controller );
+			return controller;
 		}
 
 		try {

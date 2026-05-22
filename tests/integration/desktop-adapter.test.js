@@ -113,6 +113,56 @@ describe( 'ODD Desktop Mode adapter', () => {
 		expect( privateRedock ).not.toHaveBeenCalled();
 	} );
 
+	it( 'sets dock, taskbar, and desktop icon badges through native host APIs', () => {
+		const dockBadge = vi.fn();
+		const taskbarBadge = vi.fn();
+		const iconBadge = vi.fn();
+		const dockAttention = vi.fn();
+		const taskbarAttention = vi.fn();
+		const compactRailBadge = vi.fn();
+		const compactRailAttention = vi.fn();
+		window.wp.desktop = {
+			dock: {
+				setBadge:     dockBadge,
+				setAttention: dockAttention,
+			},
+			taskbar: {
+				setBadge:     taskbarBadge,
+				setAttention: taskbarAttention,
+			},
+			icons: {
+				setBadge: iconBadge,
+			},
+		};
+		window.__odd.dockRails = [
+			{
+				setBadge:     compactRailBadge,
+				setAttention: compactRailAttention,
+			},
+		];
+		const adapter = window.__odd.desktop;
+
+		expect( adapter.capabilities() ).toMatchObject( {
+			badges: true,
+			attention: true,
+		} );
+		expect( adapter.setBadge( 'odd', '3.8' ) ).toBe( true );
+		expect( dockBadge ).toHaveBeenCalledWith( 'odd', 3 );
+		expect( taskbarBadge ).toHaveBeenCalledWith( 'odd', 3 );
+		expect( iconBadge ).toHaveBeenCalledWith( 'odd', 3 );
+		expect( compactRailBadge ).toHaveBeenCalledWith( 'odd', 3 );
+
+		expect( adapter.clearBadge( 'odd' ) ).toBe( true );
+		expect( dockBadge ).toHaveBeenLastCalledWith( 'odd', 0 );
+		expect( taskbarBadge ).toHaveBeenLastCalledWith( 'odd', 0 );
+		expect( iconBadge ).toHaveBeenLastCalledWith( 'odd', 0 );
+
+		expect( adapter.setAttention( 'odd', 'pulse', { intensity: 'subtle' } ) ).toBe( true );
+		expect( dockAttention ).toHaveBeenCalledWith( 'odd', 'pulse', { intensity: 'subtle' } );
+		expect( taskbarAttention ).toHaveBeenCalledWith( 'odd', 'pulse', { intensity: 'subtle' } );
+		expect( compactRailAttention ).toHaveBeenCalledWith( 'odd', 'pulse', { intensity: 'subtle' } );
+	} );
+
 	it( 'registers sanitized Desktop Mode window notices and falls back to toasts', () => {
 		const unregister = vi.fn();
 		const registerWindowNotice = vi.fn( () => unregister );

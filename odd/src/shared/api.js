@@ -329,10 +329,13 @@
 	}
 
 	function setBadge( itemId, count ) {
+		if ( desktopAdapter && typeof desktopAdapter.setBadge === 'function' ) {
+			return desktopAdapter.setBadge( itemId, count );
+		}
 		var d = desktop();
 		if ( ! d || ! itemId ) return false;
 		return !! safeCall( function () {
-			var rails = [ d.dock, d.sideDock, d.icons ];
+			var rails = [ d.dock, d.taskbar, d.sideDock, d.icons ];
 			for ( var i = 0; i < rails.length; i++ ) {
 				if ( rails[ i ] && typeof rails[ i ].setBadge === 'function' ) {
 					rails[ i ].setBadge( itemId, count );

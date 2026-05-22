@@ -39,7 +39,13 @@ out dock badge alignment, scrollable docks with pinned system tiles, quieter
 desktop file/shortcut updates, nested-folder trash fixes, Media Library image
 dragging into Gutenberg posts, Edit User layout polish, centered title-bar
 icons, and WP Guidelines-powered sticky notes. ODD keeps 0.8.5 as the runtime
-floor and relies on feature detection for every host surface below.
+floor and relies on feature detection for every host surface below. The ODD
+compact rail now implements the host rail `setBadge()` and `setAttention()`
+methods and keeps its menu segment scrollable while system tiles remain pinned,
+so selecting the ODD rail does not regress Desktop Mode 0.8.8's dock behavior.
+Desktop Mode's WP Guidelines sticky notes are host-owned in 0.8.8: ODD keeps
+its catalog Sticky Note on the public widget contract until a documented
+third-party sticky-note registration API exists.
 
 ## 0.8.6 Surface Notes
 
@@ -115,7 +121,7 @@ The important contracts:
 | OS-file-drop hooks: `desktop-mode.drop.files-detected`, `before-upload`, `upload-started`, `upload-progress`, `after-upload`, `upload-failed` | supported | ODD intercepts `.wp`/`.odd` files before Media Library upload and records progress hooks for diagnostics; upload UI stays Desktop Mode-owned. |
 | Wallpaper hooks: `desktop-mode.wallpapers`, `desktop-mode.wallpaper.mounting`, `mounted`, `unmounting`, `mount-failed`, `visibility`, `surfaces` | supported | ODD uses visibility, records lifecycle/surface data, and exposes a Desktop Mode wallpaper editor for scene/shuffle/audio controls. |
 | Dock hooks: `desktop-mode.dock.item-appended`, `desktop-mode.dock.before-render`, `tile-class`, `tile-element`, `tile-tooltip`, `tile-rendered`, `after-render`, `item-removed` | supported | ODD decorates only ODD tile data/elements returned by hooks and records dock behavior. It does not replace host dock icon DOM. |
-| Dock APIs: `registerSystemTile()`, `listSystemTiles()`, `getSystemTile()`, `openOsSettings()`, `getMenuItems()`, `renderIcon()`, `isDockElement()` | supported | ODD uses these where available for settings, diagnostics, and launcher integration. |
+| Dock APIs: `registerSystemTile()`, `listSystemTiles()`, `getSystemTile()`, `openOsSettings()`, `getMenuItems()`, `renderIcon()`, `isDockElement()`, `dock.setBadge()`, `taskbar.setBadge()`, `icons.setBadge()`, `dock.setAttention()`, `taskbar.setAttention()` | supported | ODD uses these where available for settings, diagnostics, launcher integration, and host-native dock/icon badges. The custom ODD compact rail mirrors `setBadge()` and `setAttention()` and exposes its active controller to ODD's adapter so badge/update counts keep working when that renderer is selected. |
 | Command APIs and hooks: `registerCommand()`, `listCommands()`, `registerPalette()`, `listPalettes()`, `desktop-mode.command.before-run`, `after-run`, `error`, `desktop-mode.open-command.items` | supported | ODD registers commands, contributes `/open` items, registers an ODD palette, and records command lifecycle. |
 | Settings tabs: `registerSettingsTab()`, `listSettingsTabs()` | supported | ODD renders an OS Settings tab with health and diagnostics actions. |
 | Activity channels: toast, attention, badge, open-requested, presence-changed, presence-snapshot-applied | diagnostics-only | ODD records activity and uses toast/attention/badge helpers when relevant. |

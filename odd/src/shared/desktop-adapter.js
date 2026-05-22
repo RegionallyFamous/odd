@@ -431,6 +431,80 @@
 		}
 	}
 
+	function localRailControllers() {
+		var out = [];
+		function add( rail ) {
+			if ( ! rail ) return;
+			if ( rail.controller ) {
+				rail = rail.controller;
+			}
+			if ( rail && out.indexOf( rail ) === -1 ) {
+				out.push( rail );
+			}
+		}
+		var odd = window.__odd || {};
+		if ( Array.isArray( odd.dockRails ) ) {
+			odd.dockRails.forEach( add );
+		}
+		add( odd.dockRail );
+		return out;
+	}
+
+	function railControllers( d, includeIcons ) {
+		var rails = [ d && d.dock, d && d.taskbar, d && d.sideDock ].concat( localRailControllers() );
+		if ( includeIcons ) {
+			rails.push( d && d.icons );
+		}
+		return rails.filter( function ( rail, index, list ) {
+			return !! rail && list.indexOf( rail ) === index;
+		} );
+	}
+
+	function setBadge( itemId, count ) {
+		var d = host();
+		if ( ! itemId ) return false;
+		var safe = Math.max( 0, Math.floor( Number( count ) || 0 ) );
+		var called = false;
+		railControllers( d, true ).forEach( function ( rail ) {
+			if ( rail && typeof rail.setBadge === 'function' ) {
+				try {
+					rail.setBadge( itemId, safe );
+					called = true;
+				} catch ( err ) {
+					record( 'warn', 'wp.desktop.setBadge.failed', {
+						id:      itemId,
+						message: err && err.message || '',
+					} );
+				}
+			}
+		} );
+		return called;
+	}
+
+	function clearBadge( itemId ) {
+		return setBadge( itemId, 0 );
+	}
+
+	function setAttention( itemId, mode, opts ) {
+		var d = host();
+		if ( ! itemId ) return false;
+		var called = false;
+		railControllers( d, false ).forEach( function ( rail ) {
+			if ( rail && typeof rail.setAttention === 'function' ) {
+				try {
+					rail.setAttention( itemId, mode == null ? null : String( mode || 'pulse' ), opts || {} );
+					called = true;
+				} catch ( err ) {
+					record( 'warn', 'wp.desktop.setAttention.failed', {
+						id:      itemId,
+						message: err && err.message || '',
+					} );
+				}
+			}
+		} );
+		return called;
+	}
+
 	function redockWidget( id ) {
 		var d = host();
 		if ( ! d || ! id ) return null;
@@ -503,6 +577,8 @@
 			windowNotices: !! ( d && typeof d.registerWindowNotice === 'function' ),
 			windowNoticeDismissal: !! ( d && typeof d.dismissWindowNotice === 'function' && typeof d.undismissWindowNotice === 'function' ),
 			windowGeometry: !! ( d && d.HOOKS && d.HOOKS.WINDOW_GEOMETRY ),
+			badges: railControllers( d, true ).some( function ( rail ) { return typeof rail.setBadge === 'function'; } ),
+			attention: railControllers( d, false ).some( function ( rail ) { return typeof rail.setAttention === 'function'; } ),
 			files: !! f,
 			fileTypes: !! ( f && typeof f.registerType === 'function' ),
 			fileOpeners: !! ( f && typeof f.registerOpener === 'function' ),
@@ -569,6 +645,9 @@
 		dismissWindowNotice: dismissWindowNotice,
 		undismissWindowNotice: undismissWindowNotice,
 		listWindowNotices: listWindowNotices,
+		setBadge: setBadge,
+		clearBadge: clearBadge,
+		setAttention: setAttention,
 		openOsSettings: openOsSettings,
 		getWindow: getWindow,
 		mountWidget: mountWidget,

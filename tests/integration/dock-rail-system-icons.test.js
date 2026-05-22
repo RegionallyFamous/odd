@@ -41,6 +41,7 @@ function systemTile( id, label, icon ) {
 describe( 'ODD dock rail default icon contract', () => {
 	beforeEach( () => {
 		document.body.innerHTML = '';
+		delete window.__odd;
 		seedOdd();
 	} );
 
@@ -166,5 +167,65 @@ describe( 'ODD dock rail default icon contract', () => {
 			source: 'desktop-mode.dock-rail.context-menu',
 		} ) );
 		expect( openDockTileMenu.mock.calls[0][0].item.id ).toBe( 'odd' );
+	} );
+
+	it( 'implements Desktop Mode badge and attention methods in the compact rail', () => {
+		vi.useFakeTimers();
+		window.wp = {
+			i18n:  { __: ( text ) => text },
+			hooks: { addAction: vi.fn() },
+			desktop: {
+				ready:                    ( cb ) => cb(),
+				registerDockRailRenderer: vi.fn(),
+			},
+		};
+
+		execRail();
+
+		const renderer = window.wp.desktop.registerDockRailRenderer.mock.calls[0][0];
+		const container = document.createElement( 'div' );
+		const mounted = renderer.mount( {
+			container,
+			items: [
+				{ id: 'odd-app-demo', slug: 'odd-app-demo', title: 'ODD Demo', icon: 'https://example.test/demo.svg' },
+			],
+			orientation: 'bottom',
+		} );
+		expect( window.__odd.dockRails ).toContain( mounted );
+
+		mounted.setBadge( 'odd-app-demo', 7 );
+		let menuTile = container.querySelector( '[data-odd-ref="odd-app-demo"]' );
+		expect( menuTile.querySelector( '.desktop-mode-dock__badge' ).textContent ).toBe( '7' );
+
+		mounted.replaceItems( [
+			{ id: 'odd-app-demo', slug: 'odd-app-demo', title: 'ODD Demo', icon: 'https://example.test/demo.svg' },
+		] );
+		menuTile = container.querySelector( '[data-odd-ref="odd-app-demo"]' );
+		expect( menuTile.querySelector( '.desktop-mode-dock__badge' ).textContent ).toBe( '7' );
+
+		mounted.appendSystemItem( {
+			id:    'odd',
+			title: 'ODD Shop',
+			icon:  'https://example.test/odd.svg',
+		} );
+		mounted.setBadge( 'odd', 124 );
+		const systemTile = container.querySelector( '[data-odd-system-id="odd"]' );
+		const badge = systemTile.querySelector( '.desktop-mode-dock__badge' );
+		expect( badge.textContent ).toBe( '99+' );
+		expect( badge.getAttribute( 'aria-label' ) ).toBe( '124 notifications' );
+
+		mounted.setAttention( 'odd', 'shake', { intensity: 'strong', durationMs: 40 } );
+		expect( systemTile.classList.contains( 'odd-dock-rail-mount__tile--attention-shake' ) ).toBe( true );
+		expect( systemTile.classList.contains( 'odd-dock-rail-mount__tile--intensity-strong' ) ).toBe( true );
+
+		vi.advanceTimersByTime( 40 );
+		expect( systemTile.classList.contains( 'odd-dock-rail-mount__tile--attention-shake' ) ).toBe( false );
+		expect( systemTile.classList.contains( 'odd-dock-rail-mount__tile--intensity-strong' ) ).toBe( false );
+
+		mounted.setBadge( 'odd', 0 );
+		expect( systemTile.querySelector( '.desktop-mode-dock__badge' ) ).toBeNull();
+		mounted.destroy();
+		expect( window.__odd.dockRails ).not.toContain( mounted );
+		vi.useRealTimers();
 	} );
 } );
