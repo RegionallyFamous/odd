@@ -11,7 +11,9 @@ notes to GitHub Releases.
 <a id="unreleased"></a>
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+- Playground and local e2e launchers now pin WP Desktop Mode 0.8.8, while
+  ODD's runtime minimum stays at Desktop Mode 0.8.5.
 
 <a id="v1.1.3"></a>
 ## [1.1.3] — 2026-05-19

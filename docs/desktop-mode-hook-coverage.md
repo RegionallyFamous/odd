@@ -31,12 +31,22 @@ fallbacks. Host-owned surfaces stay host-owned: ODD
 observes and annotates, but does not live-swap dock DOM, restyle the host rails,
 or move host window geometry.
 
+## 0.8.8 Playground Pin
+
+Desktop Mode `v0.8.8` is the current WordPress.org package pinned by the
+stable, dev, and preview Playground blueprints. Its upstream changelog calls
+out dock badge alignment, scrollable docks with pinned system tiles, quieter
+desktop file/shortcut updates, nested-folder trash fixes, Media Library image
+dragging into Gutenberg posts, Edit User layout polish, centered title-bar
+icons, and WP Guidelines-powered sticky notes. ODD keeps 0.8.5 as the runtime
+floor and relies on feature detection for every host surface below.
+
 ## 0.8.6 Surface Notes
 
 Desktop Mode `v0.8.6` adds two ODD-relevant polish groups from upstream
 PRs #228 and #229, plus newer host surfaces around OS file drops, My WordPress
 media previews, web components, and PWA service-worker ownership. ODD treats
-0.8.5 as the runtime floor and 0.8.6 as the Playground-pinned enhancement set:
+0.8.5 as the runtime floor and 0.8.6 as the first post-floor enhancement set:
 code branches on `wp.desktop` methods, `wp.desktop.HOOKS`, PHP helper
 functions, or fired hooks rather than on a version string.
 

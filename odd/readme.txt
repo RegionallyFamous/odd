@@ -55,7 +55,7 @@ It works with Desktop Mode's own windows, dock, taskbar, desktop icons, and widg
 
 == Installation ==
 
-1. Install and activate [WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/) v0.8.5 or newer. WordPress will also show it as a required plugin dependency for ODD. The public Playground demo pins Desktop Mode v0.8.6.
+1. Install and activate [WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/) v0.8.5 or newer. WordPress will also show it as a required plugin dependency for ODD. The public Playground demo pins Desktop Mode v0.8.8.
 2. Install and activate ODD.
 3. Enable Desktop Mode for your user.
 4. Open the ODD Shop from the desktop.

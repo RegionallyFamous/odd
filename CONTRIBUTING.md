@@ -34,7 +34,7 @@ composer install
 npm ci
 ```
 
-Activate ODD alongside WP Desktop Mode (`v0.8.0+`). There's no build
+Activate ODD alongside WP Desktop Mode (`v0.8.5+`). There's no build
 step — plain JS, loaded via `wp_enqueue_script`.
 
 ## Testing
