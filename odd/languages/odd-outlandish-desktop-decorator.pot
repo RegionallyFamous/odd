@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: odd\n"
 "Report-Msgid-Bugs-To: https://github.com/RegionallyFamous/odd/issues\n"
-"POT-Creation-Date: 2026-05-19 14:36-0500\n"
+"POT-Creation-Date: 2026-05-23 05:14-0500\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -26,6 +26,10 @@ msgstr ""
 
 #: odd/src/panel/index.js:2206
 msgid "\". Reloading to finish setup…"
+msgstr ""
+
+#: odd/includes/rest.php:148
+msgid "%s ago"
 msgstr ""
 
 #: odd/includes/content/bundle.php:127
@@ -619,7 +623,7 @@ msgstr ""
 msgid "Hide admin bar"
 msgstr ""
 
-#: odd/src/shell/odd-dock-rail.js:309
+#: odd/src/shell/odd-dock-rail.js:513
 msgid "High-contrast icon mosaic selectable alongside the shipped strip in OS Settings."
 msgstr ""
 
@@ -1193,16 +1197,20 @@ msgstr ""
 msgid "Unknown bundle type \"%s\". Supported: app, icon-set, cursor-set, scene, widget."
 msgstr ""
 
-#: odd/includes/rest.php:280
+#: odd/includes/rest.php:397
 msgid "Unknown cursor set."
 msgstr ""
 
-#: odd/includes/rest.php:267
+#: odd/includes/rest.php:384
 msgid "Unknown icon set."
 msgstr ""
 
-#: odd/includes/rest.php:172
+#: odd/includes/rest.php:289
 msgid "Unknown wallpaper slug."
+msgstr ""
+
+#: odd/includes/rest.php:143
+msgid "Untitled draft"
 msgstr ""
 
 #: odd/src/panel/index.js:3724
@@ -1281,6 +1289,10 @@ msgstr ""
 msgid "bundle"
 msgstr ""
 
+#: odd/includes/rest.php:195
+msgid "checked %s ago"
+msgstr ""
+
 #: odd/src/panel/index.js:2197
 msgid "cursor set"
 msgstr ""
@@ -1325,6 +1337,10 @@ msgstr ""
 
 #: odd/includes/dependencies.php:170
 msgid "none"
+msgstr ""
+
+#: odd/includes/rest.php:198
+msgid "not checked yet"
 msgstr ""
 
 #: odd/src/panel/index.js:103

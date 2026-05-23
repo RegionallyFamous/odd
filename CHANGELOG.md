@@ -11,9 +11,22 @@ notes to GitHub Releases.
 <a id="unreleased"></a>
 ## [Unreleased]
 
+<a id="v1.1.4"></a>
+## [1.1.4] — 2026-05-23
+
 ### Changed
 - Playground and local e2e launchers now pin WP Desktop Mode 0.8.8, while
   ODD's runtime minimum stays at Desktop Mode 0.8.5.
+- The optional ODD compact rail keeps app shortcuts scrollable while system
+  tiles stay pinned, matching Desktop Mode 0.8.8 dock behavior more closely.
+- ODD's Desktop Mode 0.8.8 support boundary now documents that WP Guidelines
+  sticky notes remain host-owned until Desktop Mode exposes a public
+  sticky-note API.
+
+### Fixed
+- Badge and attention updates now forward through Desktop Mode dock, taskbar,
+  desktop icon, and ODD compact rail controllers when those surfaces are
+  available.
 
 <a id="v1.1.3"></a>
 ## [1.1.3] — 2026-05-19

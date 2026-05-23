@@ -5,7 +5,7 @@ Requires at least: 6.8
 Tested up to: 6.9
 Requires PHP: 8.1
 Requires Plugins: desktop-mode
-Stable tag: 1.1.3
+Stable tag: 1.1.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -120,6 +120,14 @@ Typical build commands:
 
 == Changelog ==
 
+= 1.1.4 =
+
+ODD 1.1.4 improves Desktop Mode 0.8.8 compatibility for dock badges, attention states, and the optional compact rail.
+
+* Badge and attention updates now forward through Desktop Mode dock, taskbar, desktop icon, and ODD compact rail controllers when those surfaces are available.
+* The optional ODD compact rail keeps app shortcuts scrollable while system tiles stay pinned, matching Desktop Mode 0.8.8 dock behavior more closely.
+* The Desktop Mode 0.8.8 support boundary is documented, including host-owned WP Guidelines sticky notes staying with Desktop Mode until a public sticky-note API exists.
+
 = 1.1.3 =
 
 ODD 1.1.3 tightens the current Desktop Mode integration path and refreshes the public release docs and Playground pins.
@@ -167,6 +175,10 @@ ODD 1.1.0 makes the desktop experience feel more native, more polished, and more
 Welcome to ODD. The first public release brings living wallpapers, icon sets, cursor themes, desktop widgets, tiny apps, starter content, and the ODD Shop to WP Desktop Mode.
 
 == Upgrade Notice ==
+
+= 1.1.4 =
+
+Improves Desktop Mode 0.8.8 dock badge, attention, compact rail, and documentation behavior. Requires WP Desktop Mode v0.8.5 or newer.
 
 = 1.1.3 =
 
