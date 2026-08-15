@@ -72,10 +72,6 @@
           "type": {
             "type": "string",
             "enum": [
-              "scene",
-              "icon-set",
-              "cursor-set",
-              "widget",
               "app"
             ]
           },
@@ -155,7 +151,7 @@
                 "type": "string",
                 "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
               },
-              "desktopMode": {
+              "openStation": {
                 "type": "string",
                 "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
               },

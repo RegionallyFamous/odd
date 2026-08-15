@@ -33,8 +33,8 @@ Bundle types:
                 + living-layer preview art)
     widget      source: catalog-sources/widgets/<slug>/{widget.js,
                 widget.css?, manifest.json, preview.svg?, assets/*}
-    app         source: catalog-sources/apps/<slug>/{bundle.wp, icon.webp|icon.png|icon.svg,
-                meta.json} — app .wp is prebuilt, we just publish it.
+    app         source: catalog-sources/apps/<slug>/{bundle-src/** or bundle.wp,
+                icon.webp|icon.png|icon.svg, meta.json}.
 """
 
 from __future__ import annotations
@@ -95,7 +95,7 @@ SCHEMA_URL = f"{CATALOG_BASE}/registry.schema.json"
 FIRST_PARTY_ICON_KEYS = {
     "odd", "my-wordpress", "content-graph", "recycle-bin", "fallback",
 }
-REQUIRES_KEYS = {"odd", "desktopMode", "api"}
+REQUIRES_KEYS = {"odd", "openStation", "api"}
 CATALOG_CHANNELS = {"stable", "preview", "all"}
 SEMVER_RE = re.compile(
     r"^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$"
@@ -194,7 +194,23 @@ def source_metadata(kind: str, folder: Path) -> dict:
 
 
 def should_build_source(kind: str, folder: Path) -> bool:
-    return catalog_channel_included(catalog_channel(source_metadata(kind, folder)))
+    if not catalog_channel_included(catalog_channel(source_metadata(kind, folder))):
+        return False
+    allowlist_path = SOURCES / "catalog.json"
+    if not allowlist_path.is_file():
+        return True
+    allowlist = json.loads(allowlist_path.read_text())
+    group = {
+        "scene": "scenes",
+        "icon-set": "iconSets",
+        "cursor-set": "cursorSets",
+        "widget": "widgets",
+        "app": "apps",
+    }[kind]
+    selected = allowlist.get(group, [])
+    if not isinstance(selected, list):
+        raise SystemExit(f"catalog.json {group} must be an array")
+    return folder.name in selected
 
 
 def catalog_signing_key():
@@ -1203,6 +1219,7 @@ def build_widget(slug: str, src_dir: Path) -> dict:
 def build_app(slug: str, src_dir: Path) -> dict:
     meta = json.loads((src_dir / "meta.json").read_text())
     bundle_src = src_dir / "bundle.wp"
+    bundle_tree = src_dir / "bundle-src"
     icon_src = next(
         (
             candidate
@@ -1215,8 +1232,19 @@ def build_app(slug: str, src_dir: Path) -> dict:
         ),
         None,
     )
-    if not bundle_src.is_file():
-        raise SystemExit(f"app {slug}: missing bundle.wp")
+    bundle_dest = OUT_BUNDLES / f"{slug}.wp"
+    if bundle_tree.is_dir():
+        files = {
+            path.relative_to(bundle_tree).as_posix(): path.read_bytes()
+            for path in sorted(bundle_tree.rglob("*"))
+            if path.is_file() and path.name != ".DS_Store"
+        }
+        if not files:
+            raise SystemExit(f"app {slug}: bundle-src is empty")
+        write_zip(bundle_dest, files)
+        bundle_src = bundle_dest
+    elif not bundle_src.is_file():
+        raise SystemExit(f"app {slug}: missing bundle-src or bundle.wp")
     if icon_src is not None and icon_src.suffix.lower().lstrip(".") in ICON_IMAGE_EXTENSIONS:
         _validate_app_icon_raster(slug, icon_src.name, icon_src.read_bytes())
     with zipfile.ZipFile(bundle_src, "r") as zf:
@@ -1232,8 +1260,8 @@ def build_app(slug: str, src_dir: Path) -> dict:
         ):
             _validate_app_icon_raster(slug, icon, zf.read(icon))
 
-    bundle_dest = OUT_BUNDLES / f"{slug}.wp"
-    shutil.copy2(bundle_src, bundle_dest)
+    if bundle_src != bundle_dest:
+        shutil.copy2(bundle_src, bundle_dest)
 
     icon_name = f"{slug}{icon_src.suffix}" if icon_src is not None else f"{slug}.svg"
     if icon_src is not None:
@@ -1300,7 +1328,7 @@ SCHEMA = {
                 "properties": {
                     "type": {
                         "type": "string",
-                        "enum": ["scene", "icon-set", "cursor-set", "widget", "app"],
+                        "enum": ["app"],
                     },
                     "slug": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
                     "name": {"type": "string"},
@@ -1334,7 +1362,7 @@ SCHEMA = {
                                 "type": "string",
                                 "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$",
                             },
-                            "desktopMode": {
+                            "openStation": {
                                 "type": "string",
                                 "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$",
                             },

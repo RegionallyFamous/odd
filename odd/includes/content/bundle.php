@@ -1,6 +1,6 @@
 <?php
 /**
- * ODD — universal `.wp` bundle installer.
+ * ODD — Apps-only `.wp` bundle installer.
  *
  * Single public entry for every content type:
  *
@@ -35,35 +35,11 @@ defined( 'ABSPATH' ) || exit;
  */
 function oddout_bundle_type_modules() {
 	return array(
-		'app'        => array(
+		'app' => array(
 			'validate'  => 'oddout_bundle_app_validate',
 			'install'   => 'oddout_bundle_app_install',
 			'uninstall' => 'oddout_bundle_app_uninstall',
 			'has'       => 'oddout_bundle_app_has',
-		),
-		'icon-set'   => array(
-			'validate'  => 'oddout_iconset_bundle_validate',
-			'install'   => 'oddout_iconset_bundle_install',
-			'uninstall' => 'oddout_iconset_bundle_uninstall',
-			'has'       => 'oddout_iconset_bundle_has',
-		),
-		'cursor-set' => array(
-			'validate'  => 'oddout_cursorset_bundle_validate',
-			'install'   => 'oddout_cursorset_bundle_install',
-			'uninstall' => 'oddout_cursorset_bundle_uninstall',
-			'has'       => 'oddout_cursorset_bundle_has',
-		),
-		'scene'      => array(
-			'validate'  => 'oddout_scene_bundle_validate',
-			'install'   => 'oddout_scene_bundle_install',
-			'uninstall' => 'oddout_scene_bundle_uninstall',
-			'has'       => 'oddout_scene_bundle_has',
-		),
-		'widget'     => array(
-			'validate'  => 'oddout_widget_bundle_validate',
-			'install'   => 'oddout_widget_bundle_install',
-			'uninstall' => 'oddout_widget_bundle_uninstall',
-			'has'       => 'oddout_widget_bundle_has',
 		),
 	);
 }
@@ -188,38 +164,13 @@ function oddout_bundle_install( $tmp_path, $filename, $args = array() ) {
  * Build the entry_url a freshly-installed bundle needs for in-page
  * registration. Widgets and scenes both ship a JS entry that self-
  * registers on load, so the Shop can hot-inject the script after
- * install instead of rebooting the whole Desktop Mode shell.
+ * install instead of rebooting the whole OpenStation shell.
  *
  * @param array $manifest Normalised manifest from `oddout_bundle_install()`.
  * @return string|null    Absolute URL to the entry JS, or null.
  */
 function oddout_bundle_entry_url_for( array $manifest ) {
-	if ( empty( $manifest['type'] ) || empty( $manifest['slug'] ) ) {
-		return null;
-	}
-	$slug = sanitize_key( (string) $manifest['slug'] );
-	$type = (string) $manifest['type'];
-	if ( 'widget' === $type ) {
-		if ( ! function_exists( 'oddout_widgets_url_for' ) ) {
-			return null;
-		}
-		$entry = isset( $manifest['entry'] ) ? (string) $manifest['entry'] : 'widget.js';
-		$base  = oddout_widgets_url_for( $slug );
-	} elseif ( 'scene' === $type ) {
-		if ( ! function_exists( 'oddout_scenes_url_for' ) ) {
-			return null;
-		}
-		$entry = isset( $manifest['entry'] ) ? (string) $manifest['entry'] : 'scene.js';
-		$base  = oddout_scenes_url_for( $slug );
-	} else {
-		return null;
-	}
-	if ( '' === $base ) {
-		return null;
-	}
-	return function_exists( 'oddout_content_url_for_relative' )
-		? oddout_content_url_for_relative( $base, $entry )
-		: $base . rawurlencode( $entry );
+	return null;
 }
 
 /**
@@ -230,14 +181,7 @@ function oddout_bundle_entry_url_for( array $manifest ) {
  * @return string[]
  */
 function oddout_bundle_style_urls_for( array $manifest ) {
-	if ( empty( $manifest['type'] ) || 'widget' !== (string) $manifest['type'] || empty( $manifest['slug'] ) ) {
-		return array();
-	}
-	if ( ! function_exists( 'oddout_widget_stylesheet_urls_for' ) ) {
-		return array();
-	}
-	$slug = sanitize_key( (string) $manifest['slug'] );
-	return oddout_widget_stylesheet_urls_for( $slug, $manifest );
+	return array();
 }
 
 /**
@@ -258,93 +202,25 @@ function oddout_bundle_style_urls_for( array $manifest ) {
  * @return array
  */
 function oddout_bundle_panel_row_for( array $manifest ) {
-	if ( empty( $manifest['type'] ) || empty( $manifest['slug'] ) ) {
+	if ( empty( $manifest['slug'] ) || 'app' !== (string) ( $manifest['type'] ?? '' ) ) {
 		return array();
 	}
-
-	$type = (string) $manifest['type'];
 	$slug = sanitize_key( (string) $manifest['slug'] );
-
-	switch ( $type ) {
-		case 'scene':
-			$preview_name   = isset( $manifest['preview'] ) ? (string) $manifest['preview'] : 'preview.webp';
-			$wallpaper_name = isset( $manifest['wallpaper'] ) ? (string) $manifest['wallpaper'] : 'wallpaper.webp';
-			$base           = function_exists( 'oddout_scenes_url_for' ) ? oddout_scenes_url_for( $slug ) : '';
-			return array(
-				'slug'          => $slug,
-				'label'         => isset( $manifest['label'] ) ? (string) $manifest['label'] : $slug,
-				'category'      => isset( $manifest['category'] ) ? (string) $manifest['category'] : 'Community',
-				'tags'          => isset( $manifest['tags'] ) && is_array( $manifest['tags'] ) ? array_values( $manifest['tags'] ) : array(),
-				'fallbackColor' => isset( $manifest['fallbackColor'] ) ? (string) $manifest['fallbackColor'] : '#111',
-				'installed'     => true,
-				'previewUrl'    => '' === $base ? '' : oddout_content_url_for_relative( $base, $preview_name ),
-				'wallpaperUrl'  => '' === $base ? '' : oddout_content_url_for_relative( $base, $wallpaper_name ),
-			);
-
-		case 'icon-set':
-			$icons_map = array();
-			$icons     = isset( $manifest['icons'] ) && is_array( $manifest['icons'] ) ? $manifest['icons'] : array();
-			$base      = function_exists( 'oddout_iconsets_url_for' ) ? oddout_iconsets_url_for( $slug ) : '';
-			foreach ( $icons as $key => $file ) {
-				if ( ! is_string( $file ) || '' === $file ) {
-					continue;
-				}
-				$icons_map[ (string) $key ] = '' === $base ? '' : oddout_content_url_for_relative( $base, $file );
-			}
-			$preview = isset( $manifest['preview'] ) ? (string) $manifest['preview'] : '';
-			return array(
-				'slug'        => $slug,
-				'label'       => isset( $manifest['label'] ) ? (string) $manifest['label'] : $slug,
-				'category'    => isset( $manifest['category'] ) ? (string) $manifest['category'] : 'Community',
-				'accent'      => isset( $manifest['accent'] ) ? (string) $manifest['accent'] : '',
-				'description' => isset( $manifest['description'] ) ? (string) $manifest['description'] : '',
-				'preview'     => ( '' === $preview || '' === $base ) ? '' : oddout_content_url_for_relative( $base, $preview ),
-				'icons'       => $icons_map,
-				'installed'   => true,
-			);
-
-		case 'cursor-set':
-			$base    = function_exists( 'oddout_cursorsets_url_for' ) ? oddout_cursorsets_url_for( $slug ) : '';
-			$preview = isset( $manifest['preview'] ) ? (string) $manifest['preview'] : '';
-			return array(
-				'slug'        => $slug,
-				'label'       => isset( $manifest['label'] ) ? (string) $manifest['label'] : $slug,
-				'category'    => isset( $manifest['category'] ) ? (string) $manifest['category'] : 'Community',
-				'accent'      => isset( $manifest['accent'] ) ? (string) $manifest['accent'] : '',
-				'description' => isset( $manifest['description'] ) ? (string) $manifest['description'] : '',
-				'preview'     => ( '' === $preview || '' === $base ) ? '' : oddout_content_url_for_relative( $base, $preview ),
-				'effects'     => isset( $manifest['effects'] ) && is_array( $manifest['effects'] ) ? $manifest['effects'] : array(),
-				'cursors'     => array(),
-				'installed'   => true,
-			);
-
-		case 'widget':
-			return array(
-				'id'          => isset( $manifest['id'] ) ? (string) $manifest['id'] : 'odd/' . $slug,
-				'slug'        => $slug,
-				'label'       => isset( $manifest['label'] ) ? (string) $manifest['label'] : $slug,
-				'description' => isset( $manifest['description'] ) ? (string) $manifest['description'] : ( isset( $manifest['name'] ) ? (string) $manifest['name'] : '' ),
-				'category'    => isset( $manifest['category'] ) ? (string) $manifest['category'] : 'Community',
-				'installed'   => true,
-			);
-
-		case 'app':
-			return array(
-				'slug'        => $slug,
-				'name'        => isset( $manifest['name'] ) ? (string) $manifest['name'] : $slug,
-				'version'     => isset( $manifest['version'] ) ? (string) $manifest['version'] : '',
-				'description' => isset( $manifest['description'] ) ? (string) $manifest['description'] : '',
-				'icon'        => isset( $manifest['icon'] ) ? (string) $manifest['icon'] : '',
-				'enabled'     => true,
-				'installed'   => true,
-				'surfaces'    => function_exists( 'oddout_apps_row_surfaces' ) ? oddout_apps_row_surfaces( $manifest ) : array(
-					'desktop' => true,
-					'taskbar' => false,
-				),
-			);
-	}
-
-	return array();
+	return array(
+		'slug'        => $slug,
+		'name'        => isset( $manifest['name'] ) ? (string) $manifest['name'] : $slug,
+		'version'     => isset( $manifest['version'] ) ? (string) $manifest['version'] : '',
+		'description' => isset( $manifest['description'] ) ? (string) $manifest['description'] : '',
+		'icon'        => isset( $manifest['icon'] ) ? (string) $manifest['icon'] : '',
+		'enabled'     => true,
+		'installed'   => true,
+		'surfaces'    => function_exists( 'oddout_apps_row_surfaces' )
+			? oddout_apps_row_surfaces( $manifest )
+			: array(
+				'desktop' => true,
+				'taskbar' => false,
+			),
+	);
 }
 
 /**

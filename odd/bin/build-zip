@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Build dist/odd.zip from odd/ at the repo root.
 
-Excludes development-only files (CI configs, dev tooling, dotfiles,
-build output). Fails if the resulting zip exceeds MAX_ZIP_BYTES so a
-silent payload-doubling regression can't ship unnoticed.
+Ships an explicit Apps-only runtime allowlist. Fails if the resulting zip
+exceeds MAX_ZIP_BYTES so a silent payload-doubling regression cannot ship.
 
 The archive's inner directory is `odd/` so it unpacks directly into
 `wp-content/plugins/odd/`.
@@ -25,40 +24,46 @@ REPO_ROOT = PLUGIN_DIR.parent
 DIST = REPO_ROOT / "dist"
 ZIP_NAME = "odd.zip"
 
-# 2 MB budget. ODD 1.0 keeps the plugin runtime lightweight: no bundled
-# wallpapers, icon sets, cursor sets, widgets, or apps. User-facing content
-# lives in the remote catalog at odd.regionallyfamous.com/catalog/v1/ and
-# installs on demand. This cap catches regressions that slip new binary
-# assets into the release zip.
+# 2 MB budget. ODD Notes installs on demand from the remote app catalog.
 DEFAULT_MAX_BYTES = 2 * 1024 * 1024
 
-EXCLUDE_DIRS = {
-    "bin",
-    "node_modules",
-    "vendor",
-    "dist",
-    "tests",
-}
-EXCLUDE_SUFFIXES = { ".pyc" }
-EXCLUDE_NAMES = {
-    ".DS_Store",
-    ".gitignore",
-    ".gitkeep",
+LIVE_FILES = {
+    "odd.php",
+    "readme.txt",
+    "uninstall.php",
+    "assets/odd-eye.svg",
+    "data/fallback-registry.json",
+    "includes/dependencies.php",
+    "includes/enqueue.php",
+    "includes/native-window.php",
+    "includes/apps/bootstrap.php",
+    "includes/apps/loader.php",
+    "includes/apps/native-surfaces.php",
+    "includes/apps/registry.php",
+    "includes/apps/repair.php",
+    "includes/apps/rest.php",
+    "includes/apps/serve-cookieauth.php",
+    "includes/apps/storage.php",
+    "includes/content/archive.php",
+    "includes/content/bootstrap.php",
+    "includes/content/bundle.php",
+    "includes/content/catalog-fallback.php",
+    "includes/content/catalog.php",
+    "includes/content/rate-limit.php",
+    "includes/content/reconcile.php",
+    "includes/content/rest.php",
+    "includes/notes/bootstrap.php",
+    "includes/notes/class-notes-rest-controller.php",
+    "includes/notes/class-notes-service.php",
+    "includes/notes/template.php",
+    "src/panel/index.js",
+    "src/panel/styles.css",
 }
 
 
 def should_include(rel: Path) -> bool:
-    if not rel.parts:
-        return False
-    if rel.parts[0] in EXCLUDE_DIRS:
-        return False
-    if rel.name.startswith("."):
-        return False
-    if rel.name in EXCLUDE_NAMES:
-        return False
-    if rel.suffix in EXCLUDE_SUFFIXES:
-        return False
-    return True
+    value = rel.as_posix()
+    return value in LIVE_FILES or value.startswith("languages/")
 
 
 def main() -> int:

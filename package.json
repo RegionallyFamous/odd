@@ -2,12 +2,9 @@
   "name": "odd-integration-tests",
   "version": "1.1.4",
   "private": true,
-  "description": "Vitest harness for the ODD (Outlandish Desktop Decorator) foundation modules.",
+  "description": "Tests for the Apps-only ODD Shop and ODD Notes.",
   "scripts": {
     "test": "vitest run",
-    "test:widgets": "vitest run tests/integration/widgets.test.js",
-    "test:widgets:visual": "node tests/visual/widgets-visual.mjs",
-    "test:widgets:all": "npm run test:widgets && npm run test:widgets:visual",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "e2e:local": "bash bin/e2e-local.sh all",

@@ -16,8 +16,10 @@ REQUIRED = {
     "odd/includes/dependencies.php",
     "odd/includes/enqueue.php",
     "odd/includes/content/bootstrap.php",
+    "odd/includes/apps/native-surfaces.php",
+    "odd/includes/notes/bootstrap.php",
     "odd/src/panel/index.js",
-    "odd/src/shared/api.js",
+    "odd/src/panel/styles.css",
 }
 
 FORBIDDEN_PARTS = {

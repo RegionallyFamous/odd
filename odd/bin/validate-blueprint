@@ -6,7 +6,7 @@ Background
 `blueprint.json` at the repo root and `site/playground/blueprint.json`
 are the source and hosted forms of the public Playground demo. The pair
 `blueprint-dev.json` / `site/playground/blueprint-dev.json` installs the
-pinned current Desktop Mode release from WordPress.org plus ODD **main** for
+pinned current OpenStation release from WordPress.org plus ODD **main** for
 throwaway trunk tests.
 The preview pair `blueprint-preview.json` /
 `site/playground/blueprint-preview.json` uses the same trunk plugin install
@@ -20,18 +20,17 @@ CORS failure — and that's typically the first thing a new user ever sees.
 This script parses the blueprint and fails on known-fragile patterns so
 regressions are caught before they reach `main`.
 
-The public blueprints intentionally install both WP Desktop Mode and ODD from
-exact versioned WordPress.org release zip URLs. Desktop Mode uses
-`ODDOUT_DESKTOP_MODE_PLAYGROUND_VERSION` when defined, otherwise
-`ODDOUT_DESKTOP_MODE_MIN_VERSION`. That keeps the normal
-Playground link deterministic while still using the approved dotorg packages.
+The public blueprints intentionally install both OpenStation and ODD from
+exact versioned WordPress.org release zip URLs. The stable OpenStation pin is
+read from the root public blueprint so the already-released WP.org pair can
+remain stable while trunk moves to a newer host API.
 During release prep, the public ODD zip may intentionally lag behind
 `ODDOUT_VERSION` until the matching WordPress.org SVN tag exists.
-The dev blueprints stay deterministic: Desktop Mode is pinned with
+The dev blueprints stay deterministic: OpenStation is pinned with
 `resource: "url"` to
 `https://downloads.wordpress.org/plugin/desktop-mode.{version}.zip` where
-`{version}` equals `ODDOUT_DESKTOP_MODE_PLAYGROUND_VERSION` when defined,
-otherwise `ODDOUT_DESKTOP_MODE_MIN_VERSION`, while ODD comes from `main`.
+`{version}` equals `ODDOUT_OPENSTATION_MIN_VERSION`, while ODD comes from
+`main`.
 
 Release blueprint pins must agree with values in `odd/odd.php` (checklist #8).
 
@@ -57,18 +56,18 @@ Checks (all emit bullets; any failure → exit code 1):
      cannot point at `github.com/*/releases/download/…`.
   6. Any `installPlugin` with `resource: "wordpress.org/plugins"` must
      include `slug`, and prefer `targetFolderName` alongside `slug`.
-  7. WP Desktop Mode must not be installed from `git:directory` because
+  7. OpenStation must not be installed from `git:directory` because
      its source archives do not include the compiled desktop shell JS
      (`assets/js/desktop.min.js`). Install packaged zips (`downloads.
      wordpress.org` or HTTPS mirrors), never raw plugin source repos.
-  8. Public blueprints install Desktop Mode and ODD from exact
+  8. Public blueprints install OpenStation and ODD from exact
      `downloads.wordpress.org` zip URLs and deterministic folder names.
      The ODD zip may match `odd/odd.php` or the previous public release while
      preparing a release whose dotorg package is not live yet.
   9. Every blueprint requests a Playground PHP runtime that satisfies
      the plugin header's `Requires PHP` value.
- 10. Dev blueprints: Desktop Mode from the pinned release zip matching
-     `ODDOUT_DESKTOP_MODE_PLAYGROUND_VERSION` (targetFolderName desktop-mode);
+ 10. Dev blueprints: OpenStation from the pinned release zip matching
+     `ODDOUT_OPENSTATION_MIN_VERSION` (targetFolderName desktop-mode);
      ODD from `git:directory` **branch** `main` on
      `RegionallyFamous/odd` with `path` `odd`.
  11. Preview blueprints also write a must-use plugin that points ODD at
@@ -105,8 +104,13 @@ PREVIEW_CATALOG_URL = "https://odd.regionallyfamous.com/catalog-preview/v1/regis
 
 
 ODD_CONST_RE = re.compile(
-    r"define\(\s*['\"]ODDOUT_(VERSION|DESKTOP_MODE_MIN_VERSION|DESKTOP_MODE_PLAYGROUND_VERSION)['\"]\s*,\s*['\"]"
+    r"define\(\s*['\"]ODDOUT_(VERSION|OPENSTATION_MIN_VERSION)['\"]\s*,\s*['\"]"
     r"([^'\"]+)['\"]\s*\)",
+)
+
+DESKTOP_MODE_ZIP_RE = re.compile(
+    r"^https://downloads\.wordpress\.org/plugin/"
+    r"desktop-mode\.([0-9]+\.[0-9]+\.[0-9]+)\.zip$"
 )
 
 ODD_GIT_COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
@@ -164,28 +168,43 @@ def odd_zip_version(url: str) -> str | None:
     return match.group(1) if match else None
 
 
-def odd_php_constants() -> tuple[str, str, str, str]:
-    """Return (ODDOUT_VERSION, Desktop Mode minimum, Playground pin, Requires PHP)."""
+def odd_php_constants() -> tuple[str, str, str]:
+    """Return (ODDOUT_VERSION, OpenStation minimum, Requires PHP)."""
     text = PLUGIN_MAIN.read_text(encoding="utf-8")
     found: dict[str, str] = {}
     for m in ODD_CONST_RE.finditer(text):
         key = m.group(1).lower()
         if key == "version":
             found["version"] = m.group(2)
-        elif key == "desktop_mode_min_version":
-            found["desktop"] = m.group(2)
-        elif key == "desktop_mode_playground_version":
-            found["desktop_playground"] = m.group(2)
+        elif key == "openstation_min_version":
+            found["openstation"] = m.group(2)
     version = found.get("version")
-    dm_min = found.get("desktop")
+    openstation_min = found.get("openstation")
     requires_php_match = REQUIRES_PHP_RE.search(text)
     requires_php = requires_php_match.group(1) if requires_php_match else None
-    if version is None or dm_min is None or requires_php is None:
+    if version is None or openstation_min is None or requires_php is None:
         raise SystemExit(
             f"error: could not read ODDOUT_VERSION and "
-            f"ODDOUT_DESKTOP_MODE_MIN_VERSION and Requires PHP from {PLUGIN_MAIN}"
+            f"ODDOUT_OPENSTATION_MIN_VERSION and Requires PHP from {PLUGIN_MAIN}"
         )
-    return version, dm_min, found.get("desktop_playground", dm_min), requires_php
+    return version, openstation_min, requires_php
+
+
+def stable_openstation_pin() -> str:
+    """Read the stable OpenStation version from the public root blueprint."""
+    data = json.loads(BLUEPRINT.read_text(encoding="utf-8"))
+    for step in data.get("steps", []):
+        if not isinstance(step, dict) or step.get("step") != "installPlugin":
+            continue
+        plugin = step.get("pluginData")
+        if not isinstance(plugin, dict) or plugin.get("resource") != "url":
+            continue
+        match = DESKTOP_MODE_ZIP_RE.match(str(plugin.get("url", "")))
+        if match:
+            return match.group(1)
+    raise SystemExit(
+        f"error: could not read the stable OpenStation pin from {BLUEPRINT}"
+    )
 
 
 def version_tuple(version: str) -> tuple[int, ...]:
@@ -714,29 +733,30 @@ def main() -> int:
     if not PLUGIN_MAIN.is_file():
         print(f"error: missing {PLUGIN_MAIN}", file=sys.stderr)
         return 1
-    odd_version, dm_min, dm_pin, requires_php = odd_php_constants()
+    odd_version, openstation_min, requires_php = odd_php_constants()
+    stable_pin = stable_openstation_pin()
     problems: list[str] = []
     total_steps = 0
     for path in (BLUEPRINT, SITE_BLUEPRINT):
-        file_problems, step_count = validate_file(path, odd_version, dm_pin, requires_php)
+        file_problems, step_count = validate_file(path, odd_version, stable_pin, requires_php)
         problems.extend(file_problems)
         total_steps += step_count
 
     for path in (BLUEPRINT_DEV, SITE_BLUEPRINT_DEV):
-        file_problems, step_count = validate_dev_file(path, dm_pin, requires_php)
+        file_problems, step_count = validate_dev_file(path, openstation_min, requires_php)
         problems.extend(file_problems)
         total_steps += step_count
 
     for path in (BLUEPRINT_PREVIEW, SITE_BLUEPRINT_PREVIEW):
-        file_problems, step_count = validate_preview_file(path, dm_pin, requires_php)
+        file_problems, step_count = validate_preview_file(path, openstation_min, requires_php)
         problems.extend(file_problems)
         total_steps += step_count
 
-    stable_cache_key = f"wporg-odd-{odd_version}-dm-{dm_pin}"
+    stable_cache_key = f"wporg-odd-{odd_version}-dm-{stable_pin}"
     for path in (SITE_PLAYGROUND_LAUNCHER, SITE_GO_LAUNCHER):
         problems.extend(validate_playground_launcher(path, stable_cache_key))
 
-    dev_cache_key_part = f"dm-{dm_pin}"
+    dev_cache_key_part = f"os-{openstation_min}"
     for path in (SITE_PLAYGROUND_DEV_LAUNCHER, SITE_GO_DEV_LAUNCHER):
         problems.extend(validate_playground_launcher(path, dev_cache_key_part))
 

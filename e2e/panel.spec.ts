@@ -1,122 +1,58 @@
 /**
- * End-to-end: one browser session — login → desktop shell → wallpaper
- * scenes + canvas pixel check → optional scene hook → ODD Shop + axe +
- * shop rail / search / wallpaper direct-apply.
- *
- * Kept in a *single* test so CI does not pay login/shell/PIXI waits twice
- * (that was the main driver of 15m+ job times).
+ * End-to-end: OpenStation shell → ODD Shop → native ODD Notes → new note.
  */
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { installOddFailureDiagnostics } from './diagnostics-hooks';
-import {
-	assertOddShopVisualSmoke,
-	exerciseOddShopInteractions,
-	goDesktopShell,
-	installCatalogAppOpenAndAssertHydratedIframe,
-	loginAdmin,
-	openOddShop,
-	waitForWallpaperScenes,
-} from './helpers';
+import { loginAdmin } from './helpers';
 
 installOddFailureDiagnostics();
 
-test.describe( 'ODD admin smoke', () => {
-	test( 'wallpaper + scene hook, shop axe, then rail + direct apply', async ( { page } ) => {
-		// ~3–8m cold CI; one combined flow + pre-provisioned app iframe check.
-		test.setTimeout( 300_000 );
-
-		page.on( 'console', ( msg ) => {
-			const type = msg.type();
-			if ( type === 'error' || type === 'warning' ) {
-				// eslint-disable-next-line no-console
-				console.log( `[page:${ type }]`, msg.text(), '@', page.url() );
-			}
-		} );
-		page.on( 'pageerror', ( err ) => {
-			// eslint-disable-next-line no-console
-			console.log( '[page:pageerror]', err.message, '@', page.url() );
-		} );
-		page.on( 'response', async ( response ) => {
-			const url = response.url();
-			const status = response.status();
-			const ctype = ( response.headers()[ 'content-type' ] ?? '' ).toLowerCase();
-			const looksLikeScript = /\.js(\?|$)/.test( url );
-			if ( status >= 400 ) {
-				// eslint-disable-next-line no-console
-				console.log( `[page:${ status }]`, url, ctype );
-				return;
-			}
-			if ( looksLikeScript && ctype.includes( 'html' ) ) {
-				// eslint-disable-next-line no-console
-				console.log( `[page:200-html-for-js]`, url, ctype );
-			}
-		} );
-		page.on( 'requestfailed', ( request ) => {
-			// eslint-disable-next-line no-console
-			console.log( '[page:requestfailed]', request.url(), request.failure()?.errorText );
-		} );
+test.describe( 'ODD Apps-only smoke', () => {
+	test( 'opens the Shop and creates an ODD Note', async ( { page } ) => {
+		test.setTimeout( 180_000 );
 
 		await loginAdmin( page );
-		await goDesktopShell( page );
-		await waitForWallpaperScenes( page );
-
-		const registeredScenes = await page.evaluate( () => {
-			const list = window.__odd && window.__odd.scenes;
-			return list ? Object.keys( list ) : [];
+		await page.goto( '/wp-admin/index.php?desktop_mode_portal=1', {
+			waitUntil: 'load',
+			timeout: 45_000,
 		} );
-		expect( registeredScenes.length, 'at least one scene must register' ).toBeGreaterThan( 0 );
-
-		const canvasState = await page.evaluate( async () => {
-			for ( let i = 0; i < 60; i++ ) {
-				const canvases = Array.from( document.querySelectorAll( 'canvas' ) );
-				const c = canvases.find( ( el ) => el.width >= 320 && el.height >= 180 );
-				if ( c ) {
-					return { found: true, width: c.width, height: c.height };
-				}
-				await new Promise( ( r ) => setTimeout( r, 100 ) );
-			}
-			return { found: false, width: 0, height: 0 };
+		await expect( page.locator( '#desktop-mode-shell' ) ).toBeVisible( {
+			timeout: 30_000,
 		} );
-		expect( canvasState.found, 'a wallpaper canvas should exist at >=320x180' ).toBe( true );
-
-		// `gl.readPixels` from the canvas default backbuffer is flaky in
-		// headless Chromium — PIXI v8 uses `preserveDrawingBuffer: false`,
-		// so sampling outside of a render tick usually returns zeros. The
-		// *engine* exposes what we actually care about: a mounted scene
-		// impl with a live PIXI app. Poll that instead of pixel bytes.
-		const sceneMounted = await page.waitForFunction(
-			() => {
-				const rt = ( window as unknown as {
-					__odd?: { runtime?: { activeScene?: { slug?: string; env?: { app?: { renderer?: unknown } } } } };
-				} ).__odd?.runtime;
-				const active = rt?.activeScene;
-				return !! active && typeof active.slug === 'string' && !! active.env?.app?.renderer;
-			},
-			{ timeout: 15_000 },
+		await page.waitForFunction(
+			() => !! ( window.wp && window.wp.os && window.wp.os.openWindow ),
+			{ timeout: 30_000 },
 		);
-		expect( !! sceneMounted, 'wallpaper engine must mount a scene' ).toBe( true );
 
-		const hookFired = await page.evaluate( async ( targetSlug ) => {
-			if ( ! ( window.wp && window.wp.hooks && window.wp.hooks.doAction ) ) return false;
-			window.wp.hooks.doAction( 'odd.pickScene', targetSlug );
-			await new Promise( ( r ) => setTimeout( r, 800 ) );
-			return true;
-		}, registeredScenes[ 0 ] );
-		expect( hookFired, 'wp.hooks must fire odd.pickScene' ).toBe( true );
+		await page.evaluate( () => window.wp.os.openWindow( 'odd' ) );
+		const shop = page.locator( '.odd-shop' ).first();
+		await expect( shop ).toBeVisible( { timeout: 20_000 } );
+		await expect( shop.getByRole( 'heading', { name: 'Apps' } ) ).toBeVisible();
+		await expect( shop.getByRole( 'heading', { name: 'ODD Notes' } ) ).toBeVisible();
+		await expect( shop.getByText( 'One excellent app at a time.' ) ).toBeVisible();
 
-		await openOddShop( page );
-		await assertOddShopVisualSmoke( page );
 		const results = await new AxeBuilder( { page } )
-			.include( '.odd-panel' )
+			.include( '.odd-shop' )
 			.withTags( [ 'wcag2a', 'wcag2aa' ] )
 			.analyze();
-		const bad = results.violations.filter(
-			( v ) => v.impact === 'critical' || v.impact === 'serious',
+		const serious = results.violations.filter(
+			( violation ) => violation.impact === 'critical' || violation.impact === 'serious',
 		);
-		expect( bad, JSON.stringify( bad, null, 2 ) ).toEqual( [] );
+		expect( serious, JSON.stringify( serious, null, 2 ) ).toEqual( [] );
 
-		await exerciseOddShopInteractions( page );
-		await installCatalogAppOpenAndAssertHydratedIframe( page );
+		await shop.getByRole( 'button', { name: 'Open' } ).click();
+		const notes = page.locator( '.os-notes-app' ).first();
+		await expect( notes ).toBeVisible( { timeout: 20_000 } );
+		await expect( notes.getByText( 'ODD Notes', { exact: true } ) ).toBeVisible();
+		await expect(
+			notes.getByRole( 'heading', { name: 'Catch the thought before it escapes.' } ),
+		).toBeVisible();
+
+		await notes.locator( '[data-notes-new]' ).click();
+		await expect( notes.locator( '[data-notes-editor]' ) ).toBeVisible();
+		await expect( notes.locator( '[data-notes-empty]' ) ).toBeHidden();
+		await expect( notes.locator( '[data-notes-title]' ) ).toBeVisible();
+		await expect( notes.locator( '[data-notes-body]' ) ).toBeVisible();
 	} );
 } );

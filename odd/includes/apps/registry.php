@@ -44,9 +44,14 @@ function oddout_apps_capability_floor() {
  * Normalize an app manifest/index capability against the capability floor.
  *
  * @param string $capability Manifest-supplied capability.
+ * @param string $slug       App slug.
  * @return string Capability safe to pass to current_user_can().
  */
-function oddout_apps_normalize_capability( $capability ) {
+function oddout_apps_normalize_capability( $capability, $slug = '' ) {
+	if ( 'odd-notes' === sanitize_key( (string) $slug ) ) {
+		return 'read';
+	}
+
 	$floor     = oddout_apps_capability_floor();
 	$requested = sanitize_key( (string) $capability );
 	if ( '' === $requested ) {
@@ -88,6 +93,13 @@ function oddout_apps_install( $tmp_path, $filename ) {
 	}
 
 	$slug = sanitize_key( $manifest['slug'] );
+	if ( oddout_apps_exists( $slug ) ) {
+		return new WP_Error(
+			'slug_exists',
+			sprintf( /* translators: %s app slug. */ __( 'App "%s" is already installed. Delete it before reinstalling.', 'odd-outlandish-desktop-decorator' ), $slug ),
+			array( 'status' => 409 )
+		);
+	}
 
 	// Atomic install lock: add_option returns false when the key
 	// already exists, so concurrent installs of the same slug fail
@@ -132,7 +144,7 @@ function oddout_apps_install( $tmp_path, $filename ) {
 		'enabled'     => true,
 		'icon'        => isset( $manifest['icon'] ) ? sanitize_text_field( (string) $manifest['icon'] ) : '',
 		'description' => isset( $manifest['description'] ) ? sanitize_text_field( (string) $manifest['description'] ) : '',
-		'capability'  => oddout_apps_normalize_capability( isset( $manifest['capability'] ) ? (string) $manifest['capability'] : '' ),
+		'capability'  => oddout_apps_normalize_capability( isset( $manifest['capability'] ) ? (string) $manifest['capability'] : '', $slug ),
 		'surfaces'    => $surfaces,
 		'installed'   => time(),
 	);
@@ -209,12 +221,12 @@ function oddout_apps_set_enabled( $slug, $enabled ) {
 /**
  * Update the per-app `surfaces` preference.
  *
- * In current Desktop Mode, visible placement belongs to the host-owned
+ * In current OpenStation, visible placement belongs to the host-owned
  * `itemVisibility` OS setting for the canonical `odd-app-{slug}` icon.
  * ODD still stores this normalized shape for install defaults, REST
  * compatibility, and older hosts that do not expose the OS-settings API.
  * Runtime registration always publishes the app window and launcher; it
- * does not use this row to add/remove Desktop Mode surfaces itself.
+ * does not use this row to add/remove OpenStation surfaces itself.
  *
  * @param string $slug
  * @param array  $surfaces { desktop?: bool, taskbar?: bool }
@@ -286,10 +298,10 @@ function oddout_apps_surfaces_to_core_placement( $surfaces ) {
 }
 
 /**
- * Seed Desktop Mode's native launcher placement for an app.
+ * Seed OpenStation's native launcher placement for an app.
  *
  * The installed-app index stores ODD's fallback `{ desktop, taskbar }`
- * shape, but current Desktop Mode decides visibility from
+ * shape, but current OpenStation decides visibility from
  * `osSettings.itemVisibility[odd-app-{slug}]`. Without this server-side
  * seed, installs that happen outside the live panel JS path register a
  * window/icon but have no visible desktop launcher until a manual toggle.
@@ -309,19 +321,15 @@ function oddout_apps_seed_core_item_visibility( $slug, $surfaces, $user_id = 0, 
 	if (
 		'' === $item_id ||
 		$user_id <= 0 ||
-		! function_exists( 'oddout_desktop_mode_supports' ) ||
-		! oddout_desktop_mode_supports( 'os_settings' ) ||
-		! function_exists( 'desktop_mode_get_os_settings' ) ||
-		! function_exists( 'desktop_mode_default_os_settings' ) ||
-		! function_exists( 'desktop_mode_save_os_settings' )
+		! oddout_openstation_supports( 'os_settings' )
 	) {
 		return false;
 	}
 
 	try {
-		$settings = desktop_mode_get_os_settings( $user_id );
+		$settings = openstation_get_os_settings( $user_id );
 		if ( ! is_array( $settings ) ) {
-			$settings = desktop_mode_default_os_settings();
+			$settings = openstation_default_os_settings();
 		}
 		if ( ! is_array( $settings ) ) {
 			return false;
@@ -335,7 +343,7 @@ function oddout_apps_seed_core_item_visibility( $slug, $surfaces, $user_id = 0, 
 		}
 
 		$settings['itemVisibility'][ $item_id ] = oddout_apps_surfaces_to_core_placement( $surfaces );
-		return (bool) desktop_mode_save_os_settings( $user_id, $settings );
+		return (bool) openstation_save_os_settings( $user_id, $settings );
 	} catch ( Throwable $e ) {
 		return false;
 	}
@@ -347,16 +355,13 @@ function oddout_apps_remove_core_item_visibility( $slug, $user_id = 0 ) {
 	if (
 		'' === $item_id ||
 		$user_id <= 0 ||
-		! function_exists( 'oddout_desktop_mode_supports' ) ||
-		! oddout_desktop_mode_supports( 'os_settings' ) ||
-		! function_exists( 'desktop_mode_get_os_settings' ) ||
-		! function_exists( 'desktop_mode_save_os_settings' )
+		! oddout_openstation_supports( 'os_settings' )
 	) {
 		return false;
 	}
 
 	try {
-		$settings = desktop_mode_get_os_settings( $user_id );
+		$settings = openstation_get_os_settings( $user_id );
 		if ( ! is_array( $settings ) || empty( $settings['itemVisibility'] ) || ! is_array( $settings['itemVisibility'] ) ) {
 			return false;
 		}
@@ -365,7 +370,7 @@ function oddout_apps_remove_core_item_visibility( $slug, $user_id = 0 ) {
 		}
 
 		unset( $settings['itemVisibility'][ $item_id ] );
-		return (bool) desktop_mode_save_os_settings( $user_id, $settings );
+		return (bool) openstation_save_os_settings( $user_id, $settings );
 	} catch ( Throwable $e ) {
 		return false;
 	}
@@ -393,7 +398,10 @@ function oddout_apps_row_surfaces( $row ) {
  */
 function oddout_apps_list() {
 	$index = oddout_apps_index_load();
-	$rows  = array_values( $index );
+	// ODD's production surface is intentionally focused on its first-party
+	// Notes app. Preserve older installed app data on disk, but do not publish
+	// those retired launchers into OpenStation.
+	$rows = isset( $index['odd-notes'] ) ? array( $index['odd-notes'] ) : array();
 	foreach ( $rows as &$row ) {
 			// Keep the REST response and Shop store on a complete shape.
 		$row['surfaces'] = oddout_apps_row_surfaces( $row );

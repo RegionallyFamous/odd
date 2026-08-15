@@ -1,119 +1,50 @@
-<p align="center">
-  <a href="https://weirdpress.com/odd">
-    <img src="https://odd.regionallyfamous.com/og.png" alt="ODD — the Luxe + Weird shop for WP Desktop Mode" width="840">
-  </a>
-</p>
+# ODD — Outlandish Desktop Decorator
 
-<h1 align="center">ODD — Outlandish Desktop Decorator</h1>
+ODD is a focused app store for [OpenStation](https://github.com/WordPress/openstation). The WordPress.org dependency slug remains [`desktop-mode`](https://wordpress.org/plugins/desktop-mode/), but ODD targets OpenStation 1.1.0’s current `openstation_*`, `wp.os`, and `os.*` public APIs.
 
-<p align="center">
-  <strong>The Luxe + Weird desktop shop for WP Desktop Mode.</strong><br>
-  Living wallpapers, icon costumes, pointer themes, draggable widgets, and tiny apps for the WordPress admin desktop.<br>
-  By <a href="https://regionallyfamous.com">Nick Hamze</a>.
-</p>
+The production catalog currently contains one app: **ODD Notes**.
 
-<p align="center">
-  <a href="https://playground.wordpress.net/?mode=seamless&blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint.json%3Foddbp%3Dwporg-odd-1.1.4-dm-0.8.8"><strong>Launch the live demo</strong></a>
-  ·
-  <a href="https://github.com/RegionallyFamous/odd/releases/latest"><strong>Download ODD</strong></a>
-  ·
-  <a href="https://weirdpress.com/odd"><strong>Marketing site</strong></a>
-  ·
-  <a href="https://github.com/RegionallyFamous/odd/wiki"><strong>Docs</strong></a>
-</p>
+**Requires:** WordPress 6.8+ · PHP 8.1+ · OpenStation 1.1.0+
 
-<p align="center">
-  <a href="https://github.com/RegionallyFamous/odd/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/RegionallyFamous/odd?style=for-the-badge&label=release"></a>
-  <a href="https://github.com/RegionallyFamous/odd/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/RegionallyFamous/odd/ci.yml?branch=main&style=for-the-badge&label=ci"></a>
-  <a href="./LICENSE"><img alt="License" src="https://img.shields.io/github/license/RegionallyFamous/odd?style=for-the-badge"></a>
-</p>
+## ODD Notes
 
----
+ODD Notes is adapted from the latest Notes app in the OpenStation repository. It opens as a native OpenStation window and stores notes as private WordPress content using the existing `wpd_note` data model. That keeps it compatible with notes created by the OpenStation Notes prototype.
 
-[WP Desktop Mode](https://github.com/WordPress/desktop-mode) makes WordPress feel like a desktop. ODD gives that desktop a polished, updateable shop for visual themes and small tools. ODD works with Desktop Mode's native surfaces instead of replacing the desktop shell.
+Features include search, tags, favorites, desktop placement, sharing, archives, local-first draft recovery, revisions, and restore.
 
-The hosted [Playground blueprint](https://odd.regionallyfamous.com/playground/blueprint.json?oddbp=wporg-odd-1.1.4-dm-0.8.8) installs exact WordPress.org package zips for **[WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/)** `0.8.8` and the current public **[ODD](https://wordpress.org/plugins/odd-outlandish-desktop-decorator/)** release `1.1.4`. Raw GitHub copy: [`blueprint.json`](https://raw.githubusercontent.com/RegionallyFamous/odd/main/blueprint.json) (add `?oddbp=wporg-odd-1.1.4-dm-0.8.8` if Playground still loads a cached older file). **Production installs:** use [WordPress.org](https://wordpress.org/plugins/odd-outlandish-desktop-decorator/) or **`odd.zip`** on [Releases](https://github.com/RegionallyFamous/odd/releases/latest). **Bleeding edge:** use [`/go/dev`](https://odd.regionallyfamous.com/go/dev/) or [`site/playground/blueprint-dev.json`](https://odd.regionallyfamous.com/playground/blueprint-dev.json) (ODD `main` + pinned Desktop Mode 0.8.8; not tied to ODD releases). **Catalog preview:** use [`/go/preview`](https://odd.regionallyfamous.com/go/preview/) to run ODD `main` against the hosted non-live preview catalog.
+## Scope
 
----
+The plugin runtime now owns two surfaces:
 
-## What You Get
+- **ODD Shop** — a native, Apps-only storefront.
+- **ODD Notes** — installed on demand from the signed remote catalog.
 
-| Surface | What It Adds |
-| --- | --- |
-| **Wallpapers** | Generative PixiJS scenes over painted backdrops, with live preview and shuffle. |
-| **Icon Sets** | Native Desktop Mode raster image URL feeds for the dock, taskbar, desktop shortcuts, and recycle bin. |
-| **Cursor Sets** | Pointer themes that reach Desktop Mode windows, chrome, widgets, and same-origin app frames. |
-| **Widgets** | Small desktop tiles like notes, prompts, and embeds, installed from catalog bundles. |
-| **Apps** | Sandboxed HTML/CSS/JS tools that open in native Desktop Mode windows with optional launchers. |
+Legacy wallpaper, icon-set, cursor, widget, shuffle, and custom placement systems are not loaded or shipped. Their historical source directories remain in the repository for preservation, while `_tools/catalog-sources/catalog.json` explicitly controls the production catalog.
 
-## Why It Feels Different
+OpenStation owns desktop/taskbar/hidden launcher placement through `itemVisibility`.
 
-| ODD Shop | Remote Catalog | Safe Installation |
-| --- | --- | --- |
-| Mac App Store-style browsing with editorial shelves, department glyphs, global search, preview bars, and responsive chrome. | New wallpapers, card art, widgets, apps, icon sets, and cursor sets publish without forcing every site to update the plugin. | `.wp` bundles are validated, catalog downloads are SHA256-checked, and app files are served behind authenticated paths. |
+## Development
 
-Wallpapers, icon sets, and cursor sets preview instantly. Try a scene, theme, or cursor set, then keep it or roll back from the preview bar. Catalog cards update in place after install, so the thing you install is the thing you use.
+```sh
+python3 _tools/build-catalog.py
+ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog
+npm test
+odd/bin/check-version
+odd/bin/check-plugin-metadata
+odd/bin/build-zip
+odd/bin/check-zip-contents
+```
 
----
+The catalog builder produces a deterministic `odd-notes.wp` bundle from `_tools/catalog-sources/apps/odd-notes/bundle-src/`.
 
-## Install
+Runtime plugin files live in `odd/`; the production catalog is generated into `site/catalog/v1/`.
 
-### One-click demo
+## Release boundaries
 
-[**Launch ODD in WordPress Playground ->**](https://playground.wordpress.net/?mode=seamless&blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint.json%3Foddbp%3Dwporg-odd-1.1.4-dm-0.8.8)
-
-First load takes ~20–30 seconds while Playground boots the site and installs the plugin. Throwaway — close the tab and it's gone.
-
-**Short links (GitHub Pages — same host as the hosted blueprint):** [`/go/`](https://odd.regionallyfamous.com/go/) redirects to the pinned WordPress.org demo; [`/go/dev`](https://odd.regionallyfamous.com/go/dev/) opens a **dev** blueprint (pinned Desktop Mode 0.8.8 zip + ODD `main`); [`/go/preview`](https://odd.regionallyfamous.com/go/preview/) opens ODD `main` with the hosted preview catalog. Full launcher pages: [`/playground/`](https://odd.regionallyfamous.com/playground/), [`/playground/dev/`](https://odd.regionallyfamous.com/playground/dev/), and [`/playground/preview/`](https://odd.regionallyfamous.com/playground/preview/).
-
-### A real WordPress install
-
-1. Install and activate [WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/) **v0.8.5** or newer. ODD declares Desktop Mode as a required plugin dependency, so WordPress can surface that relationship during install.
-2. Install ODD from [WordPress.org](https://wordpress.org/plugins/odd-outlandish-desktop-decorator/) or download the latest `odd.zip` from the [Releases](https://github.com/RegionallyFamous/odd/releases/latest) page.
-3. WP Admin → Plugins → Add New → Upload Plugin → pick the zip → Activate.
-4. Double-click the **ODD** desktop icon, use the taskbar icon, or run `/odd-panel` from the command palette to open the Shop.
-
-**Requires:** WordPress 6.8+ · PHP 8.1+ · WP Desktop Mode v0.8.5+
-
----
-
-## Build Your Own
-
-Anyone can ship a scene, icon set, cursor set, widget, or app as a single `.wp` file. ODD validates the archive, checks catalog downloads against SHA256, and keeps app files behind authenticated serve paths. First-party content lives under `_tools/catalog-sources/`, can be tested through the non-live [Catalog Preview Workflow](docs/catalog-preview.md), and publishes to the remote catalog through GitHub Pages; plugin releases are only for runtime/API changes.
-
-Users can also export a lightweight `.odd` workspace from the Shop's Install tab. A `.odd` file is a JSON preset for wallpaper, icons, cursors, widgets, apps, and preferences; it never contains executable bundle code.
-
-| Guide | Use It For |
-| --- | --- |
-| [Building an App](docs/building-an-app.md) | Package a sandboxed mini-app with optional desktop/taskbar launchers. |
-| [Building a Scene](docs/building-a-scene.md) | Create a PixiJS wallpaper scene with preview and wallpaper art. |
-| [Building an Icon Set](docs/building-an-icon-set.md) | Ship a themed PNG/WebP icon feed for Desktop Mode chrome. |
-| [Building a Cursor Set](docs/building-a-cursor-set.md) | Add custom pointer roles and cursor assets. |
-| [Building a Widget](docs/building-a-widget.md) | Register a small draggable desktop widget. |
-| [Catalog Preview Workflow](docs/catalog-preview.md) | Test catalog rows and install paths without publishing them live. |
-| [Shareable `.odd` Workspaces](docs/shareable-workspaces.md) | Export/import a whole desktop mood as a safe preset. |
-| [`.wp` Manifest Reference](docs/wp-manifest.md) | Validate bundle metadata and file contracts. |
-
-## Project Map
-
-- `odd/` — the plugin itself (what ships in `odd.zip`). The 1.0 runtime is intentionally lightweight; catalog content installs on demand.
-- `_tools/catalog-sources/` — source of truth for every bundle (scene / icon set / cursor set / widget / app). Rebuilt into `site/catalog/v1/` by `_tools/build-catalog.py`.
-- `.odd/catalog-preview/v1/` — ignored local output from `npm run catalog:preview` for testing catalog content without publishing it.
-- `site/catalog-preview/v1/` — ignored Pages deploy output generated by `pages.yml` for the explicit preview Playground lane.
-- `site/` — static site assets, Playground launchers, and the remote catalog (`site/catalog/v1/registry.json` + `bundles/` + `icons/`). The public marketing home is [weirdpress.com/odd](https://weirdpress.com/odd); catalog and Playground infrastructure still live under `odd.regionallyfamous.com`.
-- `docs/` — authoring guides and reference docs.
-- `ci/smoke/` — MU-plugin fixtures used by `install-smoke.yml` to test the starter-pack installer hermetically.
-- `bin/` → see `odd/bin/` — `validate-catalog`, `validate-blueprint`, `check-version`, `build-zip`, `make-pot`.
-
-## Useful Links
-
-- **Playground:** [Stable — short link `/go/`](https://odd.regionallyfamous.com/go/) (pinned WordPress.org ODD 1.1.4 + Desktop Mode 0.8.8) · [Trunk — `/go/dev`](https://odd.regionallyfamous.com/go/dev/) · [Preview catalog — `/go/preview`](https://odd.regionallyfamous.com/go/preview/) · [Launcher hub `/playground/`](https://odd.regionallyfamous.com/playground/)
-- [Marketing site](https://weirdpress.com/odd)
-- [ODD Shop State Machine](docs/store-state-machine.md)
-- [Release Runbook](docs/release-runbook.md)
-- [Building on ODD](docs/building-on-odd.md)
-- [Project wiki](https://github.com/RegionallyFamous/odd/wiki)
+- App/catalog changes publish through the catalog lane after explicit approval.
+- Plugin runtime changes require a versioned WordPress.org plugin release.
+- Building and validation do not publish, bump versions, tag commits, or push repositories.
 
 ## License
 
-GPLv2 or later, matching [WP Desktop Mode](https://github.com/WordPress/desktop-mode). See [LICENSE](./LICENSE).
+GPLv2 or later. See [LICENSE](LICENSE).

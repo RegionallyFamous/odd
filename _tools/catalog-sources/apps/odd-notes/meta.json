@@ -1,0 +1,18 @@
+{
+  "slug": "odd-notes",
+  "name": "ODD Notes",
+  "description": "A local-first notes library for OpenStation, saved as private WordPress content with favorites, tags, sharing, archives, and revision history.",
+  "version": "1.1.0",
+  "author": "Regionally Famous",
+  "tags": [
+    "notes",
+    "writing",
+    "productivity",
+    "local-first"
+  ],
+  "requires": {
+    "odd": "1.1.4",
+    "openStation": "1.1.0",
+    "api": "2.3.0"
+  }
+}

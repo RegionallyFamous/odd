@@ -1,174 +1,131 @@
 <?php
 /**
- * ODD — host-plugin dependency guards.
+ * ODD — OpenStation dependency guards.
  *
- * ODD is an add-on for WP Desktop Mode v0.8.5+. In normal installs WordPress
- * loads Desktop Mode first, then ODD. In Playground or manual installs, though,
- * the host plugin can fail to download or activate. Keep ODD loadable in that
- * state so recovery is possible, but never call host APIs unless the baseline
- * host is present.
+ * ODD targets the current OpenStation public API directly. The WordPress.org
+ * dependency slug remains `desktop-mode`, but runtime functions and JavaScript
+ * live under the `openstation_*` and `wp.os` namespaces.
  */
 
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Minimum set of WP Desktop Mode APIs that ODD needs before it can
- * safely register windows, icons, widgets, or wallpapers. Checked on
- * every integration touchpoint — see oddout_desktop_mode_available().
+ * Public OpenStation functions required by the Apps-only runtime.
+ *
+ * @return string[]
  */
-function oddout_desktop_mode_required_functions() {
+function oddout_openstation_required_functions() {
 	return array(
-		'desktop_mode_is_enabled',
-		'desktop_mode_register_window',
-		'desktop_mode_register_icon',
+		'openstation_is_enabled',
+		'openstation_register_window',
+		'openstation_register_icon',
 	);
 }
 
 /**
- * Secondary Desktop Mode API groups are feature-detected because some
- * host-owned surfaces are optional or can be disabled by the host plugin.
+ * Optional OpenStation capability groups used by ODD.
+ *
+ * @param string $capability Capability id.
+ * @return string[]
  */
-function oddout_desktop_mode_capability_functions( $capability ) {
+function oddout_openstation_capability_functions( $capability ) {
 	$map = array(
-		'core'           => oddout_desktop_mode_required_functions(),
+		'core'           => oddout_openstation_required_functions(),
 		'os_settings'    => array(
-			'desktop_mode_get_os_settings',
-			'desktop_mode_save_os_settings',
-			'desktop_mode_default_os_settings',
+			'openstation_get_os_settings',
+			'openstation_save_os_settings',
+			'openstation_default_os_settings',
 		),
-		'registry'       => array(
-			'desktop_mode_native_window_registry',
-		),
-		'wallpaper'      => array(
-			'desktop_mode_register_wallpaper',
-		),
-		'commands'       => array(
-			'desktop_mode_register_command_script',
-		),
-		'settings'       => array(
-			'desktop_mode_register_settings_tab_script',
-			'desktop_mode_register_settings_tab',
-		),
-		'titlebar'       => array(
-			'desktop_mode_register_titlebar_button_script',
-		),
-		'window_notices' => array(
-			'desktop_mode_register_window_notice',
-		),
-		'dock_rail'      => array(
-			'desktop_mode_register_dock_rail_renderer_script',
-		),
-		'host_widgets'   => array(
-			'desktop_mode_register_widget',
-		),
-		'desktop_files'  => array(
-			'desktop_mode_register_file_type',
-			'desktop_mode_register_file_opener',
-			'desktop_mode_resolve_file',
-		),
-		'shared_folders' => array(
-			'desktop_mode_files_sharing_enabled_for',
-			'desktop_mode_files_get_visible_folders',
-		),
-		'presence'       => array(
-			'desktop_mode_presence_status_for_user',
-			'desktop_mode_presence_snapshot',
-		),
-		'heartbeat'      => array(
-			'desktop_mode_register_heartbeat_widget',
-		),
-		'debug'          => array(
-			'desktop_mode_debug_publish',
-			'desktop_mode_debug_session_for_request',
-		),
-		'ai'             => array(
-			'desktop_mode_register_ai_tool',
-		),
-		'pwa'            => array(
-			'desktop_mode_pwa_force_replace_sw',
-		),
-		'window_chrome'  => array(
-			'desktop_mode_register_window_theme_script',
-			'desktop_mode_register_window_theme',
-			'desktop_mode_register_window_control_script',
-			'desktop_mode_register_window_control',
-			'desktop_mode_register_window_slot_script',
-			'desktop_mode_register_window_slot',
-			'desktop_mode_register_window_chrome_script',
-			'desktop_mode_register_window_chrome',
-		),
+		'registry'       => array( 'openstation_native_window_registry' ),
+		'window_notices' => array( 'openstation_register_window_notice' ),
 	);
+
 	return isset( $map[ $capability ] ) ? $map[ $capability ] : array();
 }
 
-function oddout_desktop_mode_missing_functions( $capability = 'core' ) {
+/**
+ * Missing functions for a capability group.
+ *
+ * @param string $capability Capability id.
+ * @return string[]
+ */
+function oddout_openstation_missing_functions( $capability = 'core' ) {
 	$missing = array();
-	foreach ( oddout_desktop_mode_capability_functions( $capability ) as $fn ) {
-		if ( ! function_exists( $fn ) ) {
-			$missing[] = $fn;
+	foreach ( oddout_openstation_capability_functions( $capability ) as $function_name ) {
+		if ( ! function_exists( $function_name ) ) {
+			$missing[] = $function_name;
 		}
 	}
 	return $missing;
 }
 
-function oddout_desktop_mode_min_version() {
-	return defined( 'ODDOUT_DESKTOP_MODE_MIN_VERSION' ) ? ODDOUT_DESKTOP_MODE_MIN_VERSION : '0.8.5';
-}
-
-function oddout_desktop_mode_version() {
-	return defined( 'DESKTOP_MODE_VERSION' ) ? (string) DESKTOP_MODE_VERSION : '';
-}
-
-function oddout_desktop_mode_version_available() {
-	$version = oddout_desktop_mode_version();
-	return '' !== $version && version_compare( $version, oddout_desktop_mode_min_version(), '>=' );
-}
-
-function oddout_desktop_mode_version_at_least( $version ) {
-	$detected = oddout_desktop_mode_version();
-	return '' !== $detected && version_compare( $detected, (string) $version, '>=' );
+/**
+ * Minimum supported OpenStation version.
+ *
+ * @return string
+ */
+function oddout_openstation_min_version() {
+	return defined( 'ODDOUT_OPENSTATION_MIN_VERSION' ) ? ODDOUT_OPENSTATION_MIN_VERSION : '1.1.0';
 }
 
 /**
- * Whether the core Desktop Mode integration surface is available.
- * Pass a capability slug to check a secondary group (e.g. `os_settings`).
+ * Detected OpenStation version.
+ *
+ * @return string
  */
-function oddout_desktop_mode_available() {
-	return oddout_desktop_mode_version_available() && array() === oddout_desktop_mode_missing_functions( 'core' );
+function oddout_openstation_version() {
+	return defined( 'OPENSTATION_VERSION' ) ? (string) OPENSTATION_VERSION : '';
 }
 
-function oddout_desktop_mode_supports( $capability ) {
-	return oddout_desktop_mode_version_available() && array() === oddout_desktop_mode_missing_functions( $capability );
+/**
+ * Whether the detected host version meets ODD's baseline.
+ *
+ * @return bool
+ */
+function oddout_openstation_version_available() {
+	$version = oddout_openstation_version();
+	return '' !== $version && version_compare( $version, oddout_openstation_min_version(), '>=' );
+}
+
+/**
+ * Whether the core OpenStation integration is ready.
+ *
+ * @return bool
+ */
+function oddout_openstation_available() {
+	return oddout_openstation_version_available() && array() === oddout_openstation_missing_functions();
+}
+
+/**
+ * Whether an optional OpenStation capability is ready.
+ *
+ * @param string $capability Capability id.
+ * @return bool
+ */
+function oddout_openstation_supports( $capability ) {
+	return oddout_openstation_version_available()
+		&& array() === oddout_openstation_missing_functions( $capability );
 }
 
 add_action(
 	'admin_notices',
 	static function () {
-		if ( oddout_desktop_mode_available() || ! current_user_can( 'activate_plugins' ) ) {
+		if ( oddout_openstation_available() || ! current_user_can( 'activate_plugins' ) ) {
 			return;
 		}
 
-		$missing      = oddout_desktop_mode_missing_functions();
-		$version      = oddout_desktop_mode_version();
-		$min_version  = oddout_desktop_mode_min_version();
-		$version_note = oddout_desktop_mode_version_available()
-			? ''
-			: sprintf(
-				/* translators: 1: detected WP Desktop Mode version, 2: minimum required version. */
-				__( ' Detected version: %1$s. Required version: %2$s or newer.', 'odd-outlandish-desktop-decorator' ),
-				'' === $version ? __( 'unknown', 'odd-outlandish-desktop-decorator' ) : $version,
-				$min_version
-			);
+		$missing = oddout_openstation_missing_functions();
+		$version = oddout_openstation_version();
 		?>
 		<div class="notice notice-warning">
 			<p>
 				<?php
 				printf(
-					/* translators: 1: minimum WP Desktop Mode version, 2: comma-separated missing function names, 3: version note. */
-					esc_html__( 'ODD requires WP Desktop Mode %1$s or newer. Desktop surfaces are paused until the host plugin is installed, active, and current. Missing APIs: %2$s.%3$s', 'odd-outlandish-desktop-decorator' ),
-					esc_html( $min_version ),
-					esc_html( empty( $missing ) ? __( 'none', 'odd-outlandish-desktop-decorator' ) : implode( ', ', $missing ) ),
-					esc_html( $version_note )
+					/* translators: 1: minimum OpenStation version, 2: detected version, 3: missing APIs. */
+					esc_html__( 'ODD requires OpenStation %1$s or newer. Detected: %2$s. Missing APIs: %3$s.', 'odd-outlandish-desktop-decorator' ),
+					esc_html( oddout_openstation_min_version() ),
+					esc_html( '' === $version ? __( 'unknown', 'odd-outlandish-desktop-decorator' ) : $version ),
+					esc_html( empty( $missing ) ? __( 'none', 'odd-outlandish-desktop-decorator' ) : implode( ', ', $missing ) )
 				);
 				?>
 			</p>

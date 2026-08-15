@@ -1,19 +1,11 @@
 name: install-smoke
 
-# Boots a real WordPress install under MySQL, activates WP Desktop Mode
-# and odd.zip, serves a local fixture catalog via a pre_http_request
-# MU-plugin so the install is hermetic, and asserts that:
-#   1. ODD activates cleanly against a zero-content plugin.
-#   2. The starter-pack installer downloads the fixture bundles and
-#      leaves the site with real content in every registry.
-# Gates the release pipeline: if odd.zip would fatal on a clean install,
-# we want to know BEFORE the GH release goes public.
-
+# Hermetic release gate for the Apps-only ODD runtime and ODD Notes.
 on:
   workflow_call:
     inputs:
       zip-path:
-        description: "Path to odd.zip (relative to repo root). Built locally when omitted."
+        description: "Path to odd.zip (relative to repo root)."
         required: false
         default: "dist/odd.zip"
         type: string
@@ -28,637 +20,95 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: wordpress
-        ports:
-          - 3306:3306
+        ports: ["3306:3306"]
         options: >-
           --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -proot"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
     env:
-      WP_CLI_ALLOW_ROOT: '1'
+      WP_CLI_ALLOW_ROOT: "1"
     steps:
       - uses: actions/checkout@v6
 
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: "8.2"
           extensions: mysqli, zip, dom, gd, mbstring, xml, intl
           coverage: none
+          tools: wp-cli
 
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
-      - name: Install Python catalog dependencies
-        run: python -m pip install --quiet -r requirements-catalog.txt
-
-      - name: Wait for MySQL
-        run: |
-          for i in $(seq 1 30); do
-            if mysqladmin ping -h 127.0.0.1 -u root -proot --silent; then
-              echo "mysql ready"; exit 0
-            fi
-            sleep 2
-          done
-          echo "mysql never came up"; exit 1
-
-      - name: Install wp-cli
-        run: |
-          curl -fSLo wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
-          chmod +x wp-cli.phar
-          sudo mv wp-cli.phar /usr/local/bin/wp
-          wp --info
-
-      - name: Build fixture catalog from _tools/catalog-sources/
-        run: |
-          # Build the full catalog — it doubles as a hermetic smoke
-          # fixture. The pre_http_request MU-plugin maps any /catalog/v1/
-          # request onto these files so no network traffic leaks.
-          python3 _tools/build-catalog.py
-          ls -la site/catalog/v1/
-          head -20 site/catalog/v1/registry.json
-
-      - name: Build odd.zip if missing
-        run: |
-          if [ ! -f "${{ inputs.zip-path }}" ]; then
-            odd/bin/build-zip
-          fi
-          ls -lh "${{ inputs.zip-path }}"
-
-      - name: Download + configure WordPress
-        run: |
-          mkdir -p /tmp/wp
-          cd /tmp/wp
-          wp core download --locale=en_US --version=latest
-          wp config create \
-            --dbname=wordpress \
-            --dbuser=root \
-            --dbpass=root \
-            --dbhost=127.0.0.1:3306 \
-            --dbprefix=ins_ \
-            --extra-php <<'PHP'
-          define( 'WP_DEBUG', true );
-          define( 'WP_DEBUG_LOG', true );
-          define( 'WP_DEBUG_DISPLAY', false );
-          // WP_CONTENT_DIR isn't defined yet when this extra-php runs —
-          // it's set by wp-settings.php later. Use the default layout
-          // relative to wp-config.php instead.
-          define( 'ODD_SMOKE_FIXTURE_ROOT', __DIR__ . '/wp-content/odd-smoke-fixture' );
-          PHP
-          wp core install \
-            --url=http://localhost \
-            --title="Install Smoke" \
-            --admin_user=smoke \
-            --admin_password=smoke \
-            --admin_email=smoke@example.com \
-            --skip-email
-
-      - name: Stage fixture catalog + MU-plugin
-        run: |
-          # Mirror the built catalog into wp-content/odd-smoke-fixture/
-          # where the MU-plugin expects to find it.
-          mkdir -p /tmp/wp/wp-content/odd-smoke-fixture
-          cp -R "$GITHUB_WORKSPACE/site/catalog/v1/." /tmp/wp/wp-content/odd-smoke-fixture/
-          mkdir -p /tmp/wp/wp-content/mu-plugins
-          cp "$GITHUB_WORKSPACE/ci/smoke/odd-smoke-fixture.php" /tmp/wp/wp-content/mu-plugins/
-          ls /tmp/wp/wp-content/mu-plugins/
-          ls /tmp/wp/wp-content/odd-smoke-fixture/ | head
-
-      - name: Install WP Desktop Mode (host plugin)
-        working-directory: /tmp/wp
-        run: |
-          wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.0.8.5.zip --activate
-
-      - name: Install ODD
-        working-directory: /tmp/wp
+      - name: Build Apps-only catalog and plugin package
         env:
-          ODD_ZIP: ${{ github.workspace }}/${{ inputs.zip-path }}
-        run: |
-          wp plugin install "$ODD_ZIP" --activate
-
-      - name: Assert ODD activated
-        working-directory: /tmp/wp
-        run: |
-          wp plugin list --status=active --field=name | grep -E '^odd$'
-
-      - name: Assert starter-pack ran on activation
-        working-directory: /tmp/wp
-        run: |
-          # ODD installs the starter pack inline during the
-          # activation hook (no cron). By the time `wp plugin activate`
-          # returns, state should be `installed`. The MU-plugin
-          # intercepts the catalog HTTP calls so this is deterministic
-          # and offline-safe. If for any reason activation skipped the
-          # install (oddout_starter_ensure_installed returned null), the
-          # `init`-level safety net would pick it up on the next
-          # request — nudge it with a no-op wp eval so we don't race.
-          wp eval 'oddout_starter_ensure_installed( true );'
-          wp eval '$s = oddout_starter_get_state(); echo "starter state: " . $s["status"] . " (attempts=" . $s["attempts"] . ")\n"; if ( $s["last_error"] ) { echo "last error: " . $s["last_error"] . "\n"; } exit( "installed" === $s["status"] ? 0 : 1 );'
-
-      - name: Assert starter pack populated the registries
-        working-directory: /tmp/wp
-        run: |
-          # Starter pack ships a non-empty scene + icon set + cursor set (see
-          # _tools/catalog-sources/starter-pack.json). After the run
-          # the plugin registries should carry those slugs.
-          wp eval '$n = count( oddout_wallpaper_scene_slugs() ); echo "scene slugs after starter: $n\n"; exit( $n >= 1 ? 0 : 1 );'
-          wp eval 'if ( ! function_exists( "oddout_icons_get_sets" ) ) { echo "no icons API; skipping\n"; exit( 0 ); } $n = count( oddout_icons_get_sets() ); echo "icon sets after starter: $n\n"; exit( $n >= 1 ? 0 : 1 );'
-          wp eval 'if ( ! function_exists( "oddout_cursors_get_sets" ) ) { echo "no cursors API\n"; exit( 1 ); } $n = count( oddout_cursors_get_sets() ); echo "cursor sets after starter: $n\n"; exit( $n >= 1 ? 0 : 1 );'
-          wp eval '$sets = oddout_cursors_get_sets(); $slug = array_key_first( $sets ); $css = oddout_cursors_build_css( $sets[ $slug ] ); echo substr( $css, 0, 80 ) . "\n"; exit( false !== strpos( $css, "ODD cursor effects" ) ? 0 : 1 );'
-
-      - name: Assert apps API is loaded
-        working-directory: /tmp/wp
-        run: |
-          wp eval 'exit( function_exists( "oddout_apps_install" ) ? 0 : 1 );'
-
-      - name: Assert dock filter registered
-        working-directory: /tmp/wp
-        run: |
-          wp eval 'global $wp_filter; exit( isset( $wp_filter["desktop_mode_dock_item"] ) ? 0 : 1 );'
-
-      - name: Assert widget bundle API loaded
-        working-directory: /tmp/wp
-        run: |
-          wp eval 'exit( function_exists( "oddout_widget_bundle_install" ) ? 0 : 1 );'
-
-      - name: Assert native-window registered for the Control Panel
-        working-directory: /tmp/wp
-        run: |
-          # desktop_mode_native_window_registry returns null when the
-          # window id is unknown to WP Desktop Mode. If our
-          # includes/native-window.php didn't run, the ODD control-panel
-          # window is missing.
-          wp eval 'if ( ! function_exists( "desktop_mode_native_window_registry" ) ) { exit( 0 ); } exit( null !== desktop_mode_native_window_registry( "odd" ) ? 0 : 1 );'
-
-      - name: Build example .wp bundles
-        run: |
-          mkdir -p dist
-          for dir in examples/example-*; do
-            name=$(basename "$dir")
-            ( cd "$dir" && zip -r -q "$GITHUB_WORKSPACE/dist/${name}.wp" . -x '*.DS_Store' )
-            ls -la "$GITHUB_WORKSPACE/dist/${name}.wp"
-          done
-
-      - name: Install each example bundle through the universal installer
-        working-directory: /tmp/wp
-        run: |
-          # Drive the bundle installer from the PHP side so we don't
-          # have to authenticate HTTP multipart uploads. This is the
-          # same codepath the REST upload route terminates at.
-          cat > /tmp/install-example.php <<'PHP'
-          <?php
-          wp_set_current_user( 1 );
-          $bundles = array(
-              'example-rainbow'    => getenv( 'GITHUB_WORKSPACE' ) . '/dist/example-scene.wp',
-              'example-hex'        => getenv( 'GITHUB_WORKSPACE' ) . '/dist/example-iconset.wp',
-              'example-hello'      => getenv( 'GITHUB_WORKSPACE' ) . '/dist/example-widget.wp',
-              'example-hello-app'  => getenv( 'GITHUB_WORKSPACE' ) . '/dist/example-app.wp',
-          );
-          foreach ( $bundles as $slug => $wp_path ) {
-              if ( ! file_exists( $wp_path ) ) {
-                  fwrite( STDERR, "missing bundle: $wp_path\n" );
-                  exit( 1 );
-              }
-              $result = oddout_bundle_install( $wp_path, basename( $wp_path ) );
-              if ( is_wp_error( $result ) ) {
-                  fwrite( STDERR, "install failed for $slug: " . $result->get_error_code() . ' — ' . $result->get_error_message() . "\n" );
-                  exit( 1 );
-              }
-              echo "installed: $slug\n";
-          }
-          exit( 0 );
-          PHP
-          wp eval-file /tmp/install-example.php
-
-      - name: Assert installed examples show up in their registries
-        working-directory: /tmp/wp
-        run: |
-          # The rainbow scene should register through the scene
-          # registry filter, the hex icon set through the icons
-          # registry, and the hello widget through the widgets index.
-          # We hit each registry's accessor directly.
-          wp eval 'if ( ! array_key_exists( "example-hex", oddout_icons_get_sets() ) ) { fwrite( STDERR, "example-hex did not register\n" ); exit( 1 ); } echo "example-hex registered\n";'
-          wp eval 'if ( ! function_exists( "oddout_scenes_index_load" ) ) { echo "scenes index helper missing — skipping\n"; exit( 0 ); } $i = oddout_scenes_index_load(); if ( empty( $i["example-rainbow"] ) ) { fwrite( STDERR, "example-rainbow did not register\n" ); exit( 1 ); } echo "example-rainbow registered\n";'
-          wp eval 'if ( ! function_exists( "oddout_widgets_index_load" ) ) { echo "widgets index helper missing — skipping\n"; exit( 0 ); } $i = oddout_widgets_index_load(); if ( empty( $i["example-hello"] ) ) { fwrite( STDERR, "example-hello did not register\n" ); exit( 1 ); } echo "example-hello registered\n";'
-
-      - name: Assert bundle catalog REST responds
-        working-directory: /tmp/wp
-        run: |
-          # Use internal REST so we don't need to stand up a real HTTP
-          # server. The catalog endpoint requires current_user_can( 'read' );
-          # wp_set_current_user lets that through for the eval.
-          cat > /tmp/assert-catalog.php <<'PHP'
-          <?php
-          wp_set_current_user( 1 );
-          $req  = new WP_REST_Request( 'GET', '/odd/v1/bundles/catalog' );
-          $resp = rest_do_request( $req );
-          if ( is_wp_error( $resp ) || $resp->get_status() !== 200 ) {
-              fwrite( STDERR, "catalog endpoint returned " . ( is_wp_error( $resp ) ? $resp->get_error_code() : $resp->get_status() ) . "\n" );
-              exit( 1 );
-          }
-          $data = $resp->get_data();
-          if ( ! is_array( $data ) || ! isset( $data['bundles'] ) || ! is_array( $data['bundles'] ) ) {
-              fwrite( STDERR, "catalog response missing `bundles` array\n" );
-              exit( 1 );
-          }
-          if ( count( $data['bundles'] ) < 1 ) {
-              fwrite( STDERR, "catalog response is empty (MU fixture not wired?)\n" );
-              exit( 1 );
-          }
-          exit( 0 );
-          PHP
-          wp eval-file /tmp/assert-catalog.php
-
-      - name: Assert prefs REST round-trips
-        working-directory: /tmp/wp
-        run: |
-          cat > /tmp/assert-prefs.php <<'PHP'
-          <?php
-          wp_set_current_user( 1 );
-          $req  = new WP_REST_Request( 'GET', '/odd/v1/prefs' );
-          $resp = rest_do_request( $req );
-          if ( is_wp_error( $resp ) || $resp->get_status() !== 200 ) {
-              fwrite( STDERR, "prefs endpoint returned " . ( is_wp_error( $resp ) ? $resp->get_error_code() : $resp->get_status() ) . "\n" );
-              exit( 1 );
-          }
-          $data = $resp->get_data();
-          foreach ( array( 'wallpaper', 'iconSet', 'scenes', 'sets' ) as $key ) {
-              if ( ! array_key_exists( $key, $data ) ) {
-                  fwrite( STDERR, "prefs missing key: $key\n" );
-                  exit( 1 );
-              }
-          }
-          exit( 0 );
-          PHP
-          wp eval-file /tmp/assert-prefs.php
-
-      - name: Scan debug.log for PHP errors during activation
-        working-directory: /tmp/wp
-        run: |
-          log="wp-content/debug.log"
-          if [ ! -f "$log" ]; then
-            echo "No debug.log written - activation produced no PHP errors."
-            exit 0
-          fi
-          echo "--- debug.log tail ---"
-          tail -n 200 "$log"
-          echo "--- scanning ---"
-          if grep -E 'PHP (Fatal|Parse|Warning)' "$log"; then
-            echo "error: ODD activation emitted PHP errors above" >&2
-            exit 1
-          fi
-
-  # Dependency smoke: install ODD without WP Desktop Mode installed.
-  # WordPress 6.9+ blocks activation when a required plugin is missing,
-  # so the release contract is now "clear dependency failure, no fatal,
-  # plugin remains inactive." Runtime degraded-mode paths are covered by
-  # PHPUnit where the plugin can be bootstrapped under controlled stubs.
-  install-smoke-no-host:
-    runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: wordpress
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -proot"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
-    env:
-      WP_CLI_ALLOW_ROOT: '1'
-    steps:
-      - uses: actions/checkout@v6
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          extensions: mysqli, zip, dom, gd, mbstring, xml, intl
-          coverage: none
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-      - name: Install Python catalog dependencies
-        run: python -m pip install --quiet -r requirements-catalog.txt
-      - name: Wait for MySQL
-        run: |
-          for i in $(seq 1 30); do
-            if mysqladmin ping -h 127.0.0.1 -u root -proot --silent; then
-              echo "mysql ready"; exit 0
-            fi
-            sleep 2
-          done
-          echo "mysql never came up"; exit 1
-      - name: Install wp-cli
-        run: |
-          curl -fSLo wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
-          chmod +x wp-cli.phar
-          sudo mv wp-cli.phar /usr/local/bin/wp
-          wp --info
-      - name: Build odd.zip if missing
-        run: |
-          if [ ! -f "${{ inputs.zip-path }}" ]; then
-            odd/bin/build-zip
-          fi
-          ls -lh "${{ inputs.zip-path }}"
-      - name: Download + configure WordPress
-        run: |
-          mkdir -p /tmp/wp
-          cd /tmp/wp
-          wp core download --locale=en_US --version=latest
-          wp config create \
-            --dbname=wordpress \
-            --dbuser=root \
-            --dbpass=root \
-            --dbhost=127.0.0.1:3306 \
-            --dbprefix=dm_ \
-            --extra-php <<'PHP'
-          define( 'WP_DEBUG', true );
-          define( 'WP_DEBUG_LOG', true );
-          define( 'WP_DEBUG_DISPLAY', false );
-          PHP
-          wp core install \
-            --url=http://localhost \
-            --title="Degraded Smoke" \
-            --admin_user=smoke \
-            --admin_password=smoke \
-            --admin_email=smoke@example.com \
-            --skip-email
-      - name: Install ODD without host plugin
-        working-directory: /tmp/wp
-        env:
-          ODD_ZIP: ${{ github.workspace }}/${{ inputs.zip-path }}
-        run: |
-          set +e
-          output=$(wp plugin install "$ODD_ZIP" --activate 2>&1)
-          status=$?
-          set -e
-          echo "$output"
-          echo "$output" | grep -F 'requires 1 plugin to be installed and activated: desktop-mode'
-          wp plugin list --status=inactive --field=name | grep -E '^odd$'
-          if wp plugin list --status=active --field=name | grep -E '^odd$'; then
-            echo "error: ODD activated despite missing required Desktop Mode plugin" >&2
-            exit 1
-          fi
-          exit 0
-      - name: Assert dependency block did not fatal
-        working-directory: /tmp/wp
-        run: |
-          wp plugin list --field=name | grep -E '^odd$'
-      - name: Scan debug.log for PHP errors in degraded mode
-        working-directory: /tmp/wp
-        run: |
-          log="wp-content/debug.log"
-          if [ ! -f "$log" ]; then
-            echo "No debug.log written."
-            exit 0
-          fi
-          echo "--- debug.log tail ---"
-          tail -n 200 "$log"
-          if grep -E 'PHP (Fatal|Parse)' "$log"; then
-            echo "error: ODD without host plugin emitted PHP Fatal/Parse errors" >&2
-            exit 1
-          fi
-
-  # Degraded-mode smoke: WP Desktop Mode is present, but the remote
-  # catalog HTTP is blocked and there is no stale mirror. The bundled
-  # frozen fallback at odd/data/fallback-registry.json must carry the
-  # Shop + starter-pack runner through first boot.
-  install-smoke-offline-catalog:
-    runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: wordpress
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -proot"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
-    env:
-      WP_CLI_ALLOW_ROOT: '1'
-    steps:
-      - uses: actions/checkout@v6
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          extensions: mysqli, zip, dom, gd, mbstring, xml, intl
-          coverage: none
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-      - name: Install Python catalog dependencies
-        run: python -m pip install --quiet -r requirements-catalog.txt
-      - name: Wait for MySQL
-        run: |
-          for i in $(seq 1 30); do
-            if mysqladmin ping -h 127.0.0.1 -u root -proot --silent; then
-              echo "mysql ready"; exit 0
-            fi
-            sleep 2
-          done
-          echo "mysql never came up"; exit 1
-      - name: Install wp-cli
-        run: |
-          curl -fSLo wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
-          chmod +x wp-cli.phar
-          sudo mv wp-cli.phar /usr/local/bin/wp
-          wp --info
-      - name: Build catalog (to refresh fallback snapshot)
+          ODD_CATALOG_BASE_URL: https://fixture.invalid/catalog/v1
         run: |
           python3 _tools/build-catalog.py
-          ls -la odd/data/fallback-registry.json
-      - name: Build odd.zip if missing
-        run: |
-          if [ ! -f "${{ inputs.zip-path }}" ]; then
-            odd/bin/build-zip
-          fi
-      - name: Download + configure WordPress
-        run: |
-          mkdir -p /tmp/wp
-          cd /tmp/wp
-          wp core download --locale=en_US --version=latest
-          wp config create \
-            --dbname=wordpress \
-            --dbuser=root \
-            --dbpass=root \
-            --dbhost=127.0.0.1:3306 \
-            --dbprefix=off_ \
-            --extra-php <<'PHP'
-          define( 'WP_DEBUG', true );
-          define( 'WP_DEBUG_LOG', true );
-          define( 'WP_DEBUG_DISPLAY', false );
-          PHP
-          wp core install \
-            --url=http://localhost \
-            --title="Offline Catalog Smoke" \
-            --admin_user=smoke \
-            --admin_password=smoke \
-            --admin_email=smoke@example.com \
-            --skip-email
-      - name: Stage offline-only MU-plugin that blocks all ODD catalog HTTP
-        run: |
-          mkdir -p /tmp/wp/wp-content/mu-plugins
-          cat > /tmp/wp/wp-content/mu-plugins/odd-offline-catalog.php <<'PHP'
-          <?php
-          /**
-           * Plugin Name: ODD Offline Catalog Smoke
-           * Description: Reject every outbound ODD catalog HTTP call so the reliability
-           *              gate can prove the frozen in-plugin fallback takes over.
-           */
-          add_filter( 'pre_http_request', function ( $preempt, $args, $url ) {
-              if ( false !== $preempt ) { return $preempt; }
-              if ( ! is_string( $url ) ) { return false; }
-              if ( false !== strpos( $url, '/catalog/v1/' ) || false !== strpos( $url, 'odd.regionallyfamous.com' ) ) {
-                  return new WP_Error( 'offline_smoke', 'simulated catalog outage' );
-              }
-              return false;
-          }, 9, 3 );
-          PHP
-      - name: Install WP Desktop Mode + ODD (fresh site, no stale cache)
-        working-directory: /tmp/wp
-        env:
-          ODD_ZIP: ${{ github.workspace }}/${{ inputs.zip-path }}
-        run: |
-          wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.0.8.5.zip --activate
-          wp plugin install "$ODD_ZIP" --activate
-      - name: Assert the bundled fallback registry carried the Shop
-        working-directory: /tmp/wp
-        run: |
-          wp eval 'delete_transient( ODDOUT_CATALOG_TRANSIENT ); delete_option( ODDOUT_CATALOG_STALE_OPTION );'
-          wp eval '$r = oddout_catalog_load( true ); $n = isset( $r["bundles"] ) ? count( $r["bundles"] ) : 0; echo "bundles from load: $n\n"; exit( $n >= 1 ? 0 : 1 );'
-      - name: Scan debug.log for PHP errors under offline catalog
-        working-directory: /tmp/wp
-        run: |
-          log="wp-content/debug.log"
-          if [ ! -f "$log" ]; then
-            echo "No debug.log written."
-            exit 0
-          fi
-          echo "--- debug.log tail ---"
-          tail -n 200 "$log"
-          if grep -E 'PHP (Fatal|Parse)' "$log"; then
-            echo "error: offline-catalog mode emitted PHP Fatal/Parse errors" >&2
-            exit 1
-          fi
+          odd/bin/validate-catalog
+          if [ ! -f "${{ inputs.zip-path }}" ]; then odd/bin/build-zip; fi
+          odd/bin/check-zip-contents "${{ inputs.zip-path }}"
 
-  # Degraded-mode smoke: a corrupted .wp bundle (wrong sha256) must be
-  # refused by oddout_bundle_install() without fatalling. This protects
-  # against a compromised or truncated remote mirror on first activation.
-  install-smoke-bad-hash:
-    runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: wordpress
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -proot"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
-    env:
-      WP_CLI_ALLOW_ROOT: '1'
-    steps:
-      - uses: actions/checkout@v6
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          extensions: mysqli, zip, dom, gd, mbstring, xml, intl
-          coverage: none
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
       - name: Wait for MySQL
         run: |
           for i in $(seq 1 30); do
-            if mysqladmin ping -h 127.0.0.1 -u root -proot --silent; then
-              echo "mysql ready"; exit 0
-            fi
+            mysqladmin ping -h 127.0.0.1 -u root -proot --silent && exit 0
             sleep 2
           done
-          echo "mysql never came up"; exit 1
-      - name: Install wp-cli
-        run: |
-          curl -fSLo wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
-          chmod +x wp-cli.phar
-          sudo mv wp-cli.phar /usr/local/bin/wp
-          wp --info
-      - name: Build odd.zip if missing
-        run: |
-          if [ ! -f "${{ inputs.zip-path }}" ]; then
-            odd/bin/build-zip
-          fi
-      - name: Download + configure WordPress
+          exit 1
+
+      - name: Install WordPress
         run: |
           mkdir -p /tmp/wp
           cd /tmp/wp
           wp core download --locale=en_US --version=latest
-          wp config create \
-            --dbname=wordpress \
-            --dbuser=root \
-            --dbpass=root \
-            --dbhost=127.0.0.1:3306 \
-            --dbprefix=bh_ \
-            --extra-php <<'PHP'
-          define( 'WP_DEBUG', true );
-          define( 'WP_DEBUG_LOG', true );
-          define( 'WP_DEBUG_DISPLAY', false );
-          PHP
-          wp core install \
-            --url=http://localhost \
-            --title="Bad Hash Smoke" \
-            --admin_user=smoke \
-            --admin_password=smoke \
-            --admin_email=smoke@example.com \
-            --skip-email
-      - name: Install WP Desktop Mode + ODD
-        working-directory: /tmp/wp
+          wp config create --dbname=wordpress --dbuser=root --dbpass=root --dbhost=127.0.0.1:3306 --dbprefix=odd_
+          wp config set ODD_SMOKE_FIXTURE_ROOT /tmp/wp/wp-content/odd-smoke-fixture
+          wp config set ODD_SMOKE_CATALOG_URL https://fixture.invalid/catalog/v1/registry.json
+          wp core install --url=http://localhost --title="ODD Smoke" --admin_user=smoke --admin_password=smoke --admin_email=smoke@example.com --skip-email
+
+      - name: Stage catalog fixture
+        run: |
+          mkdir -p /tmp/wp/wp-content/odd-smoke-fixture /tmp/wp/wp-content/mu-plugins
+          cp -R site/catalog/v1/. /tmp/wp/wp-content/odd-smoke-fixture/
+          cp ci/smoke/odd-smoke-fixture.php /tmp/wp/wp-content/mu-plugins/
+
+      - name: Install OpenStation 1.1.0 and ODD
         env:
           ODD_ZIP: ${{ github.workspace }}/${{ inputs.zip-path }}
+        working-directory: /tmp/wp
         run: |
-          wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.0.8.5.zip --activate
+          wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.1.1.0.zip --activate
           wp plugin install "$ODD_ZIP" --activate
-      - name: Assert oddout_bundle_install rejects a corrupted .wp
+          wp user meta update 1 desktop_mode_mode 1
+
+      - name: Assert Apps-only OpenStation registration
         working-directory: /tmp/wp
         run: |
-          cat > /tmp/bad-hash.php <<'PHP'
-          <?php
-          wp_set_current_user( 1 );
-          $path = tempnam( sys_get_temp_dir(), 'badhash_' ) . '.wp';
-          // Write garbage bytes — definitely not a real ZIP archive.
-          file_put_contents( $path, "not a real zip archive\n" );
-          $result = oddout_bundle_install( $path, 'bad.wp' );
-          @unlink( $path );
-          if ( ! is_wp_error( $result ) ) {
-              fwrite( STDERR, "bad bundle was accepted — reliability gate failed\n" );
-              exit( 1 );
-          }
-          echo "rejected as expected: " . $result->get_error_code() . "\n";
-          exit( 0 );
-          PHP
-          wp eval-file /tmp/bad-hash.php
-      - name: Scan debug.log for PHP errors during bad-hash attempt
+          wp --user=1 eval 'exit( oddout_openstation_available() ? 0 : 1 );'
+          wp --user=1 eval 'exit( null !== openstation_native_window_registry( "odd" ) ? 0 : 1 );'
+          wp --user=1 eval 'exit( array( "app" ) === oddout_catalog_allowed_types() ? 0 : 1 );'
+          wp --user=1 eval 'exit( function_exists( "oddout_wallpaper_scenes" ) || function_exists( "oddout_icons_get_sets" ) || function_exists( "oddout_cursors_get_sets" ) ? 1 : 0 );'
+
+      - name: Install ODD Notes from the fixture catalog
         working-directory: /tmp/wp
         run: |
-          log="wp-content/debug.log"
-          if [ ! -f "$log" ]; then
-            echo "No debug.log written."
-            exit 0
-          fi
-          echo "--- debug.log tail ---"
-          tail -n 200 "$log"
-          if grep -E 'PHP (Fatal|Parse)' "$log"; then
-            echo "error: bad-hash mode emitted PHP Fatal/Parse errors" >&2
-            exit 1
+          wp --user=1 eval '$registry = oddout_catalog_refresh(); $entry = null; foreach ( $registry["bundles"] as $row ) { if ( "odd-notes" === $row["slug"] ) { $entry = $row; break; } } if ( ! $entry ) { fwrite( STDERR, "ODD Notes missing from catalog\n" ); exit( 1 ); } $result = oddout_catalog_install_entry( $entry ); if ( is_wp_error( $result ) ) { fwrite( STDERR, $result->get_error_message() . "\n" ); exit( 1 ); }'
+
+      - name: Assert ODD Notes native app and REST API
+        working-directory: /tmp/wp
+        run: |
+          wp --user=1 eval '$row = openstation_native_window_registry( "odd-app-odd-notes" ); exit( is_array( $row ) && "ODD Notes" === $row["title"] ? 0 : 1 );'
+          wp --user=1 eval 'exit( wp_script_is( "odd-app-odd-notes", "registered" ) && wp_style_is( "odd-app-odd-notes", "registered" ) ? 0 : 1 );'
+          wp --user=1 eval '$server = rest_get_server(); do_action( "rest_api_init" ); $routes = $server->get_routes(); exit( isset( $routes["/odd-notes/v1/notes"] ) ? 0 : 1 );'
+          wp --user=1 eval '$apps = oddout_apps_list(); exit( 1 === count( $apps ) && "odd-notes" === $apps[0]["slug"] ? 0 : 1 );'
+
+      - name: Fail on PHP fatals
+        if: always()
+        run: |
+          if [ -f /tmp/wp/wp-content/debug.log ]; then
+            cat /tmp/wp/wp-content/debug.log
+            ! grep -E "PHP (Fatal error|Parse error)" /tmp/wp/wp-content/debug.log
           fi

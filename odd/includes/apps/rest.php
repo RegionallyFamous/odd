@@ -220,7 +220,7 @@ add_action(
 						'sanitize_callback' => 'rest_sanitize_boolean',
 					),
 					'surfaces' => array(
-						'description'       => __( 'Fallback Desktop Mode launch surface metadata for this app.', 'odd-outlandish-desktop-decorator' ),
+						'description'       => __( 'Fallback OpenStation launch surface metadata for this app.', 'odd-outlandish-desktop-decorator' ),
 						'type'              => 'object',
 						'required'          => false,
 						'validate_callback' => static function ( $value ) {
@@ -416,7 +416,7 @@ function oddout_apps_rest_serve_permission( WP_REST_Request $req ) {
 		return false;
 	}
 	$cap = function_exists( 'oddout_apps_normalize_capability' )
-		? oddout_apps_normalize_capability( isset( $index[ $slug ]['capability'] ) ? $index[ $slug ]['capability'] : '' )
+		? oddout_apps_normalize_capability( isset( $index[ $slug ]['capability'] ) ? $index[ $slug ]['capability'] : '', $slug )
 		: 'manage_options';
 	return current_user_can( $cap );
 }
@@ -877,7 +877,7 @@ function oddout_apps_rest_diag( WP_REST_Request $req ) {
 		'oddout_apps_forbidden_extensions'     => function_exists( 'oddout_apps_forbidden_extensions' ),
 		'oddout_apps_mime_for'                 => function_exists( 'oddout_apps_mime_for' ),
 		'oddout_apps_inject_runtime_importmap' => function_exists( 'oddout_apps_inject_runtime_importmap' ),
-		'desktop_mode_register_window'         => function_exists( 'desktop_mode_register_window' ),
+		'openstation_register_window'          => function_exists( 'openstation_register_window' ),
 	);
 
 	// Hook priority — is serve-cookieauth actually on init@1?
@@ -908,7 +908,7 @@ function oddout_apps_rest_diag( WP_REST_Request $req ) {
 	$installed = null !== $row;
 	$enabled   = $installed && ! empty( $row['enabled'] );
 	$cap       = $installed && function_exists( 'oddout_apps_normalize_capability' )
-		? oddout_apps_normalize_capability( isset( $row['capability'] ) ? $row['capability'] : '' )
+		? oddout_apps_normalize_capability( isset( $row['capability'] ) ? $row['capability'] : '', $slug )
 		: 'manage_options';
 	$cap_ok    = current_user_can( $cap );
 
@@ -1032,9 +1032,9 @@ function oddout_apps_rest_diag( WP_REST_Request $req ) {
 	// Has the client-side desktop shell template element been
 	// written for this window? We can't see the shell's DOM from
 	// the server, but we can confirm the registry entry exists.
-	$desktop_mode_registered = null;
-	if ( function_exists( 'desktop_mode_native_window_registry' ) ) {
-		$desktop_mode_registered = null !== desktop_mode_native_window_registry( 'odd-app-' . $slug );
+	$openstation_registered = null;
+	if ( function_exists( 'openstation_native_window_registry' ) ) {
+		$openstation_registered = null !== openstation_native_window_registry( 'odd-app-' . $slug );
 	}
 
 	$checks = array(
@@ -1199,9 +1199,9 @@ function oddout_apps_rest_diag( WP_REST_Request $req ) {
 			'last' => function_exists( 'oddout_apps_repair_meta_for' ) ? oddout_apps_repair_meta_for( $slug ) : array(),
 		),
 		'icon'         => $icon_health,
-		'desktop_mode' => array(
+		'openstation'  => array(
 			'window_id'         => 'odd-app-' . $slug,
-			'window_registered' => $desktop_mode_registered,
+			'window_registered' => $openstation_registered,
 		),
 	);
 

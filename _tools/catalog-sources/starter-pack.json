@@ -1,13 +1,7 @@
 {
-  "scenes": [
-    "oddling-desktop"
-  ],
-  "iconSets": [
-    "odd-default-icons"
-  ],
-  "cursorSets": [
-    "odd-default-cursors"
-  ],
+  "scenes": [],
+  "iconSets": [],
+  "cursorSets": [],
   "widgets": [],
   "apps": []
 }

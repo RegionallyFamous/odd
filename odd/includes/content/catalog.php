@@ -2,8 +2,8 @@
 /**
  * ODD — remote bundle catalog.
  *
- * ODD 1.0 keeps the plugin runtime lightweight; every scene, icon set,
- * cursor set, widget, and app lives in a remote registry at `ODDOUT_CATALOG_URL`. We fetch that
+ * ODD keeps the plugin runtime lightweight; every app lives in a remote
+ * registry at `ODDOUT_CATALOG_URL`. We fetch that
  * registry over HTTPS, cache it in a 12h transient, and surface the
  * parsed rows through the same `/odd/v1/bundles/*` REST endpoints the
  * panel already consumes.
@@ -33,7 +33,7 @@
  *         "download_url": "https://.../bundles/<name>.wp",
  *         "sha256":       "<64 hex chars>",
  *         "size":         12345,
- *         "requires":     {"odd":"1.0.0","desktopMode":"0.8.5","api":"2.3.0"}
+ *         "requires":     {"odd":"1.0.0","openStation":"1.1.0","api":"2.3.0"}
  *       }
  *     ]
  *   }
@@ -97,7 +97,16 @@ function oddout_catalog_url() {
 }
 
 function oddout_catalog_allowed_types() {
-	return array( 'scene', 'icon-set', 'cursor-set', 'widget', 'app' );
+	return array( 'app' );
+}
+
+/**
+ * First-party catalog slugs exposed by this focused release.
+ *
+ * @return string[]
+ */
+function oddout_catalog_allowed_slugs() {
+	return array( 'odd-notes' );
 }
 
 function oddout_catalog_max_response_bytes() {
@@ -670,7 +679,7 @@ function oddout_catalog_semver_is_valid( $version ) {
 }
 
 function oddout_catalog_requires_keys() {
-	return array( 'odd', 'desktopMode', 'api' );
+	return array( 'odd', 'openStation', 'api' );
 }
 
 function oddout_catalog_current_versions() {
@@ -678,7 +687,7 @@ function oddout_catalog_current_versions() {
 	$api_version = (string) apply_filters( 'oddout_catalog_api_version', $api_version );
 	$versions    = array(
 		'odd'         => defined( 'ODDOUT_VERSION' ) ? (string) ODDOUT_VERSION : '',
-		'desktopMode' => function_exists( 'oddout_desktop_mode_version' ) ? oddout_desktop_mode_version() : ( defined( 'DESKTOP_MODE_VERSION' ) ? (string) DESKTOP_MODE_VERSION : '' ),
+		'openStation' => function_exists( 'oddout_openstation_version' ) ? oddout_openstation_version() : ( defined( 'OPENSTATION_VERSION' ) ? (string) OPENSTATION_VERSION : '' ),
 		'api'         => $api_version,
 	);
 
@@ -714,8 +723,8 @@ function oddout_catalog_requirement_label( $key ) {
 	switch ( (string) $key ) {
 		case 'odd':
 			return __( 'ODD', 'odd-outlandish-desktop-decorator' );
-		case 'desktopMode':
-			return __( 'WP Desktop Mode', 'odd-outlandish-desktop-decorator' );
+		case 'openStation':
+			return __( 'OpenStation', 'odd-outlandish-desktop-decorator' );
 		case 'api':
 			return __( 'ODD API', 'odd-outlandish-desktop-decorator' );
 	}
@@ -1545,6 +1554,10 @@ function oddout_catalog_normalise( $data ) {
 		if ( ! in_array( $type, $allowed_types, true ) ) {
 			continue;
 		}
+		$slug = sanitize_key( (string) $entry['slug'] );
+		if ( ! in_array( $slug, oddout_catalog_allowed_slugs(), true ) ) {
+			continue;
+		}
 		$sha = isset( $entry['sha256'] ) ? strtolower( (string) $entry['sha256'] ) : '';
 		if ( '' !== $sha && ! preg_match( '/^[0-9a-f]{64}$/', $sha ) ) {
 			// Drop rows with malformed hashes — we'd refuse to install them anyway.
@@ -1556,7 +1569,7 @@ function oddout_catalog_normalise( $data ) {
 		}
 		$row = array(
 			'type'          => $type,
-			'slug'          => sanitize_key( (string) $entry['slug'] ),
+			'slug'          => $slug,
 			'name'          => sanitize_text_field( (string) $entry['name'] ),
 			'version'       => isset( $entry['version'] ) ? sanitize_text_field( (string) $entry['version'] ) : '',
 			'author'        => isset( $entry['author'] ) ? sanitize_text_field( (string) $entry['author'] ) : '',

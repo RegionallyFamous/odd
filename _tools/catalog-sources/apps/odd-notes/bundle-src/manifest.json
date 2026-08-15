@@ -1,0 +1,31 @@
+{
+  "type": "app",
+  "name": "ODD Notes",
+  "slug": "odd-notes",
+  "version": "1.1.0",
+  "author": "Regionally Famous",
+  "description": "A local-first notes library for OpenStation, saved as private WordPress content with revision history.",
+  "icon": "icon.svg",
+  "entry": "index.html",
+  "capability": "read",
+  "native": {
+    "script": "assets/js/odd-notes.min.js",
+    "style": "assets/css/odd-notes.css",
+    "template": "odd-notes"
+  },
+  "window": {
+    "title": "ODD Notes",
+    "width": 1060,
+    "height": 720,
+    "min_width": 720,
+    "min_height": 500
+  },
+  "desktopIcon": {
+    "title": "ODD Notes",
+    "position": 36
+  },
+  "surfaces": {
+    "desktop": true,
+    "taskbar": false
+  }
+}

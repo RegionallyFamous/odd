@@ -1,13 +1,6 @@
 name: e2e
 
-# Playwright end-to-end against a real WordPress install with ODD
-# activated. Picks up JS regressions that install-smoke misses
-# because install-smoke never loads a browser.
-#
-# One combined smoke test (see e2e/panel.spec.ts) covering wallpaper mount,
-# ODD Shop axe, and shop rail / preview interactions — no duplicate login/shell
-# boot. `playwright-report` artifact on failure.
-
+# Browser-level release gate for the Apps-only ODD Shop and native ODD Notes.
 on:
   pull_request:
   push:
@@ -16,7 +9,6 @@ on:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    # One ~2.5m test + setup; 20m is plenty; avoids hanging the queue.
     timeout-minutes: 20
     services:
       mysql:
@@ -52,124 +44,70 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install node deps
-        run: npm ci --no-audit --no-fund
+      - name: Install dependencies and build the fixture catalog
+        env:
+          ODD_CATALOG_BASE_URL: https://fixture.invalid/catalog/v1
+        run: |
+          npm ci --no-audit --no-fund
+          python -m pip install --quiet -r requirements-catalog.txt
+          python3 _tools/build-catalog.py
 
-      - name: Install Python catalog dependencies
-        run: python -m pip install --quiet -r requirements-catalog.txt
-
-      - name: Build fixture catalog from _tools/catalog-sources/
-        run: python3 _tools/build-catalog.py
-
-      - name: Install Playwright browsers
+      - name: Install Playwright Chromium
         run: |
           for attempt in 1 2 3; do
             if npx playwright install chromium --with-deps; then
               exit 0
             fi
-            echo "Playwright browser install failed on attempt ${attempt}; retrying after mirror/DNS cooldown..."
             sleep $(( attempt * 20 ))
           done
-          npx playwright install chromium --with-deps
+          exit 1
 
       - name: Wait for MySQL
         run: |
           for i in $(seq 1 30); do
-            if mysqladmin ping -h 127.0.0.1 -u root -proot --silent; then
-              echo "mysql ready"; exit 0
-            fi
+            mysqladmin ping -h 127.0.0.1 -u root -proot --silent && exit 0
             sleep 2
           done
-          echo "mysql never came up" >&2; exit 1
+          exit 1
 
-      - name: Provision WordPress
+      - name: Provision WordPress and fixture catalog
         working-directory: /tmp
         run: |
-          mkdir -p /tmp/wp && cd /tmp/wp
+          mkdir -p /tmp/wp
+          cd /tmp/wp
           wp core download
-          wp config create \
-            --dbname=wordpress \
-            --dbuser=root \
-            --dbpass=root \
-            --dbhost=127.0.0.1 \
-            --skip-check
-          wp core install \
-            --url=http://127.0.0.1:8080 \
-            --title=ODD-e2e \
-            --admin_user=admin \
-            --admin_password=password \
-            --admin_email=e2e@example.com \
-            --skip-email
+          wp config create --dbname=wordpress --dbuser=root --dbpass=root --dbhost=127.0.0.1 --skip-check
+          wp config set ODD_SMOKE_FIXTURE_ROOT /tmp/wp/wp-content/odd-smoke-fixture
+          wp config set ODD_SMOKE_CATALOG_URL https://fixture.invalid/catalog/v1/registry.json
+          wp core install --url=http://127.0.0.1:8080 --title=ODD-e2e --admin_user=admin --admin_password=password --admin_email=e2e@example.com --skip-email
+          mkdir -p wp-content/odd-smoke-fixture wp-content/mu-plugins
+          cp -R "$GITHUB_WORKSPACE/site/catalog/v1/." wp-content/odd-smoke-fixture/
+          cp "$GITHUB_WORKSPACE/ci/smoke/odd-smoke-fixture.php" wp-content/mu-plugins/
 
-      - name: Stage fixture catalog + MU-plugin
-        run: |
-          mkdir -p /tmp/wp/wp-content/odd-smoke-fixture
-          cp -R "$GITHUB_WORKSPACE/site/catalog/v1/." /tmp/wp/wp-content/odd-smoke-fixture/
-          mkdir -p /tmp/wp/wp-content/mu-plugins
-          cp "$GITHUB_WORKSPACE/ci/smoke/odd-smoke-fixture.php" /tmp/wp/wp-content/mu-plugins/
-
-      - name: Install WP Desktop Mode (host plugin)
-        working-directory: /tmp/wp
-        # Use the mirrored packaged zip (includes compiled assets/js/desktop.min.js
-        # and assets/vendor/pixi.min.js) rather than a source archive, which
-        # ships only the TypeScript sources and 404s desktop.min.js at runtime.
-        run: wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.0.8.5.zip --activate
-
-      - name: Link ODD into wp-content/plugins
-        run: |
-          ln -s "${{ github.workspace }}/odd" /tmp/wp/wp-content/plugins/odd
-          cd /tmp/wp && wp plugin activate odd
-
-      - name: Enable desktop mode for admin
-        working-directory: /tmp/wp
-        run: wp user meta update 1 desktop_mode_mode 1
-
-      - name: Install starter pack from remote catalog
-        working-directory: /tmp/wp
-        # ODD content installs through the catalog path, with the
-        # MU-plugin above serving the built fixture files hermetically.
-        run: |
-          wp eval '$r = oddout_starter_install_now(); if (is_wp_error($r)) { fwrite(STDERR, $r->get_error_message() . "\n"); exit(1); } var_export($r);'
-
-      - name: Pre-install a catalog app for Playwright (iframe smoke)
+      - name: Install OpenStation 1.1.0 and ODD
         working-directory: /tmp/wp
         run: |
-          wp eval '$reg = oddout_catalog_refresh(); $slug = "board"; if (function_exists("oddout_bundle_catalog_installed_versions") && array_key_exists($slug, oddout_bundle_catalog_installed_versions())) { fwrite(STDOUT, "e2e: app already installed\n"); exit(0); } $entry = null; foreach ((array) ($reg["bundles"] ?? array()) as $e) { if ((isset($e["type"], $e["slug"]) && $e["type"] === "app" && $e["slug"] === $slug)) { $entry = $e; break; } } if (!$entry) { fwrite(STDERR, "e2e: catalog missing app {$slug}\n"); exit(1);} $r = oddout_catalog_install_entry($entry); if (is_wp_error($r)) { fwrite(STDERR, $r->get_error_message() . "\n"); exit(1);} var_export($r);'
-
-      - name: Select the ODD canvas wallpaper for admin
-        working-directory: /tmp/wp
-        # Desktop Mode's built-in wallpaper picker defaults to the
-        # `dark` CSS gradient, which means ODD's canvas wallpaper
-        # mount() never runs — and since the shell only loads PIXI on
-        # demand via `needs: ['pixijs']` when a `type: canvas` wallpaper
-        # actually mounts, `window.PIXI` would stay undefined forever
-        # and Playwright would hang waiting for it. Force the admin's
-        # Desktop Mode wallpaper to `odd` so the shell loads PIXI and
-        # mounts the scene engine on first paint. Writing user meta
-        # directly (rather than via desktop_mode_save_os_settings)
-        # sidesteps the sanitizer which re-stamps the full settings
-        # shape; read-side merges defaults in from its own code path.
-        run: |
-          wp user meta update 1 desktop_mode_os_settings '{"wallpaper":"odd"}' --format=json
-          wp eval 'var_export( desktop_mode_get_os_settings( 1 ) );'
-
-      - name: Pretty permalinks for REST (/wp-json) on wp server
-        working-directory: /tmp/wp
-        run: |
+          wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.1.1.0.zip --activate
+          ln -s "${{ github.workspace }}/odd" wp-content/plugins/odd
+          wp plugin activate odd
+          wp user meta update 1 desktop_mode_mode 1
           wp option update permalink_structure '/%postname%/'
           wp rewrite flush --hard
 
-      - name: Start WP server
+      - name: Install ODD Notes from the fixture catalog
+        working-directory: /tmp/wp
+        run: |
+          wp --user=1 eval '$registry = oddout_catalog_refresh(); $entry = null; foreach ( $registry["bundles"] as $row ) { if ( "odd-notes" === $row["slug"] ) { $entry = $row; break; } } if ( ! $entry ) { fwrite( STDERR, "ODD Notes missing from catalog\n" ); exit( 1 ); } $result = oddout_catalog_install_entry( $entry ); if ( is_wp_error( $result ) ) { fwrite( STDERR, $result->get_error_message() . "\n" ); exit( 1 ); }'
+          wp --user=1 eval 'exit( null !== openstation_native_window_registry( "odd-app-odd-notes" ) ? 0 : 1 );'
+
+      - name: Start WordPress
         working-directory: /tmp/wp
         run: |
           nohup wp server --host=127.0.0.1 --port=8080 > /tmp/wp-server.log 2>&1 &
           for i in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:8080/ > /dev/null; then
-              echo "wp server ready"; exit 0
-            fi
+            curl -fsS http://127.0.0.1:8080/ > /dev/null && exit 0
             sleep 1
           done
-          echo "wp server never came up" >&2
           cat /tmp/wp-server.log || true
           exit 1
 
@@ -178,7 +116,7 @@ jobs:
           BASE_URL: http://127.0.0.1:8080
           WP_ADMIN_USER: admin
           WP_ADMIN_PASS: password
-        run: npx playwright test
+        run: npx playwright test e2e/panel.spec.ts
 
       - uses: actions/upload-artifact@v7
         if: always()

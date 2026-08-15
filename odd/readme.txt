@@ -1,6 +1,6 @@
 === ODD — Outlandish Desktop Decorator ===
 Contributors: nickhamze
-Tags: wp-desktop-mode, desktop, wallpaper, widgets, apps
+Tags: openstation, desktop, apps, notes, productivity
 Requires at least: 6.8
 Tested up to: 7.0
 Requires PHP: 8.1
@@ -9,97 +9,51 @@ Stable tag: 1.1.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Make WordPress feel like your digital home with living wallpapers, custom icons, playful cursors, desk widgets, and tiny apps for WP Desktop Mode.
+A focused app store for OpenStation, beginning with ODD Notes.
 
 == Description ==
 
-ODD turns your WordPress admin into a customizable desktop you actually want to spend time in.
+ODD adds a small, native app store to OpenStation. Its first app is ODD Notes: a local-first notes library and editor stored in WordPress.
 
-WordPress does not have to feel like a plain control panel. With ODD and WP Desktop Mode, your admin can become a little digital room: a place with wallpaper, personality, favorite tools, charming desk toys, and a shop full of strange little upgrades.
+ODD Notes includes:
 
-ODD is made by Nick Hamze. Visit https://weirdpress.com/odd to learn more or try it in Playground.
+* A native OpenStation window and movable launcher.
+* Search, tags, favorites, desktop notes, sharing, and archives.
+* Local-first drafts and recovery when a connection is interrupted.
+* WordPress revision history and restore controls.
+* Private WordPress content storage, with no third-party notes service.
 
-Open the ODD Shop, pick what feels right, and make the workspace yours.
-
-With ODD you can:
-
-* Add living wallpapers that make your desktop feel alive.
-* Dress up your Desktop Mode dock, taskbar, and desktop icons with themed raster icon sets.
-* Swap in custom cursors that match the mood.
-* Drop tiny widgets onto the desktop, like notes, toys, embeds, and little desk companions.
-* Install small desktop apps that open in their own windows.
-* Start with a ready-made starter pack, then customize from there.
-
-ODD is for people who live in WordPress all day and want it to feel less like rented office furniture and more like their own place.
-
-Maybe your WordPress should be calm and cozy. Maybe it should be weird and neon. Maybe it should look like a tiny operating system from a dream. ODD gives you the pieces and lets you decorate.
-
-== Why You'll Like It ==
-
-= Your admin gets a personality =
-
-Change the look and feel of WordPress without changing your public site. ODD decorates your workspace, not your visitors' experience.
-
-= It is easy to try things =
-
-Browse the ODD Shop, install something, apply it, swap it, remove it, and keep playing until the desktop feels right.
-
-= It makes everyday WordPress more fun =
-
-Your tools are still there. Your admin still works. It just feels more alive while you work.
-
-= It works with WP Desktop Mode =
-
-ODD is made for WP Desktop Mode, the plugin that turns wp-admin into a desktop-style workspace.
-It works with Desktop Mode's own windows, dock, taskbar, desktop icons, and widget layer instead of replacing the desktop shell.
+ODD no longer installs wallpapers, icon sets, cursor effects, or desktop widgets. The Shop has one department—Apps—and OpenStation owns launcher placement through its normal desktop and taskbar settings.
 
 == Installation ==
 
-1. Install and activate [WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/) v0.8.5 or newer. WordPress will also show it as a required plugin dependency for ODD. The public Playground demo pins Desktop Mode v0.8.8.
+1. Install and activate [OpenStation](https://wordpress.org/plugins/desktop-mode/) 1.1.0 or newer. Its WordPress.org plugin slug is `desktop-mode`.
 2. Install and activate ODD.
-3. Enable Desktop Mode for your user.
-4. Open the ODD Shop from the desktop.
-5. Pick a wallpaper, icon set, cursor, widget, or app and make yourself at home.
+3. Enable OpenStation for your user.
+4. Open ODD Shop from the OpenStation desktop.
+5. Install ODD Notes.
 
 == Frequently Asked Questions ==
 
 = Does ODD change my public website? =
 
-No. ODD customizes your WordPress admin workspace. Visitors to your site will not see your desktop wallpaper, icons, widgets, or apps.
+No. ODD and ODD Notes run inside the authenticated WordPress admin workspace.
 
-= Do I need WP Desktop Mode? =
+= Where are notes stored? =
 
-Yes. ODD is made for WP Desktop Mode. Desktop Mode creates the desktop workspace, and ODD fills it with personality.
+Notes are stored as private WordPress content. ODD Notes also keeps a local draft journal so interrupted edits can recover cleanly.
 
-= What can I customize? =
+= Does this preserve notes created with the OpenStation Notes prototype? =
 
-You can customize wallpapers, Desktop Mode icons, cursors, widgets, and small desktop apps.
+Yes. ODD Notes uses the same `wpd_note` content model and compatible metadata.
 
-= Is this just for developers? =
+= Does ODD send analytics or notes to another service? =
 
-No. ODD is meant to be fun for regular WordPress users. If you can browse a shop and click install, you can use ODD.
-
-= Can I undo things? =
-
-Yes. Installed items can be changed or removed. You can keep experimenting until your workspace feels right.
-
-= Does ODD send analytics or tracking data? =
-
-No. ODD does not send telemetry, analytics, license checks, or error reports. It only fetches the public catalog and the items you choose to install.
-
-== Screenshots ==
-
-1. A decorated WordPress desktop with living wallpaper, icons, widgets, and docked desk tools.
-2. The ODD Shop, where you can browse living wallpapers and desktop upgrades.
-3. A tiny desktop app running in its own window, surrounded by ODD desktop icons and widgets.
+No. ODD sends no telemetry or note content. It only fetches the public app catalog and app bundle selected by an administrator.
 
 == External services ==
 
-ODD connects to the public ODD catalog at https://odd.regionallyfamous.com/catalog/v1/. This catalog is used to show items in the ODD Shop and download the wallpapers, icon sets, cursors, widgets, and apps you choose to install.
-
-When an administrator opens or refreshes the ODD Shop, when WordPress cron checks whether new catalog content is available, when the starter pack runs, when catalog content is installed, or when an installed item is repaired, the site makes normal HTTPS requests for static catalog files and assets. Those requests may include normal web request information such as the server IP address, user agent, requested URL, and timestamp.
-
-ODD does not send site content, user account details, cookies, analytics events, license keys, or diagnostic reports to the catalog service.
+ODD connects to https://odd.regionallyfamous.com/catalog/v1/ to display and download verified app bundles. Normal HTTPS request metadata such as IP address, user agent, URL, and timestamp may reach the catalog host. ODD does not send site content, notes, user details, cookies, analytics events, or license keys.
 
 Service terms: https://odd.regionallyfamous.com/terms/
 
@@ -107,95 +61,29 @@ Privacy policy: https://odd.regionallyfamous.com/privacy/
 
 == Source and build tools ==
 
-The human-readable source code for ODD is available at https://github.com/RegionallyFamous/odd. The repository includes the source files, build scripts, catalog sources, and package metadata used to create the plugin.
+Source code and deterministic catalog tooling are available at https://github.com/RegionallyFamous/odd.
 
-The generated JavaScript runtime files in `apps/runtime/*.js` are built from the public `react` and `react-dom` npm packages pinned in the repository. React source code is maintained at https://github.com/facebook/react, and the exact package versions are recorded in `package-lock.json`.
+Typical checks:
 
-Typical build commands:
-
-1. `npm ci`
-2. `odd/bin/build-runtime`
-3. `python3 _tools/build-catalog.py`
+1. `python3 _tools/build-catalog.py`
+2. `odd/bin/validate-catalog`
+3. `npm test`
 4. `odd/bin/build-zip`
 
 == Changelog ==
 
+= Development =
+
+* Rebuilt ODD as an Apps-only OpenStation store.
+* Added ODD Notes using OpenStation 1.1.0 public APIs.
+* Removed legacy wallpaper, icon-set, cursor, widget, and custom placement runtime surfaces.
+
 = 1.1.4 =
 
-ODD 1.1.4 improves Desktop Mode 0.8.8 compatibility for dock badges, attention states, and the optional compact rail.
-
-* Badge and attention updates now forward through Desktop Mode dock, taskbar, desktop icon, and ODD compact rail controllers when those surfaces are available.
-* The optional ODD compact rail keeps app shortcuts scrollable while system tiles stay pinned, matching Desktop Mode 0.8.8 dock behavior more closely.
-* The Desktop Mode 0.8.8 support boundary is documented, including host-owned WP Guidelines sticky notes staying with Desktop Mode until a public sticky-note API exists.
-
-= 1.1.3 =
-
-ODD 1.1.3 tightens the current Desktop Mode integration path and refreshes the public release docs and Playground pins.
-
-* Hide-admin-bar now works with WP Desktop Mode 0.8.6's stronger shell CSS and removes the leftover top offset.
-* The dev Playground seeds the hidden admin-bar preference on first boot, matching the intended full desktop shell.
-* Stable Playground links now install ODD 1.1.3 with WP Desktop Mode 0.8.6 and fresh cache-busting keys.
-* Sticky Note uses Desktop Mode's native widget frame more cleanly, with larger default sizing and tighter resize behavior.
-* Shop install progress no longer emits an unregistered `wpd-progress-bar` custom element warning.
-* ODD keeps Playground's root service worker protected while letting Desktop Mode own normal service-worker behavior.
-
-= 1.1.2 =
-
-ODD 1.1.2 fixes first-install Desktop Mode refresh behavior so starter content becomes visible without requiring a browser refresh.
-
-* ODD's Desktop Mode wallpaper and Shop window now register through a small live bootstrap handle that can load the full ODD runtime during Desktop Mode's mid-session refresh.
-* The bootstrap applies the starter wallpaper, large dock, and ODD launcher visibility through Desktop Mode's native settings API when the current desktop is still on the default wallpaper.
-* The ODD Shop native window now advertises its stylesheet to Desktop Mode's lazy loader, so mid-session activation gets styled Shop chrome immediately.
-
-= 1.1.1 =
-
-ODD 1.1.1 is a stability release for catalog freshness, Shop teardown cleanup, and the current bundled catalog baseline.
-
-* Catalog refreshes now invalidate the runtime catalog cache immediately, so the Shop stops showing old rows after a successful remote refresh or repair.
-* The Shop highlight timer is guarded during teardown, fixing the lingering async handle that could make CI report Vitest cleanup failures.
-* Refreshed bundled catalog metadata, app/widget presentation, Tiny Aquarium sizing, and game app card/icon polish from the post-1.1.0 catalog updates.
-* Updated the stable Playground/readme links for the next pinned WordPress.org release package.
-
-= 1.1.0 =
-
-ODD 1.1.0 makes the desktop experience feel more native, more polished, and more fun.
-
-* Apps, widgets, taskbar entries, desktop shortcuts, wallpaper controls, and decoration reset actions now work more cleanly with WP Desktop Mode's native surfaces.
-* App icons can appear on the desktop immediately after install or placement changes.
-* The Shop has more consistent catalog cards, clearer install/open/apply states, refreshed card art, and better app presentation.
-* Added the Don't Read the Comments Minesweeper-style desktop app.
-* Refreshed the default desktop icon set, including the custom recycle-bin icon treatment.
-* Added living cursor effect packs and stricter icon/cursor validation.
-* Improved signed catalog checks, cached fallback behavior, repair flows, and catalog health details.
-* Added `window.__odd.sdk` for extension authors and updated `window.__odd.api.version` to 2.4.0.
-* Kept diagnostics local-only with no telemetry, analytics, license checks, or remote error reporting.
-
-= 1.0.0 =
-
-Welcome to ODD. The first public release brings living wallpapers, icon sets, cursor themes, desktop widgets, tiny apps, starter content, and the ODD Shop to WP Desktop Mode.
+* Improved compatibility with the previous Desktop Mode 0.8.8 host runtime.
 
 == Upgrade Notice ==
 
-= 1.1.4 =
+= Development =
 
-Improves Desktop Mode 0.8.8 dock badge, attention, compact rail, and documentation behavior. Requires WP Desktop Mode v0.8.5 or newer.
-
-= 1.1.3 =
-
-Polishes ODD's Desktop Mode 0.8.6 integration, Playground pins, sticky widget sizing, admin-bar hiding, and Shop install diagnostics. Requires WP Desktop Mode v0.8.5 or newer.
-
-= 1.1.2 =
-
-First installs now apply the starter Desktop Mode experience immediately after activation without a manual browser refresh. Requires WP Desktop Mode v0.8.5 or newer.
-
-= 1.1.1 =
-
-Catalog freshness, Shop teardown cleanup, and the bundled fallback catalog baseline are improved. Requires WP Desktop Mode v0.8.5 or newer.
-
-= 1.1.0 =
-
-Native Desktop Mode integration, desktop app shortcuts, catalog security checks, the Shop UI, default desktop icons, and cursor effects are improved. Requires WP Desktop Mode v0.8.5 or newer.
-
-= 1.0.0 =
-
-Initial WordPress.org release. Requires WP Desktop Mode v0.8.5 or newer.
+The Apps-only redesign requires OpenStation 1.1.0 or newer. Existing non-app ODD catalog content is retired from the Shop.

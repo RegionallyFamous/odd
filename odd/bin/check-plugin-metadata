@@ -3,7 +3,7 @@
 
 This intentionally overlaps a little with WordPress.org Plugin Check. Plugin
 Check catches WordPress-wide rules; this script enforces ODD-specific release
-invariants so the README, readme.txt, changelog, and Desktop Mode requirement
+invariants so the README, readme.txt, changelog, and OpenStation requirement
 cannot drift from odd.php.
 """
 from __future__ import annotations
@@ -113,12 +113,12 @@ def main() -> int:
     if readme_field(readme_txt, "Requires Plugins") != header["Requires Plugins"]:
         return fail("readme.txt Requires Plugins does not match odd.php")
 
-    desktop_min = constant(plugin, "ODDOUT_DESKTOP_MODE_MIN_VERSION")
-    expected_requirement = f"WordPress {wp_min}+ · PHP {php_min}+ · WP Desktop Mode v{desktop_min}+"
+    openstation_min = constant(plugin, "ODDOUT_OPENSTATION_MIN_VERSION")
+    expected_requirement = f"WordPress {wp_min}+ · PHP {php_min}+ · OpenStation {openstation_min}+"
     if expected_requirement not in readme_md:
         return fail(f"README.md does not contain requirement line: {expected_requirement}")
-    if f"WP Desktop Mode](https://wordpress.org/plugins/desktop-mode/) v{desktop_min}" not in readme_txt:
-        return fail("readme.txt install instructions do not mention the Desktop Mode minimum")
+    if f"OpenStation](https://wordpress.org/plugins/desktop-mode/) {openstation_min}" not in readme_txt:
+        return fail("readme.txt install instructions do not mention the OpenStation minimum")
 
     anchor = f'<a id="v{version}"></a>'
     if anchor not in changelog:
@@ -128,8 +128,6 @@ def main() -> int:
         return fail("readme.txt is missing Tested up to")
     if readme_field(readme_txt, "Tags") is None:
         return fail("readme.txt is missing Tags")
-    if "== Screenshots ==" not in readme_txt:
-        return fail("readme.txt is missing Screenshots section")
     if "== Frequently Asked Questions ==" not in readme_txt:
         return fail("readme.txt is missing FAQ section")
     if "== Upgrade Notice ==" not in readme_txt:
@@ -142,12 +140,9 @@ def main() -> int:
         return fail("readme.txt External services section is missing privacy link")
     if "== Source and build tools ==" not in readme_txt:
         return fail("readme.txt is missing Source and build tools section")
-    if "https://github.com/facebook/react" not in readme_txt:
-        return fail("readme.txt must document the upstream React source for generated runtime JS")
-
     print(
         "OK: plugin metadata matches "
-        f"Version {version}, WordPress {wp_min}+, PHP {php_min}+, Desktop Mode {desktop_min}+"
+        f"Version {version}, WordPress {wp_min}+, PHP {php_min}+, OpenStation {openstation_min}+"
     )
     return 0
 

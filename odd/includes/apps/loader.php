@@ -164,11 +164,6 @@ function oddout_apps_validate_archive( $tmp_path, $filename ) {
 		return new WP_Error( 'invalid_slug', __( 'App slug must contain only lowercase letters, numbers, and hyphens.', 'odd-outlandish-desktop-decorator' ) );
 	}
 
-	if ( oddout_apps_exists( $manifest['slug'] ) ) {
-		$zip->close();
-		return new WP_Error( 'slug_exists', sprintf( /* translators: %s slug */ __( 'App "%s" is already installed. Delete it before reinstalling.', 'odd-outlandish-desktop-decorator' ), $manifest['slug'] ) );
-	}
-
 	$entry = isset( $manifest['entry'] ) ? (string) $manifest['entry'] : 'index.html';
 	if (
 		false !== strpos( $entry, '..' ) ||
@@ -216,6 +211,50 @@ function oddout_apps_validate_archive( $tmp_path, $filename ) {
 			}
 			$manifest['icon'] = $icon;
 		}
+	}
+
+	if ( isset( $manifest['native'] ) ) {
+		if ( ! is_array( $manifest['native'] ) ) {
+			$zip->close();
+			return new WP_Error( 'invalid_native_app', __( 'Manifest native must be an object.', 'odd-outlandish-desktop-decorator' ) );
+		}
+
+		$native = $manifest['native'];
+		$script = isset( $native['script'] ) ? (string) $native['script'] : '';
+		$style  = isset( $native['style'] ) ? (string) $native['style'] : '';
+		if ( '' === $script ) {
+			$zip->close();
+			return new WP_Error( 'missing_native_script', __( 'Native apps must declare native.script.', 'odd-outlandish-desktop-decorator' ) );
+		}
+
+		foreach ( array(
+			'script' => $script,
+			'style'  => $style,
+		) as $kind => $asset ) {
+			if ( '' === $asset && 'style' === $kind ) {
+				continue;
+			}
+			$expected_ext = 'script' === $kind ? 'js' : 'css';
+			if (
+				false !== strpos( $asset, '..' ) ||
+				( strlen( $asset ) > 0 && '/' === $asset[0] ) ||
+				! preg_match( '#^[a-zA-Z0-9._-]+(/[a-zA-Z0-9._-]+)*$#', $asset ) ||
+				$expected_ext !== strtolower( pathinfo( $asset, PATHINFO_EXTENSION ) )
+			) {
+				$zip->close();
+				return new WP_Error( 'invalid_native_asset', __( 'Native app asset paths must be safe relative JS/CSS paths.', 'odd-outlandish-desktop-decorator' ) );
+			}
+			if ( false === $zip->getFromName( $asset ) ) {
+				$zip->close();
+				return new WP_Error( 'missing_native_asset', sprintf( /* translators: %s asset path. */ __( 'Native app asset "%s" was not found.', 'odd-outlandish-desktop-decorator' ), $asset ) );
+			}
+		}
+
+		$manifest['native'] = array(
+			'script'   => $script,
+			'style'    => $style,
+			'template' => isset( $native['template'] ) ? sanitize_key( (string) $native['template'] ) : '',
+		);
 	}
 
 	$zip->close();

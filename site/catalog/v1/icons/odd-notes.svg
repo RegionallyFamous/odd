@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title">
+  <title id="title">ODD Notes</title>
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#fff49a"/>
+      <stop offset="1" stop-color="#ffb95f"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#160d25" flood-opacity=".32"/>
+    </filter>
+  </defs>
+  <path fill="url(#paper)" filter="url(#shadow)" d="M42 28h172v170l-34 34H42z"/>
+  <path fill="#ef8f54" d="M180 198h34l-34 34z"/>
+  <circle cx="77" cy="83" r="12" fill="#ff399f"/>
+  <circle cx="128" cy="83" r="12" fill="#17151d"/>
+  <circle cx="179" cy="83" r="12" fill="#19baa8"/>
+  <path d="M72 124h112M72 151h91M72 178h64" fill="none" stroke="#4d3b43" stroke-width="10" stroke-linecap="round" opacity=".72"/>
+</svg>

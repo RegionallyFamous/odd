@@ -10,8 +10,7 @@
  *   registry.php             install/uninstall API + oddout_app_registry
  *   rest.php                 /odd/v1/apps/* routes
  *   serve-cookieauth.php    /odd-app/* file delivery
- *   embed-output.php        rewrite catalog JS/HTML for ODD REST + iframe bootstrap
- *   native-surfaces.php      desktop_mode_register_icon + _window per app
+ *   native-surfaces.php      OpenStation window + launcher registration
  *
  * Feature flag:
  *
@@ -48,5 +47,4 @@ require_once ODDOUT_DIR . 'includes/apps/loader.php';
 require_once ODDOUT_DIR . 'includes/apps/repair.php';
 require_once ODDOUT_DIR . 'includes/apps/rest.php';
 require_once ODDOUT_DIR . 'includes/apps/serve-cookieauth.php';
-require_once ODDOUT_DIR . 'includes/apps/embed-output.php';
 require_once ODDOUT_DIR . 'includes/apps/native-surfaces.php';

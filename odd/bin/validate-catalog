@@ -101,7 +101,7 @@ CATALOG_CARD_SIZE_BUDGET = 320 * 1024
 SCENE_CARD_RMS_LIMIT = 10.0
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 SEMVER_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$")
-REQUIRES_KEYS = {"odd", "desktopMode", "api"}
+REQUIRES_KEYS = {"odd", "openStation", "api"}
 
 
 def sha256_file(path: Path) -> str:
@@ -354,7 +354,7 @@ def check_bundle_row(
     slug = row["slug"]
     version = row["version"]
 
-    if btype not in ("scene", "icon-set", "cursor-set", "widget", "app"):
+    if btype != "app":
         problems.append(f"bundle[{idx}] ({slug}): unknown type {btype!r}")
     if not isinstance(slug, str) or not SLUG_RE.match(slug):
         problems.append(f"bundle[{idx}] ({slug}): invalid slug")

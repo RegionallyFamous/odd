@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: odd\n"
 "Report-Msgid-Bugs-To: https://github.com/RegionallyFamous/odd/issues\n"
-"POT-Creation-Date: 2026-05-23 05:14-0500\n"
+"POT-Creation-Date: 2026-08-15 17:32-0500\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -12,91 +12,55 @@ msgstr ""
 "X-Generator: odd/bin/make-pot\n"
 "X-Domain: odd\n"
 
-#: odd/includes/dependencies.php:158
-msgid " Detected version: %1$s. Required version: %2$s or newer."
-msgstr ""
-
-#: odd/src/panel/index.js:2209
-msgid "\". Ready to open."
-msgstr ""
-
-#: odd/src/panel/index.js:2211
-msgid "\". Ready."
-msgstr ""
-
-#: odd/src/panel/index.js:2206
-msgid "\". Reloading to finish setup…"
-msgstr ""
-
 #: odd/includes/rest.php:148
 msgid "%s ago"
 msgstr ""
 
-#: odd/includes/content/bundle.php:127
+#: odd/includes/content/bundle.php:103
 msgid "A bundle named \"%s\" is already installed. Remove it before reinstalling."
 msgstr ""
 
-#: odd/src/panel/index.js:2229
-msgid "A bundle with that slug is already installed. Remove the existing one first."
-msgstr ""
-
-#: odd/includes/content/catalog.php:882
+#: odd/includes/content/catalog.php:891
 msgid "A catalog operation is already in progress. Please try again in a moment."
 msgstr ""
 
-#: odd/src/panel/index.js:10
-msgid "About"
+#: odd/src/panel/index.js:68
+msgid "A focused notes app stored in WordPress."
 msgstr ""
 
-#: odd/src/panel/index.js:1585
-msgid "Adds a shortcut to the wallpaper."
+#: odd/includes/notes/template.php:112
+msgid "Add"
 msgstr ""
 
-#: odd/src/panel/index.js:3773
-msgid "Admin bar hidden in Desktop Mode."
+#: odd/includes/notes/template.php:112
+msgid "Add a tag…"
 msgstr ""
 
-#: odd/src/panel/index.js:3773
-msgid "Admin bar restored."
-msgstr ""
-
-#: odd/src/panel/index.js:231
-msgid "All departments"
-msgstr ""
-
-#: odd/src/panel/index.js:241
-msgid "All styles"
-msgstr ""
-
-#: odd/src/panel/index.js:2242
-msgid "An SVG in this bundle isn\\u2019t well-formed."
+#: odd/includes/notes/template.php:30
+msgid "All notes"
 msgstr ""
 
 #: odd/includes/apps/repair.php:63
 msgid "An app repair is already in progress."
 msgstr ""
 
-#: odd/includes/apps/registry.php:102
+#: odd/includes/apps/registry.php:114
 msgid "An installation of this app is already in progress."
 msgstr ""
 
-#: odd/includes/content/bundle.php:154
+#: odd/includes/content/bundle.php:130
 msgid "An installation of this bundle is already in progress."
 msgstr ""
 
-#: odd/includes/content/bundle.php:134
+#: odd/includes/content/bundle.php:110
 msgid "An installed bundle with this slug has a different type."
 msgstr ""
 
-#: odd/includes/content/catalog.php:2179
+#: odd/includes/content/catalog.php:2192
 msgid "An update is available. Pass allow_update=1 to reinstall."
 msgstr ""
 
-#: odd/src/panel/index.js:2231
-msgid "Another install of this bundle is already in progress."
-msgstr ""
-
-#: odd/includes/apps/loader.php:169
+#: odd/includes/apps/registry.php:99
 msgid "App \"%s\" is already installed. Delete it before reinstalling."
 msgstr ""
 
@@ -112,7 +76,7 @@ msgstr ""
 msgid "App archives must have a .wp extension."
 msgstr ""
 
-#: odd/includes/apps/registry.php:191
+#: odd/includes/apps/registry.php:203
 msgid "App is not installed."
 msgstr ""
 
@@ -120,20 +84,8 @@ msgstr ""
 msgid "App is too large (%1$s MB uncompressed). Maximum is %2$s MB."
 msgstr ""
 
-#: odd/src/panel/index.js:1484
-msgid "App launcher placement"
-msgstr ""
-
 #: odd/includes/apps/rest.php:310
 msgid "App not found."
-msgstr ""
-
-#: odd/src/panel/index.js:1552
-msgid "App placement updated."
-msgstr ""
-
-#: odd/src/panel/index.js:1655
-msgid "App removed from Desktop Mode."
 msgstr ""
 
 #: odd/includes/apps/repair.php:148
@@ -156,12 +108,12 @@ msgstr ""
 msgid "App storage segment."
 msgstr ""
 
-#: odd/src/panel/index.js:1637
-msgid "App surfaces updated."
+#: odd/src/panel/index.js:158
+msgid "Apps"
 msgstr ""
 
-#: odd/src/panel/index.js:10
-msgid "Apps"
+#: odd/includes/notes/template.php:50
+msgid "Archive"
 msgstr ""
 
 #: odd/includes/apps/loader.php:96
@@ -180,32 +132,12 @@ msgstr ""
 msgid "Bad app path."
 msgstr ""
 
-#: odd/src/panel/index.js:696
-msgid "Both"
-msgstr ""
-
 #: odd/includes/integration/desktop-mode-extended-surfaces.php:79
 msgid "Browse catalogs and installers in <strong>%s Shop</strong> — <a href=\"#\" class=\"odd-js-open-shop\">open the shop window</a> while you work."
 msgstr ""
 
-#: odd/src/panel/index.js:2222
-msgid "Bundle contains a path-traversal entry and was rejected."
-msgstr ""
-
 #: odd/includes/content/archive.php:145
 msgid "Bundle contains a path-traversal entry: %s"
-msgstr ""
-
-#: odd/src/panel/index.js:2224
-msgid "Bundle contains a server-executable file and was rejected."
-msgstr ""
-
-#: odd/src/panel/index.js:2221
-msgid "Bundle contains a suspicious compression ratio and was rejected."
-msgstr ""
-
-#: odd/src/panel/index.js:2223
-msgid "Bundle contains a symlink and was rejected."
 msgstr ""
 
 #: odd/includes/content/archive.php:152
@@ -220,39 +152,15 @@ msgstr ""
 msgid "Bundle exceeds %d files."
 msgstr ""
 
-#: odd/src/panel/index.js:2219
-msgid "Bundle has too many files. The limit is 2000."
-msgstr ""
-
-#: odd/includes/content/catalog.php:2180
+#: odd/includes/content/catalog.php:2193
 msgid "Bundle is already installed."
 msgstr ""
 
-#: odd/src/panel/index.js:2225
-msgid "Bundle is missing a manifest.json at the root."
-msgstr ""
-
-#: odd/src/panel/index.js:2236
-msgid "Bundle is missing one of the image files it declared."
-msgstr ""
-
-#: odd/src/panel/index.js:2234
-msgid "Bundle is missing preview.webp."
-msgstr ""
-
-#: odd/src/panel/index.js:2232
-msgid "Bundle is missing the entry file declared in manifest.json."
-msgstr ""
-
-#: odd/src/panel/index.js:2235
-msgid "Bundle is missing wallpaper.webp."
-msgstr ""
-
-#: odd/includes/content/catalog.php:2160
+#: odd/includes/content/catalog.php:2173
 msgid "Bundle is not compatible with this ODD runtime."
 msgstr ""
 
-#: odd/includes/content/catalog.php:2153
+#: odd/includes/content/catalog.php:2166
 msgid "Bundle is not in the catalog."
 msgstr ""
 
@@ -260,39 +168,19 @@ msgstr ""
 msgid "Bundle is too large (%1$s MB uncompressed). Maximum is %2$s MB."
 msgstr ""
 
-#: odd/src/panel/index.js:2220
-msgid "Bundle is too large. Keep it under 25 MB uncompressed."
-msgstr ""
-
-#: odd/includes/content/catalog.php:993
+#: odd/includes/content/catalog.php:1002
 msgid "Bundle sha256 mismatch. Expected %1$s, downloaded %2$s."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1008
+#: odd/includes/content/catalog.php:1017
 msgid "Bundle size mismatch. Expected %1$d bytes, downloaded %2$d bytes."
-msgstr ""
-
-#: odd/src/panel/index.js:2228
-msgid "Bundle slug must be lowercase letters, numbers, and hyphens."
-msgstr ""
-
-#: odd/src/panel/index.js:2233
-msgid "Bundle\\u2019s entry path is invalid."
-msgstr ""
-
-#: odd/src/panel/index.js:2227
-msgid "Bundle\\u2019s manifest.json is missing a required field."
-msgstr ""
-
-#: odd/src/panel/index.js:2226
-msgid "Bundle\\u2019s manifest.json is not valid JSON."
 msgstr ""
 
 #: odd/includes/content/archive.php:103
 msgid "Bundles must have a .wp extension."
 msgstr ""
 
-#: odd/includes/content/catalog.php:2032
+#: odd/includes/content/catalog.php:2045
 msgid "Bypass the short update-check cache."
 msgstr ""
 
@@ -300,103 +188,95 @@ msgstr ""
 msgid "CSS file \"%s\" is not present in the bundle."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1450
+#: odd/includes/content/catalog.php:1459
 msgid "Catalog body exceeded the maximum allowed size."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1979
+#: odd/includes/content/catalog.php:1992
 msgid "Catalog bundle slug to install."
 msgstr ""
 
-#: odd/includes/content/catalog.php:933
+#: odd/includes/content/catalog.php:942
 msgid "Catalog download URL must stay under the configured catalog base."
 msgstr ""
 
-#: odd/includes/content/catalog.php:914
+#: odd/includes/content/catalog.php:923
 msgid "Catalog downloads must use HTTPS."
 msgstr ""
 
-#: odd/includes/content/catalog.php:908
+#: odd/includes/content/catalog.php:917
 msgid "Catalog entry has no download URL."
 msgstr ""
 
-#: odd/includes/content/catalog.php:925
+#: odd/includes/content/catalog.php:934
 msgid "Catalog entry is missing a required sha256 digest."
 msgstr ""
 
-#: odd/src/panel/index.js:4173
-msgid "Catalog refresh failed."
-msgstr ""
-
-#: odd/src/panel/index.js:4168
-msgid "Catalog refreshed."
-msgstr ""
-
-#: odd/includes/content/catalog.php:1400
+#: odd/includes/content/catalog.php:1409
 msgid "Catalog registry URL must use HTTPS."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1341
+#: odd/includes/content/catalog.php:1350
 msgid "Catalog registry contains a bundle URL outside the configured catalog base."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1331
+#: odd/includes/content/catalog.php:1340
 msgid "Catalog registry contains a bundle with a missing URL field."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1312
+#: odd/includes/content/catalog.php:1321
 msgid "Catalog registry contains a bundle with an invalid sha256."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1321
+#: odd/includes/content/catalog.php:1330
 msgid "Catalog registry contains a bundle with an invalid size."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1242
+#: odd/includes/content/catalog.php:1251
 msgid "Catalog registry contains a bundle with an invalid slug."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1271
+#: odd/includes/content/catalog.php:1280
 msgid "Catalog registry contains a bundle with an invalid version."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1280
+#: odd/includes/content/catalog.php:1289
 msgid "Catalog registry contains a bundle with malformed compatibility requirements."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1262
+#: odd/includes/content/catalog.php:1271
 msgid "Catalog registry contains a bundle without a name."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1220
+#: odd/includes/content/catalog.php:1229
 msgid "Catalog registry contains a malformed bundle row."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1298
+#: odd/includes/content/catalog.php:1307
 msgid "Catalog registry contains an invalid compatibility requirement version."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1229
+#: odd/includes/content/catalog.php:1238
 msgid "Catalog registry contains an unsupported bundle type."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1288
+#: odd/includes/content/catalog.php:1297
 msgid "Catalog registry contains an unsupported compatibility requirement."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1249
+#: odd/includes/content/catalog.php:1258
 msgid "Catalog registry contains duplicate bundle slugs."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1210
+#: odd/includes/content/catalog.php:1219
 msgid "Catalog registry is missing the bundles array."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1200
+#: odd/includes/content/catalog.php:1209
 msgid "Catalog registry must be a JSON object."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1205
+#: odd/includes/content/catalog.php:1214
 msgid "Catalog registry version must be 1."
 msgstr ""
 
@@ -404,68 +284,56 @@ msgstr ""
 msgid "Catalog row is missing sha256, so repair cannot verify the archive."
 msgstr ""
 
-#: odd/includes/content/catalog.php:256
+#: odd/includes/content/catalog.php:265
 msgid "Catalog signature URL could not be resolved."
 msgstr ""
 
-#: odd/includes/content/catalog.php:243
+#: odd/includes/content/catalog.php:252
 msgid "Catalog signature did not verify against a trusted key."
 msgstr ""
 
-#: odd/includes/content/catalog.php:213
+#: odd/includes/content/catalog.php:222
 msgid "Catalog signature is missing or malformed."
 msgstr ""
 
-#: odd/includes/content/catalog.php:204
+#: odd/includes/content/catalog.php:213
 msgid "Catalog signatures require the PHP sodium extension."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1369
+#: odd/includes/content/catalog.php:1378
 msgid "Catalog starter_pack entries must be arrays."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1353
+#: odd/includes/content/catalog.php:1362
 msgid "Catalog starter_pack must be an object."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1378
+#: odd/includes/content/catalog.php:1387
 msgid "Catalog starter_pack references a missing bundle."
 msgstr ""
 
-#: odd/src/panel/index.js:4214
-msgid "Catalog update check failed."
-msgstr ""
-
-#: odd/includes/content/catalog.php:2191
+#: odd/includes/content/catalog.php:2204
 msgid "Catalog version is not newer than the installed version."
 msgstr ""
 
-#: odd/src/panel/index.js:383
+#: odd/includes/notes/template.php:87
+msgid "Catch the thought before it escapes."
+msgstr ""
+
+#: odd/includes/notes/template.php:135
 msgid "Close"
-msgstr ""
-
-#: odd/src/panel/index.js:3135
-msgid "Copied"
-msgstr ""
-
-#: odd/src/panel/index.js:3129
-msgid "Copy diagnostics"
-msgstr ""
-
-#: odd/src/panel/index.js:3135
-msgid "Copy failed"
 msgstr ""
 
 #: odd/includes/content/archive.php:296
 msgid "Could not create bundle directory."
 msgstr ""
 
-#: odd/includes/apps/loader.php:256
+#: odd/includes/apps/loader.php:295
 #: odd/includes/content/archive.php:311
 msgid "Could not create staging directory."
 msgstr ""
 
-#: odd/includes/content/catalog.php:962
+#: odd/includes/content/catalog.php:971
 msgid "Could not download bundle: %s"
 msgstr ""
 
@@ -473,12 +341,8 @@ msgstr ""
 msgid "Could not finalise bundle installation."
 msgstr ""
 
-#: odd/includes/apps/loader.php:277
+#: odd/includes/apps/loader.php:316
 msgid "Could not finalize app installation."
-msgstr ""
-
-#: odd/src/panel/index.js:1572
-msgid "Could not update app placement."
 msgstr ""
 
 #: odd/includes/cursors/css-endpoint.php:258
@@ -529,39 +393,23 @@ msgstr ""
 msgid "Cursor set storage is unavailable."
 msgstr ""
 
-#: odd/src/panel/index.js:84
-msgid "Cursors"
-msgstr ""
-
-#: odd/src/panel/index.js:322
-msgid "Decorate"
-msgstr ""
-
-#: odd/src/panel/index.js:4
-msgid "Desktop"
-msgstr ""
-
-#: odd/src/panel/index.js:188
-msgid "Desktop decor with a wink"
-msgstr ""
-
-#: odd/src/panel/index.js:323
-msgid "Do more"
-msgstr ""
-
-#: odd/includes/content/catalog.php:2331
+#: odd/includes/content/catalog.php:2344
 msgid "Downloaded bundle slug does not match the catalog entry."
 msgstr ""
 
-#: odd/includes/content/catalog.php:2342
+#: odd/includes/content/catalog.php:2355
 msgid "Downloaded bundle type does not match the catalog entry."
 msgstr ""
 
-#: odd/includes/content/catalog.php:2354
+#: odd/includes/content/catalog.php:2367
 msgid "Downloaded bundle version does not match the catalog entry."
 msgstr ""
 
-#: odd/includes/apps/loader.php:183
+#: odd/includes/notes/template.php:97
+msgid "Duplicate"
+msgstr ""
+
+#: odd/includes/apps/loader.php:178
 msgid "Entry file \"%s\" not found in archive."
 msgstr ""
 
@@ -570,20 +418,16 @@ msgstr ""
 msgid "Entry file \"%s\" not found in bundle."
 msgstr ""
 
-#: odd/src/panel/index.js:2366
-msgid "Escape"
-msgstr ""
-
 #: odd/includes/apps/rest.php:223
-msgid "Fallback Desktop Mode launch surface metadata for this app."
+msgid "Fallback OpenStation launch surface metadata for this app."
 msgstr ""
 
-#: odd/src/panel/index.js:374
-msgid "Featured"
+#: odd/includes/notes/template.php:35
+msgid "Favorite"
 msgstr ""
 
-#: odd/src/panel/index.js:87
-msgid "Feed it files"
+#: odd/includes/notes/template.php:35
+msgid "Favorites"
 msgstr ""
 
 #: odd/includes/apps/loader.php:75
@@ -595,34 +439,6 @@ msgstr ""
 msgid "File not found."
 msgstr ""
 
-#: odd/src/panel/index.js:3190
-msgid "Focus search"
-msgstr ""
-
-#: odd/src/panel/index.js:3157
-msgid "Full environment + log ring buffer is copied when diagnostics are available."
-msgstr ""
-
-#: odd/includes/native-window.php:235
-msgid "Gather ODD widgets"
-msgstr ""
-
-#: odd/src/panel/index.js:3755
-msgid "Give Desktop Mode the whole top edge while keeping classic admin normal."
-msgstr ""
-
-#: odd/src/panel/index.js:3205
-msgid "Got it"
-msgstr ""
-
-#: odd/src/panel/index.js:699
-msgid "Hidden"
-msgstr ""
-
-#: odd/src/panel/index.js:3753
-msgid "Hide admin bar"
-msgstr ""
-
 #: odd/src/shell/odd-dock-rail.js:513
 msgid "High-contrast icon mosaic selectable alongside the shipped strip in OS Settings."
 msgstr ""
@@ -631,11 +447,7 @@ msgstr ""
 msgid "Icon \"%s\" must be a PNG or WebP image."
 msgstr ""
 
-#: odd/src/panel/index.js:10
-msgid "Icon Sets"
-msgstr ""
-
-#: odd/includes/apps/loader.php:215
+#: odd/includes/apps/loader.php:210
 msgid "Icon file \"%s\" not found in archive."
 msgstr ""
 
@@ -679,14 +491,6 @@ msgstr ""
 msgid "Icon set accent must be a hex colour like #ffb000."
 msgstr ""
 
-#: odd/src/panel/index.js:2237
-msgid "Icon set images must be PNG or WebP files."
-msgstr ""
-
-#: odd/src/panel/index.js:2241
-msgid "Icon set is missing required keys."
-msgstr ""
-
 #: odd/includes/content/iconsets.php:182
 msgid "Icon set is missing required keys: %s"
 msgstr ""
@@ -699,44 +503,24 @@ msgstr ""
 msgid "Icon set manifest.json must include an \"icons\" map."
 msgstr ""
 
-#: odd/src/panel/index.js:87
+#: odd/src/panel/index.js:73
 msgid "Install"
 msgstr ""
 
-#: odd/src/panel/index.js:2060
-msgid "Install failed"
-msgstr ""
-
-#: odd/src/panel/index.js:2060
-msgid "Install failed."
-msgstr ""
-
-#: odd/src/panel/index.js:1251
-msgid "Installed "
-msgstr ""
-
-#: odd/src/panel/index.js:2209
-msgid "Installed app \""
-msgstr ""
-
-#: odd/src/panel/index.js:2054
-msgid "Installing"
-msgstr ""
-
-#: odd/includes/content/bundle.php:367
+#: odd/includes/content/bundle.php:243
 msgid "Internal error: type module missing."
 msgstr ""
 
-#: odd/includes/apps/registry.php:167
+#: odd/includes/apps/registry.php:179
 #: odd/includes/apps/repair.php:145
 msgid "Invalid app slug."
 msgstr ""
 
-#: odd/includes/content/bundle.php:357
+#: odd/includes/content/bundle.php:233
 msgid "Invalid bundle slug."
 msgstr ""
 
-#: odd/includes/apps/loader.php:234
+#: odd/includes/apps/loader.php:273
 #: odd/includes/content/archive.php:292
 #: odd/includes/content/cursor-sets.php:255
 #: odd/includes/content/iconsets.php:269
@@ -745,7 +529,7 @@ msgstr ""
 msgid "Invalid slug."
 msgstr ""
 
-#: odd/includes/apps/registry.php:233
+#: odd/includes/apps/registry.php:245
 msgid "Invalid surfaces payload."
 msgstr ""
 
@@ -753,92 +537,68 @@ msgstr ""
 msgid "JSON value to store for this app segment."
 msgstr ""
 
-#: odd/src/panel/index.js:3706
-msgid "Keep a quick ODD Shop portal in the Desktop Mode taskbar."
-msgstr ""
-
-#: odd/src/panel/index.js:3704
-msgid "Keep in taskbar"
-msgstr ""
-
-#: odd/src/panel/index.js:1593
-msgid "Keeps a launcher in the dock."
-msgstr ""
-
-#: odd/src/panel/index.js:3183
-msgid "Keyboard shortcuts"
-msgstr ""
-
-#: odd/src/panel/index.js:1493
-msgid "Launcher"
-msgstr ""
-
 #: odd/includes/integration/desktop-mode-ai.php:94
 msgid "Lists ODD-installed content: active wallpaper scene slug plus installed scene, icon set, widget, app, and cursor-set slugs for the requesting user."
 msgstr ""
 
-#: odd/src/panel/index.js:86
-msgid "Little tools, big portals"
-msgstr ""
-
-#: odd/src/panel/index.js:82
-msgid "Living desktop weather"
-msgstr ""
-
-#: odd/src/panel/index.js:84
-msgid "Living pointer auras"
-msgstr ""
-
-#: odd/includes/apps/native-surfaces.php:162
+#: odd/includes/apps/native-surfaces.php:140
 msgid "Loading %s…"
 msgstr ""
 
-#: odd/src/panel/index.js:3636
-msgid "Local-only counters for slow shelves, leaked canvases, and heavy catalog rows."
+#: odd/includes/notes/template.php:70
+msgid "Loading your library…"
 msgstr ""
 
-#: odd/src/panel/index.js:89
-msgid "Lore & blinking"
-msgstr ""
-
-#: odd/includes/apps/loader.php:179
+#: odd/includes/apps/loader.php:174
 msgid "Manifest entry path contains invalid characters or path traversal."
 msgstr ""
 
-#: odd/includes/apps/loader.php:195
+#: odd/includes/apps/loader.php:190
 msgid "Manifest icon URL is invalid."
 msgstr ""
 
-#: odd/includes/apps/loader.php:211
+#: odd/includes/apps/loader.php:206
 msgid "Manifest icon must be an image file."
 msgstr ""
 
-#: odd/includes/apps/loader.php:206
+#: odd/includes/apps/loader.php:201
 msgid "Manifest icon path contains invalid characters or path traversal."
 msgstr ""
 
+#: odd/includes/apps/loader.php:219
+msgid "Manifest native must be an object."
+msgstr ""
+
 #: odd/includes/apps/rest.php:834
-#: odd/includes/content/catalog.php:2148
+#: odd/includes/content/catalog.php:2161
 msgid "Missing slug."
 msgstr ""
 
-#: odd/src/panel/index.js:3193
-msgid "Move in the sidebar"
+#: odd/includes/notes/template.php:100
+msgid "Move to Trash"
 msgstr ""
 
-#: odd/src/panel/index.js:83
-msgid "Native disguises"
+#: odd/includes/apps/loader.php:249
+msgid "Native app asset \"%s\" was not found."
 msgstr ""
 
-#: odd/src/panel/index.js:4209
-msgid "New Shop content is available."
+#: odd/includes/apps/loader.php:245
+msgid "Native app asset paths must be safe relative JS/CSS paths."
 msgstr ""
 
-#: odd/includes/content/bundle.php:362
+#: odd/includes/apps/loader.php:227
+msgid "Native apps must declare native.script."
+msgstr ""
+
+#: odd/includes/notes/template.php:22
+msgid "New note"
+msgstr ""
+
+#: odd/includes/content/bundle.php:238
 msgid "No bundle with that slug is installed."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1395
+#: odd/includes/content/catalog.php:1404
 msgid "No catalog URL configured."
 msgstr ""
 
@@ -847,69 +607,90 @@ msgstr ""
 msgid "No file uploaded. Use multipart field \"file\"."
 msgstr ""
 
-#: odd/includes/content/catalog.php:553
+#: odd/includes/content/catalog.php:562
 msgid "No previous catalog snapshot is available."
 msgstr ""
 
-#: odd/includes/content/catalog.php:222
+#: odd/includes/content/catalog.php:231
 msgid "No trusted catalog signing key is configured."
 msgstr ""
 
+#: odd/includes/notes/template.php:106
+msgid "Note body"
+msgstr ""
+
+#: odd/includes/notes/template.php:66
+msgid "Note list"
+msgstr ""
+
+#: odd/includes/notes/class-notes-service.php:362
+msgid "Note not found."
+msgstr ""
+
 #: odd/includes/content/catalog.php:3
-#: odd/includes/enqueue.php:3
-#: odd/includes/native-window.php:3
 #: odd/includes/toasts.php:3
 msgid "ODD"
 msgstr ""
 
-#: odd/includes/content/catalog.php:720
+#: odd/src/panel/index.js:143
+msgid "ODD / APPS"
+msgstr ""
+
+#: odd/includes/content/catalog.php:729
 msgid "ODD API"
 msgstr ""
 
-#: odd/includes/content/bundle.php:410
+#: odd/includes/content/bundle.php:286
 msgid "ODD Apps are disabled on this site."
 msgstr ""
 
+#: odd/includes/notes/template.php:3
+msgid "ODD Notes"
+msgstr ""
+
+#: odd/includes/notes/class-notes-rest-controller.php:114
+msgid "ODD Notes is not installed or enabled."
+msgstr ""
+
+#: odd/includes/notes/template.php:11
+msgid "ODD Notes navigation"
+msgstr ""
+
 #: odd/includes/integration/desktop-mode-extended-surfaces.php:37
-#: odd/includes/native-window.php:5
-#: odd/src/panel/index.js:2
+#: odd/includes/native-window.php:3
 msgid "ODD Shop"
+msgstr ""
+
+#: odd/src/panel/index.js:10
+msgid "ODD Shop requires the OpenStation public API."
 msgstr ""
 
 #: odd/src/shell/odd-dock-rail.js:2
 msgid "ODD compact rail"
 msgstr ""
 
-#: odd/src/panel/index.js:2246
-msgid "ODD couldn\\u2019t finalise the install. Check wp-content permissions and try again."
-msgstr ""
-
-#: odd/includes/content/bundle.php:112
+#: odd/includes/content/bundle.php:88
 msgid "ODD does not know how to install bundles of type \"%s\"."
 msgstr ""
 
-#: odd/includes/native-window.php:131
-msgid "ODD is using its saved Shop catalog because the newest catalog could not be verified. Refresh the catalog from ODD Shop when you are ready."
+#: odd/includes/native-window.php:95
+msgid "ODD is using its saved app catalog because the newest catalog could not be verified."
 msgstr ""
 
-#: odd/includes/dependencies.php:168
-msgid "ODD requires WP Desktop Mode %1$s or newer. Desktop surfaces are paused until the host plugin is installed, active, and current. Missing APIs: %2$s.%3$s"
+#: odd/includes/dependencies.php:125
+msgid "ODD requires OpenStation %1$s or newer. Detected: %2$s. Missing APIs: %3$s."
 msgstr ""
 
 #: odd/includes/accents.php:39
 msgid "ODD · %s"
 msgstr ""
 
-#: odd/src/panel/index.js:2240
-msgid "One of the icon set images is empty."
+#: odd/includes/notes/template.php:40
+msgid "On desktop"
 msgstr ""
 
-#: odd/src/panel/index.js:2238
-msgid "One of the icon set images is malformed or the wrong size."
-msgstr ""
-
-#: odd/src/panel/index.js:2239
-msgid "One of the icon set images is too large."
+#: odd/src/panel/index.js:159
+msgid "One excellent app at a time. Install it here; OpenStation handles where its launcher lives."
 msgstr ""
 
 #: odd/includes/icons/registry.php:74
@@ -920,15 +701,31 @@ msgstr ""
 msgid "Only catalog-owned apps can be repaired automatically."
 msgstr ""
 
-#: odd/includes/native-window.php:241
-msgid "Open ODD Shop"
+#: odd/includes/notes/class-notes-service.php:376
+msgid "Only the note owner can change it."
 msgstr ""
 
-#: odd/includes/native-window.php:242
-msgid "Open the ODD workspace."
+#: odd/src/panel/index.js:10
+msgid "Open"
 msgstr ""
 
-#: odd/includes/content/catalog.php:1955
+#: odd/includes/content/catalog.php:727
+msgid "OpenStation"
+msgstr ""
+
+#: odd/includes/notes/class-notes-rest-controller.php:117
+msgid "OpenStation is not enabled for this user."
+msgstr ""
+
+#: odd/includes/native-window.php:109
+msgid "Opening ODD Shop…"
+msgstr ""
+
+#: odd/includes/notes/template.php:80
+msgid "Opening the notebook…"
+msgstr ""
+
+#: odd/includes/content/catalog.php:1968
 msgid "Optional catalog bundle type filter."
 msgstr ""
 
@@ -940,20 +737,20 @@ msgstr ""
 msgid "PHP ZipArchive extension is required to install apps."
 msgstr ""
 
+#: odd/includes/notes/template.php:116
+msgid "Paper"
+msgstr ""
+
+#: odd/includes/notes/template.php:117
+msgid "Paper color"
+msgstr ""
+
 #: odd/includes/apps/rest.php:67
 msgid "Path to a static app asset relative to the app root."
 msgstr ""
 
-#: odd/src/panel/index.js:3603
-msgid "Performance"
-msgstr ""
-
-#: odd/includes/native-window.php:230
-msgid "Pick another installed ODD scene."
-msgstr ""
-
-#: odd/src/panel/index.js:3683
-msgid "Play tiny clicks and velvet chimes while browsing."
+#: odd/includes/notes/template.php:120
+msgid "Pin on desktop"
 msgstr ""
 
 #: odd/includes/content/cursor-sets.php:94
@@ -998,6 +795,10 @@ msgstr ""
 msgid "Preview file is not present in the bundle."
 msgstr ""
 
+#: odd/includes/notes/template.php:16
+msgid "Private by default"
+msgstr ""
+
 #: odd/includes/apps/rest.php:1292
 msgid "Provide a value when writing to app storage."
 msgstr ""
@@ -1010,59 +811,55 @@ msgstr ""
 msgid "Reading ODD catalog state…"
 msgstr ""
 
-#: odd/includes/native-window.php:236
-msgid "Redock floating ODD widgets and add installed ODD widgets to the desktop."
+#: odd/src/panel/index.js:125
+msgid "Ready."
 msgstr ""
 
-#: odd/src/panel/index.js:4083
+#: odd/includes/notes/template.php:72
+msgid "Refresh"
+msgstr ""
+
+#: odd/src/panel/index.js:146
 msgid "Refresh catalog"
 msgstr ""
 
-#: odd/src/panel/index.js:2373
-msgid "Refreshing admin…"
-msgstr ""
-
-#: odd/src/panel/index.js:4148
+#: odd/src/panel/index.js:150
 msgid "Refreshing…"
 msgstr ""
 
-#: odd/src/panel/index.js:556
-msgid "Reloading Desktop Mode to apply app surfaces…"
-msgstr ""
-
-#: odd/src/panel/index.js:3737
-msgid "Reloading Desktop Mode to update ODD taskbar setting…"
-msgstr ""
-
-#: odd/includes/content/catalog.php:1689
+#: odd/includes/content/catalog.php:1702
 msgid "Remote catalog returned zero bundles; keeping the current catalog."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1090
+#: odd/includes/content/catalog.php:1099
 msgid "Remote catalog returned zero bundles; keeping the last known good catalog."
+msgstr ""
+
+#: odd/src/panel/index.js:91
+msgid "Remove"
+msgstr ""
+
+#: odd/src/panel/index.js:94
+msgid "Remove ODD Notes from this site?"
 msgstr ""
 
 #: odd/includes/integration/desktop-mode-extended-surfaces.php:55
 msgid "Removed <strong>%s</strong> catalog wallpaper, icons, or apps? Re-install them anytime from <a href=\"#\" class=\"odd-js-open-shop\">Open ODD Shop</a>. Bin entries here remain WordPress content (posts, media, comments…)."
 msgstr ""
 
-#: odd/src/panel/index.js:2190
-msgid "Repairing"
+#: odd/src/panel/index.js:96
+msgid "Removing…"
 msgstr ""
 
-#: odd/includes/content/catalog.php:746
+#: odd/includes/content/catalog.php:755
 msgid "Requires %1$s %2$s or newer; detected %3$s."
 msgstr ""
 
-#: odd/includes/native-window.php:247
-msgid "Reset ODD decorations"
+#: odd/includes/notes/class-notes-service.php:339
+msgid "Revision not found."
 msgstr ""
 
-#: odd/includes/native-window.php:248
-msgid "Reset active ODD icon and cursor decorations."
-msgstr ""
-
-#: odd/includes/content/catalog.php:2060
+#: odd/includes/content/catalog.php:2073
 msgid "Rollback snapshot index to restore."
 msgstr ""
 
@@ -1070,12 +867,16 @@ msgstr ""
 msgid "SVG cursor file path relative to the cursor set root."
 msgstr ""
 
-#: odd/src/panel/index.js:564
-msgid "Saved. Desktop Mode will update shortly."
+#: odd/includes/notes/template.php:125
+msgid "Saved"
 msgstr ""
 
-#: odd/src/panel/index.js:550
-msgid "Saved. Reloading Desktop Mode…"
+#: odd/includes/notes/template.php:125
+msgid "Saved to WordPress"
+msgstr ""
+
+#: odd/includes/notes/template.php:125
+msgid "Saving…"
 msgstr ""
 
 #: odd/includes/content/scenes.php:88
@@ -1094,12 +895,8 @@ msgstr ""
 msgid "Scene is not installed."
 msgstr ""
 
-#: odd/src/panel/index.js:197
-msgid "Search"
-msgstr ""
-
-#: odd/src/panel/index.js:207
-msgid "Search the Shop"
+#: odd/includes/notes/template.php:25
+msgid "Search notes"
 msgstr ""
 
 #: odd/includes/content/cursor-sets.php:100
@@ -1115,28 +912,24 @@ msgstr ""
 msgid "Server-executable files are not allowed. Found: %s"
 msgstr ""
 
-#: odd/src/panel/index.js:88
-msgid "Settings"
-msgstr ""
-
-#: odd/src/panel/index.js:3191
-msgid "Show this help"
-msgstr ""
-
-#: odd/includes/native-window.php:229
-msgid "Shuffle ODD wallpaper"
+#: odd/includes/notes/template.php:45
+msgid "Shared"
 msgstr ""
 
 #: odd/includes/content/archive.php:226
 msgid "Slug must contain only lowercase letters, numbers, and hyphens."
 msgstr ""
 
-#: odd/src/panel/index.js:3681
-msgid "Sound effects"
+#: odd/includes/notes/template.php:27
+msgid "Smart lists"
 msgstr ""
 
-#: odd/src/panel/index.js:3240
-msgid "Store sections"
+#: odd/src/panel/index.js:130
+msgid "Something went wrong."
+msgstr ""
+
+#: odd/includes/notes/template.php:106
+msgid "Start writing…"
 msgstr ""
 
 #: odd/includes/apps/loader.php:119
@@ -1144,53 +937,48 @@ msgstr ""
 msgid "Suspicious compression ratio (%2$d:1) in %1$s."
 msgstr ""
 
-#: odd/src/panel/index.js:390
-msgid "Taskbar"
-msgstr ""
-
-#: odd/src/panel/index.js:2216
-msgid "That file isn\\u2019t a .wp bundle."
-msgstr ""
-
-#: odd/src/panel/index.js:2217
-msgid "That file isn\\u2019t a valid ZIP archive."
+#: odd/includes/notes/template.php:56
+msgid "Tags"
 msgstr ""
 
 #: odd/includes/content/archive.php:107
 msgid "The PHP ZipArchive extension is required to install ODD bundles."
 msgstr ""
 
-#: odd/includes/content/catalog.php:978
+#: odd/src/panel/index.js:166
+msgid "The app catalog is temporarily unavailable."
+msgstr ""
+
+#: odd/includes/content/catalog.php:987
 msgid "The downloaded file is not a valid .wp archive."
 msgstr ""
 
-#: odd/src/panel/index.js:2230
-msgid "This ODD version doesn\\u2019t know how to install that bundle type."
+#: odd/includes/notes/class-notes-service.php:280
+msgid "The note could not be moved to Trash."
 msgstr ""
 
-#: odd/src/panel/index.js:234
-msgid "This department"
+#: odd/includes/notes/class-notes-service.php:342
+msgid "The revision could not be restored."
 msgstr ""
 
 #: odd/includes/apps/rest.php:438
 msgid "This file type cannot be served."
 msgstr ""
 
-#: odd/src/panel/index.js:2218
-msgid "This site is missing the PHP ZipArchive extension \\u2014 ask the host to enable it."
+#: odd/includes/notes/class-notes-service.php:220
+msgid "This note changed in another window."
 msgstr ""
 
-#: odd/src/panel/index.js:85
-msgid "Tiny desktop creatures"
+#: odd/includes/notes/template.php:25
+msgid "Title"
+msgstr ""
+
+#: odd/includes/notes/template.php:25
+msgid "Title, words, or #tag"
 msgstr ""
 
 #: odd/includes/content/rate-limit.php:44
-#: odd/src/panel/index.js:2243
 msgid "Too many requests. Please wait a minute and try again."
-msgstr ""
-
-#: odd/src/panel/index.js:88
-msgid "Tune the strange"
 msgstr ""
 
 #: odd/includes/content/archive.php:235
@@ -1213,35 +1001,32 @@ msgstr ""
 msgid "Untitled draft"
 msgstr ""
 
-#: odd/src/panel/index.js:3724
-msgid "Updated ODD taskbar setting."
+#: odd/includes/notes/class-notes-service.php:466
+#: odd/includes/notes/template.php:105
+msgid "Untitled note"
 msgstr ""
 
-#: odd/src/panel/index.js:560
-msgid "Updating"
+#: odd/src/panel/index.js:73
+msgid "Update"
 msgstr ""
 
-#: odd/src/panel/index.js:560
-msgid "Updating Desktop Mode…"
+#: odd/src/panel/index.js:144
+msgid "Useful things for your OpenStation."
 msgstr ""
 
-#: odd/src/panel/index.js:4267
-msgid "View health"
+#: odd/includes/notes/template.php:98
+msgid "Version history"
 msgstr ""
 
-#: odd/includes/content/catalog.php:718
-msgid "WP Desktop Mode"
-msgstr ""
-
-#: odd/src/panel/index.js:10
-msgid "Wallpapers"
+#: odd/includes/notes/template.php:121
+msgid "Visible to everyone"
 msgstr ""
 
 #: odd/includes/apps/rest.php:217
 msgid "Whether the app should be enabled."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1989
+#: odd/includes/content/catalog.php:2002
 msgid "Whether to reinstall when the catalog version is newer."
 msgstr ""
 
@@ -1261,56 +1046,36 @@ msgstr ""
 msgid "Widget manifest lists an invalid CSS path."
 msgstr ""
 
-#: odd/src/panel/index.js:85
-msgid "Widgets"
+#: odd/includes/notes/template.php:62
+msgid "WordPress connected"
 msgstr ""
 
-#: odd/src/panel/index.js:2128
-msgid "Working"
+#: odd/includes/notes/template.php:134
+msgid "WordPress keeps the earlier words."
 msgstr ""
 
-#: odd/src/panel/index.js:2189
-msgid "Working…"
+#: odd/includes/notes/template.php:89
+msgid "Write a note"
 msgstr ""
 
-#: odd/src/panel/index.js:324
-msgid "You"
+#: odd/includes/notes/class-notes-rest-controller.php:111
+msgid "You do not have permission to use ODD Notes."
 msgstr ""
 
-#: odd/src/panel/index.js:213
-msgid "active"
+#: odd/includes/notes/class-notes-rest-controller.php:108
+msgid "You must be logged in."
 msgstr ""
 
-#: odd/src/panel/index.js:79
-msgid "app"
-msgstr ""
-
-#: odd/src/panel/index.js:449
-msgid "bundle"
+#: odd/includes/notes/template.php:88
+msgid "Your drafts land here first, then tuck themselves safely into WordPress."
 msgstr ""
 
 #: odd/includes/rest.php:195
 msgid "checked %s ago"
 msgstr ""
 
-#: odd/src/panel/index.js:2197
-msgid "cursor set"
-msgstr ""
-
 #: odd/includes/content/scenes.php:120
 msgid "fallbackColor must be a hex colour like #0a0a1f."
-msgstr ""
-
-#: odd/src/panel/index.js:200
-msgid "icon set"
-msgstr ""
-
-#: odd/src/panel/index.js:198
-msgid "installed"
-msgstr ""
-
-#: odd/src/panel/index.js:11
-msgid "item"
 msgstr ""
 
 #: odd/includes/apps/loader.php:153
@@ -1335,7 +1100,7 @@ msgstr ""
 msgid "manifest.json was not found at the bundle root."
 msgstr ""
 
-#: odd/includes/dependencies.php:170
+#: odd/includes/dependencies.php:128
 msgid "none"
 msgstr ""
 
@@ -1343,20 +1108,16 @@ msgstr ""
 msgid "not checked yet"
 msgstr ""
 
-#: odd/src/panel/index.js:103
-msgid "scene"
-msgstr ""
-
 #: odd/includes/apps/rest.php:376
 msgid "surfaces must be an object."
 msgstr ""
 
-#: odd/includes/content/catalog.php:367
-#: odd/includes/dependencies.php:159
+#: odd/includes/content/catalog.php:376
+#: odd/includes/dependencies.php:127
 msgid "unknown"
 msgstr ""
 
-#: odd/src/panel/index.js:85
-msgid "widget"
+#: odd/includes/notes/template.php:127
+msgid "⌘S to save"
 msgstr ""
 

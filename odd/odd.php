@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       ODD — Outlandish Desktop Decorator
  * Plugin URI:        https://weirdpress.com/odd
- * Description:       App store and decorator for WP Desktop Mode: install wallpapers, icons, cursors, widgets, and apps from a safe catalog.
+ * Description:       A focused app store for OpenStation, beginning with ODD Notes.
  * Version:           1.1.4
  * Requires at least: 6.8
  * Requires PHP:      8.1
@@ -13,15 +13,14 @@
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       odd-outlandish-desktop-decorator
  *
- * Requires the WordPress Desktop Mode plugin to be active:
- * https://github.com/WordPress/desktop-mode
+ * Requires the OpenStation plugin (WordPress.org slug: desktop-mode):
+ * https://github.com/WordPress/openstation
  */
 
 defined( 'ABSPATH' ) || exit;
 
 define( 'ODDOUT_VERSION', '1.1.4' );
-define( 'ODDOUT_DESKTOP_MODE_MIN_VERSION', '0.8.5' );
-define( 'ODDOUT_DESKTOP_MODE_PLAYGROUND_VERSION', '0.8.8' );
+define( 'ODDOUT_OPENSTATION_MIN_VERSION', '1.1.0' );
 define( 'ODDOUT_FILE', __FILE__ );
 define( 'ODDOUT_DIR', plugin_dir_path( __FILE__ ) );
 
@@ -242,30 +241,11 @@ function oddout_https_rest_url( $path = '' ) {
 define( 'ODDOUT_URL', untrailingslashit( oddout_url_current_scheme( plugins_url( '', __FILE__ ) ) ) );
 
 require_once ODDOUT_DIR . 'includes/dependencies.php';
-require_once ODDOUT_DIR . 'includes/playground-compat.php';
-require_once ODDOUT_DIR . 'includes/extensions.php';
-require_once ODDOUT_DIR . 'includes/migrations.php';
-require_once ODDOUT_DIR . 'includes/wallpaper/registry.php';
-require_once ODDOUT_DIR . 'includes/wallpaper/prefs.php';
-require_once ODDOUT_DIR . 'includes/icons/registry.php';
-require_once ODDOUT_DIR . 'includes/icons/dock-filter.php';
-require_once ODDOUT_DIR . 'includes/cursors/registry.php';
-require_once ODDOUT_DIR . 'includes/cursors/css-endpoint.php';
-require_once ODDOUT_DIR . 'includes/cursors/inject.php';
-require_once ODDOUT_DIR . 'includes/admin-bar.php';
-require_once ODDOUT_DIR . 'includes/rest.php';
-require_once ODDOUT_DIR . 'includes/accents.php';
-require_once ODDOUT_DIR . 'includes/toasts.php';
-require_once ODDOUT_DIR . 'includes/native-window.php';
-require_once ODDOUT_DIR . 'includes/integration/desktop-mode-ai.php';
-require_once ODDOUT_DIR . 'includes/integration/desktop-mode-extended-surfaces.php';
 require_once ODDOUT_DIR . 'includes/apps/bootstrap.php';
-// Universal bundle installer. Requires the Apps bootstrap above so the App type
-// module can delegate to oddout_apps_validate_archive() / oddout_apps_install().
 require_once ODDOUT_DIR . 'includes/content/bootstrap.php';
-require_once ODDOUT_DIR . 'includes/starter-pack.php';
-require_once ODDOUT_DIR . 'includes/e2e-diagnostics.php';
+require_once ODDOUT_DIR . 'includes/notes/bootstrap.php';
 require_once ODDOUT_DIR . 'includes/enqueue.php';
+require_once ODDOUT_DIR . 'includes/native-window.php';
 
 /**
  * Wire every registered ODD script handle up to `wp_set_script_translations`
@@ -281,7 +261,7 @@ add_action(
 	'wp_enqueue_scripts',
 	static function () {
 		$langs_dir = ODDOUT_DIR . 'languages';
-		foreach ( array( 'odd-panel', 'odd-commands', 'odd-api' ) as $handle ) {
+		foreach ( array( 'odd-panel', 'odd-notes' ) as $handle ) {
 			if ( wp_script_is( $handle, 'registered' ) ) {
 				wp_set_script_translations( $handle, 'odd-outlandish-desktop-decorator', $langs_dir );
 			}
@@ -293,7 +273,7 @@ add_action(
 	'admin_enqueue_scripts',
 	static function () {
 		$langs_dir = ODDOUT_DIR . 'languages';
-		foreach ( array( 'odd-panel', 'odd-commands', 'odd-api' ) as $handle ) {
+		foreach ( array( 'odd-panel', 'odd-notes' ) as $handle ) {
 			if ( wp_script_is( $handle, 'registered' ) ) {
 				wp_set_script_translations( $handle, 'odd-outlandish-desktop-decorator', $langs_dir );
 			}
