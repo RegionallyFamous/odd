@@ -17,7 +17,7 @@ test.describe( 'ODD Apps-only smoke', () => {
 			waitUntil: 'load',
 			timeout: 45_000,
 		} );
-		await expect( page.locator( '#desktop-mode-shell' ) ).toBeVisible( {
+		await expect( page.locator( '#os-shell' ) ).toBeVisible( {
 			timeout: 30_000,
 		} );
 		await page.waitForFunction(

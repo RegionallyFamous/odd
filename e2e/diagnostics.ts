@@ -90,7 +90,7 @@ export async function collectClientDiagnostics( page: Page ): Promise<OddClientD
 			oddHasApi: !! w.__odd?.api,
 			oddRuntimePresent: !! w.__odd?.runtime,
 			activeSceneSlug: rt?.activeScene?.slug,
-			shell: !! document.getElementById( 'desktop-mode-shell' ),
+			shell: !! document.getElementById( 'os-shell' ),
 			desktopModeWallpaperKeys: dm ? Object.keys( dm ) : null,
 		};
 	} );

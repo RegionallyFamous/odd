@@ -64,7 +64,7 @@ export async function loginAdmin(
 export async function goDesktopShell( page: Page ) {
 	await page.goto( '/wp-admin/index.php?desktop_mode_portal=1', { waitUntil: 'load', timeout: 45_000 } );
 	await page.waitForURL( /\/wp-admin/, { timeout: 45_000 } );
-	await expect( page.locator( '#desktop-mode-shell' ) ).toBeVisible( { timeout: 20_000 } );
+	await expect( page.locator( '#os-shell' ) ).toBeVisible( { timeout: 20_000 } );
 	await dismissDesktopModeWelcomeIfPresent( page );
 	await page.waitForFunction( () => {
 		const w = window as unknown as { __odd?: object };
@@ -143,7 +143,7 @@ export async function waitForWallpaperScenes( page: Page ) {
 				wallpaperKeys: wallpapers ? Object.keys( wallpapers ) : null,
 				oddScenes: odd?.scenes ? Object.keys( odd.scenes ) : null,
 				oddApi: !! odd?.api,
-				shellVisible: !! document.getElementById( 'desktop-mode-shell' ),
+				shellVisible: !! document.getElementById( 'os-shell' ),
 			};
 		} );
 		// eslint-disable-next-line no-console

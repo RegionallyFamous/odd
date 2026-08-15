@@ -91,7 +91,7 @@ function oddout_e2e_diagnostics_payload( $probe_catalog = false ) {
 		),
 		'odd'         => array(
 			'version'        => ODDOUT_VERSION,
-			'desktopModeMin' => ODDOUT_DESKTOP_MODE_MIN_VERSION,
+			'openStationMin' => oddout_openstation_min_version(),
 			'appsEnabled'    => defined( 'ODDOUT_APPS_ENABLED' ) && ODDOUT_APPS_ENABLED,
 		),
 		'plugins'     => $active,
