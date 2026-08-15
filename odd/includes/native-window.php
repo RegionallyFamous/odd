@@ -118,5 +118,5 @@ function oddout_render_panel_template() {
  * @return string
  */
 function oddout_control_icon_url() {
-	return oddout_url_current_scheme( ODDOUT_URL . 'assets/odd-eye.svg' );
+	return oddout_url_current_scheme( ODDOUT_URL . '/assets/odd-eye.svg' );
 }

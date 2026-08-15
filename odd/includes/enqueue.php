@@ -17,14 +17,14 @@ function oddout_register_assets() {
 
 	wp_register_script(
 		'odd-panel',
-		ODDOUT_URL . 'src/panel/index.js',
+		ODDOUT_URL . '/src/panel/index.js',
 		array( 'openstation', 'wp-i18n' ),
 		ODDOUT_VERSION,
 		true
 	);
 	wp_register_style(
 		'odd-panel-style',
-		ODDOUT_URL . 'src/panel/styles.css',
+		ODDOUT_URL . '/src/panel/styles.css',
 		array( 'os-variables', 'dashicons' ),
 		ODDOUT_VERSION
 	);
