@@ -137,6 +137,7 @@ function oddout_apps_render_window_template( $slug, $manifest ) {
 	$name      = isset( $manifest['name'] ) ? (string) $manifest['name'] : $slug;
 	?>
 	<div class="odd-app-host" data-odd-app data-odd-app-slug="<?php echo esc_attr( $slug ); ?>" data-odd-app-src="<?php echo esc_url( $serve_url ); ?>">
+		<?php /* translators: %s: app name. */ ?>
 		<p><?php printf( esc_html__( 'Loading %s…', 'odd-outlandish-desktop-decorator' ), esc_html( $name ) ); ?></p>
 	</div>
 	<?php
