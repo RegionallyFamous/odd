@@ -45,33 +45,124 @@
 		return false;
 	}
 
+	function displayName( row ) {
+		return row.label || row.name || 'ODD Notes';
+	}
+
+	function appRows( state ) {
+		var rows = ( state.catalog || [] ).slice();
+		( state.installed || [] ).forEach( function ( installed ) {
+			if ( ! rows.some( function ( row ) { return row.slug === installed.slug; } ) ) {
+				rows.push( installed );
+			}
+		} );
+		return rows;
+	}
+
+	function setStatus( state, message, tone ) {
+		state.status.textContent = message || '';
+		state.status.dataset.tone = tone || 'neutral';
+		state.status.classList.toggle( 'is-visible', !! message );
+	}
+
+	function buttonLabel( button ) {
+		return button.querySelector( '[data-odd-button-label]' ) || button;
+	}
+
+	function prettyTag( tag ) {
+		return String( tag || '' )
+			.replace( /-/g, ' ' )
+			.replace( /\b\w/g, function ( letter ) { return letter.toUpperCase(); } );
+	}
+
+	function cardKicker( row ) {
+		var tags = ( row.tags || [] ).slice( 1, 3 ).map( prettyTag );
+		return tags.length ? tags.join( ' · ' ) : __( 'OpenStation app' );
+	}
+
+	function appendHighlights( body, row ) {
+		var highlights = el( 'ul', 'odd-app-card__highlights' );
+		var labels = row.slug === 'odd-notes'
+			? [ __( 'Private WordPress storage' ), __( 'Favorites, tags & sharing' ), __( 'Revision history' ) ]
+			: ( row.tags || [] ).slice( 0, 3 ).map( prettyTag );
+
+		labels.forEach( function ( label, index ) {
+			var item = el( 'li', 'odd-app-card__highlight' );
+			var glyph = el( 'span', 'odd-app-card__highlight-glyph' );
+			glyph.setAttribute( 'aria-hidden', 'true' );
+			glyph.dataset.color = String( index + 1 );
+			item.appendChild( glyph );
+			item.appendChild( el( 'span', '', label ) );
+			highlights.appendChild( item );
+		} );
+
+		if ( labels.length ) { body.appendChild( highlights ); }
+	}
+
 	function renderCard( state, row ) {
 		var installed = state.installed.find( function ( app ) { return app.slug === row.slug; } );
 		var update = installed && versionNewer( row.version, installed.version );
+		var titleText = displayName( row );
 		var card = el( 'article', 'odd-app-card' );
+		card.dataset.slug = row.slug || '';
+		card.dataset.state = update ? 'update' : ( installed ? 'installed' : 'available' );
+
 		var art = el( 'div', 'odd-app-card__art' );
 		var preview = row.preview_url || row.previewUrl || row.card_url || row.cardUrl || '';
-		if ( preview ) { art.style.backgroundImage = 'url("' + String( preview ).replace( /["\\]/g, '' ) + '")'; }
+		if ( preview ) {
+			var previewImage = el( 'img', 'odd-app-card__preview' );
+			previewImage.src = preview;
+			previewImage.alt = '';
+			previewImage.loading = 'eager';
+			previewImage.decoding = 'async';
+			art.appendChild( previewImage );
+		}
+		var featured = el( 'span', 'odd-app-card__featured', __( 'Featured app' ) );
+		featured.insertBefore( el( 'span', 'odd-app-card__featured-dot' ), featured.firstChild );
+		art.appendChild( featured );
+		art.appendChild( el( 'span', 'odd-app-card__art-glint' ) );
 		card.appendChild( art );
 
 		var body = el( 'div', 'odd-app-card__body' );
-		var heading = el( 'div', 'odd-app-card__heading' );
-		var icon = el( 'img', 'odd-app-card__icon' );
-		icon.alt = '';
-		icon.src = row.icon_url || row.iconUrl || '';
-		heading.appendChild( icon );
-		var title = el( 'div' );
-		title.appendChild( el( 'h2', '', row.label || row.name || 'ODD Notes' ) );
-		title.appendChild( el( 'p', 'odd-app-card__version', 'v' + ( row.version || '1.0.0' ) ) );
-		heading.appendChild( title );
-		body.appendChild( heading );
-		body.appendChild( el( 'p', 'odd-app-card__description', row.description || __( 'A focused notes app stored in WordPress.' ) ) );
+		var identity = el( 'div', 'odd-app-card__identity' );
+		var iconWrap = el( 'span', 'odd-app-card__icon-wrap' );
+		var iconUrl = row.icon_url || row.iconUrl || '';
+		if ( iconUrl ) {
+			var icon = el( 'img', 'odd-app-card__icon' );
+			icon.alt = '';
+			icon.src = iconUrl;
+			iconWrap.appendChild( icon );
+		}
+		identity.appendChild( iconWrap );
+		var identityCopy = el( 'div', 'odd-app-card__identity-copy' );
+		identityCopy.appendChild( el( 'p', 'odd-app-card__kicker', cardKicker( row ) ) );
+		identityCopy.appendChild( el( 'h2', '', titleText ) );
+		identity.appendChild( identityCopy );
+		body.appendChild( identity );
 
+		var stateBadge = el(
+			'span',
+			'odd-app-card__state',
+			update ? __( 'Update available' ) : ( installed ? __( 'Installed' ) : __( 'Available' ) )
+		);
+		stateBadge.insertBefore( el( 'span', 'odd-app-card__state-dot' ), stateBadge.firstChild );
+		body.appendChild( stateBadge );
+
+		body.appendChild( el( 'p', 'odd-app-card__description', row.description || __( 'A focused notes app stored in WordPress.' ) ) );
+		appendHighlights( body, row );
+
+		var footer = el( 'div', 'odd-app-card__footer' );
 		var actions = el( 'div', 'odd-app-card__actions' );
-		var primary = el( 'button', 'button button-primary' );
+		var primary = el( 'button', 'odd-app-card__button odd-app-card__button--primary' );
 		primary.type = 'button';
-		primary.textContent = installed ? ( update ? __( 'Update' ) : __( 'Open' ) ) : __( 'Install' );
+		var primaryLabel = el( 'span', '', installed ? ( update ? __( 'Update app' ) : __( 'Open app' ) ) : __( 'Install app' ) );
+		primaryLabel.dataset.oddButtonLabel = '1';
+		primary.appendChild( primaryLabel );
+		primary.appendChild( el( 'span', 'odd-app-card__button-arrow', '↗' ) );
 		primary.disabled = ! installed && ! state.cfg.canInstall;
+		if ( primary.disabled ) {
+			primary.title = __( 'An administrator must install this app.' );
+		}
 		primary.addEventListener( 'click', function () {
 			if ( installed && ! update ) {
 				api().openWindow( 'odd-app-' + row.slug );
@@ -88,10 +179,10 @@
 		actions.appendChild( primary );
 
 		if ( installed && state.cfg.canInstall ) {
-			var remove = el( 'button', 'button button-link-delete', __( 'Remove' ) );
+			var remove = el( 'button', 'odd-app-card__button odd-app-card__button--remove', __( 'Remove' ) );
 			remove.type = 'button';
-			remove.addEventListener( 'click', async function () {
-				var confirmed = window.confirm( __( 'Remove ODD Notes from this site?' ) );
+			remove.addEventListener( 'click', function () {
+				var confirmed = window.confirm( __( 'Remove ' ) + titleText + __( ' from this site?' ) );
 				if ( ! confirmed ) { return; }
 				mutate( state, remove, __( 'Removing…' ), function () {
 					return request( state.cfg, state.cfg.rest.bundles + encodeURIComponent( row.slug ), { method: 'DELETE' } );
@@ -99,7 +190,15 @@
 			} );
 			actions.appendChild( remove );
 		}
-		body.appendChild( actions );
+		footer.appendChild( actions );
+		footer.appendChild( el(
+			'p',
+			'odd-app-card__version',
+			installed && ! update
+				? __( 'Ready in OpenStation · v' ) + ( installed.version || row.version || '1.0.0' )
+				: __( 'Verified ODD catalog · v' ) + ( row.version || '1.0.0' )
+		) );
+		body.appendChild( footer );
 		card.appendChild( body );
 		return card;
 	}
@@ -113,60 +212,118 @@
 		state.catalog = ( results[ 1 ].bundles || [] ).filter( function ( row ) { return row.type === 'app'; } );
 	}
 
-	async function mutate( state, button, busyLabel, operation ) {
-		var prior = button.textContent;
+	async function mutate( state, button, busyText, operation ) {
+		var label = buttonLabel( button );
+		var prior = label.textContent;
 		button.disabled = true;
-		button.textContent = busyLabel;
-		state.status.textContent = busyLabel;
+		label.textContent = busyText;
+		setStatus( state, busyText, 'busy' );
 		try {
 			await operation();
 			await reloadState( state );
 			if ( typeof api().refreshMenu === 'function' ) { await api().refreshMenu(); }
-			state.status.textContent = __( 'Ready.' );
+			setStatus( state, __( 'Everything is up to date.' ), 'success' );
 			render( state );
 		} catch ( error ) {
 			button.disabled = false;
-			button.textContent = prior;
-			state.status.textContent = error.message || __( 'Something went wrong.' );
+			label.textContent = prior;
+			setStatus( state, error.message || __( 'Something went wrong.' ), 'error' );
 		}
 	}
 
-	function render( state ) {
-		var root = state.root;
-		root.replaceChildren();
+	function renderHeader( state, rows ) {
 		var top = el( 'header', 'odd-shop__top' );
-		var mark = el( 'img', 'odd-shop__mark' );
-		mark.src = state.cfg.iconUrl || '';
-		mark.alt = '';
-		top.appendChild( mark );
-		var copy = el( 'div' );
-		copy.appendChild( el( 'p', 'odd-shop__eyebrow', __( 'ODD / APPS' ) ) );
-		copy.appendChild( el( 'h1', '', __( 'Useful things for your OpenStation.' ) ) );
-		top.appendChild( copy );
-		var refresh = el( 'button', 'button', __( 'Refresh catalog' ) );
+		var topInner = el( 'div', 'odd-shop__top-inner' );
+		var brand = el( 'div', 'odd-shop__brand' );
+		var markWrap = el( 'span', 'odd-shop__mark-wrap' );
+		if ( state.cfg.iconUrl ) {
+			var mark = el( 'img', 'odd-shop__mark' );
+			mark.src = state.cfg.iconUrl;
+			mark.alt = '';
+			markWrap.appendChild( mark );
+		}
+		brand.appendChild( markWrap );
+		var brandCopy = el( 'span', 'odd-shop__brand-copy' );
+		brandCopy.appendChild( el( 'strong', '', __( 'ODD Shop' ) ) );
+		brandCopy.appendChild( el( 'span', '', __( 'Apps for OpenStation' ) ) );
+		brand.appendChild( brandCopy );
+		topInner.appendChild( brand );
+
+		var tools = el( 'div', 'odd-shop__tools' );
+		var count = el( 'span', 'odd-shop__count' );
+		count.appendChild( el( 'span', 'odd-shop__count-dot' ) );
+		count.appendChild( el( 'span', '', rows.length + ( rows.length === 1 ? __( ' app' ) : __( ' apps' ) ) ) );
+		tools.appendChild( count );
+		var refresh = el( 'button', 'odd-shop__refresh' );
 		refresh.type = 'button';
 		refresh.disabled = ! state.cfg.canInstall;
+		refresh.title = __( 'Refresh catalog' );
+		refresh.setAttribute( 'aria-label', __( 'Refresh catalog' ) );
+		refresh.appendChild( el( 'span', 'odd-shop__refresh-icon', '↻' ) );
+		var refreshLabel = el( 'span', 'odd-shop__refresh-label', __( 'Refresh' ) );
+		refreshLabel.dataset.oddButtonLabel = '1';
+		refresh.appendChild( refreshLabel );
 		refresh.addEventListener( 'click', function () {
 			mutate( state, refresh, __( 'Refreshing…' ), function () {
 				return request( state.cfg, state.cfg.rest.refresh, { method: 'POST' } );
 			} );
 		} );
-		top.appendChild( refresh );
-		root.appendChild( top );
+		tools.appendChild( refresh );
+		topInner.appendChild( tools );
+		top.appendChild( topInner );
+		return top;
+	}
 
+	function render( state ) {
+		var root = state.root;
+		var rows = appRows( state );
+		root.replaceChildren();
+		root.appendChild( renderHeader( state, rows ) );
+
+		var main = el( 'main', 'odd-shop__main' );
 		var intro = el( 'section', 'odd-shop__intro' );
-		intro.appendChild( el( 'h2', '', __( 'Apps' ) ) );
-		intro.appendChild( el( 'p', '', __( 'One excellent app at a time. Install it here; OpenStation handles where its launcher lives.' ) ) );
-		root.appendChild( intro );
+		var introCopy = el( 'div', 'odd-shop__intro-copy' );
+		introCopy.appendChild( el( 'p', 'odd-shop__eyebrow', __( 'ODD / APPS' ) ) );
+		introCopy.appendChild( el( 'h1', '', __( 'Small tools. Strange polish.' ) ) );
+		introCopy.appendChild( el( 'p', 'odd-shop__lede', __( 'A tiny collection of useful things made to feel completely at home in OpenStation.' ) ) );
+		intro.appendChild( introCopy );
+		var orbit = el( 'div', 'odd-shop__orbit' );
+		orbit.setAttribute( 'aria-hidden', 'true' );
+		orbit.appendChild( el( 'span', 'odd-shop__orbit-ring' ) );
+		orbit.appendChild( el( 'span', 'odd-shop__orbit-eye' ) );
+		intro.appendChild( orbit );
+		main.appendChild( intro );
 
-		var grid = el( 'main', 'odd-shop__grid' );
-		if ( state.catalog.length ) {
-			state.catalog.forEach( function ( row ) { grid.appendChild( renderCard( state, row ) ); } );
-		} else {
-			grid.appendChild( el( 'p', 'odd-shop__empty', __( 'The app catalog is temporarily unavailable.' ) ) );
+		var shelf = el( 'section', 'odd-shop__shelf' );
+		var shelfHead = el( 'div', 'odd-shop__shelf-head' );
+		var shelfCopy = el( 'div' );
+		shelfCopy.appendChild( el( 'h2', '', __( 'Apps' ) ) );
+		shelfCopy.appendChild( el( 'p', '', __( 'One excellent app at a time. No filler, no feed.' ) ) );
+		shelfHead.appendChild( shelfCopy );
+		var signal = el( 'span', 'odd-shop__signal', __( 'Catalog online' ) );
+		signal.insertBefore( el( 'span', 'odd-shop__signal-dot' ), signal.firstChild );
+		if ( ! state.catalog.length ) {
+			signal.replaceChildren( el( 'span', 'odd-shop__signal-dot' ), document.createTextNode( __( 'Using saved apps' ) ) );
+			signal.classList.add( 'is-offline' );
 		}
-		root.appendChild( grid );
-		root.appendChild( state.status );
+		shelfHead.appendChild( signal );
+		shelf.appendChild( shelfHead );
+
+		var grid = el( 'div', 'odd-shop__grid' );
+		if ( rows.length ) {
+			rows.forEach( function ( row ) { grid.appendChild( renderCard( state, row ) ); } );
+		} else {
+			var empty = el( 'div', 'odd-shop__empty' );
+			empty.appendChild( el( 'span', 'odd-shop__empty-eye', '◉' ) );
+			empty.appendChild( el( 'h2', '', __( 'The shelf is resting.' ) ) );
+			empty.appendChild( el( 'p', '', __( 'The app catalog is temporarily unavailable. Refresh it in a moment.' ) ) );
+			grid.appendChild( empty );
+			signal.replaceChildren( el( 'span', 'odd-shop__signal-dot' ), document.createTextNode( __( 'Catalog unavailable' ) ) );
+		}
+		shelf.appendChild( grid );
+		main.appendChild( shelf );
+		main.appendChild( state.status );
+		root.appendChild( main );
 	}
 
 	window.openStationNativeWindows.odd = function ( body, context ) {
@@ -175,6 +332,7 @@
 		cfg.iconUrl = cfg.iconUrl || '';
 		var status = el( 'p', 'odd-shop__status' );
 		status.setAttribute( 'role', 'status' );
+		status.setAttribute( 'aria-live', 'polite' );
 		var state = { root: root, cfg: cfg, status: status, installed: cfg.installedApps || [], catalog: cfg.catalogApps || [] };
 		if ( context && context.markLoading ) { context.markLoading(); }
 		render( state );
