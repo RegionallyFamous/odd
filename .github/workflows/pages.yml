@@ -101,8 +101,8 @@ jobs:
           expected_registry_sha = os.environ.get("EXPECTED_REGISTRY_SHA256", "")
           expected_signature_sha = os.environ.get("EXPECTED_REGISTRY_SIGNATURE_SHA256", "")
           public_key = base64.b64decode(os.environ["ODD_CATALOG_PUBLIC_KEY"], validate=True)
-          required_types = {"scene", "icon-set", "cursor-set", "widget"}
-          required_widgets = {"sticky", "eight-ball"}
+          required_types = {"app"}
+          required_apps = {"odd-notes"}
 
           def fetch(url):
               last = None
@@ -156,19 +156,16 @@ jobs:
           if missing_types:
               raise SystemExit(f"missing bundle types in published registry: {missing_types}")
 
-          widget_rows = {
+          app_rows = {
               row.get("slug"): row
               for row in bundles
-              if row.get("type") == "widget" and row.get("slug") in required_widgets
+              if row.get("type") == "app" and row.get("slug") in required_apps
           }
-          missing = required_widgets - set(widget_rows)
+          missing = required_apps - set(app_rows)
           if missing:
-              raise SystemExit(f"missing widget rows: {sorted(missing)}")
+              raise SystemExit(f"missing app rows: {sorted(missing)}")
 
-          representatives = []
-          for type_name in sorted(required_types):
-              representatives.append(by_type[type_name][0])
-          representatives.extend(widget_rows.values())
+          representatives = list(app_rows.values())
 
           def verify_raster_image(url, slug, field, *, allow_svg=False):
               body = fetch(url)
