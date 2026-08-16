@@ -760,63 +760,146 @@
 
 .os-notes-app__meta {
 	display: grid;
-	gap: 10px;
-	padding: 8px 18px 12px;
+	gap: 8px;
+	padding: 12px 18px 9px;
 	border-top: 1px solid var(--notes-border);
 	background: color-mix(in srgb, var(--notes-editor-bg) 93%, transparent);
+	container: notes-meta / inline-size;
 }
 
+.os-notes-app__meta-heading,
 .os-notes-app__tags-row,
 .os-notes-app__options-row,
 .os-notes-app__status-row {
 	display: flex;
 	align-items: center;
-	gap: 12px;
 	min-width: 0;
+}
+
+.os-notes-app__meta-heading {
+	justify-content: space-between;
+	gap: 16px;
+}
+
+.os-notes-app__meta-heading > div:first-child {
+	display: grid;
+	gap: 1px;
+	min-width: 0;
+}
+
+.os-notes-app__meta-heading strong {
+	font-size: 11px;
+	font-weight: 730;
+	letter-spacing: -0.01em;
+}
+
+.os-notes-app__meta-heading > div:first-child span,
+.os-notes-app__setting-copy span,
+.os-notes-app__toggle-setting > span {
+	color: var(--notes-dim);
+	font-size: 9px;
+}
+
+.os-notes-app__setting-card {
+	border: 1px solid color-mix(in srgb, var(--notes-border) 82%, transparent);
+	border-radius: 11px;
+	background: color-mix(in srgb, var(--notes-fg) 3.5%, transparent);
+}
+
+.os-notes-app__tags-row {
+	display: grid;
+	grid-template-columns: 94px minmax(0, 1fr);
+	gap: 12px;
+	min-height: 46px;
+	padding: 7px 10px;
 }
 
 .os-notes-app__tags-row os-tag-input {
-	flex: 1 1 auto;
+	display: flex;
+	width: 100%;
+	min-width: 0;
+	--os-ui-tag-input-gap: 6px;
+	--os-ui-tag-input-padding: 0;
+	--os-ui-tag-input-add-fg: var(--notes-muted);
+	--os-ui-tag-input-add-border: color-mix(in srgb, var(--notes-border) 92%, var(--notes-muted));
+}
+
+.os-notes-app__setting-copy {
+	display: grid;
+	gap: 1px;
 	min-width: 0;
 }
 
-.os-notes-app__meta-label {
-	flex: 0 0 38px;
-	color: var(--notes-dim);
-	font-size: 9px;
-	font-weight: 700;
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
+.os-notes-app__setting-copy strong {
+	font-size: 10px;
+	font-weight: 690;
 }
 
 .os-notes-app__options-row {
-	justify-content: space-between;
+	display: grid;
+	grid-template-columns: minmax(175px, 0.8fr) minmax(260px, 1.2fr);
+	gap: 12px;
+	padding: 9px 10px;
 }
 
 .os-notes-app__paper-colors,
 .os-notes-app__placement {
-	display: flex;
+	display: grid;
 	align-items: center;
-	gap: 8px;
+}
+
+.os-notes-app__paper-colors {
+	grid-template-columns: 64px minmax(0, 1fr);
+	gap: 9px;
 }
 
 .os-notes-app__paper-colors os-swatch-grid {
 	display: flex;
-	gap: 4px;
+	flex-wrap: nowrap;
+	gap: 7px;
 }
 
 .os-notes-app__paper-colors os-swatch {
-	--os-ui-swatch-size: 20px;
+	display: block;
+	flex: 0 0 27px;
+	width: 27px;
+	height: 27px;
+	aspect-ratio: 1;
 }
 
 .os-notes-app__placement {
-	gap: 14px;
-	font-size: 11px;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+}
+
+.os-notes-app__toggle-setting {
+	display: grid;
+	align-content: center;
+	min-height: 39px;
+	padding: 4px 8px;
+	border-left: 1px solid color-mix(in srgb, var(--notes-border) 78%, transparent);
+}
+
+.os-notes-app__toggle-setting os-checkbox-label {
+	display: flex;
+	width: 100%;
+	color: var(--notes-fg);
+	font-size: 10px;
+	font-weight: 610;
+	--os-ui-accent: var(--notes-icon);
+	--os-ui-fg-on-accent: var(--odd-notes-ink);
+}
+
+.os-notes-app__toggle-setting > span {
+	padding-left: 24px;
+	white-space: nowrap;
 }
 
 .os-notes-app__status-row {
+	gap: 9px;
 	color: var(--notes-dim);
 	font-size: 9px;
+	white-space: nowrap;
 }
 
 .os-notes-app__status-row [data-notes-stats] {
@@ -824,8 +907,32 @@
 }
 
 .os-notes-app__shortcut {
-	margin-left: auto;
+	justify-self: end;
+	margin-top: -3px;
+	color: var(--notes-dim);
+	font-size: 9px;
 	opacity: 0.72;
+}
+
+@container notes-meta (max-width: 620px) {
+	.os-notes-app__options-row {
+		grid-template-columns: 1fr;
+	}
+
+	.os-notes-app__placement {
+		padding-top: 7px;
+		border-top: 1px solid color-mix(in srgb, var(--notes-border) 72%, transparent);
+	}
+
+	.os-notes-app__toggle-setting:first-child {
+		border-left: 0;
+	}
+}
+
+/* The floating bottom dock intentionally overlays the desktop. Keep the
+ * controls above it while letting the dock cover only empty footer space. */
+body:has(.os-dock[data-os-dock-placement="bottom"]) .os-notes-app__meta {
+	padding-bottom: calc(21px + var(--os-dock-width, 56px));
 }
 
 /* History --------------------------------------------------------- */
@@ -1042,10 +1149,22 @@
 		padding-inline: 10px;
 	}
 
-	.os-notes-app__placement {
+	.os-notes-app__meta-heading {
 		align-items: flex-start;
 		flex-direction: column;
-		gap: 3px;
+		gap: 5px;
+	}
+
+	.os-notes-app__options-row {
+		grid-template-columns: 1fr;
+	}
+
+	.os-notes-app__placement {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.os-notes-app__toggle-setting:first-child {
+		border-left: 0;
 	}
 
 	.os-notes-app__shortcut {
@@ -1078,9 +1197,27 @@
 	--odd-notes-mint: #59e0bd;
 	--odd-notes-violet: #b78cff;
 	--odd-notes-ink: #211929;
+	--notes-icon: color-mix(in srgb, var(--notes-fg) 82%, var(--notes-muted));
 	--odd-notes-canvas: color-mix(in srgb, var(--os-ui-bg, #11131a) 93%, #5a3972 7%);
-	grid-template-columns: 202px 310px minmax(0, 1fr);
+	grid-template-columns:
+		clamp(72px, calc(43.333% - 257px), 202px)
+		clamp(210px, 29%, 310px)
+		minmax(0, 1fr);
 	background: var(--odd-notes-canvas);
+}
+
+.os-notes-app .dashicons {
+	color: var(--notes-icon);
+	filter: none;
+	text-shadow: none;
+}
+
+.os-notes-app__brand-mark.dashicons,
+.os-notes-app__filters button.is-active .dashicons,
+.os-notes-app__tag-nav button.is-active .dashicons,
+.os-notes-app__sidebar > os-button .dashicons,
+.os-notes-app__empty > os-button .dashicons {
+	color: var(--odd-notes-ink);
 }
 
 .os-notes-app__sidebar {
@@ -1420,7 +1557,7 @@
 }
 
 .os-notes-app__meta {
-	padding: 10px 20px 14px;
+	padding: 12px 20px 9px;
 	border-color: color-mix(in srgb, var(--notes-border) 74%, var(--odd-notes-violet));
 	background: color-mix(in srgb, var(--odd-notes-canvas) 90%, transparent);
 	backdrop-filter: blur(14px);

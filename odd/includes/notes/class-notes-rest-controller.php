@@ -194,6 +194,26 @@ class ODDOUT_Notes_REST_Controller {
 	 */
 	private function json_input( WP_REST_Request $request ) {
 		$input = $request->get_json_params();
+		if ( is_array( $input ) ) {
+			return $input;
+		}
+
+		/*
+		 * Playground and iframe request bridges can preserve the JSON body while
+		 * dropping the content-type signal WordPress uses to populate
+		 * get_json_params(). Decode the raw body before falling back to ordinary
+		 * form parameters so a valid Notes mutation never becomes a silent empty
+		 * update.
+		 */
+		$body = $request->get_body();
+		if ( is_string( $body ) && '' !== trim( $body ) ) {
+			$decoded = json_decode( $body, true );
+			if ( JSON_ERROR_NONE === json_last_error() && is_array( $decoded ) ) {
+				return $decoded;
+			}
+		}
+
+		$input = $request->get_body_params();
 		return is_array( $input ) ? $input : array();
 	}
 }

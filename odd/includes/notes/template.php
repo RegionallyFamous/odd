@@ -106,26 +106,44 @@ function oddout_notes_render_template() {
 					<os-textarea class="os-notes-app__body" aria-label="<?php esc_attr_e( 'Note body', 'odd-outlandish-desktop-decorator' ); ?>" placeholder="<?php esc_attr_e( 'Start writing…', 'odd-outlandish-desktop-decorator' ); ?>" rows="18" maxlength="100000" data-notes-body></os-textarea>
 				</div>
 
-				<footer class="os-notes-app__meta">
-					<div class="os-notes-app__tags-row">
-						<span class="os-notes-app__meta-label"><?php esc_html_e( 'Tags', 'odd-outlandish-desktop-decorator' ); ?></span>
+				<footer class="os-notes-app__meta" aria-label="<?php esc_attr_e( 'Note details', 'odd-outlandish-desktop-decorator' ); ?>">
+					<div class="os-notes-app__meta-heading">
+						<div>
+							<strong><?php esc_html_e( 'Note details', 'odd-outlandish-desktop-decorator' ); ?></strong>
+							<span><?php esc_html_e( 'Make this thought easy to find and share.', 'odd-outlandish-desktop-decorator' ); ?></span>
+						</div>
+						<div class="os-notes-app__status-row">
+							<os-save-status mode="pill" idle-label="<?php esc_attr_e( 'Saved to WordPress', 'odd-outlandish-desktop-decorator' ); ?>" saving-label="<?php esc_attr_e( 'Saving…', 'odd-outlandish-desktop-decorator' ); ?>" saved-label="<?php esc_attr_e( 'Saved', 'odd-outlandish-desktop-decorator' ); ?>" data-notes-save-status></os-save-status>
+							<span data-notes-stats></span>
+						</div>
+					</div>
+					<div class="os-notes-app__tags-row os-notes-app__setting-card">
+						<div class="os-notes-app__setting-copy">
+							<strong><?php esc_html_e( 'Tags', 'odd-outlandish-desktop-decorator' ); ?></strong>
+							<span><?php esc_html_e( 'Group related notes', 'odd-outlandish-desktop-decorator' ); ?></span>
+						</div>
 						<os-tag-input label="<?php esc_attr_e( 'Tags', 'odd-outlandish-desktop-decorator' ); ?>" placeholder="<?php esc_attr_e( 'Add a tag…', 'odd-outlandish-desktop-decorator' ); ?>" add-label="<?php esc_attr_e( 'Add', 'odd-outlandish-desktop-decorator' ); ?>" creatable data-notes-tags></os-tag-input>
 					</div>
-					<div class="os-notes-app__options-row">
+					<div class="os-notes-app__options-row os-notes-app__setting-card">
 						<div class="os-notes-app__paper-colors">
-							<span class="os-notes-app__meta-label"><?php esc_html_e( 'Paper', 'odd-outlandish-desktop-decorator' ); ?></span>
-							<os-swatch-grid label="<?php esc_attr_e( 'Paper color', 'odd-outlandish-desktop-decorator' ); ?>" data-notes-colors></os-swatch-grid>
+							<div class="os-notes-app__setting-copy">
+								<strong><?php esc_html_e( 'Paper', 'odd-outlandish-desktop-decorator' ); ?></strong>
+								<span><?php esc_html_e( 'Pick a shade', 'odd-outlandish-desktop-decorator' ); ?></span>
+							</div>
+							<os-swatch-grid mode="row" label="<?php esc_attr_e( 'Paper color', 'odd-outlandish-desktop-decorator' ); ?>" data-notes-colors></os-swatch-grid>
 						</div>
 						<div class="os-notes-app__placement">
-							<os-checkbox-label label="<?php esc_attr_e( 'Pin on desktop', 'odd-outlandish-desktop-decorator' ); ?>" data-notes-desktop></os-checkbox-label>
-							<os-checkbox-label label="<?php esc_attr_e( 'Visible to everyone', 'odd-outlandish-desktop-decorator' ); ?>" data-notes-public></os-checkbox-label>
+							<div class="os-notes-app__toggle-setting">
+								<os-checkbox-label label="<?php esc_attr_e( 'Pin to desktop', 'odd-outlandish-desktop-decorator' ); ?>" data-notes-desktop></os-checkbox-label>
+								<span><?php esc_html_e( 'Show it on your station', 'odd-outlandish-desktop-decorator' ); ?></span>
+							</div>
+							<div class="os-notes-app__toggle-setting">
+								<os-checkbox-label label="<?php esc_attr_e( 'Share with site', 'odd-outlandish-desktop-decorator' ); ?>" data-notes-public></os-checkbox-label>
+								<span><?php esc_html_e( 'Requires a desktop pin', 'odd-outlandish-desktop-decorator' ); ?></span>
+							</div>
 						</div>
 					</div>
-					<div class="os-notes-app__status-row">
-						<os-save-status mode="pill" idle-label="<?php esc_attr_e( 'Saved to WordPress', 'odd-outlandish-desktop-decorator' ); ?>" saving-label="<?php esc_attr_e( 'Saving…', 'odd-outlandish-desktop-decorator' ); ?>" saved-label="<?php esc_attr_e( 'Saved', 'odd-outlandish-desktop-decorator' ); ?>" data-notes-save-status></os-save-status>
-						<span data-notes-stats></span>
-						<span class="os-notes-app__shortcut"><?php esc_html_e( '⌘S to save', 'odd-outlandish-desktop-decorator' ); ?></span>
-					</div>
+					<span class="os-notes-app__shortcut"><?php esc_html_e( '⌘S to save', 'odd-outlandish-desktop-decorator' ); ?></span>
 				</footer>
 			</article>
 
