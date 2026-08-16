@@ -9,24 +9,40 @@ Stable tag: 1.1.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-A focused app store for OpenStation, beginning with ODD Notes.
+A growing collection of delightful OpenStation apps, starting with ODD Notes.
 
 == Description ==
 
-ODD adds a small, native app store to OpenStation. Its first app is ODD Notes: a local-first notes library and editor stored in WordPress.
+ODD is an app shop for OpenStation.
 
-The Shop is intentionally focused. It has one Apps department, one verified catalog, and one excellent app at a time. OpenStation continues to own windows, launchers, placement, and the surrounding desktop experience.
+OpenStation makes WordPress feel less like a stack of admin screens and more like a computer you actually own. It gives you a desktop, a dock, movable windows, launchers, and apps that stay close while you work.
 
-ODD Notes includes:
+ODD is here to fill that desktop with good stuff.
 
-* A native OpenStation window and movable launcher.
-* Search, tags, favorites, desktop notes, sharing, and archives.
-* Local-first drafts and recovery when a connection is interrupted.
-* WordPress revision history and restore controls.
-* Reliable autosave with genuine multi-window conflict protection.
-* Private WordPress content storage, with no third-party notes service.
+We are building useful little tools, playful experiments, and apps that make WordPress more fun to spend time in. Some will help you get work done. Some may be delightfully unnecessary. All of them should feel like they belong in OpenStation.
 
-ODD no longer installs wallpapers, icon sets, cursor effects, or desktop widgets. The Shop has one department—Apps—and OpenStation owns launcher placement through its normal desktop and taskbar settings.
+We are starting with one app because we want each one to be good. ODD Notes is the first app, not the last.
+
+= Meet ODD Notes =
+
+ODD Notes is a calm, native place to write things down without leaving your WordPress desktop. Your notes live in WordPress, open in their own window, and stay ready whenever you need them.
+
+You can:
+
+* Write and organize notes with search, tags, favorites, and archives.
+* Pin notes to your OpenStation desktop.
+* Share a note when you want to, while keeping notes private by default.
+* Recover drafts if your connection disappears at the wrong moment.
+* Browse WordPress revision history and restore an earlier version.
+* Trust autosave without sending your notes to another service.
+
+= Why ODD? =
+
+Because OpenStation deserves great apps.
+
+ODD gives those apps one friendly place to live. Open the Shop, find something interesting, install it, and decide whether it belongs on your desktop, in your dock, or both. OpenStation handles the workspace. ODD brings the things you can do with it.
+
+ODD Notes is only the beginning. We plan to keep making all sorts of cool apps for OpenStation: useful ones, weird ones, tiny ones, and things WordPress did not know it needed yet.
 
 == Installation ==
 
@@ -34,13 +50,21 @@ ODD no longer installs wallpapers, icon sets, cursor effects, or desktop widgets
 2. Install and activate ODD.
 3. Enable OpenStation for your user.
 4. Open ODD Shop from the OpenStation desktop.
-5. Install ODD Notes.
+5. Install ODD Notes, then come back as the app shelf grows.
 
 == Frequently Asked Questions ==
 
 = Does ODD change my public website? =
 
-No. ODD and ODD Notes run inside the authenticated WordPress admin workspace.
+No. OpenStation, ODD, and ODD Notes live inside your WordPress admin workspace. Visitors will not see them on your public site.
+
+= Is ODD just a notes app? =
+
+Not for long. ODD Notes is the first app in the Shop. The plan is to keep adding thoughtfully made OpenStation apps over time.
+
+= Why does ODD require OpenStation? =
+
+OpenStation provides the desktop, windows, dock, and launchers that make these apps feel like part of a real workspace. ODD builds on that foundation instead of trying to replace it.
 
 = Where are notes stored? =
 
@@ -52,7 +76,7 @@ Yes. ODD Notes uses the same `wpd_note` content model and compatible metadata.
 
 = Does ODD send analytics or notes to another service? =
 
-No. ODD sends no telemetry or note content. It only fetches the public app catalog and app bundle selected by an administrator.
+No. ODD sends no telemetry or note content. It only fetches the public app catalog and an app bundle when an administrator chooses to install it.
 
 == External services ==
 
@@ -64,16 +88,14 @@ Privacy policy: https://odd.regionallyfamous.com/privacy/
 
 == Source and build tools ==
 
-Source code and deterministic catalog tooling are available at https://github.com/RegionallyFamous/odd.
+ODD is open source. The human-readable plugin and ODD Notes source, along with the catalog and packaging tools, are available at https://github.com/RegionallyFamous/odd.
 
-Typical checks:
+To rebuild the distributed files:
 
-1. `npm run build:notes`
-2. `python3 _tools/build-catalog.py`
-3. `ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog`
-4. `npm test`
-5. `composer phpcs`
-6. `odd/bin/build-zip`
+1. `npm ci`
+2. `npm run build:notes`
+3. `python3 _tools/build-catalog.py`
+4. `odd/bin/build-zip`
 
 == Screenshots ==
 
