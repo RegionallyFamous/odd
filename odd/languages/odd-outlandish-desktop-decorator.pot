@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: odd\n"
 "Report-Msgid-Bugs-To: https://github.com/RegionallyFamous/odd/issues\n"
-"POT-Creation-Date: 2026-08-16 07:11-0500\n"
+"POT-Creation-Date: 2026-08-16 11:15-0500\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -595,10 +595,6 @@ msgstr ""
 
 #: odd/includes/integration/desktop-mode-ai.php:94
 msgid "Lists ODD-installed content: active wallpaper scene slug plus installed scene, icon set, widget, app, and cursor-set slugs for the requesting user."
-msgstr ""
-
-#: odd/includes/apps/native-surfaces.php:141
-msgid "Loading %s…"
 msgstr ""
 
 #: odd/includes/notes/template.php:70

@@ -11,6 +11,20 @@ notes to GitHub Releases.
 <a id="unreleased"></a>
 ## [Unreleased]
 
+<a id="v1.1.7"></a>
+## [1.1.7] — 2026-08-16
+
+### Added
+- Added ODD Workbench to the production Shop with six local-first utilities:
+  Text Cleaner, Markdown Preview, Slug Maker, JSON Formatter, Diff Checker,
+  and Encoder / Decoder.
+
+### Changed
+- Installed catalog apps can now register their own OpenStation windows and
+  launchers instead of being limited to ODD Notes.
+- Workbench opens in a bounded floating window with simplified monochrome
+  icons that match the rest of OpenStation.
+
 <a id="v1.1.6"></a>
 ## [1.1.6] — 2026-08-16
 

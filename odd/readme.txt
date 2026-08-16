@@ -5,11 +5,11 @@ Requires at least: 6.8
 Tested up to: 7.0
 Requires PHP: 8.1
 Requires Plugins: desktop-mode
-Stable tag: 1.1.6
+Stable tag: 1.1.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-A growing collection of delightful OpenStation apps, starting with ODD Notes.
+A growing collection of delightful OpenStation apps, including ODD Notes and ODD Workbench.
 
 == Description ==
 
@@ -21,7 +21,7 @@ ODD is here to fill that desktop with good stuff.
 
 We are building useful little tools, playful experiments, and apps that make WordPress more fun to spend time in. Some will help you get work done. Some may be delightfully unnecessary. All of them should feel like they belong in OpenStation.
 
-We are starting with one app because we want each one to be good. ODD Notes is the first app, not the last.
+We started with one app because we want each one to be good. ODD Notes was first; ODD Workbench is next.
 
 = Meet ODD Notes =
 
@@ -35,6 +35,17 @@ You can:
 * Recover drafts if your connection disappears at the wrong moment.
 * Browse WordPress revision history and restore an earlier version.
 * Trust autosave without sending your notes to another service.
+
+= Meet ODD Workbench =
+
+ODD Workbench puts six compact, local-first utilities in one OpenStation window:
+
+* Clean up pasted text and whitespace.
+* Preview Markdown while you write.
+* Turn titles into clean slugs.
+* Format and validate JSON.
+* Compare two drafts.
+* Encode and decode common text formats.
 
 = Why ODD? =
 
@@ -50,7 +61,7 @@ ODD Notes is only the beginning. We plan to keep making all sorts of cool apps f
 2. Install and activate ODD.
 3. Enable OpenStation for your user.
 4. Open ODD Shop from the OpenStation desktop.
-5. Install ODD Notes, then come back as the app shelf grows.
+5. Install ODD Notes or ODD Workbench, then come back as the app shelf grows.
 
 == Frequently Asked Questions ==
 
@@ -60,7 +71,7 @@ No. OpenStation, ODD, and ODD Notes live inside your WordPress admin workspace. 
 
 = Is ODD just a notes app? =
 
-Not for long. ODD Notes is the first app in the Shop. The plan is to keep adding thoughtfully made OpenStation apps over time.
+No. ODD Notes and ODD Workbench are the first apps in the Shop. The plan is to keep adding thoughtfully made OpenStation apps over time.
 
 = Why does ODD require OpenStation? =
 
@@ -99,11 +110,17 @@ To rebuild the distributed files:
 
 == Screenshots ==
 
-1. ODD Shop has one focused Apps department and a verified ODD Notes install card.
+1. ODD Shop has one focused Apps department with verified ODD Notes and ODD Workbench install cards.
 2. ODD Notes combines a searchable library, tags, favorites, paper colors, and a distraction-free editor in one native OpenStation window.
 3. WordPress revision history keeps earlier note content available for one-click restore.
 
 == Changelog ==
+
+= 1.1.7 =
+
+* Added ODD Workbench to the production Shop with six local-first text, Markdown, slug, JSON, diff, and encoding utilities.
+* Allowed installed catalog apps to register their own OpenStation windows and launchers.
+* Kept Workbench in a bounded floating window and simplified its icons to match OpenStation.
 
 = 1.1.6 =
 
@@ -125,6 +142,10 @@ To rebuild the distributed files:
 * Improved compatibility with the previous Desktop Mode 0.8.8 host runtime.
 
 == Upgrade Notice ==
+
+= 1.1.7 =
+
+ODD Workbench is now available beside ODD Notes in the production Shop.
 
 = 1.1.6 =
 
