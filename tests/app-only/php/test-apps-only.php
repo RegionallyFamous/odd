@@ -31,6 +31,35 @@ class ODDOUT_Apps_Only_Test extends WP_UnitTestCase {
 		$this->assertSame( array( 'workbench' ), wp_list_pluck( $registry['bundles'], 'slug' ) );
 	}
 
+	public function test_apps_list_publishes_workbench_and_hides_unapproved_apps() {
+		$original = oddout_apps_index_load();
+		oddout_apps_index_save(
+			array(
+				'odd-notes'      => array(
+					'slug'    => 'odd-notes',
+					'name'    => 'ODD Notes',
+					'version' => '1.3.0',
+				),
+				'workbench'      => array(
+					'slug'    => 'workbench',
+					'name'    => 'ODD Workbench',
+					'version' => '1.0.0',
+				),
+				'unapproved-app' => array(
+					'slug'    => 'unapproved-app',
+					'name'    => 'Unapproved App',
+					'version' => '1.0.0',
+				),
+			)
+		);
+
+		try {
+			$this->assertSame( array( 'odd-notes', 'workbench' ), wp_list_pluck( oddout_apps_list(), 'slug' ) );
+		} finally {
+			oddout_apps_index_save( $original );
+		}
+	}
+
 	public function test_odd_notes_uses_read_capability() {
 		$this->assertSame( 'read', oddout_apps_normalize_capability( 'read', 'odd-notes' ) );
 		$this->assertSame( 'manage_options', oddout_apps_normalize_capability( 'read', 'untrusted-app' ) );

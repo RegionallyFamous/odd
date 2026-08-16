@@ -398,10 +398,19 @@ function oddout_apps_row_surfaces( $row ) {
  */
 function oddout_apps_list() {
 	$index = oddout_apps_index_load();
-	// ODD's production surface is intentionally focused on its first-party
-	// Notes app. Preserve older installed app data on disk, but do not publish
-	// those retired launchers into OpenStation.
-	$rows = isset( $index['odd-notes'] ) ? array( $index['odd-notes'] ) : array();
+	// Publish only approved first-party catalog apps. Preserve any other
+	// installed app data on disk without exposing retired launchers in
+	// OpenStation.
+	$allowed_slugs = function_exists( 'oddout_catalog_allowed_slugs' )
+		? oddout_catalog_allowed_slugs()
+		: array( 'odd-notes' );
+	$rows          = array();
+	foreach ( $allowed_slugs as $slug ) {
+		$slug = sanitize_key( (string) $slug );
+		if ( isset( $index[ $slug ] ) ) {
+			$rows[] = $index[ $slug ];
+		}
+	}
 	foreach ( $rows as &$row ) {
 			// Keep the REST response and Shop store on a complete shape.
 		$row['surfaces'] = oddout_apps_row_surfaces( $row );
