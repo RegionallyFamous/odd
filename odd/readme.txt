@@ -1,11 +1,11 @@
-=== ODD — Outlandish Desktop Decorator ===
+=== ODD — Apps for OpenStation ===
 Contributors: nickhamze
 Tags: openstation, desktop, apps, notes, productivity
 Requires at least: 6.8
 Tested up to: 7.0
 Requires PHP: 8.1
 Requires Plugins: desktop-mode
-Stable tag: 1.1.5
+Stable tag: 1.1.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -105,6 +105,11 @@ To rebuild the distributed files:
 
 == Changelog ==
 
+= 1.1.6 =
+
+* Renamed ODD to “ODD — Apps for OpenStation” everywhere the product appears.
+* Updated the website, repository, plugin metadata, and WordPress.org listing around ODD's apps-first direction.
+
 = 1.1.5 =
 
 * Rebuilt ODD as an Apps-only OpenStation store.
@@ -120,6 +125,10 @@ To rebuild the distributed files:
 * Improved compatibility with the previous Desktop Mode 0.8.8 host runtime.
 
 == Upgrade Notice ==
+
+= 1.1.6 =
+
+ODD now has a clearer name: ODD — Apps for OpenStation. The Shop and ODD Notes continue to work exactly as before.
 
 = 1.1.5 =
 

@@ -5,7 +5,7 @@
 
 ## What this is
 
-ODD (**Outlandish Desktop Decorator**) is a WordPress plugin that layers on top of [WP Desktop Mode](https://github.com/WordPress/desktop-mode). **As of the 1.0 baseline the plugin runtime stays lightweight** — visual content is pulled on demand from a remote catalog. The plugin owns five surfaces:
+ODD (**Apps for OpenStation**) is a WordPress plugin that layers on top of [OpenStation](https://github.com/WordPress/openstation). The WordPress.org dependency slug remains `desktop-mode`. **As of the 1.1.5 baseline the production experience is apps-only** — app content is pulled on demand from a remote catalog, beginning with ODD Notes.
 
 1. **A canvas wallpaper engine** — a single `registerWallpaper('odd', …)` that hosts generative PixiJS scenes painted on top of 1920×1080 WebP backdrops. Scenes install as `.wp` bundles.
 2. **Icon sets** — themed icon packs that re-skin WP Desktop Mode desktop-shortcut icons via the `desktop_mode_icons` filter. Rail, dock, taskbar, and system action icons stay on Desktop Mode defaults. Install as `.wp` bundles.

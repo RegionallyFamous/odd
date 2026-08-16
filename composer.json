@@ -1,6 +1,6 @@
 {
     "name": "regionallyfamous/odd",
-    "description": "ODD — Outlandish Desktop Decorator. WordPress plugin quality tooling.",
+    "description": "ODD — Apps for OpenStation. WordPress plugin quality tooling.",
     "type": "wordpress-plugin",
     "license": "GPL-2.0-or-later",
     "require": {

@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name:       ODD — Outlandish Desktop Decorator
+ * Plugin Name:       ODD — Apps for OpenStation
  * Plugin URI:        https://weirdpress.com/odd
- * Description:       A focused app store for OpenStation, beginning with ODD Notes.
- * Version:           1.1.5
+ * Description:       A growing collection of apps for OpenStation, beginning with ODD Notes.
+ * Version:           1.1.6
  * Requires at least: 6.8
  * Requires PHP:      8.1
  * Requires Plugins:  desktop-mode
@@ -19,7 +19,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'ODDOUT_VERSION', '1.1.5' );
+define( 'ODDOUT_VERSION', '1.1.6' );
 define( 'ODDOUT_OPENSTATION_MIN_VERSION', '1.1.0' );
 define( 'ODDOUT_FILE', __FILE__ );
 define( 'ODDOUT_DIR', plugin_dir_path( __FILE__ ) );

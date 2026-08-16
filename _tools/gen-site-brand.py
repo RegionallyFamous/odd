@@ -260,7 +260,7 @@ def render_og() -> Image.Image:
 	url_font = load_font(FONT_BOLD, 24)
 
 	# Kicker
-	kicker_text = "WP DESKTOP MODE"
+	kicker_text = "OPENSTATION"
 	d.text((text_x, 158), kicker_text, fill=CYAN, font=kicker_font)
 	kbbox = d.textbbox((text_x, 158), kicker_text, font=kicker_font)
 	d.rounded_rectangle(
@@ -276,16 +276,16 @@ def render_og() -> Image.Image:
 	dot_cy = wm_bbox[3] - 14
 	d.ellipse((dot_cx - 14, dot_cy - 14, dot_cx + 14, dot_cy + 14), fill=HOT)
 
-	# Headline (2 lines, fits comfortably)
+	# Product line (2 lines, fits comfortably)
 	head_y = 380
 	head_line_h = 48
-	d.text((text_x, head_y), "The app store", fill=GOLD, font=head_font)
-	d.text((text_x, head_y + head_line_h), "it was missing.", fill=GOLD, font=head_font)
+	d.text((text_x, head_y), "Apps for", fill=GOLD, font=head_font)
+	d.text((text_x, head_y + head_line_h), "OpenStation.", fill=GOLD, font=head_font)
 
 	# Lede
 	lede_y = head_y + head_line_h * 2 + 16
-	d.text((text_x, lede_y), "Install apps with one click.", fill=BONE, font=lede_font)
-	d.text((text_x, lede_y + 32), "Decorate your desktop without leaving WordPress.", fill=BONE, font=lede_font)
+	d.text((text_x, lede_y), "Useful tools. Playful experiments.", fill=BONE, font=lede_font)
+	d.text((text_x, lede_y + 32), "ODD Notes is only the beginning.", fill=BONE, font=lede_font)
 
 	# URL
 	d.text((text_x, H - 56), "odd.regionallyfamous.com", fill=CYAN, font=url_font)

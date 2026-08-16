@@ -1,4 +1,4 @@
-# ODD — Outlandish Desktop Decorator
+# ODD — Apps for OpenStation
 
 **OpenStation turns WordPress into a desktop. ODD fills it with things worth opening.**
 
@@ -46,7 +46,9 @@ ODD Notes is a calm place to catch a thought without leaving your desktop. Notes
 
 The fastest way to see ODD is the [live WordPress Playground demo](https://odd.regionallyfamous.com/go/). It opens a temporary WordPress site with OpenStation and the current stable ODD release ready to explore.
 
-To install it on your own site, get [ODD from WordPress.org](https://wordpress.org/plugins/odd-outlandish-desktop-decorator/). ODD requires WordPress 6.8 or newer, PHP 8.1 or newer, and OpenStation 1.1.0 or newer.
+To install it on your own site, get [ODD from WordPress.org](https://wordpress.org/plugins/odd-outlandish-desktop-decorator/).
+
+**Requires:** WordPress 6.8+ · PHP 8.1+ · OpenStation 1.1.0+
 
 ## Want to help make the next app?
 

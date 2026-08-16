@@ -11,6 +11,15 @@ notes to GitHub Releases.
 <a id="unreleased"></a>
 ## [Unreleased]
 
+<a id="v1.1.6"></a>
+## [1.1.6] — 2026-08-16
+
+### Changed
+- Renamed the product to **ODD — Apps for OpenStation** across the plugin,
+  WordPress.org listing, repository, website, wiki, and social metadata.
+- Reframed the public website around ODD's apps-first direction and ODD Notes
+  as the first app in a growing OpenStation collection.
+
 <a id="v1.1.5"></a>
 ## [1.1.5] — 2026-08-15
 

@@ -1,6 +1,6 @@
 # ODD Shop Visual QA
 
-The Luxe + Weird overhaul is checked at these breakpoints in the dark-only Shop chrome:
+The apps-first Shop overhaul is checked at these breakpoints in the dark-only Shop chrome:
 
 - 420 x 520: native-window minimum width stress case.
 - 480 x 820: narrow portrait stress case.

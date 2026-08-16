@@ -508,13 +508,14 @@ describe( 'Desktop Mode integration source contracts', () => {
 		expect( css ).not.toContain( '--wp-desktop-window-background' );
 	} );
 
-	it( 'publishes a creator mini-site for Desktop Mode extension authors', () => {
+	it( 'publishes an apps-only creator mini-site for OpenStation authors', () => {
 		const page = readRel( 'site/build/index.html' );
 		const home = readRel( 'site/index.html' );
 
-		expect( page ).toContain( 'Build for ODD + WP Desktop Mode' );
-		expect( page ).toContain( 'enhance Desktop Mode, do not replace it' );
-		expect( page ).toContain( 'examples/build-for-desktop-mode' );
+		expect( page ).toContain( 'ODD — Apps for OpenStation' );
+		expect( page ).toContain( 'Make the next app.' );
+		expect( page ).toContain( '_tools/catalog-sources/apps/odd-notes' );
+		expect( page ).not.toContain( 'Wallpapers' );
 		expect( home ).toContain( 'href="/build/"' );
 	} );
 } );

@@ -268,7 +268,7 @@ h1 {
 }
 
 .preview::before {
-	content: "LIVE DESKTOP GOOP";
+	content: "APPS LIVE HERE";
 	position: absolute;
 	z-index: 4;
 	top: 20px;
@@ -281,6 +281,23 @@ h1 {
 	letter-spacing: 0.12em;
 	transform: rotate( 20deg );
 	box-shadow: 0 16px 28px rgba( 0, 0, 0, 0.28 );
+}
+
+.site-product-shot,
+.product-showcase img {
+	display: block;
+	width: 100%;
+	height: auto;
+	border-radius: 20px;
+}
+
+.product-showcase {
+	margin: 30px 0;
+	padding: 12px;
+	border: 1px solid var( --line );
+	border-radius: 28px;
+	background: rgba( 255, 255, 255, 0.05 );
+	box-shadow: 0 30px 90px rgba( 0, 0, 0, 0.3 );
 }
 
 /* ---------- Sticker family ---------- */
@@ -1221,6 +1238,32 @@ footer {
 	display: block;
 	width: 100%;
 	height: 100%;
+}
+
+.app-icon img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+.app-grid--single {
+	grid-template-columns: minmax( 0, 520px );
+}
+
+.app-grid--single .app-card {
+	grid-template-columns: 44px minmax( 0, 1fr );
+	min-height: 148px;
+}
+
+.app-grid--single .app-icon {
+	width: 44px;
+	height: 44px;
+}
+
+.app-grid--single .app-card p,
+.app-grid--single .app-tags {
+	grid-column: 1 / -1;
 }
 
 .app-card h3 {
