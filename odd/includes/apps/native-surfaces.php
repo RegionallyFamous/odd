@@ -32,23 +32,30 @@ function oddout_apps_register_enabled_surfaces() {
  */
 function oddout_apps_register_surfaces( $row ) {
 	$slug = isset( $row['slug'] ) ? sanitize_key( (string) $row['slug'] ) : '';
-	if ( 'odd-notes' !== $slug || ! oddout_openstation_available() ) {
+	if ( '' === $slug || ! oddout_openstation_available() ) {
 		return;
 	}
 
 	$manifest = oddout_apps_manifest_load( $slug );
-	if ( empty( $manifest['native']['script'] ) ) {
+	if ( empty( $manifest ) ) {
 		return;
 	}
 	$window_id = 'odd-app-' . $slug;
 	$name      = isset( $row['name'] ) ? sanitize_text_field( (string) $row['name'] ) : $slug;
 	$icon_url  = oddout_apps_icon_url( $slug, $manifest );
-	$script    = 'odd-app-' . $slug;
+	$script    = '';
 	$style     = '';
-	$template  = 'oddout_notes_render_template';
+	$template  = static function () use ( $slug, $manifest ) {
+		oddout_apps_render_window_template( $slug, $manifest );
+	};
 	$config    = array();
 
 	if ( ! empty( $manifest['native']['script'] ) ) {
+		if ( 'odd-notes' !== $slug || ! function_exists( 'oddout_notes_render_template' ) ) {
+			return;
+		}
+		$script   = 'odd-app-' . $slug;
+		$template = 'oddout_notes_render_template';
 		wp_register_script(
 			$script,
 			oddout_apps_asset_url( $slug, $manifest['native']['script'] ),
@@ -67,11 +74,7 @@ function oddout_apps_register_surfaces( $row ) {
 			);
 		}
 
-		if ( function_exists( 'oddout_notes_render_template' ) ) {
-			$config = oddout_notes_window_config();
-		} else {
-			return;
-		}
+		$config = oddout_notes_window_config();
 	}
 
 	$window = array(
@@ -92,9 +95,18 @@ function oddout_apps_register_surfaces( $row ) {
 	}
 
 	if ( isset( $manifest['window'] ) && is_array( $manifest['window'] ) ) {
-		foreach ( array( 'width', 'height', 'min_width', 'min_height' ) as $key ) {
-			if ( isset( $manifest['window'][ $key ] ) && is_numeric( $manifest['window'][ $key ] ) ) {
-				$window[ $key ] = (int) $manifest['window'][ $key ];
+		$geometry = array(
+			'width'      => 'width',
+			'height'     => 'height',
+			'min_width'  => 'minWidth',
+			'min_height' => 'minHeight',
+		);
+		foreach ( $geometry as $window_key => $manifest_key ) {
+			$value = isset( $manifest['window'][ $manifest_key ] )
+				? $manifest['window'][ $manifest_key ]
+				: ( isset( $manifest['window'][ $window_key ] ) ? $manifest['window'][ $window_key ] : null );
+			if ( is_numeric( $value ) ) {
+				$window[ $window_key ] = (int) $value;
 			}
 		}
 		if ( ! empty( $manifest['window']['title'] ) ) {
@@ -136,9 +148,17 @@ function oddout_apps_render_window_template( $slug, $manifest ) {
 	$serve_url = add_query_arg( '_wpnonce', wp_create_nonce( 'wp_rest' ), oddout_apps_cookieauth_url_for( $slug ) );
 	$name      = isset( $manifest['name'] ) ? (string) $manifest['name'] : $slug;
 	?>
-	<div class="odd-app-host" data-odd-app data-odd-app-slug="<?php echo esc_attr( $slug ); ?>" data-odd-app-src="<?php echo esc_url( $serve_url ); ?>">
-		<?php /* translators: %s: app name. */ ?>
-		<p><?php printf( esc_html__( 'Loading %s…', 'odd-outlandish-desktop-decorator' ), esc_html( $name ) ); ?></p>
+	<div class="odd-app-host" data-odd-app data-odd-app-slug="<?php echo esc_attr( $slug ); ?>" data-odd-app-src="<?php echo esc_url( $serve_url ); ?>" style="position:absolute;inset:0;background:#101014;">
+		<iframe
+			class="odd-app-frame"
+			title="<?php echo esc_attr( $name ); ?>"
+			src="<?php echo esc_url( $serve_url ); ?>"
+			sandbox="allow-scripts allow-forms allow-popups allow-same-origin allow-downloads"
+			loading="eager"
+			referrerpolicy="no-referrer"
+			allow="clipboard-read; clipboard-write; fullscreen"
+			style="position:absolute;inset:0;width:100%;height:100%;border:0;background:#101014;"
+		></iframe>
 	</div>
 	<?php
 }

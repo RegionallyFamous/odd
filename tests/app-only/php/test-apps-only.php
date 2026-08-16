@@ -60,6 +60,23 @@ class ODDOUT_Apps_Only_Test extends WP_UnitTestCase {
 		}
 	}
 
+	public function test_iframe_app_template_renders_a_sandboxed_frame() {
+		ob_start();
+		oddout_apps_render_window_template(
+			'workbench',
+			array(
+				'name' => 'ODD Workbench',
+			)
+		);
+		$html = ob_get_clean();
+
+		$this->assertStringContainsString( '<iframe', $html );
+		$this->assertStringContainsString( 'data-odd-app-slug="workbench"', $html );
+		$this->assertStringContainsString( 'title="ODD Workbench"', $html );
+		$this->assertStringContainsString( 'sandbox="allow-scripts allow-forms allow-popups allow-same-origin allow-downloads"', $html );
+		$this->assertStringContainsString( 'allow="clipboard-read; clipboard-write; fullscreen"', $html );
+	}
+
 	public function test_odd_notes_uses_read_capability() {
 		$this->assertSame( 'read', oddout_apps_normalize_capability( 'read', 'odd-notes' ) );
 		$this->assertSame( 'manage_options', oddout_apps_normalize_capability( 'read', 'untrusted-app' ) );
