@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>ODD Workbench</title>
+  <link rel="stylesheet" href="./assets/app.css">
+  <script defer src="./assets/app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <img class="brand__icon" src="./icon.webp" alt="">
+        <div class="brand__copy">
+          <span class="eyebrow">ODD utility desk</span>
+          <h1>Workbench</h1>
+        </div>
+      </div>
+      <div class="topbar__readout" aria-live="polite">
+        <span class="readout__lamp" aria-hidden="true"></span>
+        <span id="app-status">Local · Ready</span>
+      </div>
+      <button class="icon-button" id="reset-drafts" type="button" title="Clear every Workbench draft" aria-label="Clear every Workbench draft">
+        <span aria-hidden="true">↺</span>
+      </button>
+    </header>
+
+    <main class="app-main">
+      <nav class="tool-rail" aria-label="Workbench tools" role="tablist" aria-orientation="vertical">
+        <button class="tool-tab is-active" id="tab-clean" type="button" role="tab" aria-selected="true" aria-controls="panel-clean" data-tool="clean">
+          <span class="tool-tab__icon" aria-hidden="true">✦</span>
+          <span class="tool-tab__copy"><strong>Clean</strong><small>Tidy text</small></span>
+        </button>
+        <button class="tool-tab" id="tab-markdown" type="button" role="tab" aria-selected="false" aria-controls="panel-markdown" data-tool="markdown">
+          <span class="tool-tab__icon" aria-hidden="true">M↓</span>
+          <span class="tool-tab__copy"><strong>Markdown</strong><small>Preview &amp; export</small></span>
+        </button>
+        <button class="tool-tab" id="tab-slug" type="button" role="tab" aria-selected="false" aria-controls="panel-slug" data-tool="slug">
+          <span class="tool-tab__icon" aria-hidden="true">#</span>
+          <span class="tool-tab__copy"><strong>Slug</strong><small>URLs without fuss</small></span>
+        </button>
+        <button class="tool-tab" id="tab-json" type="button" role="tab" aria-selected="false" aria-controls="panel-json" data-tool="json">
+          <span class="tool-tab__icon tool-tab__icon--code" aria-hidden="true">{ }</span>
+          <span class="tool-tab__copy"><strong>JSON</strong><small>Format &amp; check</small></span>
+        </button>
+        <button class="tool-tab" id="tab-diff" type="button" role="tab" aria-selected="false" aria-controls="panel-diff" data-tool="diff">
+          <span class="tool-tab__icon" aria-hidden="true">≠</span>
+          <span class="tool-tab__copy"><strong>Diff</strong><small>Compare drafts</small></span>
+        </button>
+        <button class="tool-tab" id="tab-convert" type="button" role="tab" aria-selected="false" aria-controls="panel-convert" data-tool="convert">
+          <span class="tool-tab__icon" aria-hidden="true">⇄</span>
+          <span class="tool-tab__copy"><strong>Convert</strong><small>Encode &amp; decode</small></span>
+        </button>
+        <div class="rail-badge">
+          <span class="rail-badge__dot" aria-hidden="true"></span>
+          Nothing leaves this window
+        </div>
+      </nav>
+
+      <section class="workspace" aria-label="Active utility">
+        <header class="workspace__header">
+          <div>
+            <span class="workspace__number" id="tool-number">Bench 01</span>
+            <h2 id="tool-title">Clean</h2>
+          </div>
+          <p id="tool-description">Sweep away copy-paste grime without sanding off the meaning.</p>
+        </header>
+
+        <section class="tool-panel is-active" id="panel-clean" role="tabpanel" aria-labelledby="tab-clean" data-panel="clean">
+          <div class="action-strip" aria-label="Text cleaning actions">
+            <button type="button" class="action-button is-primary" data-clean-action="smart" data-action="clean-smart">Smart clean</button>
+            <button type="button" class="action-button" data-clean-action="html" data-action="clean-html">Strip HTML</button>
+            <button type="button" class="action-button" data-clean-action="dedent" data-action="clean-dedent">Dedent</button>
+            <button type="button" class="action-button" data-clean-action="one-line" data-action="clean-one-line">One line</button>
+            <button type="button" class="action-button" data-clean-action="title" data-action="clean-title">Title Case</button>
+            <button type="button" class="action-button" data-clean-action="sentence" data-action="clean-sentence">Sentence case</button>
+            <button type="button" class="action-button" data-clean-action="upper" data-action="clean-upper">UPPER</button>
+            <button type="button" class="action-button" data-clean-action="lower" data-action="clean-lower">lower</button>
+          </div>
+          <div class="editor-grid">
+            <article class="editor-card">
+              <header class="editor-card__header">
+                <label for="clean-input">Messy input</label>
+                <span id="clean-input-count">0 chars</span>
+              </header>
+              <textarea id="clean-input" spellcheck="true" placeholder="Paste the text that needs a tune-up…"></textarea>
+            </article>
+            <article class="editor-card editor-card--output">
+              <header class="editor-card__header">
+                <label for="clean-output">Clean output</label>
+                <div class="mini-actions">
+                  <button type="button" data-copy-target="clean-output">Copy</button>
+                  <button type="button" data-download-target="clean-output" data-filename="clean-text.txt">Save</button>
+                </div>
+              </header>
+              <textarea id="clean-output" readonly spellcheck="false" placeholder="Your cleaned text appears here."></textarea>
+            </article>
+          </div>
+        </section>
+
+        <section class="tool-panel" id="panel-markdown" role="tabpanel" aria-labelledby="tab-markdown" data-panel="markdown" hidden>
+          <div class="action-strip action-strip--right">
+            <span class="strip-note">Safe preview · raw HTML stays escaped</span>
+            <button type="button" class="action-button" id="copy-markdown-html">Copy HTML</button>
+            <button type="button" class="action-button is-primary" id="download-markdown-html">Save HTML</button>
+          </div>
+          <div class="editor-grid">
+            <article class="editor-card">
+              <header class="editor-card__header">
+                <label for="markdown-input">Markdown</label>
+                <span id="markdown-count">0 words</span>
+              </header>
+              <textarea id="markdown-input" class="code-input" spellcheck="false" placeholder="# Start writing\n\nYour preview updates as you type."></textarea>
+            </article>
+            <article class="editor-card editor-card--preview">
+              <header class="editor-card__header">
+                <span>Preview</span>
+                <span>Sanitized</span>
+              </header>
+              <div class="markdown-preview empty-state" id="markdown-preview">Your rendered Markdown will appear here.</div>
+            </article>
+          </div>
+        </section>
+
+        <section class="tool-panel" id="panel-slug" role="tabpanel" aria-labelledby="tab-slug" data-panel="slug" hidden>
+          <div class="single-tool-card slug-card">
+            <div class="field-group field-group--hero">
+              <label for="slug-input">Title, phrase, or filename</label>
+              <textarea id="slug-input" rows="3" spellcheck="true" placeholder="The Surprisingly Useful Little Workbench"></textarea>
+            </div>
+            <div class="option-row">
+              <label class="select-field" for="slug-separator">
+                <span>Separator</span>
+                <select id="slug-separator">
+                  <option value="-">Dash —</option>
+                  <option value="_">Underscore _</option>
+                </select>
+              </label>
+              <label class="select-field" for="slug-length">
+                <span>Maximum length</span>
+                <select id="slug-length">
+                  <option value="40">40</option>
+                  <option value="60">60</option>
+                  <option value="80" selected>80</option>
+                  <option value="120">120</option>
+                </select>
+              </label>
+              <label class="toggle-field">
+                <input type="checkbox" id="slug-lowercase" checked>
+                <span class="toggle-field__control" aria-hidden="true"></span>
+                <span>Lowercase</span>
+              </label>
+            </div>
+            <div class="result-block">
+              <span class="result-block__label">Ready for the web</span>
+              <output id="slug-output" tabindex="0">—</output>
+              <button type="button" class="result-copy" data-copy-target="slug-output">Copy slug</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="tool-panel" id="panel-json" role="tabpanel" aria-labelledby="tab-json" data-panel="json" hidden>
+          <div class="action-strip">
+            <button type="button" class="action-button is-primary" id="json-format">Format</button>
+            <button type="button" class="action-button" id="json-minify">Minify</button>
+            <button type="button" class="action-button" id="json-sort">Sort keys</button>
+            <span class="validation-pill is-idle" id="json-status">Waiting for JSON</span>
+          </div>
+          <div class="editor-grid">
+            <article class="editor-card">
+              <header class="editor-card__header">
+                <label for="json-input">JSON input</label>
+                <button type="button" class="text-button" id="json-use-sample">Load sample</button>
+              </header>
+              <textarea id="json-input" class="code-input" spellcheck="false" placeholder='{"useful": true}'></textarea>
+            </article>
+            <article class="editor-card editor-card--output">
+              <header class="editor-card__header">
+                <label for="json-output">Result</label>
+                <div class="mini-actions">
+                  <button type="button" data-copy-target="json-output">Copy</button>
+                  <button type="button" id="download-json">Save</button>
+                </div>
+              </header>
+              <textarea id="json-output" class="code-input" readonly spellcheck="false" placeholder="Valid formatted JSON appears here."></textarea>
+            </article>
+          </div>
+        </section>
+
+        <section class="tool-panel" id="panel-diff" role="tabpanel" aria-labelledby="tab-diff" data-panel="diff" hidden>
+          <div class="action-strip action-strip--right">
+            <span class="strip-note" id="diff-summary">Nothing to compare yet</span>
+            <button type="button" class="action-button" id="diff-swap">Swap sides</button>
+            <button type="button" class="action-button is-primary" id="copy-diff">Copy patch</button>
+          </div>
+          <div class="diff-inputs">
+            <article class="editor-card">
+              <header class="editor-card__header"><label for="diff-left">Original</label><span>A</span></header>
+              <textarea id="diff-left" spellcheck="true" placeholder="Paste the original draft…"></textarea>
+            </article>
+            <article class="editor-card">
+              <header class="editor-card__header"><label for="diff-right">Revised</label><span>B</span></header>
+              <textarea id="diff-right" spellcheck="true" placeholder="Paste the revised draft…"></textarea>
+            </article>
+          </div>
+          <article class="diff-card">
+            <header class="editor-card__header"><span>Line comparison</span><span>Red removed · green added</span></header>
+            <div class="diff-output empty-state" id="diff-output">Add two drafts to see exactly what changed.</div>
+          </article>
+        </section>
+
+        <section class="tool-panel" id="panel-convert" role="tabpanel" aria-labelledby="tab-convert" data-panel="convert" hidden>
+          <div class="action-strip">
+            <label class="mode-picker" for="convert-mode">
+              <span>Conversion</span>
+              <select id="convert-mode">
+                <option value="base64-encode">Text → Base64</option>
+                <option value="base64-decode">Base64 → Text</option>
+                <option value="url-encode">Text → URL component</option>
+                <option value="url-decode">URL component → Text</option>
+                <option value="html-encode">Text → HTML entities</option>
+                <option value="html-decode">HTML entities → Text</option>
+                <option value="hex-encode">Text → UTF-8 hex</option>
+                <option value="hex-decode">UTF-8 hex → Text</option>
+              </select>
+            </label>
+            <button type="button" class="action-button is-primary" id="convert-run">Convert</button>
+          </div>
+          <div class="editor-grid">
+            <article class="editor-card">
+              <header class="editor-card__header"><label for="convert-input">Input</label><span id="convert-input-label">Plain text</span></header>
+              <textarea id="convert-input" class="code-input" spellcheck="false" placeholder="Type or paste a value…"></textarea>
+            </article>
+            <article class="editor-card editor-card--output">
+              <header class="editor-card__header">
+                <label for="convert-output">Output</label>
+                <div class="mini-actions"><button type="button" data-copy-target="convert-output">Copy</button></div>
+              </header>
+              <textarea id="convert-output" class="code-input" readonly spellcheck="false" placeholder="Converted value appears here."></textarea>
+            </article>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

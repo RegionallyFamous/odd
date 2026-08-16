@@ -1,0 +1,15 @@
+{
+  "slug": "workbench",
+  "name": "ODD Workbench",
+  "description": "Six sharp little utilities for cleaning text, previewing Markdown, making slugs, formatting JSON, comparing drafts, and converting common encodings.",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "catalog_channel": "preview",
+  "tags": [
+    "productivity",
+    "utilities",
+    "text",
+    "developer",
+    "local-first"
+  ]
+}
