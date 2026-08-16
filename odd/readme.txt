@@ -40,7 +40,7 @@ You can:
 
 Because OpenStation deserves great apps.
 
-ODD gives those apps one friendly place to live. Open the Shop, find something interesting, install it, and decide whether it belongs on your desktop, in your dock, or both. OpenStation handles the workspace. ODD brings the things you can do with it.
+ODD gives those apps one friendly place to live. Open the Shop, find something interesting, install it, and decide whether it belongs on your desktop, in your dock, or both. OpenStation creates the workspace. ODD fills it with things worth opening.
 
 ODD Notes is only the beginning. We plan to keep making all sorts of cool apps for OpenStation: useful ones, weird ones, tiny ones, and things WordPress did not know it needed yet.
 
