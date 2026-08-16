@@ -11,6 +11,36 @@ notes to GitHub Releases.
 <a id="unreleased"></a>
 ## [Unreleased]
 
+<a id="v1.1.5"></a>
+## [1.1.5] — 2026-08-15
+
+### Added
+- ODD Notes is now the first-party app in a focused, apps-only ODD Shop. Notes
+  are private WordPress content with search, tags, favorites, archives, desktop
+  pinning, optional sharing, autosave, and revision restore.
+- The maintainable ODD Notes runtime now has focused unit coverage plus a real
+  WordPress/OpenStation browser test for create, edit, save, retry, and refresh.
+
+### Changed
+- ODD now targets OpenStation 1.1.0 and its current `openstation_*`, `wp.os`,
+  and `os.*` public contracts. OpenStation remains responsible for windows,
+  launchers, placement, and surrounding desktop chrome.
+- Retired wallpaper, icon-set, cursor, widget, shuffle, and custom-placement
+  systems are no longer loaded or published by the production catalog.
+- ODD Shop and ODD Notes received a complete visual redesign with a compact,
+  native-feeling dark interface and consistent monochrome action icons.
+
+### Fixed
+- Note updates now use an editable WordPress `POST` transport that preserves
+  JSON request bodies in WordPress Playground and other bridged environments.
+- Autosave preserves server-issued concurrency tokens while typing, accepts
+  idempotent stale retries, and only shows a conflict for genuinely different
+  competing edits.
+- Recovery journals are isolated by WordPress installation and user so drafts
+  cannot bleed between temporary Playground sites on the same origin.
+- Favorites, tags, paper colors, desktop pinning, sharing, archives, and note
+  text now persist through the same reliable update path.
+
 <a id="v1.1.4"></a>
 ## [1.1.4] — 2026-05-23
 

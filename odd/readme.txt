@@ -5,7 +5,7 @@ Requires at least: 6.8
 Tested up to: 7.0
 Requires PHP: 8.1
 Requires Plugins: desktop-mode
-Stable tag: 1.1.4
+Stable tag: 1.1.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -15,12 +15,15 @@ A focused app store for OpenStation, beginning with ODD Notes.
 
 ODD adds a small, native app store to OpenStation. Its first app is ODD Notes: a local-first notes library and editor stored in WordPress.
 
+The Shop is intentionally focused. It has one Apps department, one verified catalog, and one excellent app at a time. OpenStation continues to own windows, launchers, placement, and the surrounding desktop experience.
+
 ODD Notes includes:
 
 * A native OpenStation window and movable launcher.
 * Search, tags, favorites, desktop notes, sharing, and archives.
 * Local-first drafts and recovery when a connection is interrupted.
 * WordPress revision history and restore controls.
+* Reliable autosave with genuine multi-window conflict protection.
 * Private WordPress content storage, with no third-party notes service.
 
 ODD no longer installs wallpapers, icon sets, cursor effects, or desktop widgets. The Shop has one department—Apps—and OpenStation owns launcher placement through its normal desktop and taskbar settings.
@@ -65,17 +68,29 @@ Source code and deterministic catalog tooling are available at https://github.co
 
 Typical checks:
 
-1. `python3 _tools/build-catalog.py`
-2. `odd/bin/validate-catalog`
-3. `npm test`
-4. `odd/bin/build-zip`
+1. `npm run build:notes`
+2. `python3 _tools/build-catalog.py`
+3. `ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog`
+4. `npm test`
+5. `composer phpcs`
+6. `odd/bin/build-zip`
+
+== Screenshots ==
+
+1. ODD Shop has one focused Apps department and a verified ODD Notes install card.
+2. ODD Notes combines a searchable library, tags, favorites, paper colors, and a distraction-free editor in one native OpenStation window.
+3. WordPress revision history keeps earlier note content available for one-click restore.
 
 == Changelog ==
 
-= Development =
+= 1.1.5 =
 
 * Rebuilt ODD as an Apps-only OpenStation store.
-* Added ODD Notes using OpenStation 1.1.0 public APIs.
+* Added ODD Notes with private WordPress storage, autosave, local recovery, search, tags, favorites, archives, sharing, and revision restore.
+* Updated the runtime to OpenStation 1.1.0 public APIs and native window/launcher contracts.
+* Fixed note updates in Playground and eliminated false edit-conflict prompts caused by harmless retries or stale identical drafts.
+* Isolated recovery journals by WordPress installation and user.
+* Redesigned the Shop and Notes app, including consistent monochrome action icons.
 * Removed legacy wallpaper, icon-set, cursor, widget, and custom placement runtime surfaces.
 
 = 1.1.4 =
@@ -84,6 +99,6 @@ Typical checks:
 
 == Upgrade Notice ==
 
-= Development =
+= 1.1.5 =
 
-The Apps-only redesign requires OpenStation 1.1.0 or newer. Existing non-app ODD catalog content is retired from the Shop.
+ODD is now a focused Apps-only store for OpenStation 1.1.0 or newer. Update to use ODD Notes and its reliable WordPress-backed autosave, recovery, and revision history.

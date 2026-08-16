@@ -4,13 +4,25 @@ msgid ""
 msgstr ""
 "Project-Id-Version: odd\n"
 "Report-Msgid-Bugs-To: https://github.com/RegionallyFamous/odd/issues\n"
-"POT-Creation-Date: 2026-08-15 17:32-0500\n"
+"POT-Creation-Date: 2026-08-15 20:57-0500\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Language-Team: \n"
 "X-Generator: odd/bin/make-pot\n"
 "X-Domain: odd\n"
+
+#: odd/src/panel/index.js:52
+msgid " app"
+msgstr ""
+
+#: odd/src/panel/index.js:255
+msgid " apps"
+msgstr ""
+
+#: odd/src/panel/index.js:185
+msgid " from this site?"
+msgstr ""
 
 #: odd/includes/rest.php:148
 msgid "%s ago"
@@ -24,20 +36,28 @@ msgstr ""
 msgid "A catalog operation is already in progress. Please try again in a moment."
 msgstr ""
 
-#: odd/src/panel/index.js:68
+#: odd/src/panel/index.js:151
 msgid "A focused notes app stored in WordPress."
 msgstr ""
 
-#: odd/includes/notes/template.php:112
+#: odd/src/panel/index.js:288
+msgid "A tiny collection of useful things made to feel completely at home in OpenStation."
+msgstr ""
+
+#: odd/includes/notes/template.php:125
 msgid "Add"
 msgstr ""
 
-#: odd/includes/notes/template.php:112
+#: odd/includes/notes/template.php:125
 msgid "Add a tag…"
 msgstr ""
 
 #: odd/includes/notes/template.php:30
 msgid "All notes"
+msgstr ""
+
+#: odd/src/panel/index.js:164
+msgid "An administrator must install this app."
 msgstr ""
 
 #: odd/includes/apps/repair.php:63
@@ -108,8 +128,12 @@ msgstr ""
 msgid "App storage segment."
 msgstr ""
 
-#: odd/src/panel/index.js:158
+#: odd/src/panel/index.js:248
 msgid "Apps"
+msgstr ""
+
+#: odd/src/panel/index.js:248
+msgid "Apps for OpenStation"
 msgstr ""
 
 #: odd/includes/notes/template.php:50
@@ -126,6 +150,10 @@ msgstr ""
 
 #: odd/includes/apps/loader.php:90
 msgid "Archive contains an unreadable entry."
+msgstr ""
+
+#: odd/src/panel/index.js:146
+msgid "Available"
 msgstr ""
 
 #: odd/includes/apps/rest.php:433
@@ -210,6 +238,10 @@ msgstr ""
 
 #: odd/includes/content/catalog.php:934
 msgid "Catalog entry is missing a required sha256 digest."
+msgstr ""
+
+#: odd/src/panel/index.js:303
+msgid "Catalog online"
 msgstr ""
 
 #: odd/includes/content/catalog.php:1409
@@ -312,6 +344,10 @@ msgstr ""
 msgid "Catalog starter_pack references a missing bundle."
 msgstr ""
 
+#: odd/src/panel/index.js:321
+msgid "Catalog unavailable"
+msgstr ""
+
 #: odd/includes/content/catalog.php:2204
 msgid "Catalog version is not newer than the installed version."
 msgstr ""
@@ -320,7 +356,7 @@ msgstr ""
 msgid "Catch the thought before it escapes."
 msgstr ""
 
-#: odd/includes/notes/template.php:135
+#: odd/includes/notes/template.php:153
 msgid "Close"
 msgstr ""
 
@@ -418,6 +454,10 @@ msgstr ""
 msgid "Entry file \"%s\" not found in bundle."
 msgstr ""
 
+#: odd/src/panel/index.js:225
+msgid "Everything is up to date."
+msgstr ""
+
 #: odd/includes/apps/rest.php:223
 msgid "Fallback OpenStation launch surface metadata for this app."
 msgstr ""
@@ -430,6 +470,14 @@ msgstr ""
 msgid "Favorites"
 msgstr ""
 
+#: odd/src/panel/index.js:86
+msgid "Favorites, tags & sharing"
+msgstr ""
+
+#: odd/src/panel/index.js:120
+msgid "Featured app"
+msgstr ""
+
 #: odd/includes/apps/loader.php:75
 #: odd/includes/content/archive.php:113
 msgid "File is not a valid ZIP archive."
@@ -437,6 +485,10 @@ msgstr ""
 
 #: odd/includes/apps/rest.php:453
 msgid "File not found."
+msgstr ""
+
+#: odd/includes/notes/template.php:123
+msgid "Group related notes"
 msgstr ""
 
 #: odd/src/shell/odd-dock-rail.js:513
@@ -503,8 +555,12 @@ msgstr ""
 msgid "Icon set manifest.json must include an \"icons\" map."
 msgstr ""
 
-#: odd/src/panel/index.js:73
-msgid "Install"
+#: odd/src/panel/index.js:158
+msgid "Install app"
+msgstr ""
+
+#: odd/src/panel/index.js:146
+msgid "Installed"
 msgstr ""
 
 #: odd/includes/content/bundle.php:243
@@ -541,12 +597,16 @@ msgstr ""
 msgid "Lists ODD-installed content: active wallpaper scene slug plus installed scene, icon set, widget, app, and cursor-set slugs for the requesting user."
 msgstr ""
 
-#: odd/includes/apps/native-surfaces.php:140
+#: odd/includes/apps/native-surfaces.php:141
 msgid "Loading %s…"
 msgstr ""
 
 #: odd/includes/notes/template.php:70
 msgid "Loading your library…"
+msgstr ""
+
+#: odd/includes/notes/template.php:113
+msgid "Make this thought easy to find and share."
 msgstr ""
 
 #: odd/includes/apps/loader.php:174
@@ -619,11 +679,15 @@ msgstr ""
 msgid "Note body"
 msgstr ""
 
+#: odd/includes/notes/template.php:109
+msgid "Note details"
+msgstr ""
+
 #: odd/includes/notes/template.php:66
 msgid "Note list"
 msgstr ""
 
-#: odd/includes/notes/class-notes-service.php:362
+#: odd/includes/notes/class-notes-service.php:366
 msgid "Note not found."
 msgstr ""
 
@@ -632,7 +696,7 @@ msgstr ""
 msgid "ODD"
 msgstr ""
 
-#: odd/src/panel/index.js:143
+#: odd/src/panel/index.js:286
 msgid "ODD / APPS"
 msgstr ""
 
@@ -658,6 +722,7 @@ msgstr ""
 
 #: odd/includes/integration/desktop-mode-extended-surfaces.php:37
 #: odd/includes/native-window.php:3
+#: odd/src/panel/index.js:10
 msgid "ODD Shop"
 msgstr ""
 
@@ -689,8 +754,8 @@ msgstr ""
 msgid "On desktop"
 msgstr ""
 
-#: odd/src/panel/index.js:159
-msgid "One excellent app at a time. Install it here; OpenStation handles where its launcher lives."
+#: odd/src/panel/index.js:301
+msgid "One excellent app at a time. No filler, no feed."
 msgstr ""
 
 #: odd/includes/icons/registry.php:74
@@ -701,16 +766,20 @@ msgstr ""
 msgid "Only catalog-owned apps can be repaired automatically."
 msgstr ""
 
-#: odd/includes/notes/class-notes-service.php:376
+#: odd/includes/notes/class-notes-service.php:380
 msgid "Only the note owner can change it."
 msgstr ""
 
-#: odd/src/panel/index.js:10
-msgid "Open"
+#: odd/src/panel/index.js:158
+msgid "Open app"
 msgstr ""
 
 #: odd/includes/content/catalog.php:727
 msgid "OpenStation"
+msgstr ""
+
+#: odd/src/panel/index.js:80
+msgid "OpenStation app"
 msgstr ""
 
 #: odd/includes/notes/class-notes-rest-controller.php:117
@@ -737,11 +806,11 @@ msgstr ""
 msgid "PHP ZipArchive extension is required to install apps."
 msgstr ""
 
-#: odd/includes/notes/template.php:116
+#: odd/includes/notes/template.php:130
 msgid "Paper"
 msgstr ""
 
-#: odd/includes/notes/template.php:117
+#: odd/includes/notes/template.php:133
 msgid "Paper color"
 msgstr ""
 
@@ -749,8 +818,12 @@ msgstr ""
 msgid "Path to a static app asset relative to the app root."
 msgstr ""
 
-#: odd/includes/notes/template.php:120
-msgid "Pin on desktop"
+#: odd/includes/notes/template.php:131
+msgid "Pick a shade"
+msgstr ""
+
+#: odd/includes/notes/template.php:137
+msgid "Pin to desktop"
 msgstr ""
 
 #: odd/includes/content/cursor-sets.php:94
@@ -795,6 +868,10 @@ msgstr ""
 msgid "Preview file is not present in the bundle."
 msgstr ""
 
+#: odd/src/panel/index.js:86
+msgid "Private WordPress storage"
+msgstr ""
+
 #: odd/includes/notes/template.php:16
 msgid "Private by default"
 msgstr ""
@@ -811,19 +888,20 @@ msgstr ""
 msgid "Reading ODD catalog state…"
 msgstr ""
 
-#: odd/src/panel/index.js:125
-msgid "Ready."
+#: odd/src/panel/index.js:198
+msgid "Ready in OpenStation · v"
 msgstr ""
 
 #: odd/includes/notes/template.php:72
+#: odd/src/panel/index.js:260
 msgid "Refresh"
 msgstr ""
 
-#: odd/src/panel/index.js:146
+#: odd/src/panel/index.js:260
 msgid "Refresh catalog"
 msgstr ""
 
-#: odd/src/panel/index.js:150
+#: odd/src/panel/index.js:267
 msgid "Refreshing…"
 msgstr ""
 
@@ -835,19 +913,19 @@ msgstr ""
 msgid "Remote catalog returned zero bundles; keeping the last known good catalog."
 msgstr ""
 
-#: odd/src/panel/index.js:91
+#: odd/src/panel/index.js:182
 msgid "Remove"
 msgstr ""
 
-#: odd/src/panel/index.js:94
-msgid "Remove ODD Notes from this site?"
+#: odd/src/panel/index.js:185
+msgid "Remove "
 msgstr ""
 
 #: odd/includes/integration/desktop-mode-extended-surfaces.php:55
 msgid "Removed <strong>%s</strong> catalog wallpaper, icons, or apps? Re-install them anytime from <a href=\"#\" class=\"odd-js-open-shop\">Open ODD Shop</a>. Bin entries here remain WordPress content (posts, media, comments…)."
 msgstr ""
 
-#: odd/src/panel/index.js:96
+#: odd/src/panel/index.js:187
 msgid "Removing…"
 msgstr ""
 
@@ -855,7 +933,15 @@ msgstr ""
 msgid "Requires %1$s %2$s or newer; detected %3$s."
 msgstr ""
 
-#: odd/includes/notes/class-notes-service.php:339
+#: odd/includes/notes/template.php:142
+msgid "Requires a desktop pin"
+msgstr ""
+
+#: odd/src/panel/index.js:86
+msgid "Revision history"
+msgstr ""
+
+#: odd/includes/notes/class-notes-service.php:343
 msgid "Revision not found."
 msgstr ""
 
@@ -867,15 +953,15 @@ msgstr ""
 msgid "SVG cursor file path relative to the cursor set root."
 msgstr ""
 
-#: odd/includes/notes/template.php:125
+#: odd/includes/notes/template.php:116
 msgid "Saved"
 msgstr ""
 
-#: odd/includes/notes/template.php:125
+#: odd/includes/notes/template.php:116
 msgid "Saved to WordPress"
 msgstr ""
 
-#: odd/includes/notes/template.php:125
+#: odd/includes/notes/template.php:116
 msgid "Saving…"
 msgstr ""
 
@@ -912,19 +998,31 @@ msgstr ""
 msgid "Server-executable files are not allowed. Found: %s"
 msgstr ""
 
+#: odd/includes/notes/template.php:141
+msgid "Share with site"
+msgstr ""
+
 #: odd/includes/notes/template.php:45
 msgid "Shared"
+msgstr ""
+
+#: odd/includes/notes/template.php:138
+msgid "Show it on your station"
 msgstr ""
 
 #: odd/includes/content/archive.php:226
 msgid "Slug must contain only lowercase letters, numbers, and hyphens."
 msgstr ""
 
+#: odd/src/panel/index.js:287
+msgid "Small tools. Strange polish."
+msgstr ""
+
 #: odd/includes/notes/template.php:27
 msgid "Smart lists"
 msgstr ""
 
-#: odd/src/panel/index.js:130
+#: odd/src/panel/index.js:230
 msgid "Something went wrong."
 msgstr ""
 
@@ -945,27 +1043,31 @@ msgstr ""
 msgid "The PHP ZipArchive extension is required to install ODD bundles."
 msgstr ""
 
-#: odd/src/panel/index.js:166
-msgid "The app catalog is temporarily unavailable."
+#: odd/src/panel/index.js:319
+msgid "The app catalog is temporarily unavailable. Refresh it in a moment."
 msgstr ""
 
 #: odd/includes/content/catalog.php:987
 msgid "The downloaded file is not a valid .wp archive."
 msgstr ""
 
-#: odd/includes/notes/class-notes-service.php:280
+#: odd/includes/notes/class-notes-service.php:284
 msgid "The note could not be moved to Trash."
 msgstr ""
 
-#: odd/includes/notes/class-notes-service.php:342
+#: odd/includes/notes/class-notes-service.php:346
 msgid "The revision could not be restored."
+msgstr ""
+
+#: odd/src/panel/index.js:318
+msgid "The shelf is resting."
 msgstr ""
 
 #: odd/includes/apps/rest.php:438
 msgid "This file type cannot be served."
 msgstr ""
 
-#: odd/includes/notes/class-notes-service.php:220
+#: odd/includes/notes/class-notes-service.php:224
 msgid "This note changed in another window."
 msgstr ""
 
@@ -1001,25 +1103,29 @@ msgstr ""
 msgid "Untitled draft"
 msgstr ""
 
-#: odd/includes/notes/class-notes-service.php:466
+#: odd/includes/notes/class-notes-service.php:523
 #: odd/includes/notes/template.php:105
 msgid "Untitled note"
 msgstr ""
 
-#: odd/src/panel/index.js:73
-msgid "Update"
+#: odd/src/panel/index.js:158
+msgid "Update app"
 msgstr ""
 
-#: odd/src/panel/index.js:144
-msgid "Useful things for your OpenStation."
+#: odd/src/panel/index.js:146
+msgid "Update available"
+msgstr ""
+
+#: odd/src/panel/index.js:306
+msgid "Using saved apps"
+msgstr ""
+
+#: odd/src/panel/index.js:199
+msgid "Verified ODD catalog · v"
 msgstr ""
 
 #: odd/includes/notes/template.php:98
 msgid "Version history"
-msgstr ""
-
-#: odd/includes/notes/template.php:121
-msgid "Visible to everyone"
 msgstr ""
 
 #: odd/includes/apps/rest.php:217
@@ -1050,7 +1156,7 @@ msgstr ""
 msgid "WordPress connected"
 msgstr ""
 
-#: odd/includes/notes/template.php:134
+#: odd/includes/notes/template.php:152
 msgid "WordPress keeps the earlier words."
 msgstr ""
 
@@ -1117,7 +1223,7 @@ msgstr ""
 msgid "unknown"
 msgstr ""
 
-#: odd/includes/notes/template.php:127
+#: odd/includes/notes/template.php:146
 msgid "⌘S to save"
 msgstr ""
 
