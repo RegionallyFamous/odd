@@ -773,10 +773,11 @@
 	$( '#copy-diff' ).addEventListener( 'click', () => copyText( diffPatch, 'Patch copied' ) );
 
 	const resetButton = $( '#reset-drafts' );
+	const resetIcon = resetButton.innerHTML;
 	function disarmReset() {
 		window.clearTimeout( resetTimer );
 		resetButton.classList.remove( 'is-armed' );
-		resetButton.innerHTML = '<span aria-hidden="true">↺</span>';
+		resetButton.innerHTML = resetIcon;
 		resetButton.setAttribute( 'aria-label', 'Clear every Workbench draft' );
 	}
 

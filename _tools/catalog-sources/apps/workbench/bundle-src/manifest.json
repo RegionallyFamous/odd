@@ -3,7 +3,7 @@
   "type": "app",
   "slug": "workbench",
   "name": "ODD Workbench",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "Regionally Famous",
   "description": "A fast local utility desk for text, Markdown, slugs, JSON, diffs, and everyday conversions.",
   "icon": "icon.webp",

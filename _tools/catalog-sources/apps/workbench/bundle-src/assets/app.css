@@ -60,6 +60,18 @@ button {
   color: inherit;
 }
 
+.ui-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.75;
+  vector-effect: non-scaling-stroke;
+}
+
 button:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
@@ -116,11 +128,20 @@ input:focus-visible,
 }
 
 .brand__icon {
-  width: 50px;
-  height: 50px;
+  display: grid;
+  width: 42px;
+  height: 42px;
   flex: 0 0 auto;
-  object-fit: contain;
-  filter: drop-shadow(0 5px 12px rgba(255, 63, 159, 0.2));
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--cream);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.brand__icon .ui-icon {
+  width: 22px;
+  height: 22px;
 }
 
 .brand__copy {
@@ -196,8 +217,12 @@ input:focus-visible,
   border-radius: 11px;
   color: var(--muted);
   background: rgba(255, 255, 255, 0.035);
-  font-size: 20px;
   transition: 150ms ease;
+}
+
+.icon-button .ui-icon {
+  width: 18px;
+  height: 18px;
 }
 
 .icon-button:hover {
@@ -293,34 +318,25 @@ input:focus-visible,
   height: 34px;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid rgba(255, 240, 207, 0.15);
-  border-radius: 10px;
+  border-radius: 8px;
+  color: var(--muted);
+  background: transparent;
+  transition: color 150ms ease, background 150ms ease;
+}
+
+.tool-tab__icon .ui-icon {
+  width: 19px;
+  height: 19px;
+}
+
+.tool-tab:hover .tool-tab__icon {
   color: var(--cream);
-  background: linear-gradient(145deg, var(--ink-3), var(--ink-1));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 15px;
-  font-weight: 900;
+  background: rgba(255, 255, 255, 0.04);
 }
 
-.tool-tab:nth-of-type(2) .tool-tab__icon,
-.tool-tab:nth-of-type(5) .tool-tab__icon {
-  color: var(--pink);
-}
-
-.tool-tab:nth-of-type(3) .tool-tab__icon,
-.tool-tab:nth-of-type(6) .tool-tab__icon {
-  color: var(--yellow);
-}
-
-.tool-tab:nth-of-type(4) .tool-tab__icon,
-.tool-tab:nth-of-type(1) .tool-tab__icon {
-  color: var(--teal);
-}
-
-.tool-tab__icon--code {
-  font-size: 12px;
-  letter-spacing: -0.1em;
+.tool-tab.is-active .tool-tab__icon {
+  color: var(--cream);
+  background: rgba(255, 255, 255, 0.065);
 }
 
 .tool-tab__copy {
