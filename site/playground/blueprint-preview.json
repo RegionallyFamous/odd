@@ -11,6 +11,14 @@
   "login": true,
   "steps": [
     {
+      "step": "wp-cli",
+      "command": "wp core update --version=7.0.4 --force"
+    },
+    {
+      "step": "wp-cli",
+      "command": "wp core update-db"
+    },
+    {
       "step": "mkdir",
       "path": "/wordpress/wp-content/mu-plugins"
     },
