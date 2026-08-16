@@ -11,7 +11,7 @@
     "local-first"
   ],
   "requires": {
-    "odd": "1.1.4",
+    "odd": "1.1.5",
     "openStation": "1.1.0",
     "api": "2.3.0"
   }

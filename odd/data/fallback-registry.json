@@ -29,12 +29,12 @@
       "sha256": "3aee09737d00da12f7c7ebdb2077d431e97ef765868cfd82c5dfc5fd2c3eb7ae",
       "size": 49829,
       "requires": {
-        "odd": "1.1.4",
+        "odd": "1.1.5",
         "openStation": "1.1.0",
         "api": "2.3.0"
       },
       "department": "apps",
-      "search_text": "app odd-notes odd notes regionally famous a local-first library for openstation saved as private wordpress content with favorites tags sharing archives and revision history 1 3 0 writing productivity 4 2 apps",
+      "search_text": "app odd-notes odd notes regionally famous a local-first library for openstation saved as private wordpress content with favorites tags sharing archives and revision history 1 3 0 writing productivity 5 2 apps",
       "search_tokens": [
         "app",
         "odd-notes",
@@ -65,7 +65,7 @@
         "0",
         "writing",
         "productivity",
-        "4",
+        "5",
         "2",
         "apps"
       ],
