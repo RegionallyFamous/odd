@@ -54,7 +54,7 @@ class ODDOUT_Apps_Only_Test extends WP_UnitTestCase {
 		$script      = file_get_contents( $script_path );
 
 		$this->assertIsString( $script );
-		$this->assertStringContainsString( 'return de(`notes/${s}`,{method:"POST",body:e,signal:t})', $script );
+		$this->assertStringContainsString( 'return de(`notes/${o}`,{method:"POST",body:e,signal:t})', $script );
 		$this->assertStringNotContainsString( 'method:"PATCH"', $script );
 	}
 }
