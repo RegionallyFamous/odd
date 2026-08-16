@@ -215,12 +215,16 @@ class ODDOUT_Notes_Service {
 		$version_conflict    = isset( $input['version'] ) && (int) $input['version'] !== $current_version;
 		$modified_conflict   = isset( $input['updatedAtMs'] ) && (int) $input['updatedAtMs'] !== $current_modified_ms;
 		if ( $version_conflict || $modified_conflict ) {
+			$current = $this->prepare_note( $post, $user_id );
+			if ( $this->input_matches_note( $input, $current ) ) {
+				return $current;
+			}
 			return new WP_Error(
 				'oddout_notes_conflict',
 				__( 'This note changed in another window.', 'odd-outlandish-desktop-decorator' ),
 				array(
 					'status'  => 409,
-					'current' => $this->prepare_note( $post, $user_id ),
+					'current' => $current,
 				)
 			);
 		}
@@ -411,6 +415,59 @@ class ODDOUT_Notes_Service {
 			'version'     => max( 1, (int) get_post_meta( $post->ID, self::META_VERSION, true ) ),
 			'wordCount'   => str_word_count( wp_strip_all_tags( $body ) ),
 		);
+	}
+
+	/**
+	 * Whether a stale mutation is already represented by the current note.
+	 *
+	 * Idempotent retries can arrive after WordPress saved the first request but
+	 * before the browser received its response. Returning the current note avoids
+	 * presenting that harmless retry as an edit conflict.
+	 *
+	 * @param array $input Mutation input.
+	 * @param array $note  Prepared current note.
+	 * @return bool
+	 */
+	private function input_matches_note( array $input, array $note ) {
+		$candidate = array(
+			'title'     => (string) $note['title'],
+			'body'      => (string) $note['body'],
+			'color'     => (string) $note['color'],
+			'tags'      => (array) $note['tags'],
+			'favorite'  => (bool) $note['favorite'],
+			'archived'  => (bool) $note['archived'],
+			'onDesktop' => (bool) $note['onDesktop'],
+			'public'    => (bool) $note['public'],
+		);
+
+		if ( array_key_exists( 'title', $input ) ) {
+			$candidate['title'] = $this->sanitize_title( $input['title'] );
+		}
+		if ( array_key_exists( 'body', $input ) ) {
+			$candidate['body'] = $this->sanitize_body( $input['body'] );
+		}
+		if ( array_key_exists( 'color', $input ) ) {
+			$candidate['color'] = $this->sanitize_color( $input['color'] );
+		}
+		if ( array_key_exists( 'tags', $input ) ) {
+			$candidate['tags'] = $this->sanitize_tags( $input['tags'] );
+		}
+		foreach ( array( 'favorite', 'archived', 'onDesktop', 'public' ) as $field ) {
+			if ( array_key_exists( $field, $input ) ) {
+				$candidate[ $field ] = rest_sanitize_boolean( $input[ $field ] );
+			}
+		}
+		if ( $candidate['archived'] ) {
+			$candidate['onDesktop'] = false;
+			$candidate['public']    = false;
+		}
+
+		foreach ( $candidate as $field => $value ) {
+			if ( $value !== $note[ $field ] ) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/**

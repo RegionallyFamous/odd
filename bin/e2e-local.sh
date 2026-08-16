@@ -57,15 +57,14 @@ need_cmd() {
 }
 
 e2e_wp() {
-	php -d "memory_limit=${E2E_WP_MEMORY_LIMIT}" "$(command -v wp)" "$@"
+	php -d "memory_limit=${E2E_WP_MEMORY_LIMIT}" -d error_reporting=8191 "$(command -v wp)" "$@"
 }
 
 mysql_up() {
 	need_cmd docker
 	docker compose -f "${ROOT}/docker-compose.e2e.yml" up -d
 	echo "Waiting for MySQL (Docker)..."
-	local i
-	for i in $( seq 1 45 ); do
+	for _attempt in $( seq 1 45 ); do
 		if docker compose -f "${ROOT}/docker-compose.e2e.yml" exec -T mysql mysqladmin ping -h 127.0.0.1 -uroot -proot --silent 2>/dev/null; then
 			echo "mysql ready"
 			return 0
@@ -86,7 +85,7 @@ provision() {
 
 	mkdir -p "$( dirname "${WP_DIR}" )"
 	if [[ -f "${WP_DIR}/wp-config.php" ]]; then
-		echo "Reusing existing ${WP_DIR} (remove it to reprovision from scratch)"
+		echo "Reusing existing WordPress files in ${WP_DIR}"
 	else
 		mkdir -p "${WP_DIR}"
 		( cd "${WP_DIR}" && e2e_wp core download )
@@ -96,6 +95,11 @@ provision() {
 			--dbpass=root \
 			--dbhost="${DB_HOSTPORT}" \
 			--skip-check )
+	fi
+
+	# Docker volumes can be recreated independently of the cached WordPress
+	# files. Reinstall the database when wp-config.php exists but its tables do not.
+	if ! ( cd "${WP_DIR}" && e2e_wp core is-installed --quiet ); then
 		( cd "${WP_DIR}" && e2e_wp core install \
 			--url="${BASE_URL}" \
 			--title=ODD-e2e \
@@ -105,7 +109,16 @@ provision() {
 			--skip-email )
 	fi
 
-	( cd "${WP_DIR}" && e2e_wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.0.8.8.zip --activate )
+	FIXTURE_ROOT="${WP_DIR}/wp-content/odd-smoke-fixture"
+	mkdir -p "${FIXTURE_ROOT}" "${WP_DIR}/wp-content/mu-plugins"
+	cp -R "${ROOT}/site/catalog/v1/." "${FIXTURE_ROOT}/"
+	cp "${ROOT}/ci/smoke/odd-smoke-fixture.php" "${WP_DIR}/wp-content/mu-plugins/"
+	( cd "${WP_DIR}" && e2e_wp config set ODD_SMOKE_FIXTURE_ROOT "${FIXTURE_ROOT}" )
+	if ( cd "${WP_DIR}" && e2e_wp config has ODD_SMOKE_CATALOG_URL ); then
+		( cd "${WP_DIR}" && e2e_wp config delete ODD_SMOKE_CATALOG_URL )
+	fi
+
+	( cd "${WP_DIR}" && e2e_wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.1.1.0.zip --force --activate )
 
 	ODD_LINK="${WP_DIR}/wp-content/plugins/odd"
 	if [[ -L "${ODD_LINK}" ]] || [[ -d "${ODD_LINK}" ]]; then
@@ -117,11 +130,12 @@ provision() {
 
 	( cd "${WP_DIR}" && e2e_wp user meta update 1 desktop_mode_mode 1 )
 
-	( cd "${WP_DIR}" && e2e_wp eval '$r = oddout_starter_install_now(); if (is_wp_error($r)) { fwrite(STDERR, $r->get_error_message() . "\n"); exit(1); } var_export($r);' )
-
-	# Small catalog app used by Playwright to assert the iframe serve path (avoid UI install:
-	# `wp server` can return 5xx on long admin-ajax/REST requests; CLI install matches CI reliability).
-	( cd "${WP_DIR}" && e2e_wp eval '$reg = oddout_catalog_refresh(); $slug = "board"; if (function_exists("oddout_bundle_catalog_installed_versions") && array_key_exists($slug, oddout_bundle_catalog_installed_versions())) { fwrite(STDOUT, "e2e: app already installed\n"); exit(0); } $entry = null; foreach ((array) ($reg["bundles"] ?? array()) as $e) { if ((isset($e["type"], $e["slug"]) && $e["type"] === "app" && $e["slug"] === $slug)) { $entry = $e; break; } } if (!$entry) { fwrite(STDERR, "e2e: catalog missing app {$slug}\n"); exit(1);} $r = oddout_catalog_install_entry($entry); if (is_wp_error($r)) { fwrite(STDERR, $r->get_error_message() . "\n"); exit(1);} var_export($r);' )
+	# Install ODD Notes from the freshly built local fixture catalog. CLI install
+	# keeps this path deterministic while still exercising the real bundle loader.
+	# The single-quoted payload is PHP, not shell.
+	# shellcheck disable=SC2016
+	( cd "${WP_DIR}" && e2e_wp --user=1 eval '$reg = oddout_catalog_refresh(); $slug = "odd-notes"; $entry = null; foreach ((array) ($reg["bundles"] ?? array()) as $e) { if ((isset($e["type"], $e["slug"]) && $e["type"] === "app" && $e["slug"] === $slug)) { $entry = $e; break; } } if (!$entry) { WP_CLI::error("e2e: catalog missing app {$slug}"); } $versions = oddout_bundle_catalog_installed_versions(); $installed = isset($versions[$slug]) ? (string) $versions[$slug] : ""; $r = oddout_catalog_install_entry($entry, array("replace_existing" => "" !== $installed)); if (is_wp_error($r)) { WP_CLI::error($r->get_error_message()); } var_export($r);' )
+	( cd "${WP_DIR}" && e2e_wp --user=1 eval 'if ( null === openstation_native_window_registry( "odd-app-odd-notes" ) ) { WP_CLI::error( "ODD Notes native window is not registered." ); }' )
 
 	( cd "${WP_DIR}" && e2e_wp user meta update 1 desktop_mode_os_settings '{"wallpaper":"odd"}' --format=json )
 
@@ -136,7 +150,7 @@ serve() {
 	need_cmd php
 	need_cmd wp
 	[[ -f "${WP_DIR}/wp-config.php" ]] || die "run: bash bin/e2e-local.sh provision"
-	( cd "${WP_DIR}" && exec php -d "memory_limit=${E2E_WP_MEMORY_LIMIT}" "$(command -v wp)" server --host=127.0.0.1 --port=8080 )
+	( cd "${WP_DIR}" && exec php -d "memory_limit=${E2E_WP_MEMORY_LIMIT}" -d error_reporting=8191 "$(command -v wp)" server --host=127.0.0.1 --port=8080 )
 }
 
 run_playwright() {
@@ -170,7 +184,7 @@ run_all() {
 	provision
 
 	mkdir -p "${ROOT}/.e2e"
-	( cd "${WP_DIR}" && nohup php -d "memory_limit=${E2E_WP_MEMORY_LIMIT}" "$(command -v wp)" server --host=127.0.0.1 --port=8080 >"${ROOT}/.e2e/wp-server.log" 2>&1 ) &
+	( cd "${WP_DIR}" && nohup php -d "memory_limit=${E2E_WP_MEMORY_LIMIT}" -d error_reporting=8191 "$(command -v wp)" server --host=127.0.0.1 --port=8080 >"${ROOT}/.e2e/wp-server.log" 2>&1 ) &
 	SRV_PID=$!
 	trap 'kill "${SRV_PID}" 2>/dev/null || true' EXIT
 	wait_http

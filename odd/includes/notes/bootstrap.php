@@ -42,6 +42,26 @@ function oddout_notes_enabled() {
 }
 
 /**
+ * Stable, non-secret identifier used to isolate browser draft journals.
+ *
+ * Browser origins can host more than one WordPress installation (notably
+ * temporary Playground sites), so the user id alone cannot safely identify a
+ * draft owner.
+ *
+ * @return string
+ */
+function oddout_notes_draft_scope() {
+	$scope = get_option( 'oddout_notes_draft_scope', '' );
+	if ( is_string( $scope ) && preg_match( '/^[a-f0-9-]{36}$/i', $scope ) ) {
+		return $scope;
+	}
+
+	$scope = wp_generate_uuid4();
+	update_option( 'oddout_notes_draft_scope', $scope, false );
+	return $scope;
+}
+
+/**
  * Session-bound config delivered through OpenStation's window config API.
  *
  * @return array
@@ -52,10 +72,11 @@ function oddout_notes_window_config() {
 		: array( 'butter', 'blush', 'sky', 'mint', 'lilac', 'peach' );
 
 	return array(
-		'restBase'  => esc_url_raw( oddout_https_rest_url( 'odd-notes/v1/' ) ),
-		'restNonce' => wp_create_nonce( 'wp_rest' ),
-		'userId'    => get_current_user_id(),
-		'colors'    => array_values( array_map( 'sanitize_key', (array) $colors ) ),
+		'restBase'   => esc_url_raw( oddout_https_rest_url( 'odd-notes/v1/' ) ),
+		'restNonce'  => wp_create_nonce( 'wp_rest' ),
+		'userId'     => get_current_user_id(),
+		'draftScope' => oddout_notes_draft_scope(),
+		'colors'     => array_values( array_map( 'sanitize_key', (array) $colors ) ),
 	);
 }
 

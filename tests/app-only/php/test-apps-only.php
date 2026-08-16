@@ -50,11 +50,45 @@ class ODDOUT_Apps_Only_Test extends WP_UnitTestCase {
 	}
 
 	public function test_notes_updates_use_playground_safe_editable_post_transport() {
-		$script_path = dirname( ODDOUT_DIR ) . '/_tools/catalog-sources/apps/odd-notes/bundle-src/assets/js/odd-notes.min.js';
-		$script      = file_get_contents( $script_path );
+		$source_path = dirname( ODDOUT_DIR ) . '/_tools/catalog-sources/apps/odd-notes/src/api.ts';
+		$source      = file_get_contents( $source_path );
 
-		$this->assertIsString( $script );
-		$this->assertStringContainsString( 'return de(`notes/${o}`,{method:"POST",body:e,signal:t})', $script );
-		$this->assertStringNotContainsString( 'method:"PATCH"', $script );
+		$this->assertIsString( $source );
+		$this->assertStringContainsString( "method: 'POST'", $source );
+		$this->assertStringNotContainsString( "method: 'PATCH'", $source );
+	}
+
+	public function test_notes_draft_scope_is_stable_per_installation() {
+		delete_option( 'oddout_notes_draft_scope' );
+		$first  = oddout_notes_draft_scope();
+		$second = oddout_notes_draft_scope();
+
+		$this->assertSame( $first, $second );
+		$this->assertMatchesRegularExpression( '/^[a-f0-9-]{36}$/i', $first );
+	}
+
+	public function test_stale_idempotent_note_mutation_matches_current_copy() {
+		$current = array(
+			'title'     => 'Already saved',
+			'body'      => 'WordPress has these words.',
+			'color'     => 'butter',
+			'tags'      => array( 'odd', 'notes' ),
+			'favorite'  => false,
+			'archived'  => false,
+			'onDesktop' => false,
+			'public'    => false,
+		);
+		$input   = $current + array(
+			'version'     => 1,
+			'updatedAtMs' => 123,
+		);
+
+		$service = new ODDOUT_Notes_Service();
+		$method  = new ReflectionMethod( $service, 'input_matches_note' );
+		$method->setAccessible( true );
+
+		$this->assertTrue( $method->invoke( $service, $input, $current ) );
+		$input['body'] = 'A genuinely different draft.';
+		$this->assertFalse( $method->invoke( $service, $input, $current ) );
 	}
 }

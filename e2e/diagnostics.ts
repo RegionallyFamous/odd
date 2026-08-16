@@ -98,7 +98,7 @@ export async function collectClientDiagnostics( page: Page ): Promise<OddClientD
 
 export async function probeInstalledApp(
 	page: Page,
-	slug = 'board'
+	slug = 'odd-notes'
 ): Promise<Record<string, unknown> | null> {
 	return page.evaluate( async ( appSlug ) => {
 		const w = window as unknown as {
@@ -151,7 +151,7 @@ export async function attachOddDiagnostics( page: Page, testInfo: TestInfo ) {
 	}
 
 	try {
-		bundle.appProbe = await probeInstalledApp( page, 'board' );
+		bundle.appProbe = await probeInstalledApp( page, 'odd-notes' );
 	} catch ( err ) {
 		bundle.appProbeError = err instanceof Error ? err.message : String( err );
 	}
