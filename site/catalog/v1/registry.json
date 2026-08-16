@@ -14,7 +14,7 @@
       "type": "app",
       "slug": "odd-notes",
       "name": "ODD Notes",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "author": "Regionally Famous",
       "description": "A local-first notes library for OpenStation, saved as private WordPress content with favorites, tags, sharing, archives, and revision history.",
       "tags": [
@@ -26,15 +26,15 @@
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/odd-notes.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-odd-notes.webp",
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/odd-notes.wp",
-      "sha256": "b07272384964f3bd61901aed38c067a7182ff6b433dc0f5799f0c21c2de4f13b",
-      "size": 49101,
+      "sha256": "3aee09737d00da12f7c7ebdb2077d431e97ef765868cfd82c5dfc5fd2c3eb7ae",
+      "size": 49829,
       "requires": {
         "odd": "1.1.4",
         "openStation": "1.1.0",
         "api": "2.3.0"
       },
       "department": "apps",
-      "search_text": "app odd-notes odd notes regionally famous a local-first library for openstation saved as private wordpress content with favorites tags sharing archives and revision history 1 2 0 writing productivity 4 3 apps",
+      "search_text": "app odd-notes odd notes regionally famous a local-first library for openstation saved as private wordpress content with favorites tags sharing archives and revision history 1 3 0 writing productivity 4 2 apps",
       "search_tokens": [
         "app",
         "odd-notes",
@@ -61,12 +61,12 @@
         "revision",
         "history",
         "1",
-        "2",
+        "3",
         "0",
         "writing",
         "productivity",
         "4",
-        "3",
+        "2",
         "apps"
       ],
       "card_bytes": 10970

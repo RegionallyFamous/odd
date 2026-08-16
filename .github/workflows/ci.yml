@@ -121,6 +121,10 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci --no-audit --no-fund
+      - name: Build ODD Notes from maintainable source
+        run: npm run build:notes
+      - name: Verify committed ODD Notes bundle is current
+        run: git diff --exit-code -- _tools/catalog-sources/apps/odd-notes/bundle-src/assets/js/odd-notes.min.js
       - run: npm test
 
   phpcs:

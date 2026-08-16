@@ -10,11 +10,17 @@ set -e
 echo "→ odd/bin/check-version"
 odd/bin/check-version
 
+echo "→ odd/bin/build-notes-app"
+node odd/bin/build-notes-app >/dev/null
+
 echo "→ _tools/build-catalog.py"
 python3 _tools/build-catalog.py >/dev/null
 
 echo "→ catalog artifact drift check"
-git diff --exit-code -- site/catalog/v1 odd/data/fallback-registry.json
+git diff --exit-code -- \
+  _tools/catalog-sources/apps/odd-notes/bundle-src/assets/js/odd-notes.min.js \
+  site/catalog/v1 \
+  odd/data/fallback-registry.json
 
 echo "→ odd/bin/validate-catalog"
 ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog
