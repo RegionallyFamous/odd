@@ -291,13 +291,42 @@ h1 {
 	border-radius: 20px;
 }
 
+.product-preview {
+	margin: 0;
+	padding: 10px 10px 0;
+}
+
+.product-preview figcaption,
+.product-showcase figcaption {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 14px;
+	color: var( --muted );
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+.product-preview figcaption {
+	padding: 11px 8px 13px;
+}
+
+.product-preview figcaption strong {
+	color: var( --ink );
+	font-size: 13px;
+}
+
 .product-showcase {
-	margin: 30px 0;
+	margin: 0;
 	padding: 12px;
 	border: 1px solid var( --line );
 	border-radius: 28px;
 	background: rgba( 255, 255, 255, 0.05 );
 	box-shadow: 0 30px 90px rgba( 0, 0, 0, 0.3 );
+}
+
+.product-showcase figcaption {
+	padding: 12px 6px 2px;
 }
 
 /* ---------- Sticker family ---------- */
@@ -673,6 +702,10 @@ h1 {
 	padding: 26px 0 72px;
 }
 
+.grid .card {
+	padding-right: 24px;
+}
+
 .card {
 	padding: 24px;
 	padding-right: 116px;
@@ -725,6 +758,15 @@ h1 {
 .card h3 {
 	margin: 0 0 10px;
 	font-size: 18px;
+}
+
+.card-kicker {
+	margin-bottom: 12px;
+	color: var( --card-accent, var( --cyan ) );
+	font-size: 10px;
+	font-weight: 900;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
 }
 
 .card p {
@@ -1084,6 +1126,51 @@ footer {
 .apps {
 	position: relative;
 	padding: 6px 0 36px;
+}
+
+.notes-section {
+	display: grid;
+	grid-template-columns: minmax( 260px, 0.78fr ) minmax( 0, 1.45fr );
+	gap: 22px 34px;
+	align-items: start;
+	padding-top: 36px;
+}
+
+.notes-section .apps-head {
+	max-width: none;
+	margin: 0;
+}
+
+.notes-section .apps-head h2 {
+	font-size: clamp( 34px, 4.4vw, 54px );
+}
+
+.notes-section .apps-head .actions {
+	margin-bottom: 0;
+}
+
+.notes-section .product-showcase {
+	grid-column: 2;
+	grid-row: 1 / span 2;
+	align-self: center;
+}
+
+.notes-section .app-grid {
+	grid-column: 1;
+}
+
+.notes-section .apps-foot {
+	grid-column: 1 / -1;
+	margin: 14px 0 0;
+	padding: 18px 22px;
+	border: 1px solid var( --line );
+	border-radius: 18px;
+	background: linear-gradient( 90deg, rgba( 255, 79, 168, 0.1 ), rgba( 112, 245, 255, 0.08 ) );
+}
+
+.notes-section .apps-foot strong,
+.notes-section .apps-foot a {
+	color: var( --ink );
 }
 
 .apps-head {
@@ -1499,6 +1586,17 @@ footer {
 		grid-template-columns: 1fr;
 	}
 
+	.notes-section {
+		grid-template-columns: 1fr;
+	}
+
+	.notes-section .product-showcase,
+	.notes-section .app-grid,
+	.notes-section .apps-foot {
+		grid-column: 1;
+		grid-row: auto;
+	}
+
 	.nav {
 		align-items: flex-start;
 		gap: 18px;
@@ -1535,6 +1633,13 @@ footer {
 }
 
 @media (max-width: 520px) {
+	.product-preview figcaption,
+	.product-showcase figcaption {
+		align-items: flex-start;
+		flex-direction: column;
+		gap: 3px;
+	}
+
 	.app-grid {
 		grid-template-columns: 1fr;
 	}
