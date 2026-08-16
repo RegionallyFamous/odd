@@ -28,9 +28,12 @@ describe( 'Apps-only ODD Shop', () => {
 		window.eval( panelSource );
 	} );
 
-	it( 'publishes only ODD Notes in the production catalog', () => {
-		expect( registry.bundles ).toHaveLength( 1 );
-		expect( registry.bundles[ 0 ] ).toMatchObject( { type: 'app', slug: 'odd-notes', name: 'ODD Notes' } );
+	it( 'publishes ODD Notes and ODD Workbench in the production catalog', () => {
+		expect( registry.bundles ).toHaveLength( 2 );
+		expect( registry.bundles ).toEqual( expect.arrayContaining( [
+			expect.objectContaining( { type: 'app', slug: 'odd-notes', name: 'ODD Notes' } ),
+			expect.objectContaining( { type: 'app', slug: 'workbench', name: 'ODD Workbench' } ),
+		] ) );
 	} );
 
 	it( 'registers and renders through the OpenStation native window API', () => {
@@ -38,16 +41,19 @@ describe( 'Apps-only ODD Shop', () => {
 		window.openStationNativeWindows.odd( document.body, context );
 		expect( document.body.textContent ).toContain( 'Apps' );
 		expect( document.body.textContent ).toContain( 'ODD Notes' );
+		expect( document.body.textContent ).toContain( 'ODD Workbench' );
 		expect( context.markLoading ).toHaveBeenCalledOnce();
 		expect( context.markReady ).toHaveBeenCalledOnce();
 	} );
 
-	it( 'renders the single app as a bounded, responsive feature instead of a stretching grid tile', () => {
+	it( 'renders the apps as bounded, responsive features instead of stretching grid tiles', () => {
 		window.openStationNativeWindows.odd( document.body, {} );
-		const card = document.querySelector( '.odd-app-card' );
+		const cards = document.querySelectorAll( '.odd-app-card' );
+		const card = cards[ 0 ];
 
 		expect( document.querySelector( '.odd-shop__main' ) ).not.toBeNull();
 		expect( document.querySelector( '.odd-shop__intro h1' )?.textContent ).toBe( 'Small tools. Strange polish.' );
+		expect( cards ).toHaveLength( 2 );
 		expect( card?.dataset.state ).toBe( 'available' );
 		expect( card?.querySelector( '.odd-app-card__preview' )?.getAttribute( 'src' ) ).toBe( registry.bundles[ 0 ].card_url );
 		expect( card?.querySelector( '.odd-app-card__button--primary' )?.textContent ).toContain( 'Install app' );

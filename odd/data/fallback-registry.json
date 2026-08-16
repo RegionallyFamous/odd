@@ -70,6 +70,62 @@
         "apps"
       ],
       "card_bytes": 10970
+    },
+    {
+      "type": "app",
+      "slug": "workbench",
+      "name": "ODD Workbench",
+      "version": "1.0.2",
+      "author": "Regionally Famous",
+      "description": "Six sharp little utilities for cleaning text, previewing Markdown, making slugs, formatting JSON, comparing drafts, and converting common encodings.",
+      "tags": [
+        "productivity",
+        "utilities",
+        "text",
+        "developer",
+        "local-first"
+      ],
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/workbench.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-workbench.webp",
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/workbench.wp",
+      "sha256": "3081a3f9c593654396ac1182f4cf0acc4da140861be7628e6cbe09f23134fa57",
+      "size": 208916,
+      "department": "apps",
+      "search_text": "app workbench odd regionally famous six sharp little utilities for cleaning text previewing markdown making slugs formatting json comparing drafts and converting common encodings 1 0 2 productivity developer local-first apps",
+      "search_tokens": [
+        "app",
+        "workbench",
+        "odd",
+        "regionally",
+        "famous",
+        "six",
+        "sharp",
+        "little",
+        "utilities",
+        "for",
+        "cleaning",
+        "text",
+        "previewing",
+        "markdown",
+        "making",
+        "slugs",
+        "formatting",
+        "json",
+        "comparing",
+        "drafts",
+        "and",
+        "converting",
+        "common",
+        "encodings",
+        "1",
+        "0",
+        "2",
+        "productivity",
+        "developer",
+        "local-first",
+        "apps"
+      ],
+      "card_bytes": 54244
     }
   ]
 }

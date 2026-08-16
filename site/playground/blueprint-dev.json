@@ -2,14 +2,22 @@
   "$schema": "https://playground.wordpress.net/blueprint-schema.json",
   "landingPage": "/wp-admin/index.php?desktop_mode_portal=1",
   "preferredVersions": {
-    "php": "8.1",
-    "wp": "6.9"
+    "php": "8.5",
+    "wp": "latest"
   },
   "features": {
     "networking": true
   },
   "login": true,
   "steps": [
+    {
+      "step": "wp-cli",
+      "command": "wp core update --version=7.0.4 --force"
+    },
+    {
+      "step": "wp-cli",
+      "command": "wp core update-db"
+    },
     {
       "step": "installPlugin",
       "pluginData": {

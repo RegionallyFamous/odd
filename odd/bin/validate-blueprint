@@ -101,6 +101,12 @@ SITE_PLAYGROUND_PREVIEW_LAUNCHER = REPO_ROOT / "site" / "playground" / "preview"
 SITE_GO_PREVIEW_LAUNCHER = REPO_ROOT / "site" / "go" / "preview" / "index.html"
 PLUGIN_MAIN = REPO_ROOT / "odd" / "odd.php"
 PREVIEW_CATALOG_URL = "https://odd.regionallyfamous.com/catalog-preview/v1/registry.json"
+PLAYGROUND_PHP_VERSION = "8.5"
+PLAYGROUND_WORDPRESS_VERSION = "7.0.4"
+WORDPRESS_CORE_UPDATE_COMMAND = (
+    f"wp core update --version={PLAYGROUND_WORDPRESS_VERSION} --force"
+)
+WORDPRESS_DATABASE_UPDATE_COMMAND = "wp core update-db"
 
 
 ODD_CONST_RE = re.compile(
@@ -258,6 +264,38 @@ def validate_preferred_versions(data: dict, path: Path, requires_php: str) -> li
             f"{rel}: preferredVersions.php must satisfy plugin Requires PHP "
             f"{requires_php}; got {php}"
         )
+    if php != PLAYGROUND_PHP_VERSION:
+        problems.append(
+            f"{rel}: preferredVersions.php must use the current supported stable "
+            f"Playground runtime {PLAYGROUND_PHP_VERSION}; got {php}"
+        )
+
+    wp = preferred.get("wp")
+    if wp != "latest":
+        problems.append(
+            f'{rel}: preferredVersions.wp must be "latest"; got {wp!r}'
+        )
+    return problems
+
+
+def validate_wordpress_update_steps(data: dict, path: Path) -> list[str]:
+    """Require the current stable WordPress patch even when Playground lags."""
+
+    rel = path.relative_to(REPO_ROOT)
+    commands = [
+        step.get("command")
+        for step in data.get("steps", [])
+        if isinstance(step, dict) and step.get("step") == "wp-cli"
+    ]
+    problems: list[str] = []
+    if WORDPRESS_CORE_UPDATE_COMMAND not in commands:
+        problems.append(
+            f"{rel}: missing wp-cli step {WORDPRESS_CORE_UPDATE_COMMAND!r}"
+        )
+    if WORDPRESS_DATABASE_UPDATE_COMMAND not in commands:
+        problems.append(
+            f"{rel}: missing wp-cli step {WORDPRESS_DATABASE_UPDATE_COMMAND!r}"
+        )
     return problems
 
 
@@ -283,6 +321,7 @@ def validate_file(path: Path, odd_version: str, dm_pin: str, requires_php: str) 
     if not isinstance(steps, list) or not steps:
         problems.append("blueprint has no steps array")
     problems.extend(validate_preferred_versions(data, path, requires_php))
+    problems.extend(validate_wordpress_update_steps(data, path))
 
     allowed_ref_types = {"tag", "branch", "commit", "refname"}
     expected_odd_ref = "v" + odd_version
@@ -476,6 +515,7 @@ def validate_dev_file(path: Path, dm_min: str, requires_php: str) -> tuple[list[
     if not isinstance(steps, list) or not steps:
         problems.append("blueprint has no steps array")
     problems.extend(validate_preferred_versions(data, path, requires_php))
+    problems.extend(validate_wordpress_update_steps(data, path))
 
     allowed_ref_types = {"tag", "branch", "commit", "refname"}
     pinned_dm_release = False
@@ -593,6 +633,7 @@ def validate_preview_file(path: Path, dm_min: str, requires_php: str) -> tuple[l
     if not isinstance(steps, list) or not steps:
         problems.append("blueprint has no steps array")
     problems.extend(validate_preferred_versions(data, path, requires_php))
+    problems.extend(validate_wordpress_update_steps(data, path))
 
     allowed_ref_types = {"tag", "branch", "commit", "refname"}
     pinned_dm_release = False
@@ -752,15 +793,25 @@ def main() -> int:
         problems.extend(file_problems)
         total_steps += step_count
 
-    stable_cache_key = f"wporg-odd-{odd_version}-dm-{stable_pin}"
+    runtime_cache_key = (
+        f"os-{stable_pin}-wp-{PLAYGROUND_WORDPRESS_VERSION}"
+        f"-php-{PLAYGROUND_PHP_VERSION}"
+    )
+    stable_cache_key = f"wporg-odd-{odd_version}-{runtime_cache_key}"
     for path in (SITE_PLAYGROUND_LAUNCHER, SITE_GO_LAUNCHER):
         problems.extend(validate_playground_launcher(path, stable_cache_key))
 
-    dev_cache_key_part = f"os-{openstation_min}"
+    dev_cache_key_part = (
+        f"os-{openstation_min}-wp-{PLAYGROUND_WORDPRESS_VERSION}"
+        f"-php-{PLAYGROUND_PHP_VERSION}"
+    )
     for path in (SITE_PLAYGROUND_DEV_LAUNCHER, SITE_GO_DEV_LAUNCHER):
         problems.extend(validate_playground_launcher(path, dev_cache_key_part))
 
-    preview_cache_key_part = f"preview-"
+    preview_cache_key_part = (
+        f"os-{openstation_min}-wp-{PLAYGROUND_WORDPRESS_VERSION}"
+        f"-php-{PLAYGROUND_PHP_VERSION}"
+    )
     for path in (SITE_PLAYGROUND_PREVIEW_LAUNCHER, SITE_GO_PREVIEW_LAUNCHER):
         problems.extend(validate_playground_launcher(path, preview_cache_key_part))
 

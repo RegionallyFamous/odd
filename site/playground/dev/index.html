@@ -14,8 +14,8 @@
 		( function () {
 			'use strict';
 			var blueprintBase = 'https://odd.regionallyfamous.com/playground/blueprint-dev.json';
-			var openStationVersion = '1.1.0';
-			var fallbackKey = 'dev-live-' + Date.now() + '-os-' + openStationVersion;
+			var runtimeKey = 'os-1.1.0-wp-7.0.4-php-8.5';
+			var fallbackKey = 'dev-live-' + Date.now() + '-' + runtimeKey;
 			var done = false;
 			function launch( key ) {
 				if ( done ) {
@@ -48,7 +48,7 @@
 					var sha = data && typeof data.sha === 'string' && /^[0-9a-f]{40}$/i.test( data.sha )
 						? data.sha.slice( 0, 7 )
 						: '';
-					launch( sha ? 'dev-' + sha + '-os-' + openStationVersion : fallbackKey );
+					launch( sha ? 'dev-' + sha + '-' + runtimeKey : fallbackKey );
 				} )
 				.catch( function () {
 					launch( fallbackKey );
@@ -56,7 +56,7 @@
 		} )();
 	</script>
 	<noscript>
-			<meta http-equiv="refresh" content="0; url=https://playground.wordpress.net/?mode=seamless&blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-noscript-os-1.1.0">
+			<meta http-equiv="refresh" content="0; url=https://playground.wordpress.net/?mode=seamless&blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-noscript-os-1.1.0-wp-7.0.4-php-8.5">
 	</noscript>
 </head>
 <body>
@@ -66,7 +66,7 @@
 			<h1>Opening ODD <code>main</code> with pinned OpenStation 1.1.0.</h1>
 			<p class="lede">Ephemeral — may break. The launcher checks the newest <code>main</code> commit before opening Playground.</p>
 			<div class="actions">
-				<a class="button primary" href="https://playground.wordpress.net/?mode=seamless&blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-manual-os-1.1.0">Open Playground</a>
+				<a class="button primary" href="https://playground.wordpress.net/?mode=seamless&blueprint-url=https%3A%2F%2Fodd.regionallyfamous.com%2Fplayground%2Fblueprint-dev.json%3Foddbp%3Ddev-manual-os-1.1.0-wp-7.0.4-php-8.5">Open Playground</a>
 				<a class="button" href="/playground/">Stable demo</a>
 				<a class="button" href="/">Back to ODD</a>
 			</div>
