@@ -6,7 +6,29 @@
 class ODDOUT_Apps_Only_Test extends WP_UnitTestCase {
 	public function test_catalog_allows_only_apps() {
 		$this->assertSame( array( 'app' ), oddout_catalog_allowed_types() );
-		$this->assertSame( array( 'odd-notes' ), oddout_catalog_allowed_slugs() );
+		$this->assertSame( array( 'odd-notes', 'workbench' ), oddout_catalog_allowed_slugs() );
+	}
+
+	public function test_catalog_keeps_workbench_and_drops_unapproved_apps() {
+		$registry = oddout_catalog_normalise(
+			array(
+				'version' => 1,
+				'bundles' => array(
+					array(
+						'type' => 'app',
+						'slug' => 'workbench',
+						'name' => 'ODD Workbench',
+					),
+					array(
+						'type' => 'app',
+						'slug' => 'unapproved-app',
+						'name' => 'Unapproved App',
+					),
+				),
+			)
+		);
+
+		$this->assertSame( array( 'workbench' ), wp_list_pluck( $registry['bundles'], 'slug' ) );
 	}
 
 	public function test_odd_notes_uses_read_capability() {

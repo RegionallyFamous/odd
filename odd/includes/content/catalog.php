@@ -106,7 +106,7 @@ function oddout_catalog_allowed_types() {
  * @return string[]
  */
 function oddout_catalog_allowed_slugs() {
-	return array( 'odd-notes' );
+	return array( 'odd-notes', 'workbench' );
 }
 
 function oddout_catalog_max_response_bytes() {
