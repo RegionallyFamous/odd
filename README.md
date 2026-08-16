@@ -1,98 +1,64 @@
 # ODD — Outlandish Desktop Decorator
 
-ODD is a focused app store for [OpenStation](https://github.com/WordPress/openstation). The WordPress.org dependency slug remains [`desktop-mode`](https://wordpress.org/plugins/desktop-mode/), while ODD targets OpenStation 1.1.0's current `openstation_*`, `wp.os`, and `os.*` public APIs.
+**OpenStation turns WordPress into a desktop. ODD fills it with things worth opening.**
 
-The production catalog currently contains one app: **ODD Notes**.
+[OpenStation](https://github.com/WordPress/openstation) makes WordPress feel less like a stack of admin screens and more like a computer you own. You get a desktop, a dock, movable windows, and apps that can live alongside the work you are already doing.
 
-**Requires:** WordPress 6.8+ · PHP 8.1+ · OpenStation 1.1.0+
+ODD is an app shop made for that world. We are building useful little tools, playful experiments, and all sorts of cool apps that make OpenStation more personal, more capable, and more fun. Some will be practical. Some will be weird. A few may be delightfully unnecessary.
 
-- [Try the current `main` branch in Playground](https://odd.regionallyfamous.com/go/dev/)
-- [Open the stable WordPress.org demo](https://odd.regionallyfamous.com/go/)
-- [Browse the production catalog](https://odd.regionallyfamous.com/catalog/v1/registry.json)
+**ODD Notes is the first app, not the last.**
 
-## What ODD owns
+- [Try ODD in WordPress Playground](https://odd.regionallyfamous.com/go/)
+- [Get ODD from WordPress.org](https://wordpress.org/plugins/odd-outlandish-desktop-decorator/)
 
-- **ODD Shop** — a native OpenStation window with one Apps section and a verified remote catalog.
-- **ODD Notes** — an installable native OpenStation app backed by WordPress content.
+![The ODD Shop open inside OpenStation](wporg-assets/screenshot-1.jpg)
 
-OpenStation continues to own windows, desktop and dock placement, launcher visibility, and the surrounding operating-system UI. ODD registers through the host's public APIs instead of replacing those surfaces.
+## Why OpenStation is cool
 
-Legacy wallpaper, icon-set, cursor, widget, shuffle, and custom-placement systems are not loaded or published. Their historical source directories remain in the repository for reference; `_tools/catalog-sources/catalog.json` is the production catalog allowlist.
+OpenStation gives WordPress a place to breathe. Instead of bouncing between disconnected pages, you can open tools in real windows, arrange the things you use, and build a workspace that feels like yours.
 
-## ODD Notes 1.3
+- Open WordPress tools and apps in movable windows.
+- Keep the things you use close on the desktop and dock.
+- Move between tasks without losing your place.
+- Keep WordPress as the home for your content and data.
 
-ODD Notes is adapted from the latest Notes work in the OpenStation repository. It stores notes using OpenStation's existing `wpd_note` data model, so notes remain WordPress content rather than opaque browser data.
+It is still WordPress underneath. It just feels a lot more alive.
 
-Features include:
+## Why ODD is cool
 
-- Search, tags, favorites, archives, sharing, and desktop pinning.
-- Autosave, WordPress revisions, and revision restore.
-- Local-first draft recovery, isolated by WordPress installation and user.
-- Optimistic concurrency that preserves server-issued version tokens and only prompts for genuine competing edits.
-- Idempotent retry handling for saves whose first response was interrupted.
+ODD gives OpenStation apps a friendly home. Open the Shop, see what looks interesting, install it, and launch it like it belongs there.
 
-Browser journals are a recovery layer only. WordPress remains the primary store.
+We are starting with one app because we want every app on the shelf to be worth opening. The collection will grow with useful apps, odd little ideas, creative tools, and things that make your OpenStation feel unlike anyone else's.
 
-## Development
+## Meet ODD Notes
 
-Install dependencies and rebuild the maintainable ODD Notes source:
+ODD Notes is a calm place to catch a thought without leaving your desktop. Notes are saved in WordPress, private by default, and easy to find again.
+
+- Write and autosave notes without breaking your flow.
+- Organize with search, tags, favorites, and archives.
+- Pin an important note right on the OpenStation desktop.
+- Share a note only when you choose to.
+- Recover local drafts and revisit earlier revisions.
+
+![ODD Notes running as a native OpenStation app](wporg-assets/screenshot-2.jpg)
+
+## Try it
+
+The fastest way to see ODD is the [live WordPress Playground demo](https://odd.regionallyfamous.com/go/). It opens a temporary WordPress site with OpenStation and the current stable ODD release ready to explore.
+
+To install it on your own site, get [ODD from WordPress.org](https://wordpress.org/plugins/odd-outlandish-desktop-decorator/). ODD requires WordPress 6.8 or newer, PHP 8.1 or newer, and OpenStation 1.1.0 or newer.
+
+## Want to help make the next app?
+
+This repository contains the ODD Shop, ODD Notes, and the catalog that delivers apps to OpenStation. If you want to build, test, or contribute, start with the [contributor guide](CONTRIBUTING.md) or browse the [project wiki](https://github.com/RegionallyFamous/odd/wiki).
 
 ```sh
 npm ci
 npm run build:notes
-```
-
-Build and validate the production catalog:
-
-```sh
-python3 _tools/build-catalog.py
-ODD_VALIDATE_REBUILD=1 odd/bin/validate-catalog
-odd/bin/validate-blueprint
-```
-
-Run the focused tests and package checks:
-
-```sh
 npm test
-composer phpcs
-odd/bin/check-version
-odd/bin/check-plugin-metadata
-odd/bin/build-zip
-odd/bin/check-zip-contents
 ```
 
-Run the real WordPress/OpenStation browser smoke test locally with Docker:
-
-```sh
-bash bin/e2e-local.sh all e2e/panel.spec.ts
-```
-
-The browser test installs the freshly built local catalog fixture, opens ODD Notes, writes and saves a note, exercises an idempotent stale retry, refreshes the library, and confirms that no false conflict prompt appears.
-
-## Source layout
-
-```text
-odd/                                         WordPress plugin runtime
-odd/includes/notes/                          WordPress note storage and REST API
-_tools/catalog-sources/apps/odd-notes/src/  Maintainable ODD Notes TypeScript
-_tools/catalog-sources/apps/odd-notes/       App manifest, assets, and generated bundle source
-site/catalog/v1/                             Generated production catalog
-e2e/panel.spec.ts                            Real WordPress/OpenStation browser smoke
-```
-
-`npm run build:notes` compiles the TypeScript runtime and joins it to the pinned OpenStation component snapshot. Do not hand-edit `bundle-src/assets/js/odd-notes.min.js`; CI and the pre-commit hook reject source/bundle drift.
-
-## Release boundaries
-
-- **Preview catalog:** non-live QA through [`/go/preview/`](https://odd.regionallyfamous.com/go/preview/).
-- **Production catalog:** app sources plus generated `site/catalog/v1/` artifacts pushed to `main`.
-- **Plugin runtime:** versioned GitHub and WordPress.org release when PHP/runtime code changes must reach stable installs.
-
-A catalog deploy does not create a plugin release, move a tag, or publish WordPress.org SVN.
-
-## Documentation
-
-The [GitHub wiki](https://github.com/RegionallyFamous/odd/wiki) covers the current architecture, ODD Notes reliability model, development workflow, and release lanes.
+The [development Playground](https://odd.regionallyfamous.com/go/dev/) follows the current `main` branch when you want to see what is coming next.
 
 ## License
 
