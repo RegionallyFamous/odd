@@ -92,7 +92,10 @@ def blueprint_problems(wordpress: str, openstation: str) -> list[str]:
         "https://downloads.wordpress.org/plugin/"
         f"desktop-mode.{openstation}.zip"
     )
-    expected_core_command = f"wp core update --version={wordpress} --force"
+    expected_wordpress = (
+        "https://playground.wordpress.net/plugin-proxy.php?url="
+        f"https://wordpress.org/wordpress-{wordpress}.zip"
+    )
     problems: list[str] = []
     for path in BLUEPRINTS:
         try:
@@ -100,16 +103,25 @@ def blueprint_problems(wordpress: str, openstation: str) -> list[str]:
         except (OSError, json.JSONDecodeError) as error:
             problems.append(f"{path.relative_to(ROOT)}: {error}")
             continue
-        if blueprint.get("preferredVersions", {}).get("wp") != "latest":
-            problems.append(f'{path.relative_to(ROOT)}: preferredVersions.wp must be "latest"')
+        if blueprint.get("preferredVersions", {}).get("wp") != expected_wordpress:
+            problems.append(
+                f"{path.relative_to(ROOT)}: preferredVersions.wp must boot the "
+                f"current WordPress package {expected_wordpress}"
+            )
         commands = [
             str(step.get("command") or "")
             for step in blueprint.get("steps", [])
             if isinstance(step, dict) and step.get("step") == "wp-cli"
         ]
-        if expected_core_command not in commands:
+        redundant_updates = [
+            command for command in commands
+            if command.strip().startswith("wp core update")
+        ]
+        if redundant_updates:
             problems.append(
-                f"{path.relative_to(ROOT)}: missing {expected_core_command!r}"
+                f"{path.relative_to(ROOT)}: preferredVersions.wp already boots "
+                f"the current WordPress package; remove redundant wp-cli updates "
+                f"{redundant_updates!r}"
             )
         plugin_urls = [
             str(step.get("pluginData", {}).get("url") or "")

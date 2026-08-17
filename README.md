@@ -6,7 +6,7 @@
 
 ODD is an app shop made for that world. We are building useful little tools, playful experiments, and all sorts of cool apps that make OpenStation more personal, more capable, and more fun. Some will be practical. Some will be weird. A few may be delightfully unnecessary.
 
-**ODD Notes is the first app, not the last.**
+**The catalog is live, independently published, and built to keep growing.**
 
 - [Try ODD in WordPress Playground](https://odd.regionallyfamous.com/go/)
 - [Get ODD from WordPress.org](https://wordpress.org/plugins/odd-outlandish-desktop-decorator/)
@@ -28,11 +28,13 @@ It is still WordPress underneath. It just feels a lot more alive.
 
 ODD gives OpenStation apps a friendly home. Open the Shop, see what looks interesting, install it, and launch it like it belongs there.
 
-We are starting with one app because we want every app on the shelf to be worth opening. The collection will grow with useful apps, odd little ideas, creative tools, and things that make your OpenStation feel unlike anyone else's.
+The app catalog ships independently from the ODD plugin. New apps and app updates can land without asking people to reinstall the Shop, as long as they use the public app contract already provided by ODD and OpenStation.
 
-## Meet ODD Notes
+## A growing catalog
 
-ODD Notes is a calm place to catch a thought without leaving your desktop. Notes are saved in WordPress, private by default, and easy to find again.
+The live [ODD site](https://odd.regionallyfamous.com/) is the current app shelf. It updates with the catalog, while this README stays focused on the durable product and contributor contract.
+
+ODD Notes is one example of what belongs there: a calm place to catch a thought without leaving your desktop. Notes are saved in WordPress, private by default, and easy to find again.
 
 - Write and autosave notes without breaking your flow.
 - Organize with search, tags, favorites, and archives.
@@ -52,7 +54,7 @@ To install it on your own site, get [ODD from WordPress.org](https://wordpress.o
 
 ## Want to help make the next app?
 
-This repository contains the ODD Shop, ODD Notes, and the catalog that delivers apps to OpenStation. If you want to build, test, or contribute, start with the [contributor guide](CONTRIBUTING.md) or browse the [project wiki](https://github.com/RegionallyFamous/odd/wiki).
+This repository contains the ODD Shop and its independently published app catalog. If you want to build, test, or contribute, start with the [contributor guide](CONTRIBUTING.md) or browse the [project wiki](https://github.com/RegionallyFamous/odd/wiki).
 
 ```sh
 npm ci

@@ -158,7 +158,7 @@ provision() {
 
 	# Exercise first-install behavior in the browser, not a pre-seeded app state.
 	# shellcheck disable=SC2016
-	( cd "${WP_DIR}" && e2e_wp --user=1 eval 'foreach (array("odd-notes", "workbench") as $slug) { if (oddout_bundle_slug_in_use($slug)) { $result = oddout_bundle_uninstall($slug); if (is_wp_error($result)) { WP_CLI::error($result->get_error_message()); } } } if (function_exists("openstation_clear_session")) { openstation_clear_session(1); } delete_user_meta(1, "desktop_mode_os_settings"); oddout_catalog_refresh();' )
+	( cd "${WP_DIR}" && e2e_wp --user=1 eval 'foreach (array_keys(oddout_apps_index_load()) as $slug) { if (oddout_bundle_slug_in_use($slug)) { $result = oddout_bundle_uninstall($slug); if (is_wp_error($result)) { WP_CLI::error($result->get_error_message()); } } } if (function_exists("openstation_clear_session")) { openstation_clear_session(1); } delete_user_meta(1, "desktop_mode_os_settings"); oddout_catalog_refresh();' )
 
 	# Plain permalinks break `/wp-json/...` on `wp server`; OpenStation + Playwright need REST.
 	( cd "${WP_DIR}" && e2e_wp option update permalink_structure '/%postname%/' )

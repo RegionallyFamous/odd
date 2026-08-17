@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: odd\n"
 "Report-Msgid-Bugs-To: https://github.com/RegionallyFamous/odd/issues\n"
-"POT-Creation-Date: 2026-08-16 20:28-0500\n"
+"POT-Creation-Date: 2026-08-17 07:01-0500\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -40,7 +40,7 @@ msgstr ""
 msgid "A bundle named \"%s\" is already installed. Remove it before reinstalling."
 msgstr ""
 
-#: odd/includes/content/catalog.php:835
+#: odd/includes/content/catalog.php:865
 msgid "A catalog operation is already in progress. Please try again in a moment."
 msgstr ""
 
@@ -84,7 +84,7 @@ msgstr ""
 msgid "An installed bundle with this slug has a different type."
 msgstr ""
 
-#: odd/includes/content/catalog.php:2006
+#: odd/includes/content/catalog.php:2036
 msgid "An update is available. Pass allow_update=1 to reinstall."
 msgstr ""
 
@@ -232,15 +232,15 @@ msgstr ""
 msgid "Bundle exceeds %d files."
 msgstr ""
 
-#: odd/includes/content/catalog.php:2007
+#: odd/includes/content/catalog.php:2037
 msgid "Bundle is already installed."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1987
+#: odd/includes/content/catalog.php:2017
 msgid "Bundle is not compatible with this ODD runtime."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1980
+#: odd/includes/content/catalog.php:2010
 msgid "Bundle is not in the catalog."
 msgstr ""
 
@@ -248,11 +248,11 @@ msgstr ""
 msgid "Bundle is too large (%1$s MB uncompressed). Maximum is %2$s MB."
 msgstr ""
 
-#: odd/includes/content/catalog.php:946
+#: odd/includes/content/catalog.php:976
 msgid "Bundle sha256 mismatch. Expected %1$s, downloaded %2$s."
 msgstr ""
 
-#: odd/includes/content/catalog.php:961
+#: odd/includes/content/catalog.php:991
 msgid "Bundle size mismatch. Expected %1$d bytes, downloaded %2$d bytes."
 msgstr ""
 
@@ -260,31 +260,31 @@ msgstr ""
 msgid "Bundles must have a .wp extension."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1859
+#: odd/includes/content/catalog.php:1889
 msgid "Bypass the short update-check cache."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1358
+#: odd/includes/content/catalog.php:1388
 msgid "Catalog body exceeded the maximum allowed size."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1806
+#: odd/includes/content/catalog.php:1836
 msgid "Catalog bundle slug to install."
 msgstr ""
 
-#: odd/includes/content/catalog.php:886
+#: odd/includes/content/catalog.php:916
 msgid "Catalog download URL must stay under the configured catalog base."
 msgstr ""
 
-#: odd/includes/content/catalog.php:867
+#: odd/includes/content/catalog.php:897
 msgid "Catalog downloads must use HTTPS."
 msgstr ""
 
-#: odd/includes/content/catalog.php:861
+#: odd/includes/content/catalog.php:891
 msgid "Catalog entry has no download URL."
 msgstr ""
 
-#: odd/includes/content/catalog.php:878
+#: odd/includes/content/catalog.php:908
 msgid "Catalog entry is missing a required sha256 digest."
 msgstr ""
 
@@ -292,71 +292,71 @@ msgstr ""
 msgid "Catalog online"
 msgstr ""
 
-#: odd/includes/content/catalog.php:1308
+#: odd/includes/content/catalog.php:1338
 msgid "Catalog registry URL must use HTTPS."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1288
+#: odd/includes/content/catalog.php:1318
 msgid "Catalog registry contains a bundle URL outside the configured catalog base."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1278
+#: odd/includes/content/catalog.php:1308
 msgid "Catalog registry contains a bundle with a missing URL field."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1259
+#: odd/includes/content/catalog.php:1289
 msgid "Catalog registry contains a bundle with an invalid sha256."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1268
+#: odd/includes/content/catalog.php:1298
 msgid "Catalog registry contains a bundle with an invalid size."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1193
+#: odd/includes/content/catalog.php:1223
 msgid "Catalog registry contains a bundle with an invalid slug."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1218
+#: odd/includes/content/catalog.php:1248
 msgid "Catalog registry contains a bundle with an invalid version."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1227
+#: odd/includes/content/catalog.php:1257
 msgid "Catalog registry contains a bundle with malformed compatibility requirements."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1209
+#: odd/includes/content/catalog.php:1239
 msgid "Catalog registry contains a bundle without a name."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1171
+#: odd/includes/content/catalog.php:1201
 msgid "Catalog registry contains a malformed bundle row."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1245
+#: odd/includes/content/catalog.php:1275
 msgid "Catalog registry contains an invalid compatibility requirement version."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1180
+#: odd/includes/content/catalog.php:1210
 msgid "Catalog registry contains an unsupported bundle type."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1235
+#: odd/includes/content/catalog.php:1265
 msgid "Catalog registry contains an unsupported compatibility requirement."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1200
+#: odd/includes/content/catalog.php:1230
 msgid "Catalog registry contains duplicate bundle slugs."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1162
+#: odd/includes/content/catalog.php:1192
 msgid "Catalog registry is missing the bundles array."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1152
+#: odd/includes/content/catalog.php:1182
 msgid "Catalog registry must be a JSON object."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1157
+#: odd/includes/content/catalog.php:1187
 msgid "Catalog registry version must be 1."
 msgstr ""
 
@@ -364,19 +364,19 @@ msgstr ""
 msgid "Catalog row is missing sha256, so repair cannot verify the archive."
 msgstr ""
 
-#: odd/includes/content/catalog.php:259
+#: odd/includes/content/catalog.php:289
 msgid "Catalog signature URL could not be resolved."
 msgstr ""
 
-#: odd/includes/content/catalog.php:246
+#: odd/includes/content/catalog.php:276
 msgid "Catalog signature did not verify against a trusted key."
 msgstr ""
 
-#: odd/includes/content/catalog.php:216
+#: odd/includes/content/catalog.php:246
 msgid "Catalog signature is missing or malformed."
 msgstr ""
 
-#: odd/includes/content/catalog.php:207
+#: odd/includes/content/catalog.php:237
 msgid "Catalog signatures require the PHP sodium extension."
 msgstr ""
 
@@ -384,7 +384,7 @@ msgstr ""
 msgid "Catalog unavailable"
 msgstr ""
 
-#: odd/includes/content/catalog.php:2018
+#: odd/includes/content/catalog.php:2048
 msgid "Catalog version is not newer than the installed version."
 msgstr ""
 
@@ -405,7 +405,7 @@ msgstr ""
 msgid "Could not create staging directory."
 msgstr ""
 
-#: odd/includes/content/catalog.php:915
+#: odd/includes/content/catalog.php:945
 msgid "Could not download bundle: %s"
 msgstr ""
 
@@ -417,15 +417,15 @@ msgstr ""
 msgid "Could not finalize app installation."
 msgstr ""
 
-#: odd/includes/content/catalog.php:2152
+#: odd/includes/content/catalog.php:2182
 msgid "Downloaded bundle slug does not match the catalog entry."
 msgstr ""
 
-#: odd/includes/content/catalog.php:2163
+#: odd/includes/content/catalog.php:2193
 msgid "Downloaded bundle type does not match the catalog entry."
 msgstr ""
 
-#: odd/includes/content/catalog.php:2175
+#: odd/includes/content/catalog.php:2205
 msgid "Downloaded bundle version does not match the catalog entry."
 msgstr ""
 
@@ -597,7 +597,7 @@ msgid "Manifest window title must be text of at most 80 bytes."
 msgstr ""
 
 #: odd/includes/apps/rest.php:719
-#: odd/includes/content/catalog.php:1975
+#: odd/includes/content/catalog.php:2005
 msgid "Missing slug."
 msgstr ""
 
@@ -625,7 +625,7 @@ msgstr ""
 msgid "No bundle with that slug is installed."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1303
+#: odd/includes/content/catalog.php:1333
 msgid "No catalog URL configured."
 msgstr ""
 
@@ -633,11 +633,11 @@ msgstr ""
 msgid "No file uploaded. Use multipart field \"file\"."
 msgstr ""
 
-#: odd/includes/content/catalog.php:556
+#: odd/includes/content/catalog.php:586
 msgid "No previous catalog snapshot is available."
 msgstr ""
 
-#: odd/includes/content/catalog.php:225
+#: odd/includes/content/catalog.php:255
 msgid "No trusted catalog signing key is configured."
 msgstr ""
 
@@ -665,7 +665,7 @@ msgstr ""
 msgid "ODD / APPS"
 msgstr ""
 
-#: odd/includes/content/catalog.php:723
+#: odd/includes/content/catalog.php:753
 msgid "ODD API"
 msgstr ""
 
@@ -738,7 +738,7 @@ msgstr ""
 msgid "Open app"
 msgstr ""
 
-#: odd/includes/content/catalog.php:721
+#: odd/includes/content/catalog.php:751
 msgid "OpenStation"
 msgstr ""
 
@@ -774,7 +774,7 @@ msgstr ""
 msgid "Opening…"
 msgstr ""
 
-#: odd/includes/content/catalog.php:1782
+#: odd/includes/content/catalog.php:1812
 msgid "Optional catalog bundle type filter."
 msgstr ""
 
@@ -835,11 +835,11 @@ msgstr ""
 msgid "Refreshing…"
 msgstr ""
 
-#: odd/includes/content/catalog.php:1575
+#: odd/includes/content/catalog.php:1605
 msgid "Remote catalog returned zero bundles; keeping the current catalog."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1043
+#: odd/includes/content/catalog.php:1073
 msgid "Remote catalog returned zero bundles; keeping the last known good catalog."
 msgstr ""
 
@@ -855,7 +855,7 @@ msgstr ""
 msgid "Removing…"
 msgstr ""
 
-#: odd/includes/content/catalog.php:749
+#: odd/includes/content/catalog.php:779
 msgid "Requires %1$s %2$s or newer; detected %3$s."
 msgstr ""
 
@@ -871,7 +871,7 @@ msgstr ""
 msgid "Revision not found."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1887
+#: odd/includes/content/catalog.php:1917
 msgid "Rollback snapshot index to restore."
 msgstr ""
 
@@ -965,7 +965,7 @@ msgstr ""
 msgid "The change was saved, but the desktop could not refresh."
 msgstr ""
 
-#: odd/includes/content/catalog.php:931
+#: odd/includes/content/catalog.php:961
 msgid "The downloaded file is not a valid .wp archive."
 msgstr ""
 
@@ -1030,7 +1030,7 @@ msgstr ""
 msgid "Whether the app should be enabled."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1816
+#: odd/includes/content/catalog.php:1846
 msgid "Whether to reinstall when the catalog version is newer."
 msgstr ""
 
@@ -1092,7 +1092,7 @@ msgstr ""
 msgid "surfaces must be an object."
 msgstr ""
 
-#: odd/includes/content/catalog.php:370
+#: odd/includes/content/catalog.php:400
 #: odd/includes/dependencies.php:127
 msgid "unknown"
 msgstr ""

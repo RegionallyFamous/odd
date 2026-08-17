@@ -5,11 +5,11 @@ Requires at least: 6.8
 Tested up to: 7.0
 Requires PHP: 8.1
 Requires Plugins: desktop-mode
-Stable tag: 1.1.8
+Stable tag: 1.1.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-A growing collection of delightful OpenStation apps, including ODD Notes and ODD Workbench.
+A growing catalog of delightful apps for OpenStation.
 
 == Description ==
 
@@ -21,7 +21,7 @@ ODD is here to fill that desktop with good stuff.
 
 We are building useful little tools, playful experiments, and apps that make WordPress more fun to spend time in. Some will help you get work done. Some may be delightfully unnecessary. All of them should feel like they belong in OpenStation.
 
-We started with one app because we want each one to be good. ODD Notes was first; ODD Workbench is the second.
+Each app ships through ODD's signed catalog, so the shelf can grow without waiting for another plugin release.
 
 = Meet ODD Notes =
 
@@ -36,24 +36,13 @@ You can:
 * Browse WordPress revision history and restore an earlier version.
 * Trust autosave without sending your notes to another service.
 
-= Meet ODD Workbench =
-
-ODD Workbench puts six compact, local-first utilities in one OpenStation window:
-
-* Clean up pasted text and whitespace.
-* Preview Markdown while you write.
-* Turn titles into clean slugs.
-* Format and validate JSON.
-* Compare two drafts.
-* Encode and decode common text formats.
-
 = Why ODD? =
 
 Because OpenStation deserves great apps.
 
 ODD gives those apps one friendly place to live. Open the Shop, find something interesting, install it, and decide whether it belongs on your desktop, in your dock, or both. OpenStation creates the workspace. ODD fills it with things worth opening.
 
-ODD Notes is only the beginning. We plan to keep making all sorts of cool apps for OpenStation: useful ones, weird ones, tiny ones, and things WordPress did not know it needed yet.
+The shelf will keep growing with thoughtfully made OpenStation apps: useful ones, weird ones, tiny ones, and things WordPress did not know it needed yet.
 
 == Installation ==
 
@@ -61,7 +50,7 @@ ODD Notes is only the beginning. We plan to keep making all sorts of cool apps f
 2. Install and activate ODD.
 3. Enable OpenStation for your user.
 4. Open ODD Shop from the OpenStation desktop.
-5. Install ODD Notes or ODD Workbench, then come back as the app shelf grows.
+5. Choose an app from the shelf and install it.
 
 == Frequently Asked Questions ==
 
@@ -71,7 +60,7 @@ No. OpenStation, ODD, and ODD Notes live inside your WordPress admin workspace. 
 
 = Is ODD just a notes app? =
 
-No. ODD Notes and ODD Workbench are the first apps in the Shop. The plan is to keep adding thoughtfully made OpenStation apps over time.
+No. ODD Notes is one example from a growing shelf. New apps can arrive through the signed catalog without another plugin update.
 
 = Why does ODD require OpenStation? =
 
@@ -110,11 +99,18 @@ To rebuild the distributed files:
 
 == Screenshots ==
 
-1. ODD Shop has one focused Apps department with verified ODD Notes and ODD Workbench install cards.
+1. ODD Shop has one focused Apps department with verified install cards from the signed catalog.
 2. ODD Notes combines a searchable library, tags, favorites, paper colors, and a distraction-free editor in one native OpenStation window.
 3. WordPress revision history keeps earlier note content available for one-click restore.
 
 == Changelog ==
+
+= 1.1.9 =
+
+* Made the signed Apps catalog the authority for app slugs, so future apps no longer require plugin allowlist updates.
+* Kept an optional host filter for sites that want to restrict which catalog app slugs may install or launch.
+* Split catalog publishing from the plugin's frozen offline fallback so normal app releases do not modify the plugin package.
+* Unified ODD Shop and catalog app launchers around simple neutral monochrome icons.
 
 = 1.1.8 =
 
@@ -145,6 +141,10 @@ To rebuild the distributed files:
 * Focused the product, catalog, and distributable package exclusively on apps.
 
 == Upgrade Notice ==
+
+= 1.1.9 =
+
+Future ODD apps can now arrive through the signed catalog without another plugin update.
 
 = 1.1.8 =
 

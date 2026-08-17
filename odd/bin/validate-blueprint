@@ -64,15 +64,18 @@ Checks (all emit bullets; any failure → exit code 1):
      `downloads.wordpress.org` zip URLs and deterministic folder names.
      The ODD zip may match `odd/odd.php` or the previous public release while
      preparing a release whose dotorg package is not live yet.
-  9. Every blueprint requests a Playground PHP runtime that satisfies
+ 9. Every blueprint requests a Playground PHP runtime that satisfies
      the plugin header's `Requires PHP` value.
- 10. Dev blueprints: OpenStation from the pinned release zip matching
+ 10. Every blueprint boots the exact current WordPress release ZIP through
+     Playground's same-origin proxy and avoids redundant `wp core update` /
+     `wp core update-db` steps that slow startup.
+ 11. Dev blueprints: OpenStation from the pinned release zip matching
      `ODDOUT_OPENSTATION_MIN_VERSION` (targetFolderName desktop-mode);
      ODD from `git:directory` **branch** `main` on
      `RegionallyFamous/odd` with `path` `odd`.
- 11. Preview blueprints also write a must-use plugin that points ODD at
+ 12. Preview blueprints also write a must-use plugin that points ODD at
      `https://odd.regionallyfamous.com/catalog-preview/v1/registry.json`.
- 12. Hosted Playground launchers must not pass `site-slug`; that asks
+ 13. Hosted Playground launchers must not pass `site-slug`; that asks
      Playground for a named site and logs "The requested site was not found"
      before it creates the temporary site we wanted anyway.
 """
@@ -103,10 +106,10 @@ PLUGIN_MAIN = REPO_ROOT / "odd" / "odd.php"
 PREVIEW_CATALOG_URL = "https://odd.regionallyfamous.com/catalog-preview/v1/registry.json"
 PLAYGROUND_PHP_VERSION = "8.5"
 PLAYGROUND_WORDPRESS_VERSION = "7.0.4"
-WORDPRESS_CORE_UPDATE_COMMAND = (
-    f"wp core update --version={PLAYGROUND_WORDPRESS_VERSION} --force"
+PLAYGROUND_WORDPRESS_URL = (
+    "https://playground.wordpress.net/plugin-proxy.php?url="
+    f"https://wordpress.org/wordpress-{PLAYGROUND_WORDPRESS_VERSION}.zip"
 )
-WORDPRESS_DATABASE_UPDATE_COMMAND = "wp core update-db"
 
 
 ODD_CONST_RE = re.compile(
@@ -286,15 +289,16 @@ def validate_preferred_versions(data: dict, path: Path, requires_php: str) -> li
         )
 
     wp = preferred.get("wp")
-    if wp != "latest":
+    if wp != PLAYGROUND_WORDPRESS_URL:
         problems.append(
-            f'{rel}: preferredVersions.wp must be "latest"; got {wp!r}'
+            f"{rel}: preferredVersions.wp must boot the exact current WordPress "
+            f"package {PLAYGROUND_WORDPRESS_URL!r}; got {wp!r}"
         )
     return problems
 
 
-def validate_wordpress_update_steps(data: dict, path: Path) -> list[str]:
-    """Require the current stable WordPress patch even when Playground lags."""
+def validate_wordpress_boot_steps(data: dict, path: Path) -> list[str]:
+    """Reject updates after booting the exact current WordPress package."""
 
     rel = path.relative_to(REPO_ROOT)
     commands = [
@@ -302,16 +306,12 @@ def validate_wordpress_update_steps(data: dict, path: Path) -> list[str]:
         for step in data.get("steps", [])
         if isinstance(step, dict) and step.get("step") == "wp-cli"
     ]
-    problems: list[str] = []
-    if WORDPRESS_CORE_UPDATE_COMMAND not in commands:
-        problems.append(
-            f"{rel}: missing wp-cli step {WORDPRESS_CORE_UPDATE_COMMAND!r}"
-        )
-    if WORDPRESS_DATABASE_UPDATE_COMMAND not in commands:
-        problems.append(
-            f"{rel}: missing wp-cli step {WORDPRESS_DATABASE_UPDATE_COMMAND!r}"
-        )
-    return problems
+    return [
+        f"{rel}: remove redundant wp-cli step {command!r}; "
+        "preferredVersions.wp already owns the WordPress runtime version"
+        for command in commands
+        if isinstance(command, str) and command.strip().startswith("wp core update")
+    ]
 
 
 def fail(problems: list[str]) -> None:
@@ -336,7 +336,7 @@ def validate_file(path: Path, odd_version: str, openstation_pin: str, requires_p
     if not isinstance(steps, list) or not steps:
         problems.append("blueprint has no steps array")
     problems.extend(validate_preferred_versions(data, path, requires_php))
-    problems.extend(validate_wordpress_update_steps(data, path))
+    problems.extend(validate_wordpress_boot_steps(data, path))
 
     allowed_ref_types = {"tag", "branch", "commit", "refname"}
     expected_odd_ref = "v" + odd_version
@@ -530,7 +530,7 @@ def validate_dev_file(path: Path, openstation_min: str, requires_php: str) -> tu
     if not isinstance(steps, list) or not steps:
         problems.append("blueprint has no steps array")
     problems.extend(validate_preferred_versions(data, path, requires_php))
-    problems.extend(validate_wordpress_update_steps(data, path))
+    problems.extend(validate_wordpress_boot_steps(data, path))
 
     allowed_ref_types = {"tag", "branch", "commit", "refname"}
     pinned_openstation_release = False
@@ -648,7 +648,7 @@ def validate_preview_file(path: Path, openstation_min: str, requires_php: str) -
     if not isinstance(steps, list) or not steps:
         problems.append("blueprint has no steps array")
     problems.extend(validate_preferred_versions(data, path, requires_php))
-    problems.extend(validate_wordpress_update_steps(data, path))
+    problems.extend(validate_wordpress_boot_steps(data, path))
 
     allowed_ref_types = {"tag", "branch", "commit", "refname"}
     pinned_openstation_release = False

@@ -11,6 +11,7 @@ npm run build:openstation-components -- .e2e/openstation-1.1.0
 npm run build:notes
 npm test
 python3 _tools/build-catalog.py
+python3 _tools/check-app-docs.py
 odd/bin/validate-catalog
 odd/bin/check-apps-only
 odd/bin/check-upstream-versions --require-checkout
@@ -32,8 +33,18 @@ use a clean release worktree or the official WordPress.org ZIP.
   staging area and should not be committed.
 - Every archive is local-only static browser code with a strict app manifest.
 - Rebuild the catalog after any source or metadata change and commit its
-  generated registry, card, icon, bundle, and fallback-registry updates.
+  generated registry, card, icon, and bundle updates. The plugin's frozen
+  fallback registry changes only during a plugin release.
+- Add one `data-odd-app="<slug>"` card to `site/index.html` whenever an app is
+  added. Keep `README.md` evergreen instead of duplicating the app inventory.
+- Give first-party apps an `ODD ` name and the shared neutral monochrome icon
+  style enforced by the catalog builder.
 - Do not edit `bundle.wp` or generated ODD Notes JavaScript directly.
+
+This is the normal catalog-only release lane. Keep the plugin version and
+runtime source unchanged unless an app genuinely needs a new host capability.
+Catalog app versions move independently, and merging to `main` publishes their
+rebuilt bundles through Pages without creating a WordPress.org plugin release.
 
 See [Building an app](docs/building-an-app.md), the
 [manifest reference](docs/app-manifest.md), and the

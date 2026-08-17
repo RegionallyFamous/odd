@@ -1,4 +1,4 @@
-# Pantry artwork provenance
+# ODD Pantry artwork provenance
 
 Both assets were created with the built-in ImageGen tool and converted to WebP for the ODD catalog.
 

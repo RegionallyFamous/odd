@@ -7,6 +7,18 @@ All notable changes to ODD are documented here. The format follows
 <a id="unreleased"></a>
 ## [Unreleased]
 
+<a id="v1.1.9"></a>
+## [1.1.9] — 2026-08-17
+
+### Changed
+- The signed, Apps-only catalog is now the authority for app slugs, allowing
+  future apps to ship without hard-coded plugin allowlist updates.
+- Catalog publishing no longer rewrites the plugin's frozen offline fallback;
+  that snapshot is refreshed only during deliberate plugin releases.
+- Hosts can still narrow allowed catalog slugs through an explicit filter.
+- ODD Shop and all catalog apps now use the same simple neutral launcher-icon
+  style.
+
 <a id="v1.1.8"></a>
 ## [1.1.8] — 2026-08-16
 

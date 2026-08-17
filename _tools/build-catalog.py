@@ -41,7 +41,7 @@ FALLBACK_REGISTRY = repo_path_from_env(
     "ODD_CATALOG_FALLBACK_REGISTRY",
     REPO / "odd" / "data" / "fallback-registry.json",
 )
-WRITE_FALLBACK = os.environ.get("ODD_CATALOG_WRITE_FALLBACK", "1") != "0"
+WRITE_FALLBACK = os.environ.get("ODD_CATALOG_WRITE_FALLBACK", "0") == "1"
 CATALOG_CHANNEL = (os.environ.get("ODD_CATALOG_CHANNEL") or "stable").strip().lower()
 CATALOG_BASE = (
     os.environ.get("ODD_CATALOG_BASE_URL")
@@ -73,6 +73,8 @@ MAX_ICON_DIMENSION = 2048
 MIN_VISIBLE_ICON_FILL = 0.80
 MIN_TRANSPARENT_EDGE_RATIO = 0.90
 VISIBLE_ALPHA = 32
+ICON_NEUTRAL = (244, 244, 245)
+ICON_NEUTRAL_HEX = "#f4f4f5"
 CARD_SIZE = (1024, 576)
 MAX_CARD_BYTES = 320 * 1024
 SVG_ALLOWED_ELEMENTS = {
@@ -252,6 +254,8 @@ def validate_svg(data: bytes, label: str) -> None:
         tag = local_name(node.tag)
         if tag not in SVG_ALLOWED_ELEMENTS:
             fail(f"{label}: disallowed SVG element <{tag}>")
+        if tag in {"feDropShadow", "filter", "linearGradient", "radialGradient", "stop"}:
+            fail(f"{label}: app icons must use the simple monochrome icon style")
         for raw_name, raw_value in node.attrib.items():
             name = local_name(raw_name)
             value = str(raw_value).strip()
@@ -263,6 +267,13 @@ def validate_svg(data: bytes, label: str) -> None:
             )
             if has_unsafe_scheme or has_external_url:
                 fail(f"{label}: external or scriptable SVG value is forbidden")
+            if name in {"fill", "stroke"} and value.lower() not in {
+                "none", "transparent", ICON_NEUTRAL_HEX,
+            }:
+                fail(
+                    f"{label}: app icon colors must be {ICON_NEUTRAL_HEX} "
+                    "on a transparent background"
+                )
 
 
 def alpha_fill(image: Image.Image) -> float | None:
@@ -305,6 +316,19 @@ def validate_raster_icon(data: bytes, suffix: str, label: str) -> None:
         fail(f"{label}: visible icon fill is too small")
     if transparent_edge_ratio(rgba) < MIN_TRANSPARENT_EDGE_RATIO:
         fail(f"{label}: app icon needs transparent edges")
+    visible_colors = [
+        pixel[:3]
+        for pixel in rgba.get_flattened_data()
+        if pixel[3] >= VISIBLE_ALPHA
+    ]
+    if any(
+        max(abs(channel - target) for channel, target in zip(color, ICON_NEUTRAL)) > 4
+        for color in visible_colors
+    ):
+        fail(
+            f"{label}: app icon colors must be neutral {ICON_NEUTRAL_HEX} "
+            "on a transparent background"
+        )
 
 
 def validate_icon(data: bytes, name: str, label: str) -> None:

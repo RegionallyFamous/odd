@@ -6,10 +6,10 @@
 class ODDOUT_Apps_Only_Test extends WP_UnitTestCase {
 	public function test_catalog_allows_only_apps() {
 		$this->assertSame( array( 'app' ), oddout_catalog_allowed_types() );
-		$this->assertSame( array( 'odd-notes', 'pantry', 'workbench' ), oddout_catalog_allowed_slugs() );
+		$this->assertNull( oddout_catalog_allowed_slugs() );
 	}
 
-	public function test_catalog_keeps_workbench_and_drops_unapproved_apps() {
+	public function test_catalog_accepts_new_apps_without_a_plugin_allowlist_update() {
 		$registry = oddout_catalog_normalise(
 			array(
 				'version' => 1,
@@ -21,17 +21,17 @@ class ODDOUT_Apps_Only_Test extends WP_UnitTestCase {
 					),
 					array(
 						'type' => 'app',
-						'slug' => 'unapproved-app',
-						'name' => 'Unapproved App',
+						'slug' => 'future-app',
+						'name' => 'ODD Future App',
 					),
 				),
 			)
 		);
 
-		$this->assertSame( array( 'workbench' ), wp_list_pluck( $registry['bundles'], 'slug' ) );
+		$this->assertSame( array( 'workbench', 'future-app' ), wp_list_pluck( $registry['bundles'], 'slug' ) );
 	}
 
-	public function test_apps_list_publishes_workbench_and_hides_unapproved_apps() {
+	public function test_apps_list_publishes_every_valid_installed_app() {
 		$original = oddout_apps_index_load();
 		oddout_apps_index_save(
 			array(
@@ -45,18 +45,40 @@ class ODDOUT_Apps_Only_Test extends WP_UnitTestCase {
 					'name'    => 'ODD Workbench',
 					'version' => '1.0.0',
 				),
-				'unapproved-app' => array(
-					'slug'    => 'unapproved-app',
-					'name'    => 'Unapproved App',
+				'future-app'     => array(
+					'slug'    => 'future-app',
+					'name'    => 'ODD Future App',
 					'version' => '1.0.0',
 				),
 			)
 		);
 
 		try {
-			$this->assertSame( array( 'odd-notes', 'workbench' ), wp_list_pluck( oddout_apps_list(), 'slug' ) );
+			$this->assertSame( array( 'future-app', 'odd-notes', 'workbench' ), wp_list_pluck( oddout_apps_list(), 'slug' ) );
 		} finally {
 			oddout_apps_index_save( $original );
+		}
+	}
+
+	public function test_host_can_narrow_the_catalog_slug_policy() {
+		$policy = static function () {
+			return array( 'workbench' );
+		};
+		add_filter( 'oddout_catalog_allowed_slugs', $policy );
+
+		try {
+			$registry = oddout_catalog_normalise(
+				array(
+					'version' => 1,
+					'bundles' => array(
+						array( 'type' => 'app', 'slug' => 'workbench', 'name' => 'ODD Workbench' ),
+						array( 'type' => 'app', 'slug' => 'future-app', 'name' => 'ODD Future App' ),
+					),
+				)
+			);
+			$this->assertSame( array( 'workbench' ), wp_list_pluck( $registry['bundles'], 'slug' ) );
+		} finally {
+			remove_filter( 'oddout_catalog_allowed_slugs', $policy );
 		}
 	}
 

@@ -114,19 +114,18 @@ def main() -> int:
     )
     allowed_match = re.search(
         r"function\s+oddout_catalog_allowed_slugs\s*\(\s*\)\s*\{"
-        r".*?return\s+array\s*\((.*?)\)\s*;",
+        r"(.*?)\n\}",
         catalog_php,
         flags=re.DOTALL,
     )
-    allowed_slugs = (
-        set(re.findall(r"'([a-z0-9-]+)'", allowed_match.group(1)))
-        if allowed_match
-        else set()
-    )
-    if allowed_slugs != selected:
+    if not allowed_match:
         problems.append(
-            "runtime catalog allowlist must equal catalog.json; "
-            f"selected={sorted(selected)}, allowed={sorted(allowed_slugs)}"
+            "runtime catalog slug policy function is missing"
+        )
+    elif re.search(r"return\s+array\s*\(\s*['\"]", allowed_match.group(1)):
+        problems.append(
+            "runtime catalog slug policy must not hard-code app slugs; "
+            "the signed catalog is the app authority"
         )
 
     registry = json.loads(
@@ -147,21 +146,25 @@ def main() -> int:
     fallback = json.loads(
         (ROOT / "odd/data/fallback-registry.json").read_text(encoding="utf-8")
     )
-    fallback_slugs = {
-        row.get("slug")
-        for row in fallback.get("bundles", [])
-        if isinstance(row, dict) and row.get("type") == "app"
-    }
-    if fallback_slugs != selected or any(
+    if any(
         row.get("type") != "app"
         for row in fallback.get("bundles", [])
         if isinstance(row, dict)
     ):
-        problems.append("shipped fallback registry must contain exactly the selected apps")
+        problems.append("shipped fallback registry must contain only apps")
 
     if problems:
         for problem in problems:
             print(f"error: {problem}", file=sys.stderr)
+        return 1
+
+    shop_icon = (ROOT / "odd/assets/odd-eye.svg").read_text(encoding="utf-8")
+    icon_colors = set(re.findall(r"#[0-9a-fA-F]{6}", shop_icon))
+    if "Gradient" in shop_icon or icon_colors != {"#f4f4f5"}:
+        print(
+            "error: ODD Shop launcher must use the shared neutral monochrome icon style",
+            file=sys.stderr,
+        )
         return 1
     print(f"Apps-only architecture ok: {', '.join(sorted(selected))}")
     return 0

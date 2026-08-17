@@ -19,10 +19,12 @@ odd/bin/validate-manifest path/to/manifest.json
 
 For a first-party catalog app, create
 `_tools/catalog-sources/apps/<slug>/{meta.json,card.webp,bundle-src/}`, add the
-slug to `_tools/catalog-sources/catalog.json`, then run:
+slug to `_tools/catalog-sources/catalog.json`, add its app card to
+`site/index.html`, then run:
 
 ```sh
 python3 _tools/build-catalog.py
+python3 _tools/check-app-docs.py
 odd/bin/validate-catalog
 ```
 

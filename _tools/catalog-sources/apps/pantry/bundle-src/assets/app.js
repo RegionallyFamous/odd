@@ -685,7 +685,7 @@
 
 	function friendlyError( error ) {
 		if ( error?.code === 'rest_cookie_invalid_nonce' ) {
-			return 'Your WordPress session needs a refresh. Reload OpenStation, then open Pantry again.';
+			return 'Your WordPress session needs a refresh. Reload OpenStation, then open ODD Pantry again.';
 		}
 		if ( error?.status === 401 || error?.status === 403 ) {
 			return 'Your account cannot manage synced patterns, or the WordPress session has expired.';

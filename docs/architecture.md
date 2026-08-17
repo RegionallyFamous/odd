@@ -31,10 +31,13 @@ asset. Archive extraction is staged and promoted atomically.
 
 ## Catalog
 
-`_tools/catalog-sources/catalog.json` is an explicit slug allowlist.
+`_tools/catalog-sources/catalog.json` is the signed first-party app list.
 `_tools/build-catalog.py` validates each selected source, creates deterministic
-archives, writes `site/catalog/v1/`, and refreshes the plugin fallback registry.
-Registry signatures and archive SHA-256 values are checked before install.
+archives, and writes `site/catalog/v1/`. Registry signatures and archive
+SHA-256 values are checked before install. The plugin does not hard-code app
+slugs, so new valid apps can publish through the catalog without a plugin
+release. A frozen fallback registry is refreshed only when the plugin itself
+is released.
 
 ## Same-session correctness
 

@@ -95,12 +95,42 @@ function oddout_catalog_allowed_types() {
 }
 
 /**
- * First-party catalog slugs exposed by this focused release.
+ * Optional host policy for catalog app slugs.
  *
- * @return string[]
+ * The signed, apps-only catalog is the default authority, so `null` means any
+ * syntactically valid slug from that catalog is allowed. Hosts may return an
+ * explicit list through the filter to narrow their installation policy.
+ *
+ * @return string[]|null
  */
 function oddout_catalog_allowed_slugs() {
-	return array( 'odd-notes', 'pantry', 'workbench' );
+	$slugs = apply_filters( 'oddout_catalog_allowed_slugs', null );
+	if ( null === $slugs ) {
+		return null;
+	}
+	if ( ! is_array( $slugs ) ) {
+		return array();
+	}
+	return array_values(
+		array_unique(
+			array_filter(
+				array_map( 'sanitize_key', $slugs )
+			)
+		)
+	);
+}
+
+/**
+ * Whether a valid catalog row passes the optional host slug policy.
+ *
+ * @param string $slug  Normalized app slug.
+ * @param array  $entry Catalog row.
+ * @return bool
+ */
+function oddout_catalog_slug_allowed( $slug, $entry = array() ) {
+	$allowed_slugs = oddout_catalog_allowed_slugs();
+	$allowed       = null === $allowed_slugs || in_array( $slug, $allowed_slugs, true );
+	return (bool) apply_filters( 'oddout_catalog_slug_allowed', $allowed, $slug, $entry );
 }
 
 function oddout_catalog_max_response_bytes() {
@@ -1432,7 +1462,7 @@ function oddout_catalog_normalise( $data ) {
 			continue;
 		}
 		$slug = sanitize_key( (string) $entry['slug'] );
-		if ( ! in_array( $slug, oddout_catalog_allowed_slugs(), true ) ) {
+		if ( ! oddout_catalog_slug_allowed( $slug, $entry ) ) {
 			continue;
 		}
 		$sha = isset( $entry['sha256'] ) ? strtolower( (string) $entry['sha256'] ) : '';

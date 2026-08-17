@@ -2,7 +2,7 @@
   "slug": "odd-notes",
   "name": "ODD Notes",
   "description": "A local-first notes library for OpenStation, saved as private WordPress content with favorites, tags, sharing, archives, and revision history.",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "author": "Regionally Famous",
   "tags": [
     "notes",

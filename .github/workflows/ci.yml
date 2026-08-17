@@ -34,11 +34,13 @@ jobs:
       - name: Build catalog from _tools/catalog-sources/
         run: python3 _tools/build-catalog.py
       - name: Verify committed catalog artifacts are current
-        run: git diff --exit-code -- site/catalog/v1 odd/data/fallback-registry.json
+        run: git diff --exit-code -- site/catalog/v1
       - name: Validate catalog (determinism + schema + hashes)
         env:
           ODD_VALIDATE_REBUILD: '1'
         run: odd/bin/validate-catalog
+      - name: Require a site entry for every app
+        run: python3 _tools/check-app-docs.py
 
   json-valid:
     runs-on: ubuntu-latest
@@ -213,6 +215,8 @@ jobs:
       # is the html-validate recommended baseline).
       - name: Validate site/index.html
         run: npx --yes html-validate@latest site/index.html
+      - name: Require a site entry for every app
+        run: python3 _tools/check-app-docs.py
 
   zip-budget:
     runs-on: ubuntu-latest

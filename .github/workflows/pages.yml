@@ -8,6 +8,7 @@ on:
       - 'blueprint-preview.json'
       - '_tools/catalog-sources/**'
       - '_tools/build-catalog.py'
+      - '_tools/check-app-docs.py'
       - 'odd/bin/build-catalog-preview'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
@@ -35,6 +36,9 @@ jobs:
 
       - name: Install Python catalog dependencies
         run: python -m pip install --quiet -r requirements-catalog.txt
+
+      - name: Require a site entry for every app
+        run: python3 _tools/check-app-docs.py
 
       # Rebuild the remote catalog on every deploy so /catalog/v1/
       # is always in sync with whatever landed on main. The builder
@@ -102,7 +106,7 @@ jobs:
           expected_signature_sha = os.environ.get("EXPECTED_REGISTRY_SIGNATURE_SHA256", "")
           public_key = base64.b64decode(os.environ["ODD_CATALOG_PUBLIC_KEY"], validate=True)
           required_types = {"app"}
-          required_apps = {"odd-notes"}
+          required_apps = {"odd-notes", "pantry", "workbench"}
 
           def fetch(url):
               last = None

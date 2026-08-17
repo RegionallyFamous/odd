@@ -39,7 +39,9 @@ jobs:
         env:
           ODD_CATALOG_SIGNING_KEY: ${{ secrets.ODD_CATALOG_SIGNING_KEY }}
           ODD_CATALOG_REQUIRE_SIGNATURE: '1'
+          ODD_CATALOG_WRITE_FALLBACK: '1'
           ODD_VALIDATE_REQUIRE_CATALOG_SIGNATURE: '1'
+          ODD_VALIDATE_FALLBACK_REGISTRY: '1'
         run: |
           set -e
           # ODD 1.0 content lives in the remote catalog. Build it first

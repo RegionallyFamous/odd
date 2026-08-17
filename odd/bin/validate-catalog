@@ -38,7 +38,7 @@ SCHEMA = CATALOG / "registry.schema.json"
 FALLBACK = repo_path_from_env(
     "ODD_CATALOG_FALLBACK_REGISTRY", REPO / "odd" / "data" / "fallback-registry.json"
 )
-VALIDATE_FALLBACK = os.environ.get("ODD_VALIDATE_FALLBACK_REGISTRY", "1") != "0"
+VALIDATE_FALLBACK = os.environ.get("ODD_VALIDATE_FALLBACK_REGISTRY", "0") == "1"
 BASE_URL = (
     os.environ.get("ODD_CATALOG_BASE_URL")
     or "https://odd.regionallyfamous.com/catalog/v1"

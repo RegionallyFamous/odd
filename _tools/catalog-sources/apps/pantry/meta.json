@@ -1,8 +1,8 @@
 {
   "slug": "pantry",
-  "name": "Pantry",
+  "name": "ODD Pantry",
   "description": "Keep WordPress synced patterns tidy. Browse, preview, search, copy, duplicate, rename, and retire reusable blocks from one focused shelf.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Regionally Famous",
   "tags": [
     "wordpress",

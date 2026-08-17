@@ -395,17 +395,19 @@ function oddout_apps_row_surfaces( $row ) {
  */
 function oddout_apps_list() {
 	$index = oddout_apps_index_load();
-	// Publish only approved first-party catalog apps. Preserve any other
-	// installed app data on disk without exposing unapproved launchers.
-	$allowed_slugs = function_exists( 'oddout_catalog_allowed_slugs' )
-		? oddout_catalog_allowed_slugs()
-		: array( 'odd-notes' );
-	$rows          = array();
-	foreach ( $allowed_slugs as $slug ) {
+	// Installed apps have already passed archive/manifest validation. Publish
+	// every installed row unless a host has explicitly narrowed slug policy.
+	$rows = array();
+	foreach ( $index as $slug => $row ) {
 		$slug = sanitize_key( (string) $slug );
-		if ( isset( $index[ $slug ] ) ) {
-			$rows[] = $index[ $slug ];
+		if (
+			'' === $slug ||
+			! is_array( $row ) ||
+			( function_exists( 'oddout_catalog_slug_allowed' ) && ! oddout_catalog_slug_allowed( $slug, $row ) )
+		) {
+			continue;
 		}
+		$rows[] = $row;
 	}
 	foreach ( $rows as &$row ) {
 			// Keep the REST response and Shop store on a complete shape.

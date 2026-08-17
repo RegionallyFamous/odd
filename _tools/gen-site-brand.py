@@ -285,7 +285,7 @@ def render_og() -> Image.Image:
 	# Lede
 	lede_y = head_y + head_line_h * 2 + 16
 	d.text((text_x, lede_y), "Useful tools. Playful experiments.", fill=BONE, font=lede_font)
-	d.text((text_x, lede_y + 32), "ODD Notes is only the beginning.", fill=BONE, font=lede_font)
+	d.text((text_x, lede_y + 32), "Three apps today. More odd ideas tomorrow.", fill=BONE, font=lede_font)
 
 	# URL
 	d.text((text_x, H - 56), "odd.regionallyfamous.com", fill=CYAN, font=url_font)
