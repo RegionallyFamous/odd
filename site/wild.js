@@ -12,7 +12,7 @@
 	}
 
 	var root = document.documentElement;
-	var cards = Array.prototype.slice.call( document.querySelectorAll( '.tilt-card, .wild-card' ) );
+	var activeCard = null;
 	var chaosButton = document.querySelector( '[data-chaos]' );
 	var trail = [];
 	var maxTrail = 18;
@@ -47,18 +47,22 @@
 		void dot.offsetWidth;
 		dot.classList.add( 'is-on' );
 
-		cards.forEach( function ( card ) {
+		var card = ev.target && ev.target.closest ? ev.target.closest( '.tilt-card, .wild-card' ) : null;
+
+		if ( activeCard && activeCard !== card ) {
+			activeCard.style.setProperty( '--tilt-x', '0deg' );
+			activeCard.style.setProperty( '--tilt-y', '0deg' );
+		}
+
+		if ( card ) {
 			var r = card.getBoundingClientRect();
 			var px = ( ev.clientX - r.left ) / Math.max( 1, r.width ) - 0.5;
 			var py = ( ev.clientY - r.top ) / Math.max( 1, r.height ) - 0.5;
-			if ( Math.abs( px ) > 0.9 || Math.abs( py ) > 0.9 ) {
-				card.style.setProperty( '--tilt-x', '0deg' );
-				card.style.setProperty( '--tilt-y', '0deg' );
-				return;
-			}
 			card.style.setProperty( '--tilt-x', clamp( py * -14, -14, 14 ).toFixed( 2 ) + 'deg' );
 			card.style.setProperty( '--tilt-y', clamp( px * 18, -18, 18 ).toFixed( 2 ) + 'deg' );
-		} );
+		}
+
+		activeCard = card;
 	}, { passive: true } );
 
 	if ( chaosButton ) {

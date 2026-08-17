@@ -81,7 +81,7 @@ describe( 'Apps-only ODD Shop', () => {
 		expect( context.markReady ).toHaveBeenCalledOnce();
 	} );
 
-	it( 'renders the apps as bounded, responsive features instead of stretching grid tiles', () => {
+	it( 'renders a compact responsive shelf instead of full-width app features', () => {
 		window.openStationNativeWindows.odd( document.body, {} );
 		const cards = document.querySelectorAll( '.odd-app-card' );
 		const card = cards[ 0 ];
@@ -92,7 +92,12 @@ describe( 'Apps-only ODD Shop', () => {
 		expect( card?.dataset.state ).toBe( 'available' );
 		expect( card?.querySelector( '.odd-app-card__preview' )?.getAttribute( 'src' ) ).toBe( registry.bundles[ 0 ].card_url );
 		expect( card?.querySelector( '.odd-app-card__button--primary' )?.textContent ).toContain( 'Install app' );
+		expect( card?.querySelector( '.odd-app-card__featured' ) ).toBeNull();
+		expect( document.body.textContent ).toContain( 'WordPress' );
+		expect( document.body.textContent ).not.toContain( 'Wordpress' );
 		expect( panelStyles ).toContain( 'width: min(100%, 1240px);' );
+		expect( panelStyles ).toContain( 'grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));' );
+		expect( panelStyles ).not.toContain( 'grid-template-columns: minmax(0, 1.22fr)' );
 		expect( panelStyles ).toContain( '@container odd-shop (max-width: 840px)' );
 	} );
 

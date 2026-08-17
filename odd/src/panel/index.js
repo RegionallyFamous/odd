@@ -159,7 +159,10 @@
 	}
 
 	function prettyTag( tag ) {
-		return String( tag || '' )
+		var normalized = String( tag || '' ).trim().toLowerCase();
+		if ( normalized === 'wordpress' ) { return 'WordPress'; }
+		if ( normalized === 'openstation' ) { return 'OpenStation'; }
+		return normalized
 			.replace( /-/g, ' ' )
 			.replace( /\b\w/g, function ( letter ) { return letter.toUpperCase(); } );
 	}
@@ -206,9 +209,6 @@
 			previewImage.decoding = 'async';
 			art.appendChild( previewImage );
 		}
-		var featured = el( 'span', 'odd-app-card__featured', __( 'Featured app' ) );
-		featured.insertBefore( el( 'span', 'odd-app-card__featured-dot' ), featured.firstChild );
-		art.appendChild( featured );
 		art.appendChild( el( 'span', 'odd-app-card__art-glint' ) );
 		card.appendChild( art );
 
@@ -404,7 +404,7 @@
 		var introCopy = el( 'div', 'odd-shop__intro-copy' );
 		introCopy.appendChild( el( 'p', 'odd-shop__eyebrow', __( 'ODD / APPS' ) ) );
 		introCopy.appendChild( el( 'h1', '', __( 'Small tools. Strange polish.' ) ) );
-		introCopy.appendChild( el( 'p', 'odd-shop__lede', __( 'A tiny collection of useful things made to feel completely at home in OpenStation.' ) ) );
+		introCopy.appendChild( el( 'p', 'odd-shop__lede', __( 'A growing collection of useful things made to feel completely at home in OpenStation.' ) ) );
 		intro.appendChild( introCopy );
 		var orbit = el( 'div', 'odd-shop__orbit' );
 		orbit.setAttribute( 'aria-hidden', 'true' );
@@ -417,7 +417,7 @@
 		var shelfHead = el( 'div', 'odd-shop__shelf-head' );
 		var shelfCopy = el( 'div' );
 		shelfCopy.appendChild( el( 'h2', '', __( 'Apps' ) ) );
-		shelfCopy.appendChild( el( 'p', '', __( 'One excellent app at a time. No filler, no feed.' ) ) );
+		shelfCopy.appendChild( el( 'p', '', __( 'Install what you need. New apps arrive through the catalog.' ) ) );
 		shelfHead.appendChild( shelfCopy );
 		var signal = el( 'span', 'odd-shop__signal', __( 'Catalog online' ) );
 		signal.insertBefore( el( 'span', 'odd-shop__signal-dot' ), signal.firstChild );

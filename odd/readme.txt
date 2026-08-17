@@ -5,7 +5,7 @@ Requires at least: 6.8
 Tested up to: 7.0
 Requires PHP: 8.1
 Requires Plugins: desktop-mode
-Stable tag: 1.1.9
+Stable tag: 1.1.10
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -105,6 +105,12 @@ To rebuild the distributed files:
 
 == Changelog ==
 
+= 1.1.10 =
+
+* Rebuilt ODD Shop as a compact responsive multi-column shelf that scales to a much larger app catalog.
+* Removed the repeated Featured app badge and updated the Shop copy for a growing catalog.
+* Corrected WordPress and OpenStation capitalization in catalog tags.
+
 = 1.1.9 =
 
 * Made the signed Apps catalog the authority for app slugs, so future apps no longer require plugin allowlist updates.
@@ -141,6 +147,10 @@ To rebuild the distributed files:
 * Focused the product, catalog, and distributable package exclusively on apps.
 
 == Upgrade Notice ==
+
+= 1.1.10 =
+
+ODD Shop now fits more apps into a compact responsive shelf.
 
 = 1.1.9 =
 

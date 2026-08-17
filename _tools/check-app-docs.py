@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Keep every first-party catalog app represented on the evergreen site."""
+"""Keep every first-party app represented on an evergreen, scalable site shelf."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CATALOG_ROOT = ROOT / "_tools" / "catalog-sources"
 README = ROOT / "README.md"
 SITE = ROOT / "site" / "index.html"
+STYLES = ROOT / "site" / "styles.css"
 PUBLIC_TEXT_SUFFIXES = {".html", ".js", ".json", ".md", ".php", ".ts", ".tsx"}
 
 
@@ -22,6 +23,7 @@ def main() -> int:
     slugs = catalog.get("apps") or []
     readme = README.read_text(encoding="utf-8")
     site = SITE.read_text(encoding="utf-8")
+    styles = STYLES.read_text(encoding="utf-8")
 
     for slug in slugs:
         meta_path = CATALOG_ROOT / "apps" / slug / "meta.json"
@@ -39,6 +41,25 @@ def main() -> int:
     if "<!-- odd-app:" in readme:
         problems.append(
             "README.md must stay evergreen instead of duplicating the live app inventory"
+        )
+
+    shelf_rule = re.search(
+        r"\.catalog-section\s+\.app-grid\s*\{(?P<body>[^}]*)\}", styles, re.S
+    )
+    if not shelf_rule or not re.search(
+        r"grid-column\s*:\s*1\s*/\s*-1\s*;", shelf_rule.group("body")
+    ):
+        problems.append(
+            "site/styles.css must let the catalog app grid span the full shelf width"
+        )
+
+    grid_rule = re.search(r"(?m)^\.app-grid\s*\{(?P<body>[^}]*)\}", styles, re.S)
+    if not grid_rule or not re.search(
+        r"grid-template-columns\s*:\s*repeat\(\s*auto-fill\s*,",
+        grid_rule.group("body"),
+    ):
+        problems.append(
+            "site/styles.css must keep the app shelf as a responsive multi-column grid"
         )
 
     public_files = [README, SITE]

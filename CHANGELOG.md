@@ -7,6 +7,20 @@ All notable changes to ODD are documented here. The format follows
 <a id="unreleased"></a>
 ## [Unreleased]
 
+<a id="v1.1.10"></a>
+## [1.1.10] — 2026-08-17
+
+### Changed
+- ODD Shop now uses compact responsive multi-column app cards that scale to a
+  much larger catalog.
+- The public app shelf uses the same scalable layout, with constant-time hover
+  handling and automated layout guardrails.
+- Shop copy now describes a growing catalog instead of marking every app as
+  featured.
+
+### Fixed
+- WordPress and OpenStation catalog tags use their official capitalization.
+
 <a id="v1.1.9"></a>
 ## [1.1.9] — 2026-08-17
 

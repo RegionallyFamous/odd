@@ -1137,6 +1137,8 @@ footer {
 }
 
 .catalog-section .apps-head {
+	grid-column: 1;
+	grid-row: 1;
 	max-width: none;
 	margin: 0;
 }
@@ -1151,12 +1153,14 @@ footer {
 
 .catalog-section .product-showcase {
 	grid-column: 2;
-	grid-row: 1 / span 2;
+	grid-row: 1;
 	align-self: center;
 }
 
 .catalog-section .app-grid {
-	grid-column: 1;
+	grid-column: 1 / -1;
+	grid-row: 2;
+	margin-top: 10px;
 }
 
 .catalog-section .apps-foot {
@@ -1196,8 +1200,8 @@ footer {
 
 .app-grid {
 	display: grid;
-	grid-template-columns: repeat( auto-fill, minmax( 240px, 1fr ) );
-	gap: 10px;
+	grid-template-columns: repeat( auto-fill, minmax( min( 100%, 220px ), 1fr ) );
+	gap: 14px;
 }
 
 .app-card {
@@ -1208,7 +1212,7 @@ footer {
 	align-items: start;
 	column-gap: 10px;
 	row-gap: 4px;
-	min-height: 168px;
+	min-height: 176px;
 	padding: 12px 14px 14px;
 	border: 1px solid var( --line );
 	border-radius: 14px;
@@ -1345,10 +1349,14 @@ footer {
 }
 
 .app-card p {
+	display: -webkit-box;
 	margin: 0;
 	color: var( --muted );
 	line-height: 1.4;
 	font-size: 12px;
+	overflow: hidden;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 4;
 }
 
 .app-tags {
@@ -1609,7 +1617,7 @@ footer {
 	}
 
 	.app-grid {
-		grid-template-columns: repeat( auto-fill, minmax( 200px, 1fr ) );
+		grid-template-columns: repeat( auto-fill, minmax( min( 100%, 200px ), 1fr ) );
 	}
 }
 
