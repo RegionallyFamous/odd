@@ -1,68 +1,45 @@
 #!/usr/bin/env python3
-"""Sanity-check that every file under `odd/assets/` is mentioned in
-`LICENSES.md`. Prevents silent drift where someone drops a new
-wallpaper into the repo without noting its provenance.
-
-Usage:
-  odd/bin/check-licenses
-
-Exits non-zero if:
-  - a .webp / .svg file exists under odd/assets/ whose slug isn't
-    mentioned anywhere in LICENSES.md, OR
-  - a row in LICENSES.md references a slug that no longer has files
-    on disk (stale audit row).
-
-This is a best-effort heuristic — we match on the filename stem
-(e.g. "aurora.webp" → check for the string "aurora") so a careful
-author can satisfy the check with a single mention. That's fine; the
-point of the script is to catch accidental omissions, not replace
-review.
-"""
-from __future__ import annotations
-
-import sys
+"""Check the small, explicit set of third-party and generated assets."""
 from pathlib import Path
+import sys
 
-HERE = Path(__file__).resolve().parent
-REPO = HERE.parent.parent
-LICENSES_PATH = REPO / "LICENSES.md"
-ASSETS_ROOT = REPO / "odd" / "assets"
+ROOT = Path(__file__).resolve().parents[2]
+LICENSES = ROOT / "LICENSES.md"
+EXPECTED_PLUGIN_ASSETS = {"odd-eye.svg"}
+NOTES_SNAPSHOT = (
+    ROOT
+    / "_tools/catalog-sources/apps/odd-notes/component-snapshot"
+    / "openstation-ui-components.min.js"
+)
+
 
 def main() -> int:
-    if not LICENSES_PATH.exists():
-        print("LICENSES.md is missing — can't audit", file=sys.stderr)
-        return 2
-    licenses = LICENSES_PATH.read_text()
-
-    # Wallpapers + previews.
-    missing: list[str] = []
-    for sub in ("wallpapers", "previews"):
-        sub_dir = ASSETS_ROOT / sub
-        if not sub_dir.is_dir():
-            continue
-        for f in sorted(sub_dir.glob("*.webp")):
-            stem = f.stem
-            if stem not in licenses:
-                missing.append(f"{sub}/{f.name} (slug '{stem}' not mentioned in LICENSES.md)")
-
-    # Icon sets — check that each directory is named.
-    icons_dir = ASSETS_ROOT / "icons"
-    if icons_dir.is_dir():
-        for sub in sorted(p for p in icons_dir.iterdir() if p.is_dir()):
-            if sub.name not in licenses:
-                missing.append(f"icons/{sub.name}/ (set not mentioned in LICENSES.md)")
-
-    if missing:
-        print("Assets missing from LICENSES.md:")
-        for m in missing:
-            print(f"  - {m}")
-        print()
-        print("Add each to LICENSES.md with its provenance, then rerun.")
+    text = LICENSES.read_text(encoding="utf-8")
+    actual = {
+        path.name
+        for path in (ROOT / "odd/assets").iterdir()
+        if path.is_file() and not path.name.startswith(".")
+    }
+    problems = []
+    if actual != EXPECTED_PLUGIN_ASSETS:
+        problems.append(
+            f"odd/assets must contain exactly {sorted(EXPECTED_PLUGIN_ASSETS)}; "
+            f"found {sorted(actual)}"
+        )
+    if not NOTES_SNAPSHOT.is_file():
+        problems.append("ODD Notes OpenStation component snapshot is missing")
+    elif "GPL-2.0-or-later" not in NOTES_SNAPSHOT.read_text(encoding="utf-8")[:240]:
+        problems.append("ODD Notes OpenStation component snapshot lacks its license banner")
+    for phrase in ("GPLv2-or-later", "OpenStation", "WordPress/openstation"):
+        if phrase not in text:
+            problems.append(f"LICENSES.md is missing {phrase!r}")
+    if problems:
+        for problem in problems:
+            print(f"error: {problem}", file=sys.stderr)
         return 1
-
-    print(f"[check-licenses] ok — every asset under {ASSETS_ROOT.relative_to(REPO)} is mentioned.")
+    print("license inventory ok")
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

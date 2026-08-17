@@ -4,7 +4,7 @@
  * Description: MU-plugin used only by the install-smoke CI job. Short-circuits
  *              outbound HTTP requests for the ODD remote catalog (registry.json
  *              and any .wp bundle under /catalog/v1/bundles/) so the smoke
- *              suite can prove the starter-pack installer works hermetically,
+ *              suite can prove catalog app installation works hermetically,
  *              with no dependency on the live GitHub Pages deployment.
  *
  *              DO NOT INSTALL IN PRODUCTION. This intercepts catalog HTTP

@@ -1,0 +1,171 @@
+#!/usr/bin/env python3
+"""Fail when removed ODD product surfaces reappear in active source paths."""
+from __future__ import annotations
+
+import json
+import re
+import sys
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[2]
+FORBIDDEN_PATHS = (
+    "odd/apps/runtime",
+    "odd/includes/cursors",
+    "odd/includes/icons",
+    "odd/includes/wallpaper",
+    "odd/includes/extensions.php",
+    "odd/includes/starter-pack.php",
+    "odd/includes/content/scenes.php",
+    "odd/includes/content/widgets.php",
+    "odd/includes/content/iconsets.php",
+    "odd/includes/content/cursor-sets.php",
+    "odd/src/apps",
+    "odd/src/commands",
+    "odd/src/cursors",
+    "odd/src/icons",
+    "odd/src/iris",
+    "odd/src/screensaver",
+    "odd/src/shared",
+    "odd/src/shell",
+    "odd/src/shop",
+    "odd/src/wallpaper",
+    "_tools/catalog-sources/scenes",
+    "_tools/catalog-sources/widgets",
+    "_tools/catalog-sources/icon-sets",
+    "_tools/catalog-sources/cursor-sets",
+    "_tools/catalog-sources/starter-pack.json",
+    "examples/example-scene",
+    "examples/example-widget",
+    "examples/example-iconset",
+    "packages/create-odd-bundle/templates/scene",
+    "packages/create-odd-bundle/templates/widget",
+    "packages/create-odd-bundle/templates/icon-set",
+    "packages/test-harness",
+    "docs/odd-game-design-language.md",
+)
+FORBIDDEN_RUNTIME_TOKENS = (
+    "wp.desktop",
+    "desktopModeNativeWindows",
+    "wpDesktopNativeWindows",
+    "desktop_mode_register_window",
+    "desktop_mode_register_icon",
+    "desktop_mode_shell_config",
+    "wp?.desktop",
+    "oddout_apps_apply_manifest_extensions",
+    "odd-app-runtime",
+)
+ACTIVE_SOURCE_ROOTS = (
+    ROOT / "odd/includes",
+    ROOT / "odd/src",
+    ROOT / "odd/odd.php",
+    ROOT / "_tools/catalog-sources/apps",
+)
+
+
+def active_source_files():
+    for root in ACTIVE_SOURCE_ROOTS:
+        if root.is_file():
+            yield root
+            continue
+        for path in root.rglob("*"):
+            if path.is_file() and path.suffix.lower() in {".php", ".js", ".css", ".json"}:
+                yield path
+
+
+def main() -> int:
+    problems: list[str] = []
+    for relative in FORBIDDEN_PATHS:
+        if (ROOT / relative).exists():
+            problems.append(f"unsupported path exists: {relative}")
+
+    for path in active_source_files():
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for token in FORBIDDEN_RUNTIME_TOKENS:
+            if token in text:
+                problems.append(
+                    f"unsupported runtime token {token!r} in {path.relative_to(ROOT)}"
+                )
+
+    catalog_path = ROOT / "_tools/catalog-sources/catalog.json"
+    catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+    if set(catalog) != {"apps"}:
+        problems.append("catalog.json must contain only the apps key")
+    selected = set(catalog.get("apps") or [])
+    app_root = ROOT / "_tools/catalog-sources/apps"
+    present = {path.name for path in app_root.iterdir() if path.is_dir()}
+    if present != selected:
+        problems.append(
+            f"catalog app directories must equal its allowlist; "
+            f"selected={sorted(selected)}, present={sorted(present)}"
+        )
+    for slug in selected:
+        manifest_path = app_root / slug / "bundle-src/manifest.json"
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            problems.append(f"{slug}: invalid app manifest: {error}")
+            continue
+        if manifest.get("type") != "app" or manifest.get("slug") != slug:
+            problems.append(f"{slug}: manifest must be an app with the matching slug")
+
+    catalog_php = (ROOT / "odd/includes/content/catalog.php").read_text(
+        encoding="utf-8"
+    )
+    allowed_match = re.search(
+        r"function\s+oddout_catalog_allowed_slugs\s*\(\s*\)\s*\{"
+        r".*?return\s+array\s*\((.*?)\)\s*;",
+        catalog_php,
+        flags=re.DOTALL,
+    )
+    allowed_slugs = (
+        set(re.findall(r"'([a-z0-9-]+)'", allowed_match.group(1)))
+        if allowed_match
+        else set()
+    )
+    if allowed_slugs != selected:
+        problems.append(
+            "runtime catalog allowlist must equal catalog.json; "
+            f"selected={sorted(selected)}, allowed={sorted(allowed_slugs)}"
+        )
+
+    registry = json.loads(
+        (ROOT / "site/catalog/v1/registry.json").read_text(encoding="utf-8")
+    )
+    registry_slugs = {
+        row.get("slug")
+        for row in registry.get("bundles", [])
+        if isinstance(row, dict) and row.get("type") == "app"
+    }
+    if registry_slugs != selected or any(
+        row.get("type") != "app"
+        for row in registry.get("bundles", [])
+        if isinstance(row, dict)
+    ):
+        problems.append("generated registry must contain exactly the selected apps")
+
+    fallback = json.loads(
+        (ROOT / "odd/data/fallback-registry.json").read_text(encoding="utf-8")
+    )
+    fallback_slugs = {
+        row.get("slug")
+        for row in fallback.get("bundles", [])
+        if isinstance(row, dict) and row.get("type") == "app"
+    }
+    if fallback_slugs != selected or any(
+        row.get("type") != "app"
+        for row in fallback.get("bundles", [])
+        if isinstance(row, dict)
+    ):
+        problems.append("shipped fallback registry must contain exactly the selected apps")
+
+    if problems:
+        for problem in problems:
+            print(f"error: {problem}", file=sys.stderr)
+        return 1
+    print(f"Apps-only architecture ok: {', '.join(sorted(selected))}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

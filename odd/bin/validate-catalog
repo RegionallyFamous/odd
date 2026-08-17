@@ -1,56 +1,26 @@
 #!/usr/bin/env python3
-"""Validate the ODD v3 remote catalog.
+"""Validate the deterministic, Apps-only ODD catalog."""
 
-Runs every bundle described in `site/catalog/v1/registry.json` against
-the same gate the plugin enforces at install time. Catches broken
-hashes, schema drift, missing bundle files, and starter-pack entries
-that don't resolve. Fails the CI job on any mismatch.
-
-Checks:
-  1. Registry JSON parses and matches the schema in
-     `site/catalog/v1/registry.schema.json`.
-     When `registry.json.sig` exists, or signature validation is
-     required by env, it must verify against the bundled public key.
-  2. `version` is 1.
-  3. Every starter_pack entry (scenes[], iconSets[], cursorSets[], widgets[], apps[])
-     names a slug that exists in `bundles[]` with the matching type.
-  4. Every `bundles[]` row:
-        a. `download_url`, `icon_url`, and `card_url` resolve to files
-           on disk under `site/catalog/v1/`.
-        b. The `.wp` opens as a ZIP and contains `manifest.json`.
-        c. The manifest's `type`, `slug`, and `version` match the row.
-        d. The on-disk file's size matches `size`.
-        e. The on-disk file's sha256 matches `sha256`.
-  5. `odd/data/fallback-registry.json` is byte-identical to the
-     published registry.
-  6. Rebuilding the catalog from `_tools/catalog-sources/` is
-     byte-identical to what's on disk, including icons and the fallback
-     registry (determinism check — only runs when ODD_VALIDATE_REBUILD=1,
-     default off so local usage stays fast, opt-in for CI).
-
-Exit code 0 on success, non-zero with a bullet list of problems.
-"""
 from __future__ import annotations
 
 import base64
 import hashlib
-import json
 import io
+import json
 import os
 import re
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
-from typing import Any
 from urllib.parse import urlparse
 
-from PIL import Image, ImageChops, ImageStat
+from PIL import Image
 
 
 HERE = Path(__file__).resolve().parent
-PLUGIN_DIR = HERE.parent
-REPO_ROOT = PLUGIN_DIR.parent
+REPO = HERE.parent.parent
 
 
 def repo_path_from_env(name: str, default: Path) -> Path:
@@ -58,624 +28,370 @@ def repo_path_from_env(name: str, default: Path) -> Path:
     if not raw:
         return default
     path = Path(raw)
-    return path if path.is_absolute() else REPO_ROOT / path
+    return path if path.is_absolute() else REPO / path
 
 
-def display_path(path: Path) -> str:
+CATALOG = repo_path_from_env("ODD_CATALOG_OUT_ROOT", REPO / "site" / "catalog" / "v1")
+REGISTRY = CATALOG / "registry.json"
+SIGNATURE = CATALOG / "registry.json.sig"
+SCHEMA = CATALOG / "registry.schema.json"
+FALLBACK = repo_path_from_env(
+    "ODD_CATALOG_FALLBACK_REGISTRY", REPO / "odd" / "data" / "fallback-registry.json"
+)
+VALIDATE_FALLBACK = os.environ.get("ODD_VALIDATE_FALLBACK_REGISTRY", "1") != "0"
+BASE_URL = (
+    os.environ.get("ODD_CATALOG_BASE_URL")
+    or "https://odd.regionallyfamous.com/catalog/v1"
+).rstrip("/") + "/"
+PUBLIC_KEY = "2aIvGPQMF//a9ciDvQ8GST7Q8QhfVsM6h1HB3/Td5Gk="
+SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+SEMVER_RE = re.compile(
+    r"^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$"
+)
+PATH_RE = re.compile(r"^[a-zA-Z0-9._-]+(?:/[a-zA-Z0-9._-]+)*$")
+FORBIDDEN_EXTENSIONS = {
+    "bash", "cgi", "phar", "php", "php3", "php4", "php5", "php7",
+    "phps", "phtml", "pl", "py", "rb", "sh",
+}
+MANIFEST_KEYS = {
+    "$schema", "author", "capability", "description", "desktopIcon",
+    "entry", "icon", "name", "native", "slug", "surfaces", "type", "version",
+    "window",
+}
+REQUIRES_KEYS = {"odd", "openStation", "api"}
+CARD_SIZE = (1024, 576)
+MAX_CARD_BYTES = 320 * 1024
+MAX_ICON_BYTES = 768 * 1024
+MAX_FILES = 2000
+MAX_UNCOMPRESSED = 25 * 1024 * 1024
+
+
+def display(path: Path) -> str:
     try:
-        return str(path.relative_to(REPO_ROOT))
+        return str(path.relative_to(REPO))
     except ValueError:
         return str(path)
 
 
-CATALOG_DIR = repo_path_from_env("ODD_CATALOG_OUT_ROOT", REPO_ROOT / "site" / "catalog" / "v1")
-REGISTRY = CATALOG_DIR / "registry.json"
-REGISTRY_SIG = CATALOG_DIR / "registry.json.sig"
-SCHEMA = CATALOG_DIR / "registry.schema.json"
-FALLBACK_REGISTRY = repo_path_from_env(
-    "ODD_CATALOG_FALLBACK_REGISTRY",
-    REPO_ROOT / "odd" / "data" / "fallback-registry.json",
-)
-VALIDATE_FALLBACK_REGISTRY = os.environ.get("ODD_VALIDATE_FALLBACK_REGISTRY", "1") != "0"
-DEFAULT_CATALOG_PUBLIC_KEY = "2aIvGPQMF//a9ciDvQ8GST7Q8QhfVsM6h1HB3/Td5Gk="
-
-# If a bundle's icon_url / download_url starts with this prefix, strip
-# it to resolve against the on-disk catalog.
-PUBLIC_PREFIX = (
-    os.environ.get("ODD_CATALOG_PUBLIC_PREFIX")
-    or (
-        (os.environ.get("ODD_CATALOG_BASE_URL") or "https://odd.regionallyfamous.com/catalog/v1").rstrip("/")
-        + "/"
-    )
-)
-FIRST_PARTY_ICON_KEYS = {
-    "odd", "my-wordpress", "content-graph", "recycle-bin", "fallback",
-}
-ICON_IMAGE_MAX_BYTES = 768 * 1024
-ICON_IMAGE_EXTENSIONS = {"png": "PNG", "webp": "WEBP"}
-ICON_VISIBLE_ALPHA_THRESHOLD = 32
-ICON_VISIBLE_MIN_FILL = 0.80
-APP_ICON_TRANSPARENT_EDGE_MIN = 0.90
-CATALOG_CARD_SIZE = (1024, 576)
-CATALOG_CARD_SIZE_BUDGET = 320 * 1024
-SCENE_CARD_RMS_LIMIT = 10.0
-SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
-SEMVER_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$")
-REQUIRES_KEYS = {"odd", "openStation", "api"}
+def digest(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def sha256_file(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as fh:
-        for chunk in iter(lambda: fh.read(65536), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
-def signature_required() -> bool:
-    return os.environ.get("ODD_VALIDATE_REQUIRE_CATALOG_SIGNATURE") == "1"
-
-
-def check_registry_signature(problems: list[str]) -> None:
-    if not signature_required() and not REGISTRY_SIG.is_file():
-        return
-    if not REGISTRY_SIG.is_file():
-        problems.append("registry.json.sig is missing")
-        return
-    public_key_raw = (os.environ.get("ODD_CATALOG_PUBLIC_KEY") or DEFAULT_CATALOG_PUBLIC_KEY).strip()
-    try:
-        public_key = base64.b64decode(public_key_raw, validate=True)
-    except Exception as exc:  # noqa: BLE001 - report validation problem and continue.
-        problems.append(f"catalog public key is not valid base64: {exc}")
-        return
-    if len(public_key) != 32:
-        problems.append("catalog public key must decode to 32 bytes")
-        return
-    try:
-        signature = base64.b64decode(REGISTRY_SIG.read_text(encoding="utf-8").strip(), validate=True)
-    except Exception as exc:  # noqa: BLE001 - report validation problem and continue.
-        problems.append(f"registry.json.sig is not valid base64: {exc}")
-        return
-    if len(signature) != 64:
-        problems.append("registry.json.sig must decode to a 64-byte Ed25519 signature")
-        return
-    try:
-        from nacl.exceptions import BadSignatureError
-        from nacl.signing import VerifyKey
-    except Exception as exc:  # noqa: BLE001 - report validation problem and continue.
-        problems.append(f"PyNaCl is required to validate registry.json.sig: {exc}")
-        return
-    try:
-        VerifyKey(public_key).verify(REGISTRY.read_bytes(), signature)
-    except BadSignatureError:
-        problems.append("registry.json.sig does not verify registry.json")
-
-
-def resolve_to_disk(url: str) -> Path | None:
+def resolve_url(url: object) -> Path | None:
     if not isinstance(url, str):
         return None
-    if url.startswith(PUBLIC_PREFIX):
-        return CATALOG_DIR / url[len(PUBLIC_PREFIX):]
+    if url.startswith(BASE_URL):
+        path = CATALOG / url[len(BASE_URL):]
+        try:
+            path.resolve().relative_to(CATALOG.resolve())
+        except ValueError:
+            return None
+        return path
     parsed = urlparse(url)
-    if parsed.scheme in ("", "file"):
+    if parsed.scheme in {"", "file"}:
         return Path(url)
     return None
 
 
-def visible_alpha_fill_ratio(image: Image.Image) -> float | None:
-    mask = image.getchannel("A").point(
-        lambda value: 255 if value >= ICON_VISIBLE_ALPHA_THRESHOLD else 0
-    )
-    bbox = mask.getbbox()
-    if bbox is None:
-        return None
-    width = bbox[2] - bbox[0]
-    height = bbox[3] - bbox[1]
-    return max(width, height) / max(image.size)
+def validate_signature(problems: list[str]) -> None:
+    required = os.environ.get("ODD_VALIDATE_REQUIRE_CATALOG_SIGNATURE") == "1"
+    if not required and not SIGNATURE.is_file():
+        return
+    if not SIGNATURE.is_file():
+        problems.append("registry.json.sig is missing")
+        return
+    try:
+        key = base64.b64decode(os.environ.get("ODD_CATALOG_PUBLIC_KEY", PUBLIC_KEY), validate=True)
+        signature = base64.b64decode(SIGNATURE.read_text().strip(), validate=True)
+        from nacl.signing import VerifyKey
+        VerifyKey(key).verify(REGISTRY.read_bytes(), signature)
+    except Exception as exc:
+        problems.append(f"catalog signature verification failed: {exc}")
 
 
-def transparent_edge_ratio(image: Image.Image) -> float:
-    alpha = image.getchannel("A")
-    width, height = image.size
-    edge = []
-    for x in range(width):
-        edge.append(alpha.getpixel((x, 0)))
-        edge.append(alpha.getpixel((x, height - 1)))
-    for y in range(height):
-        edge.append(alpha.getpixel((0, y)))
-        edge.append(alpha.getpixel((width - 1, y)))
-    if not edge:
-        return 0.0
-    return sum(1 for value in edge if value < ICON_VISIBLE_ALPHA_THRESHOLD) / len(edge)
+def validate_schema(data: dict, problems: list[str]) -> None:
+    if not SCHEMA.is_file():
+        problems.append("registry.schema.json is missing")
+        return
+    try:
+        schema = json.loads(SCHEMA.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        problems.append(f"registry.schema.json is invalid: {exc}")
+        return
+    try:
+        from jsonschema import Draft7Validator
+    except ImportError:
+        if os.environ.get("ODD_REQUIRE_JSONSCHEMA") == "1":
+            problems.append("jsonschema is required for catalog validation")
+        return
+    for error in sorted(Draft7Validator(schema).iter_errors(data), key=lambda item: list(item.path)):
+        location = "/".join(str(part) for part in error.absolute_path) or "(root)"
+        problems.append(f"registry schema {location}: {error.message}")
 
 
-def validate_icon_image(slug: str, rel: str, data: bytes, problems: list[str]) -> None:
-    ext = Path(rel).suffix.lower().lstrip(".")
-    expected = ICON_IMAGE_EXTENSIONS.get(ext)
+def validate_svg(data: bytes, label: str, problems: list[str]) -> None:
+    try:
+        root = ET.fromstring(data.decode("utf-8"))
+    except (UnicodeDecodeError, ET.ParseError) as exc:
+        problems.append(f"{label}: invalid SVG ({exc})")
+        return
+    if root.tag.split("}")[-1] != "svg" or not root.attrib.get("viewBox"):
+        problems.append(f"{label}: SVG must have an svg root and viewBox")
+    text = data.decode("utf-8", errors="replace")
+    if re.search(r"<script\b|\bon[a-z]+\s*=|(?:javascript|data|vbscript)\s*:", text, re.I):
+        problems.append(f"{label}: SVG contains scriptable content")
+
+
+def validate_icon(path: Path, label: str, problems: list[str]) -> None:
+    if not path.is_file():
+        problems.append(f"{label}: icon file is missing")
+        return
+    data = path.read_bytes()
+    if len(data) > MAX_ICON_BYTES:
+        problems.append(f"{label}: icon exceeds {MAX_ICON_BYTES} bytes")
+        return
+    if path.suffix.lower() == ".svg":
+        validate_svg(data, label, problems)
+        return
+    expected = {".png": "PNG", ".webp": "WEBP"}.get(path.suffix.lower())
     if expected is None:
-        problems.append(f"icon-set {slug}: icon {rel!r} must be .png or .webp")
-        return
-    if len(data) > ICON_IMAGE_MAX_BYTES:
-        problems.append(f"icon-set {slug}: icon {rel!r} exceeds 768 KiB")
+        problems.append(f"{label}: icon must be SVG, PNG, or WebP")
         return
     try:
-        with Image.open(io.BytesIO(data)) as img:
-            img.verify()
-        with Image.open(io.BytesIO(data)) as img:
-            fmt = img.format
-            width, height = img.size
-            rgba = img.convert("RGBA")
-    except Exception as exc:  # noqa: BLE001 - validation should report and continue.
-        problems.append(f"icon-set {slug}: icon {rel!r} is not a valid image ({exc})")
-        return
-    if fmt != expected:
-        problems.append(f"icon-set {slug}: icon {rel!r} extension does not match {fmt}")
-    if width != height:
-        problems.append(f"icon-set {slug}: icon {rel!r} must be square, got {width}x{height}")
-    if width < 64 or height < 64 or width > 2048 or height > 2048:
-        problems.append(f"icon-set {slug}: icon {rel!r} dimensions out of range: {width}x{height}")
-    visible_fill = visible_alpha_fill_ratio(rgba)
-    if visible_fill is None:
-        problems.append(f"icon-set {slug}: icon {rel!r} has no visible alpha footprint")
-    elif visible_fill < ICON_VISIBLE_MIN_FILL:
-        problems.append(
-            f"icon-set {slug}: icon {rel!r} visible glyph fill {visible_fill:.3f} "
-            f"below {ICON_VISIBLE_MIN_FILL:.2f}; normalize transparent padding"
-        )
+        with Image.open(io.BytesIO(data)) as image:
+            image.verify()
+        with Image.open(io.BytesIO(data)) as image:
+            if image.format != expected or image.width != image.height:
+                problems.append(f"{label}: raster icon format or dimensions are invalid")
+            if not 64 <= image.width <= 2048:
+                problems.append(f"{label}: raster icon dimensions are outside 64-2048px")
+            alpha = image.convert("RGBA").getchannel("A")
+            width, height = image.size
+            edge = [alpha.getpixel((x, y)) for x in range(width) for y in (0, height - 1)]
+            edge += [alpha.getpixel((x, y)) for y in range(height) for x in (0, width - 1)]
+            if sum(value < 32 for value in edge) / len(edge) < 0.90:
+                problems.append(f"{label}: app icon needs transparent edges")
+    except (OSError, SyntaxError) as exc:
+        problems.append(f"{label}: invalid raster icon ({exc})")
 
 
-def validate_app_icon_image(slug: str, rel: str, data: bytes, problems: list[str]) -> None:
-    ext = Path(rel).suffix.lower().lstrip(".")
-    expected = ICON_IMAGE_EXTENSIONS.get(ext)
-    if expected is None:
-        return
-    if len(data) > ICON_IMAGE_MAX_BYTES:
-        problems.append(f"app {slug}: icon {rel!r} exceeds 768 KiB")
-        return
-    try:
-        with Image.open(io.BytesIO(data)) as img:
-            img.verify()
-        with Image.open(io.BytesIO(data)) as img:
-            fmt = img.format
-            width, height = img.size
-            rgba = img.convert("RGBA")
-    except Exception as exc:  # noqa: BLE001 - validation should report and continue.
-        problems.append(f"app {slug}: icon {rel!r} is not a valid image ({exc})")
-        return
-    if fmt != expected:
-        problems.append(f"app {slug}: icon {rel!r} extension does not match {fmt}")
-    if width != height:
-        problems.append(f"app {slug}: icon {rel!r} must be square, got {width}x{height}")
-    if width < 64 or height < 64 or width > 2048 or height > 2048:
-        problems.append(f"app {slug}: icon {rel!r} dimensions out of range: {width}x{height}")
-    visible_fill = visible_alpha_fill_ratio(rgba)
-    if visible_fill is None:
-        problems.append(f"app {slug}: icon {rel!r} has no visible alpha footprint")
-    elif visible_fill < ICON_VISIBLE_MIN_FILL:
-        problems.append(
-            f"app {slug}: icon {rel!r} visible glyph fill {visible_fill:.3f} "
-            f"below {ICON_VISIBLE_MIN_FILL:.2f}; normalize transparent padding"
-        )
-    transparent_edge = transparent_edge_ratio(rgba)
-    if transparent_edge < APP_ICON_TRANSPARENT_EDGE_MIN:
-        problems.append(
-            f"app {slug}: icon {rel!r} transparent edge ratio {transparent_edge:.3f} "
-            f"below {APP_ICON_TRANSPARENT_EDGE_MIN:.2f}; app icons should be transparent sticker art"
-        )
-
-
-def scene_card_from_wallpaper(wallpaper_data: bytes) -> Image.Image:
-    with Image.open(io.BytesIO(wallpaper_data)) as img:
-        return img.convert("RGB").resize(CATALOG_CARD_SIZE, Image.Resampling.LANCZOS)
-
-
-def validate_catalog_card_size(
-    label: str,
-    card_disk: Path,
-    problems: list[str],
-) -> bool:
-    try:
-        with Image.open(card_disk) as img:
-            size = img.size
-    except Exception as exc:  # noqa: BLE001 - validation should report and continue.
-        problems.append(f"{label}: card_url image is invalid ({exc})")
-        return False
-
-    if size != CATALOG_CARD_SIZE:
-        problems.append(
-            f"{label}: card_url image must be {CATALOG_CARD_SIZE[0]}x{CATALOG_CARD_SIZE[1]}, "
-            f"got {size[0]}x{size[1]}"
-        )
-        return False
-    return True
-
-
-def validate_scene_card_matches_wallpaper(
-    slug: str,
-    card_disk: Path,
-    wallpaper_data: bytes,
-    problems: list[str],
-) -> None:
-    try:
-        with Image.open(card_disk) as img:
-            card = img.convert("RGB")
-    except Exception as exc:  # noqa: BLE001 - validation should report and continue.
-        problems.append(f"scene {slug}: card_url image is invalid ({exc})")
-        return
-
-    if card.size != CATALOG_CARD_SIZE:
-        return
-
-    expected = scene_card_from_wallpaper(wallpaper_data)
-    diff = ImageChops.difference(card, expected)
-    rms = sum(v * v for v in ImageStat.Stat(diff).rms) ** 0.5
-    if rms > SCENE_CARD_RMS_LIMIT:
-        problems.append(
-            f"scene {slug}: card_url image does not match wallpaper.webp derivative "
-            f"(RMS {rms:.2f} > {SCENE_CARD_RMS_LIMIT:.2f})"
-        )
-
-
-def check_schema(data: Any, problems: list[str]) -> None:
-    if not isinstance(data, dict):
-        problems.append("registry must be a JSON object")
-        return
-    if not isinstance(data.get("version"), int) or data.get("version") != 1:
-        problems.append(f"registry.version must be 1 (got {data.get('version')!r})")
-    bundles = data.get("bundles")
-    if not isinstance(bundles, list):
-        problems.append("registry.bundles must be an array")
-    starter = data.get("starter_pack") or {}
-    if not isinstance(starter, dict):
-        problems.append("registry.starter_pack must be an object")
-
-
-def check_bundle_row(
-    row: dict, idx: int, problems: list[str]
-) -> tuple[str | None, str | None]:
-    """Returns (type, slug) so starter-pack resolution can cross-check."""
-    required = (
-        "type",
-        "slug",
-        "name",
-        "version",
-        "icon_url",
-        "download_url",
-        "sha256",
-        "size",
-        "card_url",
-    )
-    missing = [k for k in required if k not in row]
-    if missing:
-        problems.append(f"bundle[{idx}]: missing keys {missing}")
-        return None, None
-
-    btype = row["type"]
-    slug = row["slug"]
-    version = row["version"]
-
-    if btype != "app":
-        problems.append(f"bundle[{idx}] ({slug}): unknown type {btype!r}")
-    if not isinstance(slug, str) or not SLUG_RE.match(slug):
-        problems.append(f"bundle[{idx}] ({slug}): invalid slug")
-    if not isinstance(version, str) or not SEMVER_RE.match(version):
-        problems.append(f"bundle[{idx}] ({slug}): invalid version {version!r}")
-
-    channel = row.get("channel")
-    if channel is not None and channel != "preview":
-        problems.append(f"bundle[{idx}] ({slug}): unsupported catalog channel {channel!r}")
-
-    requires = row.get("requires")
-    if requires is not None:
-        if not isinstance(requires, dict):
-            problems.append(f"bundle[{idx}] ({slug}): requires must be an object")
-        else:
-            for key, value in requires.items():
-                if key not in REQUIRES_KEYS:
-                    problems.append(f"bundle[{idx}] ({slug}): unsupported requires key {key!r}")
-                if not isinstance(value, str) or not SEMVER_RE.match(value):
-                    problems.append(
-                        f"bundle[{idx}] ({slug}): requires.{key} must be a semver-like string"
-                    )
-
-    sha = row["sha256"]
-    if not isinstance(sha, str) or len(sha) != 64:
-        problems.append(f"bundle[{idx}] ({slug}): sha256 must be 64 hex chars")
-
-    disk = resolve_to_disk(row["download_url"])
-    if disk is None or not disk.is_file():
-        problems.append(
-            f"bundle[{idx}] ({slug}): download_url does not resolve to a file "
-            f"({row['download_url']!r} -> {disk})"
-        )
-        return btype, slug
-
-    if not isinstance(row.get("size"), int) or row["size"] <= 0:
-        problems.append(f"bundle[{idx}] ({slug}): size must be a positive integer")
-    actual_size = disk.stat().st_size
-    if row.get("size") != actual_size:
-        problems.append(
-            f"bundle[{idx}] ({slug}): size {row.get('size')} != on-disk {actual_size}"
-        )
-
-    if isinstance(sha, str) and len(sha) == 64:
-        actual_sha = sha256_file(disk)
-        if actual_sha != sha:
-            problems.append(
-                f"bundle[{idx}] ({slug}): sha256 mismatch — "
-                f"registry has {sha}, archive is {actual_sha}"
-            )
-
-    icon_disk = resolve_to_disk(row.get("icon_url", ""))
-    if row.get("icon_url") and (icon_disk is None or not icon_disk.is_file()):
-        problems.append(
-            f"bundle[{idx}] ({slug}): icon_url does not resolve to a file "
-            f"({row['icon_url']!r})"
-        )
-    elif btype == "app" and icon_disk is not None and icon_disk.is_file():
-        validate_app_icon_image(slug, icon_disk.name, icon_disk.read_bytes(), problems)
-    card_disk = resolve_to_disk(row.get("card_url", ""))
-    if card_disk is None or not card_disk.is_file():
-        problems.append(
-            f"bundle[{idx}] ({slug}): card_url does not resolve to a file "
-            f"({row.get('card_url')!r})"
-        )
-    elif card_disk.stat().st_size > CATALOG_CARD_SIZE_BUDGET:
-        problems.append(
-            f"bundle[{idx}] ({slug}): card_url asset is too large "
-            f"({card_disk.stat().st_size} bytes > {CATALOG_CARD_SIZE_BUDGET} bytes)"
-        )
-    else:
-        if "card_bytes" in row and row.get("card_bytes") != card_disk.stat().st_size:
-            problems.append(
-                f"bundle[{idx}] ({slug}): card_bytes {row.get('card_bytes')} "
-                f"!= on-disk {card_disk.stat().st_size}"
-            )
-        validate_catalog_card_size(f"bundle[{idx}] ({slug})", card_disk, problems)
-
-    try:
-        with zipfile.ZipFile(disk, "r") as zf:
-            try:
-                manifest_raw = zf.read("manifest.json")
-            except KeyError:
-                problems.append(
-                    f"bundle[{idx}] ({slug}): archive missing manifest.json"
-                )
-                return btype, slug
-            try:
-                manifest = json.loads(manifest_raw)
-            except json.JSONDecodeError as err:
-                problems.append(
-                    f"bundle[{idx}] ({slug}): manifest.json not valid JSON: {err}"
-                )
-                return btype, slug
-            m_type = manifest.get("type")
-            # Apps' internal manifests sometimes don't declare type
-            # (they're pre-existing bundles). Let app rows off the hook.
-            if btype == "app":
-                if m_type not in (None, "app"):
-                    problems.append(
-                        f"bundle[{idx}] ({slug}): manifest type {m_type!r} conflicts with 'app'"
-                    )
-            elif m_type != btype:
-                problems.append(
-                    f"bundle[{idx}] ({slug}): manifest type {m_type!r} != row type {btype!r}"
-                )
-            if manifest.get("slug") != slug:
-                problems.append(
-                    f"bundle[{idx}] ({slug}): manifest slug "
-                    f"{manifest.get('slug')!r} != row slug"
-                )
-            if manifest.get("version") != version:
-                problems.append(
-                    f"bundle[{idx}] ({slug}): manifest version "
-                    f"{manifest.get('version')!r} != row {version!r}"
-                )
-            if btype == "scene":
-                try:
-                    wallpaper_data = zf.read("wallpaper.webp")
-                except KeyError:
-                    problems.append(f"bundle[{idx}] ({slug}): scene archive missing wallpaper.webp")
-                else:
-                    if card_disk is not None and card_disk.is_file():
-                        validate_scene_card_matches_wallpaper(slug, card_disk, wallpaper_data, problems)
-            if btype == "icon-set":
-                icons = manifest.get("icons")
-                if not isinstance(icons, dict):
-                    problems.append(f"bundle[{idx}] ({slug}): icon-set manifest missing icons")
-                else:
-                    missing_icons = sorted(FIRST_PARTY_ICON_KEYS - set(icons.keys()))
-                    if missing_icons:
-                        problems.append(
-                            f"bundle[{idx}] ({slug}): first-party icon set missing icons {missing_icons}"
-                        )
-                    for key, rel in icons.items():
-                        if not isinstance(rel, str):
-                            problems.append(
-                                f"bundle[{idx}] ({slug}): icon {key!r} path must be a string"
-                            )
-                            continue
-                        try:
-                            data = zf.read(rel)
-                        except KeyError:
-                            problems.append(
-                                f"bundle[{idx}] ({slug}): icon {rel!r} missing from archive"
-                            )
-                            continue
-                        validate_icon_image(slug, rel, data, problems)
-            if btype == "app":
-                if not row.get("icon_url"):
-                    problems.append(f"bundle[{idx}] ({slug}): app row missing icon_url")
-                icon = manifest.get("icon")
-                if not isinstance(icon, str) or not icon:
-                    problems.append(f"bundle[{idx}] ({slug}): app manifest missing icon")
-                elif not icon.startswith(("http://", "https://")) and icon not in zf.namelist():
-                    problems.append(
-                        f"bundle[{idx}] ({slug}): app manifest icon {icon!r} missing from archive"
-                    )
-                elif (
-                    not icon.startswith(("http://", "https://"))
-                    and Path(icon).suffix.lower().lstrip(".") in ICON_IMAGE_EXTENSIONS
-                ):
-                    validate_app_icon_image(slug, icon, zf.read(icon), problems)
-                entry = manifest.get("entry") or "index.html"
-                if isinstance(entry, str):
-                    try:
-                        html = zf.read(entry).decode("utf-8", errors="replace")
-                    except KeyError:
-                        html = ""
-                    for ref in sorted(set(re.findall(r"""(?:src|href)=["']([^"']+)["']""", html))):
-                        if ref.startswith(("http://", "https://", "data:", "/", "#")):
-                            continue
-                        clean = ref.split("?", 1)[0].split("#", 1)[0].lstrip("./")
-                        if clean and clean not in zf.namelist():
-                            problems.append(
-                                f"bundle[{idx}] ({slug}): index.html references missing asset {ref!r}"
-                            )
-    except zipfile.BadZipFile:
-        problems.append(f"bundle[{idx}] ({slug}): .wp is not a valid ZIP")
-
-    return btype, slug
-
-
-def check_starter_pack(
-    data: dict, index: dict[str, set[str]], problems: list[str]
-) -> None:
-    starter = data.get("starter_pack") or {}
-    mapping = {
-        "scenes": "scene",
-        "iconSets": "icon-set",
-        "cursorSets": "cursor-set",
-        "widgets": "widget",
-        "apps": "app",
-    }
-    for group, type_key in mapping.items():
-        entries = starter.get(group) or []
-        if not isinstance(entries, list):
-            problems.append(f"starter_pack.{group} must be an array")
+def validate_html(entry: str, html: str, names: set[str], label: str, problems: list[str]) -> None:
+    if re.search(r"<base\b", html, re.I):
+        problems.append(f"{label}: HTML entry contains a base tag")
+    for reference in re.findall(r"(?:src|href)\s*=\s*['\"]([^'\"]+)['\"]", html, re.I):
+        if reference.startswith(("data:", "#")):
             continue
-        known = index.get(type_key, set())
-        for slug in entries:
-            if slug not in known:
-                problems.append(
-                    f"starter_pack.{group}: no {type_key} bundle found with slug {slug!r}"
+        if reference.startswith(("http://", "https://", "//", "/")):
+            problems.append(f"{label}: HTML entry contains non-local asset {reference!r}")
+            continue
+        clean = reference.split("?", 1)[0].split("#", 1)[0]
+        parts = [part for part in clean.split("/") if part not in {"", "."}]
+        if ".." in parts or "/".join(parts) not in names:
+            problems.append(f"{label}: HTML entry references missing asset {reference!r}")
+
+
+def validate_bundle(path: Path, row: dict, label: str, problems: list[str]) -> None:
+    try:
+        with zipfile.ZipFile(path) as archive:
+            names = archive.namelist()
+            if len(names) > MAX_FILES:
+                problems.append(f"{label}: archive exceeds {MAX_FILES} entries")
+            total = 0
+            for info in archive.infolist():
+                name = info.filename
+                total += info.file_size
+                if not PATH_RE.fullmatch(name) or ".." in Path(name).parts:
+                    problems.append(f"{label}: unsafe archive path {name!r}")
+                if Path(name).suffix.lower().lstrip(".") in FORBIDDEN_EXTENSIONS:
+                    problems.append(f"{label}: server-executable archive entry {name!r}")
+                mode = (info.external_attr >> 16) & 0o170000
+                if mode == 0o120000:
+                    problems.append(f"{label}: archive contains symlink {name!r}")
+                if info.compress_size and info.file_size / info.compress_size > 100:
+                    problems.append(f"{label}: suspicious compression ratio in {name!r}")
+                if Path(name).suffix.lower() in {".js", ".mjs"}:
+                    source = archive.read(name).decode("utf-8", errors="replace")
+                    if re.search(r"\b(?:navigator\.)?serviceWorker\b", source):
+                        problems.append(f"{label}: service-worker code in {name!r}")
+                    bare = re.search(
+                        r"\b(?:from\s*|import\s*)(?:\([^)]*)?['\"](?![./]|https?://)([^'\"]+)['\"]",
+                        source,
+                    )
+                    if bare:
+                        problems.append(f"{label}: unresolved module import {bare.group(1)!r} in {name!r}")
+            if total > MAX_UNCOMPRESSED:
+                problems.append(f"{label}: archive exceeds {MAX_UNCOMPRESSED} uncompressed bytes")
+            if "manifest.json" not in names:
+                problems.append(f"{label}: manifest.json is missing")
+                return
+            try:
+                manifest = json.loads(archive.read("manifest.json"))
+            except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                problems.append(f"{label}: manifest.json is invalid ({exc})")
+                return
+            if not isinstance(manifest, dict):
+                problems.append(f"{label}: manifest.json must be an object")
+                return
+            unknown = set(manifest).difference(MANIFEST_KEYS)
+            if unknown:
+                problems.append(f"{label}: manifest has unsupported keys {sorted(unknown)}")
+            if manifest.get("type") != "app":
+                problems.append(f"{label}: manifest type must be app")
+            if manifest.get("slug") != row.get("slug"):
+                problems.append(f"{label}: manifest slug does not match registry")
+            if manifest.get("version") != row.get("version"):
+                problems.append(f"{label}: manifest version does not match registry")
+            for field in ("entry", "icon"):
+                value = manifest.get(field)
+                if not isinstance(value, str) or value not in names or not PATH_RE.fullmatch(value):
+                    problems.append(f"{label}: manifest {field} is missing or unsafe")
+            icon = manifest.get("icon")
+            if isinstance(icon, str) and icon in names:
+                temp_icon = CATALOG / ".validate-icon" / Path(icon).name
+                temp_icon.parent.mkdir(exist_ok=True)
+                temp_icon.write_bytes(archive.read(icon))
+                validate_icon(temp_icon, f"{label} manifest icon", problems)
+                temp_icon.unlink(missing_ok=True)
+                temp_icon.parent.rmdir()
+            entry = manifest.get("entry")
+            if isinstance(entry, str) and entry in names and Path(entry).suffix.lower() in {".html", ".htm"}:
+                validate_html(
+                    entry,
+                    archive.read(entry).decode("utf-8", errors="replace"),
+                    set(names),
+                    label,
+                    problems,
                 )
+    except zipfile.BadZipFile:
+        problems.append(f"{label}: bundle is not a valid ZIP")
 
 
-def catalog_artifact_paths() -> list[Path]:
-    paths = (
-        list((CATALOG_DIR / "bundles").glob("*.wp"))
-        + list((CATALOG_DIR / "icons").glob("*"))
-        + list((CATALOG_DIR / "cards").glob("*"))
-        + [REGISTRY, SCHEMA]
-    )
-    if VALIDATE_FALLBACK_REGISTRY:
-        paths.append(FALLBACK_REGISTRY)
-    if REGISTRY_SIG.is_file():
-        paths.append(REGISTRY_SIG)
-    return sorted(p for p in paths if p.is_file())
-
-
-def check_fallback_registry(problems: list[str]) -> None:
-    if not VALIDATE_FALLBACK_REGISTRY:
+def validate_row(row: dict, index: int, seen: set[str], problems: list[str]) -> None:
+    label = f"bundle[{index}]"
+    required = {
+        "type", "slug", "name", "version", "author", "description", "tags",
+        "icon_url", "card_url", "card_bytes", "download_url", "sha256", "size",
+        "department", "search_text", "search_tokens",
+    }
+    missing = required.difference(row)
+    if missing:
+        problems.append(f"{label}: missing registry keys {sorted(missing)}")
         return
-    if not FALLBACK_REGISTRY.is_file():
-        problems.append(
-            f"{display_path(FALLBACK_REGISTRY)} is missing"
-        )
+    slug = row.get("slug")
+    label = f"bundle[{index}] ({slug})"
+    if row.get("type") != "app" or row.get("department") != "apps":
+        problems.append(f"{label}: catalog is Apps-only")
+    if not isinstance(slug, str) or not SLUG_RE.fullmatch(slug):
+        problems.append(f"{label}: invalid slug")
+    elif slug in seen:
+        problems.append(f"{label}: duplicate slug")
+    else:
+        seen.add(slug)
+    version = row.get("version")
+    if not isinstance(version, str) or not SEMVER_RE.fullmatch(version):
+        problems.append(f"{label}: invalid version")
+    requires = row.get("requires", {})
+    if not isinstance(requires, dict) or set(requires).difference(REQUIRES_KEYS):
+        problems.append(f"{label}: invalid requires object")
+    elif any(not isinstance(value, str) or not SEMVER_RE.fullmatch(value) for value in requires.values()):
+        problems.append(f"{label}: invalid requires version")
+    bundle = resolve_url(row.get("download_url"))
+    icon = resolve_url(row.get("icon_url"))
+    card = resolve_url(row.get("card_url"))
+    if bundle is None or not bundle.is_file():
+        problems.append(f"{label}: download_url does not resolve")
         return
-    if sha256_file(FALLBACK_REGISTRY) != sha256_file(REGISTRY):
-        problems.append(
-            f"{display_path(FALLBACK_REGISTRY)} differs from "
-            f"{display_path(REGISTRY)}"
-        )
+    if row.get("size") != bundle.stat().st_size:
+        problems.append(f"{label}: size does not match bundle")
+    if row.get("sha256") != digest(bundle):
+        problems.append(f"{label}: sha256 does not match bundle")
+    if icon is None:
+        problems.append(f"{label}: icon_url does not resolve")
+    else:
+        validate_icon(icon, f"{label} catalog icon", problems)
+    if card is None or not card.is_file():
+        problems.append(f"{label}: card_url does not resolve")
+    else:
+        if card.stat().st_size > MAX_CARD_BYTES or row.get("card_bytes") != card.stat().st_size:
+            problems.append(f"{label}: card byte budget or card_bytes mismatch")
+        try:
+            with Image.open(card) as image:
+                if image.format != "WEBP" or image.size != CARD_SIZE:
+                    problems.append(f"{label}: card must be a 1024x576 WebP")
+        except (OSError, SyntaxError) as exc:
+            problems.append(f"{label}: invalid card ({exc})")
+    validate_bundle(bundle, row, label, problems)
 
 
-def check_deterministic_rebuild(problems: list[str]) -> None:
-    """Optional: rebuild the catalog and confirm the on-disk tree is
-    byte-identical. Gated behind an env flag so normal local runs stay
-    fast."""
-    if not (REPO_ROOT / "_tools" / "build-catalog.py").is_file():
-        return
+def artifact_paths() -> list[Path]:
+    paths = list((CATALOG / "bundles").glob("*.wp"))
+    paths += list((CATALOG / "icons").glob("*"))
+    paths += list((CATALOG / "cards").glob("*"))
+    paths += [REGISTRY, SCHEMA]
+    if VALIDATE_FALLBACK:
+        paths.append(FALLBACK)
+    if SIGNATURE.is_file():
+        paths.append(SIGNATURE)
+    return sorted(path for path in paths if path.is_file())
+
+
+def validate_determinism(problems: list[str]) -> None:
     if os.environ.get("ODD_VALIDATE_REBUILD") != "1":
         return
-    # Snapshot shas of every published catalog artifact plus the
-    # frozen in-plugin fallback mirror. Storefront-only changes often
-    # touch icons without changing bundles, so icons must be covered.
-    paths = catalog_artifact_paths()
-    before = {p: sha256_file(p) for p in paths}
-
-    try:
-        subprocess.run(
-            [sys.executable, str(REPO_ROOT / "_tools" / "build-catalog.py")],
-            check=True,
-            capture_output=True,
-        )
-    except subprocess.CalledProcessError as err:
-        problems.append(f"rebuild failed: {err.stderr.decode(errors='replace')}")
+    before = {path: digest(path) for path in artifact_paths()}
+    result = subprocess.run(
+        [sys.executable, str(REPO / "_tools" / "build-catalog.py")],
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode:
+        problems.append(f"catalog rebuild failed: {result.stderr.decode(errors='replace')}")
         return
-
-    paths = catalog_artifact_paths()
-    after = {p: sha256_file(p) for p in paths}
-    if set(before) != set(after):
-        diffs = sorted(display_path(p) for p in set(before) ^ set(after))
-        problems.append(f"rebuild changed file set: {diffs}")
-        return
-    for p in paths:
-        if before[p] != after[p]:
-            problems.append(
-                f"rebuild changed {display_path(p)} — builder is non-deterministic"
-            )
+    after = {path: digest(path) for path in artifact_paths()}
+    if before.keys() != after.keys():
+        problems.append("catalog rebuild changed the artifact file set")
+    for path in before.keys() & after.keys():
+        if before[path] != after[path]:
+            problems.append(f"catalog rebuild changed {display(path)}")
 
 
 def main() -> int:
     problems: list[str] = []
-
     if not REGISTRY.is_file():
-        print(
-            f"error: {display_path(REGISTRY)} not found. "
-            f"Run `python3 _tools/build-catalog.py` first.",
-            file=sys.stderr,
-        )
+        print(f"error: {display(REGISTRY)} is missing", file=sys.stderr)
         return 1
-
     try:
-        data = json.loads(REGISTRY.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as err:
-        print(f"error: registry.json is not valid JSON: {err}", file=sys.stderr)
+        data = json.loads(REGISTRY.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"error: registry.json is invalid: {exc}", file=sys.stderr)
         return 1
-
-    check_registry_signature(problems)
-    check_schema(data, problems)
-
-    bundles = data.get("bundles") or []
-    index: dict[str, set[str]] = {}
-    for idx, row in enumerate(bundles):
+    if not isinstance(data, dict):
+        print("error: registry.json must be an object", file=sys.stderr)
+        return 1
+    if set(data) != {"$schema", "version", "generated_at", "bundles"}:
+        problems.append("registry contains unsupported top-level keys")
+    if data.get("version") != 1 or not isinstance(data.get("bundles"), list):
+        problems.append("registry version or bundles shape is invalid")
+    validate_signature(problems)
+    validate_schema(data, problems)
+    seen: set[str] = set()
+    for index, row in enumerate(data.get("bundles", [])):
         if not isinstance(row, dict):
-            problems.append(f"bundle[{idx}] is not an object")
+            problems.append(f"bundle[{index}] must be an object")
             continue
-        btype, slug = check_bundle_row(row, idx, problems)
-        if btype and slug:
-            index.setdefault(btype, set()).add(slug)
-
-    check_starter_pack(data, index, problems)
-    check_fallback_registry(problems)
-    check_deterministic_rebuild(problems)
-
+        validate_row(row, index, seen, problems)
+    if VALIDATE_FALLBACK:
+        if not FALLBACK.is_file() or FALLBACK.read_bytes() != REGISTRY.read_bytes():
+            problems.append("fallback registry is missing or differs from registry.json")
+    validate_determinism(problems)
     if problems:
-        print("catalog validation failed:\n", file=sys.stderr)
-        for p in problems:
-            print(f"  - {p}", file=sys.stderr)
+        print("catalog validation failed:", file=sys.stderr)
+        for problem in problems:
+            print(f"  - {problem}", file=sys.stderr)
         return 1
-
-    counts = {t: len(slugs) for t, slugs in index.items()}
-    total = sum(counts.values())
-    print(
-        f"catalog ok: {total} bundles "
-        f"({', '.join(f'{t}={n}' for t, n in sorted(counts.items()))})"
-    )
+    print(f"catalog ok: {len(seen)} app bundles")
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

@@ -55,7 +55,6 @@ describe( 'ODD Notes recovery and state helpers', () => {
 	beforeEach( () => window.localStorage.clear() );
 
 	it( 'isolates journals by installation as well as user', () => {
-		window.localStorage.setItem( 'odd-app-odd-notes/drafts/v1/1', '{"stale":true}' );
 		const first = resolveJournalScope( {
 			restBase: 'https://example.com/wp-json/odd-notes/v1/',
 			restNonce: 'nonce',
@@ -75,7 +74,6 @@ describe( 'ODD Notes recovery and state helpers', () => {
 		writeJournal( first, 1, { entries: { 42: draft } } );
 		expect( readJournal( first, 1 ).entries[ 42 ] ).toMatchObject( draft );
 		expect( readJournal( second, 1 ).entries ).toEqual( {} );
-		expect( window.localStorage.getItem( 'odd-app-odd-notes/drafts/v1/1' ) ).toBeNull();
 	} );
 
 	it( 'does not use shared Playground storage without a server scope', () => {

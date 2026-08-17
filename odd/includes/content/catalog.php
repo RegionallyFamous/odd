@@ -12,15 +12,9 @@
  *
  *   {
  *     "version": 1,
- *     "starter_pack": {
- *       "scenes":    ["<slug>"],
- *       "iconSets":  ["<slug>"],
- *       "widgets":   ["<slug>"],
- *       "apps":      ["<slug>"]
- *     },
  *     "bundles": [
  *       {
- *         "type":         "scene" | "icon-set" | "cursor-set" | "widget" | "app",
+ *         "type":         "app",
  *         "slug":         "<unique>",
  *         "name":         "Human-readable name",
  *         "version":      "1.0.0",
@@ -33,7 +27,7 @@
  *         "download_url": "https://.../bundles/<name>.wp",
  *         "sha256":       "<64 hex chars>",
  *         "size":         12345,
- *         "requires":     {"odd":"1.0.0","openStation":"1.1.0","api":"2.3.0"}
+ *         "requires":     {"odd":"1.0.0","openStation":"1.1.0","api":"2.4.0"}
  *       }
  *     ]
  *   }
@@ -66,7 +60,7 @@ if ( ! defined( 'ODDOUT_CATALOG_PUBLIC_KEY' ) ) {
 	define( 'ODDOUT_CATALOG_PUBLIC_KEY', '2aIvGPQMF//a9ciDvQ8GST7Q8QhfVsM6h1HB3/Td5Gk=' );
 }
 if ( ! defined( 'ODDOUT_CATALOG_API_VERSION' ) ) {
-	define( 'ODDOUT_CATALOG_API_VERSION', '2.3.0' );
+	define( 'ODDOUT_CATALOG_API_VERSION', '2.4.0' );
 }
 if ( ! defined( 'ODDOUT_CATALOG_CACHE_TTL' ) ) {
 	// Twelve hours. The catalog changes infrequently (only when the
@@ -106,7 +100,7 @@ function oddout_catalog_allowed_types() {
  * @return string[]
  */
 function oddout_catalog_allowed_slugs() {
-	return array( 'odd-notes', 'workbench' );
+	return array( 'odd-notes', 'pantry', 'workbench' );
 }
 
 function oddout_catalog_max_response_bytes() {
@@ -783,69 +777,19 @@ function oddout_catalog_annotate_compatibility( array $entry ) {
 	return $entry;
 }
 
-function oddout_catalog_icon_set_row_is_supported( array $entry ) {
-	if ( ! isset( $entry['type'] ) || 'icon-set' !== (string) $entry['type'] ) {
-		return true;
-	}
-
-	$icon_url = isset( $entry['icon_url'] ) ? (string) $entry['icon_url'] : '';
-	$path     = (string) wp_parse_url( $icon_url, PHP_URL_PATH );
-	$ext      = strtolower( pathinfo( $path, PATHINFO_EXTENSION ) );
-	return in_array( $ext, array( 'png', 'webp' ), true );
-}
-
 function oddout_catalog_drop_incompatible_rows( array $registry ) {
 	if ( empty( $registry['bundles'] ) || ! is_array( $registry['bundles'] ) ) {
 		return $registry;
 	}
 
-	$starter_map    = array(
-		'scenes'     => 'scene',
-		'iconSets'   => 'icon-set',
-		'cursorSets' => 'cursor-set',
-		'widgets'    => 'widget',
-		'apps'       => 'app',
-	);
-	$group_for_type = array_flip( $starter_map );
-	$kept           = array();
-	$installable    = array();
+	$kept = array();
 	foreach ( $registry['bundles'] as $entry ) {
 		if ( ! is_array( $entry ) ) {
 			continue;
 		}
-		if ( ! oddout_catalog_icon_set_row_is_supported( $entry ) ) {
-			continue;
-		}
-		if ( isset( $entry['type'], $entry['slug'] ) && empty( $entry['incompatible'] ) ) {
-			$type = (string) $entry['type'];
-			$slug = sanitize_key( (string) $entry['slug'] );
-			if ( isset( $group_for_type[ $type ] ) && '' !== $slug ) {
-				$group = $group_for_type[ $type ];
-				if ( ! isset( $installable[ $group ] ) ) {
-					$installable[ $group ] = array();
-				}
-				$installable[ $group ][ $slug ] = true;
-			}
-		}
 		$kept[] = $entry;
 	}
 	$registry['bundles'] = $kept;
-
-	foreach ( array_keys( $starter_map ) as $group ) {
-		if ( ! isset( $registry['starter_pack'][ $group ] ) || ! is_array( $registry['starter_pack'][ $group ] ) ) {
-			continue;
-		}
-		$allowed                            = isset( $installable[ $group ] ) ? $installable[ $group ] : array();
-		$registry['starter_pack'][ $group ] = array_values(
-			array_filter(
-				$registry['starter_pack'][ $group ],
-				static function ( $slug ) use ( $allowed ) {
-					$slug = sanitize_key( (string) $slug );
-					return isset( $allowed[ $slug ] );
-				}
-			)
-		);
-	}
 
 	return $registry;
 }
@@ -1036,7 +980,7 @@ function oddout_catalog_download_entry_file( array $entry, $context = 'install' 
  *      "last known good" mirror) and return the new body.
  *   3. On network / JSON failure, return whatever is in the stale
  *      option. A brand-new site with zero cache gets an empty
- *      `{bundles:[], starter_pack:{}}` and we let the starter-pack
+ *      `{bundles:[]}` and we let the fallback
  *      runner retry later.
  *
  * @param bool $force If true, skip the fresh transient and fetch
@@ -1162,8 +1106,7 @@ function oddout_catalog_load( $force = false ) {
 	// No stale mirror: this is a fresh site whose very first catalog
 	// fetch failed (Playground without network, air-gapped WP, or a
 	// catalog host outage during activation). Fall through to the
-	// frozen in-plugin fallback so the Shop still has something to
-	// render and the starter pack can install.
+		// frozen in-plugin fallback so the Shop still has something to render.
 	if ( function_exists( 'oddout_catalog_fallback_load' ) ) {
 		$fallback = oddout_catalog_fallback_load();
 		if ( ! empty( $fallback['bundles'] ) ) {
@@ -1221,7 +1164,6 @@ function oddout_catalog_validate_remote_registry( $data, $catalog_url ) {
 
 	$allowed_types = oddout_catalog_allowed_types();
 	$seen_slugs    = array();
-	$seen_by_type  = array();
 	foreach ( $data['bundles'] as $index => $entry ) {
 		if ( ! is_array( $entry ) ) {
 			return new WP_Error(
@@ -1260,10 +1202,6 @@ function oddout_catalog_validate_remote_registry( $data, $catalog_url ) {
 			);
 		}
 		$seen_slugs[ $slug ] = true;
-		if ( ! isset( $seen_by_type[ $type ] ) ) {
-			$seen_by_type[ $type ] = array();
-		}
-		$seen_by_type[ $type ][ $slug ] = true;
 
 		if ( empty( $entry['name'] ) ) {
 			return new WP_Error(
@@ -1353,45 +1291,6 @@ function oddout_catalog_validate_remote_registry( $data, $catalog_url ) {
 						'field' => $field,
 					)
 				);
-			}
-		}
-	}
-
-	if ( isset( $data['starter_pack'] ) ) {
-		if ( ! is_array( $data['starter_pack'] ) ) {
-			return new WP_Error( 'catalog_bad_starter_pack', __( 'Catalog starter_pack must be an object.', 'odd-outlandish-desktop-decorator' ) );
-		}
-		$starter_map = array(
-			'scenes'     => 'scene',
-			'iconSets'   => 'icon-set',
-			'cursorSets' => 'cursor-set',
-			'widgets'    => 'widget',
-			'apps'       => 'app',
-		);
-		foreach ( $starter_map as $group => $type ) {
-			if ( ! isset( $data['starter_pack'][ $group ] ) ) {
-				continue;
-			}
-			if ( ! is_array( $data['starter_pack'][ $group ] ) ) {
-				return new WP_Error(
-					'catalog_bad_starter_pack_group',
-					__( 'Catalog starter_pack entries must be arrays.', 'odd-outlandish-desktop-decorator' ),
-					array( 'group' => $group )
-				);
-			}
-			foreach ( $data['starter_pack'][ $group ] as $raw_slug ) {
-				$slug = is_string( $raw_slug ) ? sanitize_key( $raw_slug ) : '';
-				if ( '' === $slug || $slug !== $raw_slug || empty( $seen_by_type[ $type ][ $slug ] ) ) {
-					return new WP_Error(
-						'catalog_bad_starter_pack_slug',
-						__( 'Catalog starter_pack references a missing bundle.', 'odd-outlandish-desktop-decorator' ),
-						array(
-							'group' => $group,
-							'slug'  => $raw_slug,
-							'type'  => $type,
-						)
-					);
-				}
 			}
 		}
 	}
@@ -1504,7 +1403,7 @@ function oddout_catalog_fetch_remote( $url ) {
  * can depend on the shape. Silently drops malformed rows.
  *
  * @param array $data Decoded JSON.
- * @return array      {version:int, starter_pack:array, bundles:array}
+ * @return array      {version:int, bundles:array}
  */
 function oddout_catalog_normalise( $data ) {
 	$out = array(
@@ -1516,30 +1415,8 @@ function oddout_catalog_normalise( $data ) {
 		'_oddout_signature_status' => isset( $data['_oddout_signature_status'] ) ? sanitize_key( (string) $data['_oddout_signature_status'] ) : 'unknown',
 		'_oddout_signature_key'    => isset( $data['_oddout_signature_key'] ) ? sanitize_text_field( (string) $data['_oddout_signature_key'] ) : '',
 		'_oddout_signature_url'    => isset( $data['_oddout_signature_url'] ) ? esc_url_raw( (string) $data['_oddout_signature_url'] ) : '',
-		'starter_pack'             => array(
-			'scenes'     => array(),
-			'iconSets'   => array(),
-			'cursorSets' => array(),
-			'widgets'    => array(),
-			'apps'       => array(),
-		),
 		'bundles'                  => array(),
 	);
-
-	if ( isset( $data['starter_pack'] ) && is_array( $data['starter_pack'] ) ) {
-		foreach ( array( 'scenes', 'iconSets', 'cursorSets', 'widgets', 'apps' ) as $key ) {
-			if ( isset( $data['starter_pack'][ $key ] ) && is_array( $data['starter_pack'][ $key ] ) ) {
-				$out['starter_pack'][ $key ] = array_values(
-					array_filter(
-						array_map(
-							'sanitize_key',
-							$data['starter_pack'][ $key ]
-						)
-					)
-				);
-			}
-		}
-	}
 
 	$allowed_types = oddout_catalog_allowed_types();
 	$rows_in       = isset( $data['bundles'] ) && is_array( $data['bundles'] ) ? $data['bundles'] : array();
@@ -1561,10 +1438,6 @@ function oddout_catalog_normalise( $data ) {
 		$sha = isset( $entry['sha256'] ) ? strtolower( (string) $entry['sha256'] ) : '';
 		if ( '' !== $sha && ! preg_match( '/^[0-9a-f]{64}$/', $sha ) ) {
 			// Drop rows with malformed hashes — we'd refuse to install them anyway.
-			continue;
-		}
-		if ( ! oddout_catalog_icon_set_row_is_supported( $entry ) ) {
-			// SVG icon-set rows cannot install under the raster-only v1 contract.
 			continue;
 		}
 		$row = array(
@@ -1612,7 +1485,7 @@ function oddout_catalog_normalise( $data ) {
 	 * Filter the full bundle catalog after remote load + normalisation.
 	 * Useful for enterprise deployments that pre-seed internal bundles.
 	 *
-	 * @param array $out Registry with keys version/starter_pack/bundles.
+	 * @param array $out Registry with keys version/bundles.
 	 */
 	return (array) apply_filters( 'oddout_bundle_catalog', $out );
 }
@@ -1797,26 +1670,6 @@ function oddout_bundle_catalog() {
 }
 
 /**
- * Return the starter-pack descriptor from the registry. Used by
- * odd/includes/starter-pack.php to pick which bundles to install on
- * first activation.
- *
- * @return array{scenes:string[],iconSets:string[],cursorSets:string[],widgets:string[],apps:string[]}
- */
-function oddout_catalog_starter_pack() {
-	$registry = oddout_catalog_load();
-	return isset( $registry['starter_pack'] ) && is_array( $registry['starter_pack'] )
-		? $registry['starter_pack']
-		: array(
-			'scenes'     => array(),
-			'iconSets'   => array(),
-			'cursorSets' => array(),
-			'widgets'    => array(),
-			'apps'       => array(),
-		);
-}
-
-/**
  * Find the sha256 for a given bundle slug in the loaded catalog. Used
  * by the REST install handler to gate the download. Returns '' when
  * the slug isn't present.
@@ -1864,7 +1717,7 @@ function oddout_bundle_catalog_row_for_response( array $entry ) {
 /**
  * Catalog rows for a given type, annotated with an `installed` flag.
  *
- * @param string $type One of 'scene' | 'icon-set' | 'cursor-set' | 'widget' | 'app'.
+ * @param string $type App bundle type.
  * @return array<int, array<string, mixed>>
  */
 function oddout_bundle_catalog_for_type( $type ) {
@@ -1896,45 +1749,6 @@ function oddout_bundle_catalog_installed_versions() {
 		foreach ( oddout_apps_list() as $row ) {
 			if ( ! empty( $row['slug'] ) ) {
 				$installed[ $row['slug'] ] = isset( $row['version'] ) ? (string) $row['version'] : '';
-			}
-		}
-	}
-
-	if ( function_exists( 'oddout_icons_get_sets' ) ) {
-		foreach ( oddout_icons_get_sets() as $row ) {
-			if ( ! empty( $row['slug'] ) ) {
-				$installed[ $row['slug'] ] = isset( $row['version'] ) ? (string) $row['version'] : '';
-			}
-		}
-	}
-
-	if ( function_exists( 'oddout_cursors_get_sets' ) ) {
-		foreach ( oddout_cursors_get_sets() as $row ) {
-			if ( ! empty( $row['slug'] ) ) {
-				$installed[ $row['slug'] ] = isset( $row['version'] ) ? (string) $row['version'] : '';
-			}
-		}
-	}
-
-	$scenes = apply_filters( 'oddout_scene_registry', array() );
-	if ( is_array( $scenes ) ) {
-		foreach ( $scenes as $row ) {
-			if ( is_array( $row ) && ! empty( $row['slug'] ) ) {
-				$installed[ $row['slug'] ] = isset( $row['version'] ) ? (string) $row['version'] : '';
-			}
-		}
-	}
-
-	$widgets = apply_filters( 'oddout_widget_registry', array() );
-	if ( is_array( $widgets ) ) {
-		foreach ( $widgets as $row ) {
-			if ( ! is_array( $row ) ) {
-				continue;
-			}
-			$slug = ! empty( $row['slug'] ) ? $row['slug']
-				: ( ! empty( $row['id'] ) ? $row['id'] : '' );
-			if ( '' !== $slug ) {
-				$installed[ $slug ] = isset( $row['version'] ) ? (string) $row['version'] : '';
 			}
 		}
 	}
@@ -2222,15 +2036,11 @@ function oddout_bundle_rest_install_from_catalog( WP_REST_Request $req ) {
 	}
 
 	$out = array(
-		'installed'  => true,
-		'slug'       => $install['slug'],
-		'type'       => $install['type'],
-		'manifest'   => $install['manifest'],
-		// Shop hot-register payload. See the matching upload
-		// endpoint in includes/content/rest.php for the rationale.
-		'entry_url'  => oddout_bundle_entry_url_for( $install['manifest'] ),
-		'style_urls' => oddout_bundle_style_urls_for( $install['manifest'] ),
-		'row'        => oddout_bundle_panel_row_for( $install['manifest'] ),
+		'installed' => true,
+		'slug'      => $install['slug'],
+		'type'      => $install['type'],
+		'manifest'  => $install['manifest'],
+		'row'       => oddout_bundle_panel_row_for( $install['manifest'] ),
 	);
 	if ( 'app' === $install['type'] && function_exists( 'oddout_apps_serve_url_for_rest_payload' ) ) {
 		$serve = oddout_apps_serve_url_for_rest_payload( $install['slug'] );
@@ -2242,9 +2052,7 @@ function oddout_bundle_rest_install_from_catalog( WP_REST_Request $req ) {
 }
 
 /**
- * Download + install a single catalog row. Shared between the REST
- * install endpoint and the starter-pack installer so both go through
- * the same HTTPS + sha256 gate.
+ * Download and install a catalog app through the HTTPS and SHA-256 gate.
  *
  * @param array $entry Normalised catalog row.
  * @return array|WP_Error On success: {slug, type, manifest}.

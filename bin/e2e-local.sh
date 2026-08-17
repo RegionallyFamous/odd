@@ -16,6 +16,8 @@
 #
 # Env:
 #   E2E_WP_DIR        WordPress tree (default: <repo>/.e2e/wp)
+#   E2E_OPENSTATION_DIR clean OpenStation source checkout used for provenance
+#                       checks (default: <repo>/.e2e/openstation-1.1.0)
 #   E2E_DB_HOST         default 127.0.0.1
 #   E2E_DB_PORT         default 3306; use 3307 with docker-compose.e2e.yml
 #   E2E_BASE_URL        default http://127.0.0.1:8080
@@ -26,6 +28,8 @@ set -euo pipefail
 
 ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 ODD_PLUGIN="${ROOT}/odd"
+OPENSTATION_CHECKOUT="${E2E_OPENSTATION_DIR:-${ROOT}/.e2e/openstation-1.1.0}"
+OPENSTATION_PACKAGE_URL="https://downloads.wordpress.org/plugin/desktop-mode.1.1.0.zip"
 
 WP_DIR="${E2E_WP_DIR:-${ROOT}/.e2e/wp}"
 DB_HOST="${E2E_DB_HOST:-127.0.0.1}"
@@ -82,6 +86,8 @@ provision() {
 	sync_db_hostport
 
 	[[ -d "${ODD_PLUGIN}" ]] || die "expected ODD plugin at ${ODD_PLUGIN}"
+	[[ -n "${WP_DIR}" && "${WP_DIR}" != "/" && "${WP_DIR}" != "${ROOT}" ]] || \
+		die "refusing unsafe E2E_WP_DIR: ${WP_DIR:-empty}"
 
 	mkdir -p "$( dirname "${WP_DIR}" )"
 	if [[ -f "${WP_DIR}/wp-config.php" ]]; then
@@ -108,6 +114,8 @@ provision() {
 			--admin_email=e2e@example.com \
 			--skip-email )
 	fi
+	( cd "${WP_DIR}" && e2e_wp core update --version=latest --force )
+	( cd "${WP_DIR}" && e2e_wp core update-db )
 
 	FIXTURE_ROOT="${WP_DIR}/wp-content/odd-smoke-fixture"
 	mkdir -p "${FIXTURE_ROOT}" "${WP_DIR}/wp-content/mu-plugins"
@@ -118,32 +126,47 @@ provision() {
 		( cd "${WP_DIR}" && e2e_wp config delete ODD_SMOKE_CATALOG_URL )
 	fi
 
-	( cd "${WP_DIR}" && e2e_wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.1.1.0.zip --force --activate )
+	OPENSTATION_LINK="${WP_DIR}/wp-content/plugins/desktop-mode"
+	[[ -f "${OPENSTATION_CHECKOUT}/desktop-mode.php" ]] || die "missing clean OpenStation checkout at ${OPENSTATION_CHECKOUT}"
+	need_cmd git
+	OPENSTATION_VERSION="$( sed -n 's/^[[:space:]]*\* Version:[[:space:]]*//p' "${OPENSTATION_CHECKOUT}/desktop-mode.php" | head -1 | tr -d '\r' )"
+	[[ "${OPENSTATION_VERSION}" == "1.1.0" ]] || die "expected OpenStation 1.1.0 checkout, found ${OPENSTATION_VERSION:-unknown}"
+	OPENSTATION_TAG="$( git -C "${OPENSTATION_CHECKOUT}" describe --tags --exact-match HEAD 2>/dev/null || true )"
+	[[ "${OPENSTATION_TAG}" == "v1.1.0" ]] || die "OpenStation checkout must be at exact tag v1.1.0"
+	[[ -z "$( git -C "${OPENSTATION_CHECKOUT}" status --porcelain )" ]] || die "OpenStation checkout has local changes"
+	# Release tags are source checkouts and intentionally omit compiled shell
+	# assets. Exercise the official, versioned WordPress.org package while the
+	# clean checkout above remains the provenance source for audits/snapshots.
+	( cd "${WP_DIR}" && e2e_wp plugin deactivate desktop-mode --quiet ) || true
+	if [[ -L "${OPENSTATION_LINK}" ]]; then
+		unlink "${OPENSTATION_LINK}"
+	fi
+	( cd "${WP_DIR}" && e2e_wp plugin install "${OPENSTATION_PACKAGE_URL}" --force --activate )
 
 	ODD_LINK="${WP_DIR}/wp-content/plugins/odd"
-	if [[ -L "${ODD_LINK}" ]] || [[ -d "${ODD_LINK}" ]]; then
-		rm -rf "${ODD_LINK}"
+	if [[ -L "${ODD_LINK}" ]]; then
+		unlink "${ODD_LINK}"
+	elif [[ -d "${ODD_LINK}" ]]; then
+		( cd "${WP_DIR}" && e2e_wp plugin deactivate odd --quiet ) || true
+		( cd "${WP_DIR}" && e2e_wp plugin delete odd --quiet )
 	fi
-	ln -sf "${ODD_PLUGIN}" "${ODD_LINK}"
+	ln -s "${ODD_PLUGIN}" "${ODD_LINK}"
 
 	( cd "${WP_DIR}" && e2e_wp plugin activate odd )
 
 	( cd "${WP_DIR}" && e2e_wp user meta update 1 desktop_mode_mode 1 )
 
-	# Install ODD Notes from the freshly built local fixture catalog. CLI install
-	# keeps this path deterministic while still exercising the real bundle loader.
-	# The single-quoted payload is PHP, not shell.
+	# Exercise first-install behavior in the browser, not a pre-seeded app state.
 	# shellcheck disable=SC2016
-	( cd "${WP_DIR}" && e2e_wp --user=1 eval '$reg = oddout_catalog_refresh(); $slug = "odd-notes"; $entry = null; foreach ((array) ($reg["bundles"] ?? array()) as $e) { if ((isset($e["type"], $e["slug"]) && $e["type"] === "app" && $e["slug"] === $slug)) { $entry = $e; break; } } if (!$entry) { WP_CLI::error("e2e: catalog missing app {$slug}"); } $versions = oddout_bundle_catalog_installed_versions(); $installed = isset($versions[$slug]) ? (string) $versions[$slug] : ""; $r = oddout_catalog_install_entry($entry, array("replace_existing" => "" !== $installed)); if (is_wp_error($r)) { WP_CLI::error($r->get_error_message()); } var_export($r);' )
-	( cd "${WP_DIR}" && e2e_wp --user=1 eval 'if ( null === openstation_native_window_registry( "odd-app-odd-notes" ) ) { WP_CLI::error( "ODD Notes native window is not registered." ); }' )
+	( cd "${WP_DIR}" && e2e_wp --user=1 eval 'foreach (array("odd-notes", "workbench") as $slug) { if (oddout_bundle_slug_in_use($slug)) { $result = oddout_bundle_uninstall($slug); if (is_wp_error($result)) { WP_CLI::error($result->get_error_message()); } } } if (function_exists("openstation_clear_session")) { openstation_clear_session(1); } delete_user_meta(1, "desktop_mode_os_settings"); oddout_catalog_refresh();' )
 
-	( cd "${WP_DIR}" && e2e_wp user meta update 1 desktop_mode_os_settings '{"wallpaper":"odd"}' --format=json )
-
-	# Plain permalinks break `/wp-json/...` on `wp server`; Desktop Mode + Playwright need REST.
+	# Plain permalinks break `/wp-json/...` on `wp server`; OpenStation + Playwright need REST.
 	( cd "${WP_DIR}" && e2e_wp option update permalink_structure '/%postname%/' )
 	( cd "${WP_DIR}" && e2e_wp rewrite flush --hard )
 
-	echo "Provisioned WordPress at ${WP_DIR} (BASE_URL=${BASE_URL})"
+	WP_VERSION="$( cd "${WP_DIR}" && e2e_wp core version )"
+	OS_VERSION="$( cd "${WP_DIR}" && e2e_wp plugin get desktop-mode --field=version )"
+	echo "Provisioned WordPress ${WP_VERSION} + OpenStation ${OS_VERSION} at ${WP_DIR} (BASE_URL=${BASE_URL})"
 }
 
 serve() {

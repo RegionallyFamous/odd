@@ -26,7 +26,7 @@ const [ vendor, runtime ] = await Promise.all( [
 	} ),
 ] );
 
-if ( ! vendor.includes( 'K("os-textarea",Qe)' ) ) {
+if ( ! vendor.includes( '"os-textarea"' ) || ! vendor.includes( '"os-tag-input"' ) ) {
 	throw new Error( 'The vendored OpenStation component snapshot is incomplete.' );
 }
 if ( runtime.outputFiles.length !== 1 ) {

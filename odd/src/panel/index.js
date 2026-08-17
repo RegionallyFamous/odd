@@ -69,6 +69,95 @@
 		return button.querySelector( '[data-odd-button-label]' ) || button;
 	}
 
+	function appWindowId( slug ) {
+		return 'odd-app-' + String( slug || '' ).replace( /[^a-z0-9-]/g, '' );
+	}
+
+	function placementFor( row ) {
+		var surfaces = row && row.surfaces && typeof row.surfaces === 'object'
+			? row.surfaces
+			: { desktop: true, taskbar: false };
+		var desktop = surfaces.desktop !== false;
+		var taskbar = surfaces.taskbar === true;
+		if ( desktop && taskbar ) { return 'both'; }
+		if ( taskbar ) { return 'dock'; }
+		if ( desktop ) { return 'desktop'; }
+		return 'hidden';
+	}
+
+	function seedLivePlacement( row ) {
+		var os = api();
+		if ( typeof os.getOsSettings !== 'function' || typeof os.updateOsSettings !== 'function' ) {
+			throw new Error( __( 'OpenStation live placement is unavailable. Update OpenStation and try again.' ) );
+		}
+		var snapshot = os.getOsSettings() || {};
+		var visibility = Object.assign( {}, snapshot.itemVisibility || {} );
+		var id = appWindowId( row && row.slug );
+		if ( ! id || id === 'odd-app-' || Object.prototype.hasOwnProperty.call( visibility, id ) ) {
+			return false;
+		}
+		visibility[ id ] = placementFor( row );
+		os.updateOsSettings( { itemVisibility: visibility }, { windowId: 'odd' } );
+		return true;
+	}
+
+	function removeLivePlacement( slug ) {
+		var os = api();
+		if ( typeof os.getOsSettings !== 'function' || typeof os.updateOsSettings !== 'function' ) {
+			return false;
+		}
+		var snapshot = os.getOsSettings() || {};
+		var visibility = Object.assign( {}, snapshot.itemVisibility || {} );
+		var id = appWindowId( slug );
+		if ( ! Object.prototype.hasOwnProperty.call( visibility, id ) ) {
+			return false;
+		}
+		delete visibility[ id ];
+		os.updateOsSettings( { itemVisibility: visibility }, { windowId: 'odd' } );
+		return true;
+	}
+
+	async function refreshOpenStation() {
+		if ( typeof api().refreshMenu !== 'function' ) {
+			throw new Error( __( 'OpenStation live refresh is unavailable. Update OpenStation and try again.' ) );
+		}
+		await api().refreshMenu();
+	}
+
+	function validateInstallResult( payload, slug ) {
+		if ( ! payload || payload.installed !== true || payload.slug !== slug ) {
+			throw new Error( __( 'The app installer returned an incomplete result.' ) );
+		}
+		return payload.row && typeof payload.row === 'object'
+			? payload.row
+			: ( payload.manifest && typeof payload.manifest === 'object' ? payload.manifest : { slug: slug } );
+	}
+
+	async function openInstalledApp( state, row, button ) {
+		var label = buttonLabel( button );
+		var prior = label.textContent;
+		button.disabled = true;
+		label.textContent = __( 'Opening…' );
+		setStatus( state, __( 'Opening ' ) + displayName( row ) + '…', 'busy' );
+		try {
+			var id = appWindowId( row.slug );
+			var opened = api().openWindow( id, { source: 'odd/shop' } );
+			if ( opened !== true ) {
+				await refreshOpenStation();
+				opened = api().openWindow( id, { source: 'odd/shop-retry' } );
+			}
+			if ( opened !== true ) {
+				throw new Error( displayName( row ) + __( ' could not open. OpenStation did not register its window.' ) );
+			}
+			setStatus( state, '', 'neutral' );
+		} catch ( error ) {
+			setStatus( state, error.message || __( 'The app could not open.' ), 'error' );
+		} finally {
+			button.disabled = false;
+			label.textContent = prior;
+		}
+	}
+
 	function prettyTag( tag ) {
 		return String( tag || '' )
 			.replace( /-/g, ' ' )
@@ -165,7 +254,7 @@
 		}
 		primary.addEventListener( 'click', function () {
 			if ( installed && ! update ) {
-				api().openWindow( 'odd-app-' + row.slug );
+				openInstalledApp( state, row, primary );
 				return;
 			}
 			mutate( state, primary, __( update ? 'Updating…' : 'Installing…' ), function () {
@@ -174,6 +263,16 @@
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify( { slug: row.slug, allow_update: !! update } )
 				} );
+			}, {
+				partialFailure: displayName( row ) + __( ' was installed, but OpenStation could not refresh its launcher. Try Open app again; if it still fails, reload once.' ),
+				afterCommit: async function ( payload ) {
+					var installedRow = validateInstallResult( payload, row.slug );
+					if ( ! installed ) { seedLivePlacement( installedRow ); }
+					await refreshOpenStation();
+					if ( ! state.installed.some( function ( app ) { return app.slug === row.slug; } ) ) {
+						throw new Error( __( 'The app was installed but is missing from the installed-app registry.' ) );
+					}
+				}
 			} );
 		} );
 		actions.appendChild( primary );
@@ -186,6 +285,15 @@
 				if ( ! confirmed ) { return; }
 				mutate( state, remove, __( 'Removing…' ), function () {
 					return request( state.cfg, state.cfg.rest.bundles + encodeURIComponent( row.slug ), { method: 'DELETE' } );
+				}, {
+					partialFailure: displayName( row ) + __( ' was removed, but OpenStation could not refresh its launcher.' ),
+					afterCommit: async function ( payload ) {
+						if ( ! payload || payload.uninstalled !== true ) {
+							throw new Error( __( 'The app remover returned an incomplete result.' ) );
+						}
+						removeLivePlacement( row.slug );
+						await refreshOpenStation();
+					}
 				} );
 			} );
 			actions.appendChild( remove );
@@ -212,22 +320,33 @@
 		state.catalog = ( results[ 1 ].bundles || [] ).filter( function ( row ) { return row.type === 'app'; } );
 	}
 
-	async function mutate( state, button, busyText, operation ) {
+	async function mutate( state, button, busyText, operation, options ) {
+		options = options || {};
 		var label = buttonLabel( button );
 		var prior = label.textContent;
+		var committed = false;
 		button.disabled = true;
 		label.textContent = busyText;
 		setStatus( state, busyText, 'busy' );
 		try {
-			await operation();
+			var payload = await operation();
+			committed = true;
 			await reloadState( state );
-			if ( typeof api().refreshMenu === 'function' ) { await api().refreshMenu(); }
-			setStatus( state, __( 'Everything is up to date.' ), 'success' );
+			if ( typeof options.afterCommit === 'function' ) {
+				await options.afterCommit( payload );
+			}
 			render( state );
+			setStatus( state, __( 'Everything is up to date.' ), 'success' );
 		} catch ( error ) {
-			button.disabled = false;
-			label.textContent = prior;
-			setStatus( state, error.message || __( 'Something went wrong.' ), 'error' );
+			if ( committed ) {
+				try { await reloadState( state ); } catch ( _reloadError ) {}
+				render( state );
+				setStatus( state, options.partialFailure || error.message || __( 'The change was saved, but the desktop could not refresh.' ), 'error' );
+			} else {
+				button.disabled = false;
+				label.textContent = prior;
+				setStatus( state, error.message || __( 'Something went wrong.' ), 'error' );
+			}
 		}
 	}
 

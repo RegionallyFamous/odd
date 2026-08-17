@@ -165,7 +165,19 @@ def main() -> int:
         )
         return 1
 
-    if all(ref == SENTINEL_WPORG_LATEST for ref in blueprint_refs.values()):
+    lagging_refs = {
+        label: ref
+        for label, ref in blueprint_refs.items()
+        if ref not in (SENTINEL_GIT_DIRECTORY, SENTINEL_WPORG_LATEST)
+        and ref != version
+    }
+    if lagging_refs:
+        pins = ", ".join(
+            f"{label.removesuffix(' ref')} {ref}"
+            for label, ref in lagging_refs.items()
+        )
+        print(f"OK: odd.php version {version}; public release pin remains {pins}")
+    elif all(ref == SENTINEL_WPORG_LATEST for ref in blueprint_refs.values()):
         print(
             f"OK: odd.php version {version} (blueprint installs moving ODD from wordpress.org/plugins)"
         )

@@ -6,7 +6,7 @@
 class ODDOUT_Apps_Only_Test extends WP_UnitTestCase {
 	public function test_catalog_allows_only_apps() {
 		$this->assertSame( array( 'app' ), oddout_catalog_allowed_types() );
-		$this->assertSame( array( 'odd-notes', 'workbench' ), oddout_catalog_allowed_slugs() );
+		$this->assertSame( array( 'odd-notes', 'pantry', 'workbench' ), oddout_catalog_allowed_slugs() );
 	}
 
 	public function test_catalog_keeps_workbench_and_drops_unapproved_apps() {
@@ -74,18 +74,29 @@ class ODDOUT_Apps_Only_Test extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'data-odd-app-slug="workbench"', $html );
 		$this->assertStringContainsString( 'title="ODD Workbench"', $html );
 		$this->assertStringContainsString( 'sandbox="allow-scripts allow-forms allow-popups allow-same-origin allow-downloads"', $html );
-		$this->assertStringContainsString( 'allow="clipboard-read; clipboard-write; fullscreen"', $html );
+		$this->assertStringContainsString( 'allow="clipboard-read; clipboard-write"', $html );
+		$this->assertStringContainsString( 'position:relative;width:100%;height:100%;min-height:0', $html );
+		$this->assertStringContainsString( 'display:block;width:100%;height:100%', $html );
+		$this->assertStringNotContainsString( 'inset:', $html );
+	}
+
+	public function test_iframe_app_survives_openstation_template_escaping() {
+		$source = '<iframe class="odd-app-frame" title="Workbench" src="https://example.test/odd-app/workbench/" sandbox="allow-scripts allow-same-origin" loading="eager" referrerpolicy="no-referrer" allow="clipboard-read; clipboard-write" style="width:100%" onclick="alert(1)"></iframe>';
+		$clean  = wp_kses(
+			$source,
+			oddout_apps_allow_iframe_template_html( wp_kses_allowed_html( 'post' ) )
+		);
+
+		$this->assertStringContainsString( '<iframe', $clean );
+		$this->assertStringContainsString( 'src="https://example.test/odd-app/workbench/"', $clean );
+		$this->assertStringContainsString( 'sandbox="allow-scripts allow-same-origin"', $clean );
+		$this->assertStringContainsString( 'allow="clipboard-read; clipboard-write"', $clean );
+		$this->assertStringNotContainsString( 'onclick=', $clean );
 	}
 
 	public function test_odd_notes_uses_read_capability() {
 		$this->assertSame( 'read', oddout_apps_normalize_capability( 'read', 'odd-notes' ) );
 		$this->assertSame( 'manage_options', oddout_apps_normalize_capability( 'read', 'untrusted-app' ) );
-	}
-
-	public function test_legacy_runtime_modules_are_not_loaded() {
-		$this->assertFalse( function_exists( 'oddout_wallpaper_scenes' ) );
-		$this->assertFalse( function_exists( 'oddout_icons_get_sets' ) );
-		$this->assertFalse( function_exists( 'oddout_cursors_get_sets' ) );
 	}
 
 	public function test_notes_identifiers_are_stable() {
@@ -112,7 +123,6 @@ class ODDOUT_Apps_Only_Test extends WP_UnitTestCase {
 
 		$controller = new ODDOUT_Notes_REST_Controller( new ODDOUT_Notes_Service() );
 		$method     = new ReflectionMethod( $controller, 'json_input' );
-		$method->setAccessible( true );
 
 		$this->assertSame( $payload, $method->invoke( $controller, $request ) );
 	}
@@ -135,6 +145,60 @@ class ODDOUT_Apps_Only_Test extends WP_UnitTestCase {
 		$this->assertMatchesRegularExpression( '/^[a-f0-9-]{36}$/i', $first );
 	}
 
+	public function test_playground_shell_urls_stay_inside_the_active_scope() {
+		$original_host = isset( $_SERVER['HTTP_HOST'] ) ? $_SERVER['HTTP_HOST'] : null;
+		$original_uri  = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : null;
+		$_SERVER['HTTP_HOST']    = 'playground.wordpress.net';
+		$_SERVER['REQUEST_URI']  = '/scope:odd-live-test/wp-admin/index.php?desktop_mode_portal=1';
+
+		try {
+			$config = oddout_playground_scope_openstation_config(
+				array(
+					'adminUrl'   => 'http://playground.wordpress.net/wp-admin/',
+					'currentPage'=> 'http://playground.wordpress.net/wp-admin/index.php',
+					'restUrl'    => 'http://playground.wordpress.net/wp-json/',
+					'pwa'        => array(
+						'manifestUrl' => 'http://playground.wordpress.net/manifest.webmanifest',
+						'swUrl'       => 'http://playground.wordpress.net/sw.js',
+					),
+				)
+			);
+
+			$this->assertSame( 'https://playground.wordpress.net/scope:odd-live-test/wp-admin/', $config['adminUrl'] );
+			$this->assertSame( 'https://playground.wordpress.net/scope:odd-live-test/wp-admin/index.php', $config['currentPage'] );
+			$this->assertSame( 'https://playground.wordpress.net/scope:odd-live-test/wp-json/', $config['restUrl'] );
+			$this->assertSame( '', $config['pwa']['manifestUrl'] );
+			$this->assertSame( '', $config['pwa']['swUrl'] );
+		} finally {
+			if ( null === $original_host ) {
+				unset( $_SERVER['HTTP_HOST'] );
+			} else {
+				$_SERVER['HTTP_HOST'] = $original_host;
+			}
+			if ( null === $original_uri ) {
+				unset( $_SERVER['REQUEST_URI'] );
+			} else {
+				$_SERVER['REQUEST_URI'] = $original_uri;
+			}
+		}
+	}
+
+	public function test_non_playground_shell_config_is_unchanged() {
+		$original_host = isset( $_SERVER['HTTP_HOST'] ) ? $_SERVER['HTTP_HOST'] : null;
+		$_SERVER['HTTP_HOST'] = 'example.test';
+		$config = array( 'adminUrl' => 'http://example.test/wp-admin/' );
+
+		try {
+			$this->assertSame( $config, oddout_playground_scope_openstation_config( $config ) );
+		} finally {
+			if ( null === $original_host ) {
+				unset( $_SERVER['HTTP_HOST'] );
+			} else {
+				$_SERVER['HTTP_HOST'] = $original_host;
+			}
+		}
+	}
+
 	public function test_stale_idempotent_note_mutation_matches_current_copy() {
 		$current = array(
 			'title'     => 'Already saved',
@@ -153,7 +217,6 @@ class ODDOUT_Apps_Only_Test extends WP_UnitTestCase {
 
 		$service = new ODDOUT_Notes_Service();
 		$method  = new ReflectionMethod( $service, 'input_matches_note' );
-		$method->setAccessible( true );
 
 		$this->assertTrue( $method->invoke( $service, $input, $current ) );
 		$input['body'] = 'A genuinely different draft.';

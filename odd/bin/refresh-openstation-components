@@ -1,0 +1,71 @@
+#!/usr/bin/env node
+
+import { build } from 'esbuild';
+import { execFileSync } from 'node:child_process';
+import { readFile, writeFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const scriptDir = dirname( fileURLToPath( import.meta.url ) );
+const root = resolve( scriptDir, '../..' );
+const checkout = resolve( process.argv[ 2 ] || resolve( root, '.e2e/openstation-1.1.0' ) );
+const pluginMain = await readFile( resolve( checkout, 'desktop-mode.php' ), 'utf8' );
+const version = pluginMain.match( /define\(\s*'OPENSTATION_VERSION',\s*'([^']+)'/ )?.[ 1 ];
+const expected = ( await readFile( resolve( root, 'odd/odd.php' ), 'utf8' ) )
+	.match( /define\(\s*'ODDOUT_OPENSTATION_MIN_VERSION',\s*'([^']+)'/ )?.[ 1 ];
+if ( ! version || version !== expected ) {
+	throw new Error( `Expected OpenStation ${ expected || 'unknown' }, found ${ version || 'unknown' }.` );
+}
+
+const tag = execFileSync( 'git', [ '-C', checkout, 'describe', '--tags', '--exact-match', 'HEAD' ], { encoding: 'utf8' } ).trim();
+const commit = execFileSync( 'git', [ '-C', checkout, 'rev-parse', 'HEAD' ], { encoding: 'utf8' } ).trim();
+const status = execFileSync( 'git', [ '-C', checkout, 'status', '--porcelain' ], { encoding: 'utf8' } ).trim();
+if ( tag !== `v${ version }` || status ) {
+	throw new Error( `OpenStation checkout must be clean and exactly at v${ version }.` );
+}
+
+const components = [
+	'os-button',
+	'os-checkbox-label',
+	'os-save-status',
+	'os-spinner',
+	'os-swatch-grid',
+	'os-swatch',
+	'os-tag-input',
+	'os-text-field',
+	'os-textarea',
+];
+const entry = components
+	.map( ( name ) => `import './ui/components/${ name }/${ name }.ts';` )
+	.join( '\n' );
+const result = await build( {
+	stdin: {
+		contents: entry,
+		resolveDir: resolve( checkout, 'src' ),
+		sourcefile: 'odd-notes-openstation-components.ts',
+		loader: 'ts',
+	},
+	bundle: true,
+	format: 'iife',
+	legalComments: 'none',
+	minify: true,
+	platform: 'browser',
+	target: [ 'es2020' ],
+	write: false,
+} );
+if ( result.outputFiles.length !== 1 ) {
+	throw new Error( 'Expected one OpenStation component bundle.' );
+}
+const source = result.outputFiles[ 0 ].text;
+for ( const component of components ) {
+	if ( ! source.includes( component ) ) {
+		throw new Error( `Generated snapshot is missing ${ component }.` );
+	}
+}
+const banner = `/* OpenStation v${ version } (${ commit }) selected UI components. GPL-2.0-or-later. */\n`;
+const output = resolve(
+	root,
+	'_tools/catalog-sources/apps/odd-notes/component-snapshot/openstation-ui-components.min.js',
+);
+await writeFile( output, banner + source.trim() + '\n' );
+console.log( `refreshed OpenStation v${ version } components from ${ commit }` );

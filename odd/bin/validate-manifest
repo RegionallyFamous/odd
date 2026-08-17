@@ -1,20 +1,18 @@
 #!/usr/bin/env python3
-"""Validate an ODD .wp bundle manifest.json against the published JSON
+"""Validate an Apps-only ODD .wp manifest against the published JSON
 Schema at `docs/schemas/manifest.schema.json`.
 
 Usage:
   odd/bin/validate-manifest path/to/manifest.json [...more]
 
 Exits non-zero when any manifest fails the schema. Intended for
-third-party bundle authors (we ship this with the repo so vendors can
+app authors (we ship this with the repo so vendors can
 run it without pulling in a JavaScript toolchain) and for the CI
 matrix check in .github/workflows/ci.yml.
 
-The schema is the source of truth for the *shape* of a manifest; the
-per-type PHP validators (odd/includes/content/{scenes,iconsets,widgets,apps}.php)
-go further by asserting file presence inside the zip, SVG safety, path
-normalisation, etc. Running this script and the PHP validators both
-should catch every known bad bundle.
+The schema is the source of truth for manifest shape. The PHP archive
+validator additionally asserts file presence, paths, size, compression,
+and executable-file restrictions.
 
 Dependencies:
   - Python 3.9+
@@ -41,7 +39,7 @@ def structural_fallback(manifest: dict) -> list[str]:
     radius when broken — missing type/slug/name/version, or a slug that
     would break URLs and user-meta keys."""
     problems: list[str] = []
-    for field in ("type", "name", "slug", "version"):
+    for field in ("type", "name", "slug", "version", "entry", "icon"):
         if field not in manifest or not isinstance(manifest[field], str) or not manifest[field]:
             problems.append(f"missing or empty required field: {field}")
     slug = manifest.get("slug", "")
@@ -53,11 +51,14 @@ def structural_fallback(manifest: dict) -> list[str]:
                 f"(lowercase letters, digits, hyphens)"
             )
     bundle_type = manifest.get("type", "")
-    if bundle_type not in ("app", "scene", "icon-set", "cursor-set", "widget"):
-        problems.append(
-            f"type '{bundle_type}' is not one of "
-            f"app, scene, icon-set, cursor-set, widget"
-        )
+    if bundle_type != "app":
+        problems.append(f"type '{bundle_type}' must be app")
+    allowed = {
+        "$schema", "author", "capability", "description", "desktopIcon", "entry",
+        "icon", "name", "native", "slug", "surfaces", "type", "version", "window",
+    }
+    for field in sorted(set(manifest).difference(allowed)):
+        problems.append(f"unsupported manifest field: {field}")
     return problems
 
 

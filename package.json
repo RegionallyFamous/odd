@@ -1,18 +1,18 @@
 {
   "name": "odd-integration-tests",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "private": true,
-  "description": "Tests for the Apps-only ODD Shop and ODD Notes.",
+  "description": "Tests and release tooling for the Apps-only ODD Shop.",
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "build:notes": "node odd/bin/build-notes-app",
+    "build:openstation-components": "node odd/bin/refresh-openstation-components",
     "e2e:local": "bash bin/e2e-local.sh all",
     "e2e:docker": "docker compose -f docker-compose.e2e.yml up -d",
     "e2e:docker:down": "docker compose -f docker-compose.e2e.yml down",
     "e2e:local:provision": "bash bin/e2e-local.sh provision",
-    "build:previews": "node odd/bin/build-previews",
     "catalog:preview": "odd/bin/build-catalog-preview",
     "prepare": "husky"
   },

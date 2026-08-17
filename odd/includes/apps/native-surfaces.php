@@ -6,6 +6,37 @@
 defined( 'ABSPATH' ) || exit;
 
 add_action( 'init', 'oddout_apps_register_enabled_surfaces', 40 );
+add_filter( 'openstation_native_window_allowed_html', 'oddout_apps_allow_iframe_template_html' );
+
+/**
+ * Preserve the sandboxed app frame when OpenStation escapes native templates.
+ *
+ * OpenStation intentionally omits iframes from its default KSES allowlist.
+ * ODD's browser apps use a narrowly configured iframe as their native-window
+ * body, so the host template needs this explicit, attribute-level opt-in.
+ *
+ * @param array $allowed OpenStation's wp_kses-shaped allowlist.
+ * @return array
+ */
+function oddout_apps_allow_iframe_template_html( $allowed ) {
+	if ( ! is_array( $allowed ) ) {
+		$allowed = array();
+	}
+	$allowed['iframe'] = array_merge(
+		isset( $allowed['iframe'] ) && is_array( $allowed['iframe'] ) ? $allowed['iframe'] : array(),
+		array(
+			'class'          => true,
+			'title'          => true,
+			'src'            => true,
+			'sandbox'        => true,
+			'loading'        => true,
+			'referrerpolicy' => true,
+			'allow'          => true,
+			'style'          => true,
+		)
+	);
+	return $allowed;
+}
 
 /**
  * Register every enabled app after both plugins have registered their assets.
@@ -25,8 +56,8 @@ function oddout_apps_register_enabled_surfaces() {
 /**
  * Register one installed app.
  *
- * Native catalog apps declare bundle-owned assets in manifest.native. Older
- * iframe apps retain the sandboxed host fallback.
+ * Native apps declare bundle-owned assets in manifest.native. Browser apps
+ * use the sandboxed iframe template.
  *
  * @param array $row Installed app index row.
  */
@@ -96,21 +127,41 @@ function oddout_apps_register_surfaces( $row ) {
 
 	if ( isset( $manifest['window'] ) && is_array( $manifest['window'] ) ) {
 		$geometry = array(
-			'width'      => 'width',
-			'height'     => 'height',
-			'min_width'  => 'minWidth',
-			'min_height' => 'minHeight',
+			'width'      => array(
+				'manifest_key' => 'width',
+				'min'          => 320,
+				'max'          => 1600,
+			),
+			'height'     => array(
+				'manifest_key' => 'height',
+				'min'          => 240,
+				'max'          => 1200,
+			),
+			'min_width'  => array(
+				'manifest_key' => 'minWidth',
+				'min'          => 240,
+				'max'          => 1600,
+			),
+			'min_height' => array(
+				'manifest_key' => 'minHeight',
+				'min'          => 180,
+				'max'          => 1200,
+			),
 		);
-		foreach ( $geometry as $window_key => $manifest_key ) {
-			$value = isset( $manifest['window'][ $manifest_key ] )
+		foreach ( $geometry as $window_key => $limits ) {
+			$manifest_key = $limits['manifest_key'];
+			$value        = isset( $manifest['window'][ $manifest_key ] )
 				? $manifest['window'][ $manifest_key ]
 				: ( isset( $manifest['window'][ $window_key ] ) ? $manifest['window'][ $window_key ] : null );
 			if ( is_numeric( $value ) ) {
-				$window[ $window_key ] = (int) $value;
+				$window[ $window_key ] = max( $limits['min'], min( $limits['max'], (int) $value ) );
 			}
 		}
 		if ( ! empty( $manifest['window']['title'] ) ) {
 			$window['title'] = sanitize_text_field( (string) $manifest['window']['title'] );
+		}
+		if ( isset( $manifest['window']['resizable'] ) && is_bool( $manifest['window']['resizable'] ) ) {
+			$window['resizable'] = $manifest['window']['resizable'];
 		}
 	}
 
@@ -121,7 +172,7 @@ function oddout_apps_register_surfaces( $row ) {
 			'title'        => $name,
 			'icon'         => $icon_url,
 			'window'       => $window_id,
-			'position'     => isset( $manifest['desktopIcon']['position'] ) ? (int) $manifest['desktopIcon']['position'] : 200,
+			'position'     => isset( $manifest['desktopIcon']['position'] ) ? max( 0, min( 10000, (int) $manifest['desktopIcon']['position'] ) ) : 200,
 			'capabilities' => $window['capabilities'],
 		)
 	);
@@ -148,7 +199,7 @@ function oddout_apps_render_window_template( $slug, $manifest ) {
 	$serve_url = add_query_arg( '_wpnonce', wp_create_nonce( 'wp_rest' ), oddout_apps_cookieauth_url_for( $slug ) );
 	$name      = isset( $manifest['name'] ) ? (string) $manifest['name'] : $slug;
 	?>
-	<div class="odd-app-host" data-odd-app data-odd-app-slug="<?php echo esc_attr( $slug ); ?>" data-odd-app-src="<?php echo esc_url( $serve_url ); ?>" style="position:absolute;inset:0;background:#101014;">
+	<div class="odd-app-host" data-odd-app data-odd-app-slug="<?php echo esc_attr( $slug ); ?>" data-odd-app-src="<?php echo esc_url( $serve_url ); ?>" style="position:relative;width:100%;height:100%;min-height:0;background:#101014;">
 		<iframe
 			class="odd-app-frame"
 			title="<?php echo esc_attr( $name ); ?>"
@@ -156,8 +207,8 @@ function oddout_apps_render_window_template( $slug, $manifest ) {
 			sandbox="allow-scripts allow-forms allow-popups allow-same-origin allow-downloads"
 			loading="eager"
 			referrerpolicy="no-referrer"
-			allow="clipboard-read; clipboard-write; fullscreen"
-			style="position:absolute;inset:0;width:100%;height:100%;border:0;background:#101014;"
+			allow="clipboard-read; clipboard-write"
+			style="display:block;width:100%;height:100%;border:0;background:#101014;"
 		></iframe>
 	</div>
 	<?php
@@ -172,9 +223,6 @@ function oddout_apps_render_window_template( $slug, $manifest ) {
  */
 function oddout_apps_icon_url( $slug, $manifest ) {
 	$icon = isset( $manifest['icon'] ) ? (string) $manifest['icon'] : '';
-	if ( 0 === stripos( $icon, 'http://' ) || 0 === stripos( $icon, 'https://' ) ) {
-		return esc_url( $icon, array( 'http', 'https' ) );
-	}
 	if ( '' !== $icon && function_exists( 'oddout_apps_icon_file_path' ) && '' !== oddout_apps_icon_file_path( $slug, $manifest ) ) {
 		return oddout_https_rest_url( 'odd/v1/apps/icon/' . sanitize_key( $slug ) );
 	}

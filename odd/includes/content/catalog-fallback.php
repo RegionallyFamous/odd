@@ -37,7 +37,7 @@ function oddout_catalog_fallback_path() {
  * registry array, or an empty registry when the file is missing or
  * unreadable. Never throws.
  *
- * @return array {version:int, starter_pack:array, bundles:array}
+ * @return array {version:int, bundles:array}
  */
 function oddout_catalog_fallback_load() {
 	static $cached = null;
@@ -47,12 +47,6 @@ function oddout_catalog_fallback_load() {
 	$empty = array(
 		'version'      => 1,
 		'generated_at' => '',
-		'starter_pack' => array(
-			'scenes'   => array(),
-			'iconSets' => array(),
-			'widgets'  => array(),
-			'apps'     => array(),
-		),
 		'bundles'      => array(),
 	);
 

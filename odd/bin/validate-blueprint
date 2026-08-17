@@ -114,7 +114,7 @@ ODD_CONST_RE = re.compile(
     r"([^'\"]+)['\"]\s*\)",
 )
 
-DESKTOP_MODE_ZIP_RE = re.compile(
+OPENSTATION_ZIP_RE = re.compile(
     r"^https://downloads\.wordpress\.org/plugin/"
     r"desktop-mode\.([0-9]+\.[0-9]+\.[0-9]+)\.zip$"
 )
@@ -152,11 +152,11 @@ def odd_peeled_tag_commit(repo_root: Path, odd_version: str) -> str | None:
     return peeled if ODD_GIT_COMMIT_RE.fullmatch(peeled) else None
 
 
-def desktop_mode_zip_url(dm_min: str) -> str:
-    """Canonical WordPress.org release zip URL for pinned Desktop Mode."""
+def openstation_zip_url(openstation_min: str) -> str:
+    """Canonical WordPress.org release ZIP URL for pinned OpenStation."""
     return (
         "https://downloads.wordpress.org/"
-        + f"plugin/desktop-mode.{dm_min}.zip"
+        + f"plugin/desktop-mode.{openstation_min}.zip"
     )
 
 
@@ -205,12 +205,27 @@ def stable_openstation_pin() -> str:
         plugin = step.get("pluginData")
         if not isinstance(plugin, dict) or plugin.get("resource") != "url":
             continue
-        match = DESKTOP_MODE_ZIP_RE.match(str(plugin.get("url", "")))
+        match = OPENSTATION_ZIP_RE.match(str(plugin.get("url", "")))
         if match:
             return match.group(1)
     raise SystemExit(
         f"error: could not read the stable OpenStation pin from {BLUEPRINT}"
     )
+
+
+def stable_odd_pin() -> str:
+    """Read the published ODD version from the public root blueprint."""
+    data = json.loads(BLUEPRINT.read_text(encoding="utf-8"))
+    for step in data.get("steps", []):
+        if not isinstance(step, dict) or step.get("step") != "installPlugin":
+            continue
+        plugin = step.get("pluginData")
+        if not isinstance(plugin, dict) or plugin.get("resource") != "url":
+            continue
+        version = odd_zip_version(str(plugin.get("url", "")))
+        if version:
+            return version
+    raise SystemExit(f"error: could not read the stable ODD pin from {BLUEPRINT}")
 
 
 def version_tuple(version: str) -> tuple[int, ...]:
@@ -306,7 +321,7 @@ def fail(problems: list[str]) -> None:
     sys.exit(1)
 
 
-def validate_file(path: Path, odd_version: str, dm_pin: str, requires_php: str) -> tuple[list[str], int]:
+def validate_file(path: Path, odd_version: str, openstation_pin: str, requires_php: str) -> tuple[list[str], int]:
     problems: list[str] = []
 
     if not path.exists():
@@ -325,9 +340,9 @@ def validate_file(path: Path, odd_version: str, dm_pin: str, requires_php: str) 
 
     allowed_ref_types = {"tag", "branch", "commit", "refname"}
     expected_odd_ref = "v" + odd_version
-    dm_zip_expected = desktop_mode_zip_url(dm_pin)
+    openstation_zip_expected = openstation_zip_url(openstation_pin)
     odd_zip_expected = odd_zip_url(odd_version)
-    desktop_mode_pin_ok = False
+    openstation_pin_ok = False
     odd_pin_ok = False
 
     for idx, step in enumerate(steps or []):
@@ -355,14 +370,14 @@ def validate_file(path: Path, odd_version: str, dm_pin: str, requires_php: str) 
                 problems.append(
                     f"step[{idx}] resource=url must be https, got {url!r}"
                 )
-            if url == dm_zip_expected:
+            if url == openstation_zip_expected:
                 if options.get("targetFolderName") != "desktop-mode":
                     problems.append(
-                        f"step[{idx}] Desktop Mode zip must use "
+                        f"step[{idx}] OpenStation ZIP must use "
                         'options.targetFolderName "desktop-mode"'
                     )
                 else:
-                    desktop_mode_pin_ok = True
+                    openstation_pin_ok = True
             elif url == odd_zip_expected:
                 if options.get("targetFolderName") != "odd-outlandish-desktop-decorator":
                     problems.append(
@@ -410,8 +425,8 @@ def validate_file(path: Path, odd_version: str, dm_pin: str, requires_php: str) 
                 )
             if slug == "desktop-mode":
                 problems.append(
-                    f"step[{idx}] public blueprint must pin Desktop Mode via "
-                    f"resource=url → {dm_zip_expected!r} "
+                    f"step[{idx}] public blueprint must pin OpenStation via "
+                    f"resource=url → {openstation_zip_expected!r} "
                     "(wordpress.org/plugins slug installs cannot pin a version)"
                 )
             elif slug == "odd-outlandish-desktop-decorator":
@@ -425,7 +440,7 @@ def validate_file(path: Path, odd_version: str, dm_pin: str, requires_php: str) 
             url = str(plugin.get("url", ""))
             if "github.com/WordPress/desktop-mode" in url:
                 problems.append(
-                    f"step[{idx}] installs WP Desktop Mode from git:directory — "
+                    f"step[{idx}] installs OpenStation from git:directory — "
                     "source archives miss compiled shell assets; use "
                     "the downloads.wordpress.org release zip URL"
                 )
@@ -482,10 +497,10 @@ def validate_file(path: Path, odd_version: str, dm_pin: str, requires_php: str) 
                     )
 
     rel = path.relative_to(REPO_ROOT)
-    if not desktop_mode_pin_ok:
+    if not openstation_pin_ok:
         problems.append(
-            f"{rel}: missing pinned WordPress.org Desktop Mode release "
-            f"(resource=url, url={dm_zip_expected!r}, "
+            f"{rel}: missing pinned WordPress.org OpenStation release "
+            f"(resource=url, url={openstation_zip_expected!r}, "
             "targetFolderName=desktop-mode)"
         )
     if not odd_pin_ok:
@@ -498,8 +513,8 @@ def validate_file(path: Path, odd_version: str, dm_pin: str, requires_php: str) 
     return problems, len(steps or [])
 
 
-def validate_dev_file(path: Path, dm_min: str, requires_php: str) -> tuple[list[str], int]:
-    """Lint the trunk / pinned-Desktop-Mode dev blueprint."""
+def validate_dev_file(path: Path, openstation_min: str, requires_php: str) -> tuple[list[str], int]:
+    """Lint the trunk / pinned-OpenStation dev blueprint."""
 
     problems: list[str] = []
 
@@ -518,9 +533,9 @@ def validate_dev_file(path: Path, dm_min: str, requires_php: str) -> tuple[list[
     problems.extend(validate_wordpress_update_steps(data, path))
 
     allowed_ref_types = {"tag", "branch", "commit", "refname"}
-    pinned_dm_release = False
+    pinned_openstation_release = False
     pinned_odd_trunk = False
-    dm_zip_expected = desktop_mode_zip_url(dm_min)
+    openstation_zip_expected = openstation_zip_url(openstation_min)
 
     for idx, step in enumerate(steps or []):
         if not isinstance(step, dict):
@@ -547,21 +562,21 @@ def validate_dev_file(path: Path, dm_min: str, requires_php: str) -> tuple[list[
                 problems.append(
                     f"step[{idx}] resource=url must be https, got {url!r}"
                 )
-            if url == dm_zip_expected:
+            if url == openstation_zip_expected:
                 if options.get("targetFolderName") != "desktop-mode":
                     problems.append(
-                        f"step[{idx}] Desktop Mode zip must use "
+                        f"step[{idx}] OpenStation ZIP must use "
                         'options.targetFolderName "desktop-mode"'
                     )
                 else:
-                    pinned_dm_release = True
+                    pinned_openstation_release = True
 
         elif resource == "wordpress.org/plugins":
             slug = plugin.get("slug")
             if slug == "desktop-mode":
                 problems.append(
-                    f"step[{idx}] dev blueprint must install Desktop Mode via "
-                    f"resource=url → {dm_zip_expected!r} "
+                    f"step[{idx}] dev blueprint must install OpenStation via "
+                    f"resource=url → {openstation_zip_expected!r} "
                     "(wordpress.org/plugins slug installs cannot pin a version)"
                 )
 
@@ -569,7 +584,7 @@ def validate_dev_file(path: Path, dm_min: str, requires_php: str) -> tuple[list[
             url = str(plugin.get("url", ""))
             if "github.com/WordPress/desktop-mode" in url:
                 problems.append(
-                    f"step[{idx}] installs WP Desktop Mode from git:directory — "
+                    f"step[{idx}] installs OpenStation from git:directory — "
                     "source archives miss compiled shell assets; use "
                     "the downloads.wordpress.org zip URL"
                 )
@@ -602,10 +617,10 @@ def validate_dev_file(path: Path, dm_min: str, requires_php: str) -> tuple[list[
                     pinned_odd_trunk = True
 
     rel = path.relative_to(REPO_ROOT)
-    if not pinned_dm_release:
+    if not pinned_openstation_release:
         problems.append(
-            f"{rel}: dev blueprint must install Desktop Mode from "
-            f"{dm_zip_expected!r} (resource=url, targetFolderName=desktop-mode)"
+            f"{rel}: dev blueprint must install OpenStation from "
+            f"{openstation_zip_expected!r} (resource=url, targetFolderName=desktop-mode)"
         )
     if not pinned_odd_trunk:
         problems.append(
@@ -616,7 +631,7 @@ def validate_dev_file(path: Path, dm_min: str, requires_php: str) -> tuple[list[
     return problems, len(steps or [])
 
 
-def validate_preview_file(path: Path, dm_min: str, requires_php: str) -> tuple[list[str], int]:
+def validate_preview_file(path: Path, openstation_min: str, requires_php: str) -> tuple[list[str], int]:
     """Lint the trunk + hosted-preview-catalog blueprint."""
 
     problems: list[str] = []
@@ -636,11 +651,11 @@ def validate_preview_file(path: Path, dm_min: str, requires_php: str) -> tuple[l
     problems.extend(validate_wordpress_update_steps(data, path))
 
     allowed_ref_types = {"tag", "branch", "commit", "refname"}
-    pinned_dm_release = False
+    pinned_openstation_release = False
     pinned_odd_trunk = False
     preview_mu_plugin_dir = False
     preview_mu_plugin = False
-    dm_zip_expected = desktop_mode_zip_url(dm_min)
+    openstation_zip_expected = openstation_zip_url(openstation_min)
 
     for idx, step in enumerate(steps or []):
         if not isinstance(step, dict):
@@ -689,21 +704,21 @@ def validate_preview_file(path: Path, dm_min: str, requires_php: str) -> tuple[l
                 problems.append(
                     f"step[{idx}] resource=url must be https, got {url!r}"
                 )
-            if url == dm_zip_expected:
+            if url == openstation_zip_expected:
                 if options.get("targetFolderName") != "desktop-mode":
                     problems.append(
-                        f"step[{idx}] Desktop Mode zip must use "
+                        f"step[{idx}] OpenStation ZIP must use "
                         'options.targetFolderName "desktop-mode"'
                     )
                 else:
-                    pinned_dm_release = True
+                    pinned_openstation_release = True
 
         elif resource == "wordpress.org/plugins":
             slug = plugin.get("slug")
             if slug == "desktop-mode":
                 problems.append(
-                    f"step[{idx}] preview blueprint must install Desktop Mode via "
-                    f"resource=url → {dm_zip_expected!r} "
+                    f"step[{idx}] preview blueprint must install OpenStation via "
+                    f"resource=url → {openstation_zip_expected!r} "
                     "(wordpress.org/plugins slug installs cannot pin a version)"
                 )
 
@@ -711,7 +726,7 @@ def validate_preview_file(path: Path, dm_min: str, requires_php: str) -> tuple[l
             url = str(plugin.get("url", ""))
             if "github.com/WordPress/desktop-mode" in url:
                 problems.append(
-                    f"step[{idx}] installs WP Desktop Mode from git:directory — "
+                    f"step[{idx}] installs OpenStation from git:directory — "
                     "source archives miss compiled shell assets; use "
                     "the downloads.wordpress.org zip URL"
                 )
@@ -756,10 +771,10 @@ def validate_preview_file(path: Path, dm_min: str, requires_php: str) -> tuple[l
         problems.append(
             f"{rel}: preview blueprint must write an odd-preview-catalog.php mu-plugin"
         )
-    if not pinned_dm_release:
+    if not pinned_openstation_release:
         problems.append(
-            f"{rel}: preview blueprint must install Desktop Mode from "
-            f"{dm_zip_expected!r} (resource=url, targetFolderName=desktop-mode)"
+            f"{rel}: preview blueprint must install OpenStation from "
+            f"{openstation_zip_expected!r} (resource=url, targetFolderName=desktop-mode)"
         )
     if not pinned_odd_trunk:
         problems.append(
@@ -776,6 +791,7 @@ def main() -> int:
         return 1
     odd_version, openstation_min, requires_php = odd_php_constants()
     stable_pin = stable_openstation_pin()
+    stable_odd_version = stable_odd_pin()
     problems: list[str] = []
     total_steps = 0
     for path in (BLUEPRINT, SITE_BLUEPRINT):
@@ -797,7 +813,7 @@ def main() -> int:
         f"os-{stable_pin}-wp-{PLAYGROUND_WORDPRESS_VERSION}"
         f"-php-{PLAYGROUND_PHP_VERSION}"
     )
-    stable_cache_key = f"wporg-odd-{odd_version}-{runtime_cache_key}"
+    stable_cache_key = f"wporg-odd-{stable_odd_version}-{runtime_cache_key}"
     for path in (SITE_PLAYGROUND_LAUNCHER, SITE_GO_LAUNCHER):
         problems.extend(validate_playground_launcher(path, stable_cache_key))
 

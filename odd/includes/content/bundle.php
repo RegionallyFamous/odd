@@ -2,27 +2,20 @@
 /**
  * ODD — Apps-only `.wp` bundle installer.
  *
- * Single public entry for every content type:
+ * Public app-bundle entry points:
  *
  *   oddout_bundle_install( $tmp_path, $filename, $args = array() ) → array{ slug, type, manifest } | WP_Error
  *   oddout_bundle_uninstall( $slug )              → true | WP_Error
- *   oddout_bundle_type_for_slug( $slug )          → 'app' | 'icon-set' | 'cursor-set' | 'scene' | 'widget' | ''
+ *   oddout_bundle_type_for_slug( $slug )          → 'app' | ''
  *   oddout_bundle_slug_in_use( $slug )            → bool
  *
- * The dispatcher requires an explicit `manifest.type`, routes to the per-type
- * validator for field-level checks, and then to the per-type installer to
- * extract + register.
- *
- * Slugs are a single global namespace across all content types — the
- * same slug can't be installed as both a scene and a widget. That
- * guarantees uninstall is unambiguous: look up which of four indexes
- * holds the slug, dispatch.
+ * Only manifests with `type: "app"` are accepted.
  */
 
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Map of manifest.type → per-type module. Each module exposes:
+ * Map the app manifest type to the Apps implementation. The adapter exposes:
  *
  *   oddout_{type}_validate_archive( $tmp_path, $filename, $zip, $manifest )
  *       → normalised manifest | WP_Error
@@ -30,8 +23,6 @@ defined( 'ABSPATH' ) || exit;
  *   oddout_{type}_uninstall( $slug )              → true | WP_Error
  *   oddout_{type}_has( $slug )                    → bool
  *
- * Apps are listed first so the lookup falls through to the existing
- * Apps implementation — no second code path for the common case.
  */
 function oddout_bundle_type_modules() {
 	return array(
@@ -45,7 +36,7 @@ function oddout_bundle_type_modules() {
 }
 
 /**
- * Install any bundle. Returns the normalised descriptor on success
+ * Install an app bundle. Returns the normalised descriptor on success
  * or a WP_Error on any validation / extraction failure.
  *
  * @return array|WP_Error { slug, type, manifest }
@@ -161,42 +152,7 @@ function oddout_bundle_install( $tmp_path, $filename, $args = array() ) {
 }
 
 /**
- * Build the entry_url a freshly-installed bundle needs for in-page
- * registration. Widgets and scenes both ship a JS entry that self-
- * registers on load, so the Shop can hot-inject the script after
- * install instead of rebooting the whole OpenStation shell.
- *
- * @param array $manifest Normalised manifest from `oddout_bundle_install()`.
- * @return string|null    Absolute URL to the entry JS, or null.
- */
-function oddout_bundle_entry_url_for( array $manifest ) {
-	return null;
-}
-
-/**
- * Build companion stylesheet URLs for freshly-installed bundles that
- * need immediate in-page hydration. Currently widget-only.
- *
- * @param array $manifest Normalised manifest from `oddout_bundle_install()`.
- * @return string[]
- */
-function oddout_bundle_style_urls_for( array $manifest ) {
-	return array();
-}
-
-/**
- * Build the panel-shaped row a freshly-installed bundle contributes to
- * the Shop's state.cfg.{scenes|iconSets|installedWidgets|apps} list.
- *
- * The client splices this directly into its local state after a
- * successful install so the unified grid can re-render with the new
- * tile without re-fetching any registries. Mirrors the row shapes the
- * server bakes into `window.odd` in `includes/enqueue.php` so the
- * merge is a drop-in (keys + types match exactly).
- *
- * Returns an empty array for unknown types rather than null so the
- * client can always `Array.isArray( res.row )`-guard without a second
- * null check.
+ * Build the Shop row for a freshly installed app.
  *
  * @param array $manifest Normalised manifest from `oddout_bundle_install()`.
  * @return array
@@ -224,8 +180,7 @@ function oddout_bundle_panel_row_for( array $manifest ) {
 }
 
 /**
- * Uninstall any bundle by slug. Looks up which type owns the slug
- * and dispatches to the matching per-type uninstaller.
+ * Uninstall an app bundle by slug.
  */
 function oddout_bundle_uninstall( $slug ) {
 	$slug = sanitize_key( (string) $slug );
@@ -253,8 +208,7 @@ function oddout_bundle_uninstall( $slug ) {
 }
 
 /**
- * Which type owns the slug? Returns '' if the slug is not installed
- * in any type index.
+ * Return `app` when the slug is installed, otherwise an empty string.
  */
 function oddout_bundle_type_for_slug( $slug ) {
 	$slug = sanitize_key( (string) $slug );
@@ -272,11 +226,6 @@ function oddout_bundle_type_for_slug( $slug ) {
 function oddout_bundle_slug_in_use( $slug ) {
 	return '' !== oddout_bundle_type_for_slug( $slug );
 }
-
-// ============================================================ //
-// App type module — thin adapters onto the existing Apps API so
-// the dispatcher doesn't need to know Apps-specific internals.
-// ============================================================ //
 
 function oddout_bundle_app_validate( $tmp_path, $filename, ZipArchive $zip, array $manifest ) {
 	// Defer to the existing loader's field-level validation. It

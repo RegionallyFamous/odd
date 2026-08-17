@@ -1,0 +1,19 @@
+{
+  "slug": "pantry",
+  "name": "Pantry",
+  "description": "Keep WordPress synced patterns tidy. Browse, preview, search, copy, duplicate, rename, and retire reusable blocks from one focused shelf.",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "tags": [
+    "wordpress",
+    "blocks",
+    "patterns",
+    "content",
+    "productivity"
+  ],
+  "requires": {
+    "odd": "1.1.8",
+    "openStation": "1.1.0",
+    "api": "2.4.0"
+  }
+}

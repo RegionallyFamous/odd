@@ -1,10 +1,7 @@
 {
-  "scenes": [],
-  "iconSets": [],
-  "cursorSets": [],
-  "widgets": [],
   "apps": [
     "odd-notes",
+    "pantry",
     "workbench"
   ]
 }

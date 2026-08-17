@@ -34,6 +34,7 @@ LIVE_FILES = {
     "assets/odd-eye.svg",
     "data/fallback-registry.json",
     "includes/dependencies.php",
+    "includes/playground-compat.php",
     "includes/enqueue.php",
     "includes/native-window.php",
     "includes/apps/bootstrap.php",
@@ -76,6 +77,16 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    missing = sorted(
+        rel for rel in LIVE_FILES
+        if not (PLUGIN_DIR / rel).is_file()
+    )
+    if missing:
+        print("error: Apps-only release allowlist references missing files:", file=sys.stderr)
+        for rel in missing:
+            print(f"  {rel}", file=sys.stderr)
+        return 1
+
     DIST.mkdir(parents=True, exist_ok=True)
     out = DIST / ZIP_NAME
     if out.exists():
@@ -89,6 +100,9 @@ def main() -> int:
             rel = path.relative_to(PLUGIN_DIR)
             if not should_include(rel):
                 continue
+            if path.is_symlink():
+                print(f"error: release file may not be a symlink: {rel}", file=sys.stderr)
+                return 1
             arcname = Path("odd") / rel
             zf.write(path, arcname=str(arcname))
             count += 1

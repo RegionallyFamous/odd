@@ -19,26 +19,5 @@
   "surfaces": {
     "desktop": true,
     "taskbar": false
-  },
-  "extensions": {
-    "commands": [
-      {
-        "slug": "open-workbench",
-        "label": "Open ODD Workbench",
-        "run": "odd.apps.open:workbench"
-      }
-    ],
-    "muses": [
-      {
-        "slug": "workbench",
-        "voice": {
-          "appOpen": {
-            "workbench": [
-              "Tools out. Mess in."
-            ]
-          }
-        }
-      }
-    ]
   }
 }

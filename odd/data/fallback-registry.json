@@ -2,13 +2,6 @@
   "$schema": "https://odd.regionallyfamous.com/catalog/v1/registry.schema.json",
   "version": 1,
   "generated_at": "",
-  "starter_pack": {
-    "scenes": [],
-    "iconSets": [],
-    "cursorSets": [],
-    "widgets": [],
-    "apps": []
-  },
   "bundles": [
     {
       "type": "app",
@@ -25,16 +18,17 @@
       ],
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/odd-notes.svg",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-odd-notes.webp",
+      "card_bytes": 10970,
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/odd-notes.wp",
-      "sha256": "3aee09737d00da12f7c7ebdb2077d431e97ef765868cfd82c5dfc5fd2c3eb7ae",
-      "size": 49829,
+      "sha256": "92dd4cd1d69ebef745399f7fc8a05bb7a31c037400019edaec7861bd47805d9f",
+      "size": 49650,
       "requires": {
         "odd": "1.1.5",
         "openStation": "1.1.0",
         "api": "2.3.0"
       },
       "department": "apps",
-      "search_text": "app odd-notes odd notes regionally famous a local-first library for openstation saved as private wordpress content with favorites tags sharing archives and revision history 1 3 0 writing productivity 5 2 apps",
+      "search_text": "app odd-notes odd notes regionally famous a local-first library for openstation saved as private wordpress content with favorites tags sharing archives and revision history writing productivity 1 5 0 api 2 3 apps",
       "search_tokens": [
         "app",
         "odd-notes",
@@ -60,16 +54,80 @@
         "and",
         "revision",
         "history",
-        "1",
-        "3",
-        "0",
         "writing",
         "productivity",
+        "1",
         "5",
+        "0",
+        "api",
         "2",
+        "3",
         "apps"
+      ]
+    },
+    {
+      "type": "app",
+      "slug": "pantry",
+      "name": "Pantry",
+      "version": "1.0.0",
+      "author": "Regionally Famous",
+      "description": "Keep WordPress synced patterns tidy. Browse, preview, search, copy, duplicate, rename, and retire reusable blocks from one focused shelf.",
+      "tags": [
+        "wordpress",
+        "blocks",
+        "patterns",
+        "content",
+        "productivity"
       ],
-      "card_bytes": 10970
+      "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/pantry.webp",
+      "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-pantry.webp",
+      "card_bytes": 39166,
+      "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/pantry.wp",
+      "sha256": "dcf84d3100e400e56fd1ca7cc18ed813683bce562ddc146c259420dfede80e20",
+      "size": 127705,
+      "requires": {
+        "odd": "1.1.8",
+        "openStation": "1.1.0",
+        "api": "2.4.0"
+      },
+      "department": "apps",
+      "search_text": "app pantry regionally famous keep wordpress synced patterns tidy browse preview search copy duplicate rename and retire reusable blocks from one focused shelf content productivity odd 1 8 openstation 0 api 2 4 apps",
+      "search_tokens": [
+        "app",
+        "pantry",
+        "regionally",
+        "famous",
+        "keep",
+        "wordpress",
+        "synced",
+        "patterns",
+        "tidy",
+        "browse",
+        "preview",
+        "search",
+        "copy",
+        "duplicate",
+        "rename",
+        "and",
+        "retire",
+        "reusable",
+        "blocks",
+        "from",
+        "one",
+        "focused",
+        "shelf",
+        "content",
+        "productivity",
+        "odd",
+        "1",
+        "8",
+        "openstation",
+        "0",
+        "api",
+        "2",
+        "4",
+        "apps"
+      ]
     },
     {
       "type": "app",
@@ -87,11 +145,17 @@
       ],
       "icon_url": "https://odd.regionallyfamous.com/catalog/v1/icons/workbench.webp",
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-workbench.webp",
+      "card_bytes": 54244,
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/workbench.wp",
-      "sha256": "3081a3f9c593654396ac1182f4cf0acc4da140861be7628e6cbe09f23134fa57",
-      "size": 208916,
+      "sha256": "7299f68f22491df2b372838263297346b6195bccaa529572b17a2e0a15e4e0b8",
+      "size": 208794,
+      "requires": {
+        "odd": "1.1.8",
+        "openStation": "1.1.0",
+        "api": "2.4.0"
+      },
       "department": "apps",
-      "search_text": "app workbench odd regionally famous six sharp little utilities for cleaning text previewing markdown making slugs formatting json comparing drafts and converting common encodings 1 0 2 productivity developer local-first apps",
+      "search_text": "app workbench odd regionally famous six sharp little utilities for cleaning text previewing markdown making slugs formatting json comparing drafts and converting common encodings productivity developer local-first 1 8 openstation 0 api 2 4 apps",
       "search_tokens": [
         "app",
         "workbench",
@@ -117,15 +181,18 @@
         "converting",
         "common",
         "encodings",
-        "1",
-        "0",
-        "2",
         "productivity",
         "developer",
         "local-first",
+        "1",
+        "8",
+        "openstation",
+        "0",
+        "api",
+        "2",
+        "4",
         "apps"
-      ],
-      "card_bytes": 54244
+      ]
     }
   ]
 }

@@ -1,16 +1,22 @@
 {
-	"$schema": "https://raw.githubusercontent.com/RegionallyFamous/odd/main/docs/schemas/manifest.schema.json",
-	"type": "app",
-	"slug": "example-hello-app",
-	"name": "Example Hello App",
-	"label": "Hello",
-	"version": "1.0.0",
-	"author": "ODD Examples",
-	"description": "One-page HTML app that renders text and logs on load.",
-	"window": {
-		"width":  480,
-		"height": 320,
-		"minWidth":  320,
-		"minHeight": 240
-	}
+  "$schema": "../../docs/schemas/manifest.schema.json",
+  "type": "app",
+  "slug": "example-hello-app",
+  "name": "Example Hello App",
+  "version": "1.0.0",
+  "author": "ODD Examples",
+  "description": "A minimal local HTML app.",
+  "entry": "index.html",
+  "icon": "icon.svg",
+  "window": {
+    "width": 480,
+    "height": 320,
+    "minWidth": 320,
+    "minHeight": 240,
+    "resizable": true
+  },
+  "surfaces": {
+    "desktop": true,
+    "taskbar": false
+  }
 }

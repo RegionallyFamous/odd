@@ -7,7 +7,6 @@ import type {
 } from './types';
 
 const STORAGE_PREFIX = 'odd-app-odd-notes/drafts/v2';
-const LEGACY_STORAGE_PREFIX = 'odd-app-odd-notes/drafts/v1';
 
 export function resolveJournalScope( config: NotesConfig ): string | null {
 	const declared = String( config.draftScope ?? '' ).trim();
@@ -65,7 +64,6 @@ export function readJournal(
 	userId: number,
 ): NotesDraftJournal {
 	try {
-		window.localStorage.removeItem( `${ LEGACY_STORAGE_PREFIX }/${ userId }` );
 		const key = storageKey( scope, userId );
 		if ( ! key ) {
 			return emptyJournal();

@@ -8,7 +8,7 @@ import { defineConfig, devices } from '@playwright/test';
  * up real WP under `wp server` on port 8080, then runs this suite.
  *
  * For local iteration: run WP via `wp server --host=0.0.0.0 --port=8080`
- * in a separate terminal, activate ODD + WP Desktop Mode, then
+ * in a separate terminal, activate ODD + OpenStation, then
  * `BASE_URL=http://127.0.0.1:8080 npx playwright test`.
  *
  * WordPress Playground (https://playground.wordpress.net) does **not** load

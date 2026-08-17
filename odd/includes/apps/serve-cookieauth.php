@@ -4,7 +4,7 @@
  *
  * WHY THIS EXISTS
  * ---------------
- * Installed apps are Vite/React single-page bundles whose HTML entry
+ * Installed apps are browser bundles whose HTML entry
  * references static assets with *relative* URLs (`./assets/index-*.js`
  * etc.). The iframe receives those sub-requests from the browser, so
  * they carry the login cookie but NOT the `X-WP-Nonce` header.
@@ -21,20 +21,14 @@
  * requests whose URI path matches
  *
  *   /odd-app/<slug>/<path>
- *   /odd-app-runtime/<runtime-module>.js
  *
  * authenticates via the logged-in cookie, checks the app's
  * capability, streams the file, and exits. No rewrite rules, no REST
  * pipeline, no nonce — so relative asset URLs from the iframe's own
  * document resolve and stream cleanly.
  *
- * Earlier revisions (<= 1.3.1) used `add_rewrite_rule` +
- * `template_redirect`, but that path depended on `flush_rewrite_rules`
- * having run (and having persisted) on the exact install the user is
- * loading. Playground installs, mu-plugin setups, and any site with a
- * stale `rewrite_rules` option regressed back to the REST path and
- * left the iframe blank. A direct `$_SERVER['REQUEST_URI']` match
- * has no such dependency.
+ * A direct `$_SERVER['REQUEST_URI']` match keeps the endpoint independent
+ * from rewrite-rule state, including in WordPress Playground.
  *
  * SECURITY
  * --------
@@ -169,18 +163,6 @@ function oddout_apps_cookieauth_maybe_serve() {
 	// /odd-app/.
 	$site_pt = wp_parse_url( site_url( '/' ), PHP_URL_PATH );
 	$path    = oddout_apps_cookieauth_strip_home_path_prefix( $path, false === $site_pt ? '' : $site_pt );
-
-	// Runtime endpoint: serves React 19 ESM bundles + any shared chunks
-	// esbuild emitted alongside them. The app bundles' bare `react` /
-	// `react-dom` / `react/jsx-runtime` imports are rewritten by
-	// oddout_apps_rewrite_runtime_bare_imports() to absolute URLs under
-	// /odd-app-runtime/, and the entry modules import their shared
-	// chunks with relative paths like `./chunk-AB12CDEF.js`, which
-	// the browser resolves back into this same endpoint.
-	if ( preg_match( '#^/odd-app-runtime/([a-zA-Z0-9._-]+\.js)$#', $path, $runtime_match ) ) {
-		oddout_apps_serve_runtime_module( $runtime_match[1] );
-		exit;
-	}
 
 	// Expect `/odd-app/<slug>[/<rest>]`.
 	if ( ! preg_match( '#^/odd-app/([a-z0-9-]+)(?:/(.*))?$#', $path, $m ) ) {
@@ -407,7 +389,6 @@ function oddout_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 	}
 
 	$mime = oddout_apps_mime_for( $full );
-	$body = null;
 	$size = filesize( $full );
 
 	if ( $debug_on ) {
@@ -419,44 +400,7 @@ function oddout_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 	}
 
 	if ( oddout_apps_is_html_mime( $mime ) ) {
-		$manifest = oddout_apps_manifest_load( $slug );
-		$csp      = oddout_apps_cookieauth_csp( $slug, is_array( $manifest ) ? $manifest : array() );
-		if ( is_string( $csp ) && '' !== $csp ) {
-			header( 'Content-Security-Policy: ' . $csp );
-		}
-		// Browser-built app archives may leave React as bare module
-		// imports (`react`, `react-dom`, `react/jsx-runtime`). The
-		// sandbox iframe has no bundler, so those imports fail before
-		// the app can render. Injecting a same-origin import map here
-		// fixes fresh and already-installed apps without rewriting
-		// their archives on disk.
-		$raw = file_get_contents( $full ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-		if ( false !== $raw ) {
-			if ( function_exists( 'oddout_apps_prepare_app_html_output' ) ) {
-				$body = oddout_apps_prepare_app_html_output( $raw );
-			} else {
-				$body = oddout_apps_inject_runtime_importmap( $raw );
-			}
-			$size = strlen( $body );
-		}
-	} elseif ( oddout_apps_is_js_mime( $mime ) ) {
-		// Defense-in-depth for the same bare-import problem: rewrite
-		// `from"react"` / `from"react/jsx-runtime"` etc. inside JS
-		// chunks to absolute `/odd-app-runtime/*.js` URLs. The HTML
-		// import map works for most browsers, but some environments
-		// (sandboxed iframes behind service workers, preloaded module
-		// graphs, etc.) race ahead of the import map and throw
-		// `Failed to resolve module specifier "react/jsx-runtime"`
-		// before it registers. Rewriting the chunks makes them
-		// self-resolving regardless of import-map support or timing.
-		$raw = file_get_contents( $full ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-		if ( false !== $raw ) {
-			$body = oddout_apps_rewrite_runtime_bare_imports( $raw );
-			if ( function_exists( 'oddout_apps_transform_embed_bundle_output' ) ) {
-				$body = oddout_apps_transform_embed_bundle_output( $body, $mime );
-			}
-			$size = strlen( $body );
-		}
+		header( 'Content-Security-Policy: ' . oddout_apps_cookieauth_csp() );
 	}
 
 	while ( ob_get_level() > 0 ) {
@@ -475,18 +419,13 @@ function oddout_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 	header( 'Referrer-Policy: no-referrer' );
 	header( 'X-Frame-Options: SAMEORIGIN' );
 	header( 'Permissions-Policy: camera=(), microphone=(), geolocation=()' );
-	if ( null !== $body ) {
-		oddout_emit_raw_response( $body );
-	} else {
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
-		$sent = readfile( $full );
-		if ( false === $sent && defined( 'WP_DEBUG' ) && WP_DEBUG && function_exists( 'error_log' ) ) {
-			// Headers are already flushed by the time we're streaming,
-			// so we can't change the status — but logging makes a
-			// disk-read regression visible to admins.
-			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-			error_log( sprintf( '[ODD Apps] cookie-auth readfile() failed for %s', $full ) );
-		}
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
+	$sent = readfile( $full );
+	if ( false === $sent && defined( 'WP_DEBUG' ) && WP_DEBUG && function_exists( 'error_log' ) ) {
+		// Headers are already flushed by the time we're streaming, so log a
+		// disk-read regression instead of attempting a second response.
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		error_log( sprintf( '[ODD Apps] cookie-auth readfile() failed for %s', $full ) );
 	}
 }
 
@@ -520,204 +459,12 @@ function oddout_apps_serve_url_for_rest_payload( $slug ) {
 	);
 }
 
-function oddout_apps_runtime_importmap_html() {
-	$imports = array(
-		'react'             => oddout_url_with_playground_scope( site_url( '/odd-app-runtime/react.js' ) ),
-		'react-dom'         => oddout_url_with_playground_scope( site_url( '/odd-app-runtime/react-dom.js' ) ),
-		'react-dom/client'  => oddout_url_with_playground_scope( site_url( '/odd-app-runtime/react-dom-client.js' ) ),
-		'react/jsx-runtime' => oddout_url_with_playground_scope( site_url( '/odd-app-runtime/react-jsx-runtime.js' ) ),
-	);
-	return '<script type="importmap">' . wp_json_encode( array( 'imports' => $imports ) ) . '</script>';
-}
-
-/**
- * Is this MIME a JavaScript module we should process for bare imports?
- */
-function oddout_apps_is_js_mime( $mime ) {
-	$mime = strtolower( (string) $mime );
-	if ( false !== strpos( $mime, ';' ) ) {
-		$mime = trim( substr( $mime, 0, strpos( $mime, ';' ) ) );
-	}
-	return in_array(
-		$mime,
-		array(
-			'application/javascript',
-			'text/javascript',
-			'application/x-javascript',
-			'application/ecmascript',
-			'text/ecmascript',
-		),
-		true
-	);
-}
-
-/**
- * Rewrite bare React imports inside a JS chunk to absolute
- * /odd-app-runtime/*.js URLs.
- *
- * Vite emits minified forms like:
- *   import{jsx}from"react/jsx-runtime"
- *   import R,{useState}from"react"
- *   import"react-dom"
- *   export*from"react-dom/client"
- *
- * We rewrite each bare specifier to a same-origin URL so the module
- * loader never needs an import map. Slash-bearing specifiers
- * (`react/jsx-runtime`, `react-dom/client`) map to hyphenated
- * filenames to match the runtime endpoint regex in the top-level
- * matcher (`/odd-app-runtime/react-jsx-runtime.js` etc.).
- */
-function oddout_apps_rewrite_runtime_bare_imports( $js ) {
-	if ( ! is_string( $js ) || '' === $js ) {
-		return $js;
-	}
-	// Quick reject: if no `"react` substring at all, nothing to do —
-	// avoids running the regex over large vendor-less chunks.
-	if ( false === strpos( $js, '"react' ) && false === strpos( $js, "'react" ) ) {
-		return $js;
-	}
-	$base = rtrim( oddout_url_with_playground_scope( site_url( '/odd-app-runtime' ) ), '/' );
-	$re   = '#(\b(?:from|import)\s*)(["\'])(react(?:/jsx-runtime|-dom(?:/client)?)?)\2#';
-	return preg_replace_callback(
-		$re,
-		function ( $m ) use ( $base ) {
-			$spec      = $m[3];
-			$slug      = str_replace( '/', '-', $spec );
-			$safe_slug = preg_replace( '#[^a-z0-9-]#', '', $slug );
-			return $m[1] . $m[2] . $base . '/' . $safe_slug . '.js' . $m[2];
-		},
-		$js
-	);
-}
-
-function oddout_apps_inject_runtime_importmap( $html ) {
-	if ( false !== stripos( $html, 'type="importmap"' ) || false !== stripos( $html, "type='importmap'" ) ) {
-		return $html;
-	}
-	$map = oddout_apps_runtime_importmap_html();
-	if ( false !== stripos( $html, '<head>' ) ) {
-		return preg_replace( '#<head>#i', "<head>\n" . $map, $html, 1 );
-	}
-	if ( false !== stripos( $html, '<head ' ) ) {
-		return preg_replace( '#(<head\b[^>]*>)#i', '$1' . "\n" . $map, $html, 1 );
-	}
-	return $map . "\n" . $html;
-}
-
-/**
- * Absolute path to the directory containing the pre-built React 19
- * ESM bundles. odd/bin/build-runtime regenerates these. Keeping the
- * directory centralised makes it easy to audit what's shipping.
- */
-function oddout_apps_runtime_dir() {
-	return rtrim( ODDOUT_DIR, '/\\' ) . '/apps/runtime';
-}
-
-/**
- * Serve a file from odd/apps/runtime/ at /odd-app-runtime/<name>.js.
- *
- * These are pre-built React 19 ESM bundles (`react.js`, `react-dom.js`,
- * `react-dom-client.js`, `react-jsx-runtime.js`) plus any shared
- * `chunk-*.js` files esbuild emitted when code-splitting.
- *
- * We ship real React 19 (not a shim that proxies wp.element) because
- * Vite-built apps read `React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE`
- * — that internals pointer only exists in React 19, while WordPress's
- * wp.element is still React 18. Proxying produced a classic
- * "Cannot read properties of undefined (reading 'S')" at runtime.
- */
-function oddout_apps_serve_runtime_module( $name ) {
-	$user_id = wp_validate_auth_cookie( '', 'logged_in' );
-	if ( ! $user_id ) {
-		status_header( 401 );
-		exit;
-	}
-	if ( ! user_can( $user_id, 'read' ) ) {
-		status_header( 403 );
-		exit;
-	}
-
-	$name = (string) $name;
-	if ( '' === $name || ! preg_match( '#^[a-zA-Z0-9._-]+\.js$#', $name ) ) {
-		status_header( 404 );
-		exit;
-	}
-
-	$base_dir = oddout_apps_runtime_dir();
-	$full     = realpath( $base_dir . '/' . $name );
-	$root     = realpath( $base_dir );
-	if ( ! oddout_apps_realpath_is_inside( $full ? $full : '', $root ? $root : '' ) ) {
-		status_header( 404 );
-		exit;
-	}
-	if ( ! is_file( $full ) || ! is_readable( $full ) ) {
-		status_header( 404 );
-		exit;
-	}
-
-	$raw = file_get_contents( $full ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-	if ( false === $raw ) {
-		status_header( 500 );
-		exit;
-	}
-
-	// esbuild emits relative imports between chunks (`./chunk-X.js`)
-	// and the app bundles import our entry files via absolute
-	// `/odd-app-runtime/*.js` paths that are rewritten in
-	// oddout_apps_rewrite_runtime_bare_imports(). Run the same rewrite
-	// here as a safety net: if a future build ever leaves a bare
-	// `react`/`react-dom` specifier in a runtime chunk (bug or a
-	// dependency change), the rewrite will still catch it.
-	$source = oddout_apps_rewrite_runtime_bare_imports( $raw );
-
-	while ( ob_get_level() > 0 ) {
-		@ob_end_clean();
-	}
-	nocache_headers();
-	header( 'Content-Type: text/javascript; charset=utf-8' );
-	header( 'X-Content-Type-Options: nosniff' );
-	header( 'X-Robots-Tag: noindex, nofollow' );
-	header( 'Content-Length: ' . strlen( $source ) );
-	oddout_emit_raw_response( $source );
-}
-
 /**
  * Build a Content-Security-Policy value for HTML served from /odd-app/.
- * Default is strict same-origin with common allowances for Vite/React
- * bundles (inline bootstraps, jsdelivr if the import map points there).
- * Manifest may add an optional `csp` string (see docs/wp-manifest.md).
+ * The policy is fixed so an installed archive cannot weaken its own sandbox.
  *
- * @param string               $slug     App slug.
- * @param array<string, mixed> $manifest Parsed manifest.json.
  * @return string
  */
-function oddout_apps_cookieauth_csp( $slug, array $manifest ) {
-	$slug = sanitize_key( (string) $slug );
-	// phpcs:ignore WordPress.Arrays.ArrayDeclarationSpacing.AssociativeArrayFound -- long policy string.
-	$default = "default-src 'self'; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data: https:; connect-src 'self' https:; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'";
-	$policy  = (string) apply_filters( 'oddout_app_cookieauth_csp', $default, $slug, $manifest );
-	if ( ! empty( $manifest['csp'] ) && is_string( $manifest['csp'] ) ) {
-		$extra = oddout_apps_sanitize_csp_fragment( $manifest['csp'] );
-		if ( '' !== $extra ) {
-			$policy .= '; ' . $extra;
-		}
-	}
-	return $policy;
-}
-
-/**
- * Strip control characters and cap length; allow only CSP-safe glyph subset.
- *
- * @param string $fragment User-supplied CSP fragment from manifest.
- * @return string
- */
-function oddout_apps_sanitize_csp_fragment( $fragment ) {
-	$s = preg_replace( '/[\x00-\x1F\x7F]/', '', (string) $fragment );
-	if ( strlen( $s ) > 2048 ) {
-		$s = substr( $s, 0, 2048 );
-	}
-	if ( ! preg_match( '/^[a-zA-Z0-9_\-:;.,*\'\/\s\(\)]+$/', $s ) ) {
-		return '';
-	}
-	return $s;
+function oddout_apps_cookieauth_csp() {
+	return "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; media-src 'self' blob:; worker-src 'none'; object-src 'none'; frame-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'self'";
 }

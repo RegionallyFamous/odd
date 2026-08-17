@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Pantry</title>
+  <link rel="stylesheet" href="./assets/app.css">
+  <script defer src="./assets/app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M4.5 5.5h15v15h-15z"></path>
+            <path d="M7.5 2.8h9v2.7M4.5 11.5h15M8 8h3M13 8h3M8 15h2M12 15h4"></path>
+          </svg>
+        </span>
+        <span class="brand__copy">
+          <span class="eyebrow">Reusable block shelf</span>
+          <strong>Pantry</strong>
+        </span>
+      </div>
+
+      <label class="search-box" for="pattern-search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg>
+        <input id="pattern-search" type="search" autocomplete="off" placeholder="Search patterns and blocks…">
+        <kbd aria-hidden="true">/</kbd>
+      </label>
+
+      <div class="topbar__actions">
+        <button class="icon-button" id="refresh-patterns" type="button" title="Refresh patterns" aria-label="Refresh patterns">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 5v6h-6"></path></svg>
+        </button>
+        <button class="primary-button" id="new-pattern" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+          <span>New pattern</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <aside class="side-panel" aria-label="Pattern filters">
+        <section class="side-summary">
+          <span class="summary-orb" aria-hidden="true"><span></span><span></span><span></span></span>
+          <div><strong id="pattern-total">—</strong><span>synced patterns</span></div>
+        </section>
+
+        <nav class="filter-list" aria-label="Filter patterns">
+          <button class="filter-button is-active" type="button" data-filter="all" aria-pressed="true" aria-label="Everything">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1"></rect><rect x="14" y="4" width="6" height="6" rx="1"></rect><rect x="4" y="14" width="6" height="6" rx="1"></rect><rect x="14" y="14" width="6" height="6" rx="1"></rect></svg>
+            <span>Everything</span><em id="count-all">0</em>
+          </button>
+          <button class="filter-button" type="button" data-filter="favorites" aria-pressed="false" aria-label="Favorites">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z"></path></svg>
+            <span>Favorites</span><em id="count-favorites">0</em>
+          </button>
+          <button class="filter-button" type="button" data-filter="single" aria-pressed="false" aria-label="Single blocks">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"></rect><path d="M8 10h8M8 14h5"></path></svg>
+            <span>Single blocks</span><em id="count-single">0</em>
+          </button>
+          <button class="filter-button" type="button" data-filter="layout" aria-pressed="false" aria-label="Layouts">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18M10 10v10"></path></svg>
+            <span>Layouts</span><em id="count-layout">0</em>
+          </button>
+        </nav>
+
+        <label class="sort-field" for="pattern-sort">
+          <span>Arrange shelf</span>
+          <select id="pattern-sort">
+            <option value="modified">Recently changed</option>
+            <option value="title">Name A–Z</option>
+            <option value="blocks">Most blocks</option>
+          </select>
+        </label>
+
+        <div class="side-tip">
+          <span aria-hidden="true">✦</span>
+          <p>Synced patterns update everywhere they are used. Pantry edits the originals stored in WordPress.</p>
+        </div>
+      </aside>
+
+      <section class="library" aria-labelledby="library-title">
+        <header class="library__header">
+          <div>
+            <span class="shelf-label">Your WordPress</span>
+            <h1 id="library-title">Synced patterns</h1>
+          </div>
+          <span class="result-count" id="result-count" aria-live="polite">Loading the shelf…</span>
+        </header>
+
+        <div class="pattern-grid" id="pattern-grid" role="list" aria-busy="true">
+          <article class="pattern-card pattern-card--skeleton" aria-hidden="true"><span></span><span></span><span></span></article>
+          <article class="pattern-card pattern-card--skeleton" aria-hidden="true"><span></span><span></span><span></span></article>
+          <article class="pattern-card pattern-card--skeleton" aria-hidden="true"><span></span><span></span><span></span></article>
+          <article class="pattern-card pattern-card--skeleton" aria-hidden="true"><span></span><span></span><span></span></article>
+        </div>
+
+        <section class="empty-state" id="empty-state" hidden>
+          <span class="empty-state__cupboard" aria-hidden="true"><i></i><i></i><i></i></span>
+          <h2 id="empty-title">The shelf is empty</h2>
+          <p id="empty-copy">Create a synced pattern and reuse it anywhere in WordPress.</p>
+          <button class="secondary-button" id="empty-create" type="button">Stock the first pattern</button>
+        </section>
+
+        <section class="error-state" id="error-state" hidden>
+          <span class="error-state__symbol" aria-hidden="true">!</span>
+          <div>
+            <h2>Pantry could not reach WordPress</h2>
+            <p id="error-copy">Reload the shelf to try again.</p>
+          </div>
+          <button class="secondary-button" id="error-retry" type="button">Try again</button>
+        </section>
+      </section>
+
+      <aside class="inspector" id="pattern-inspector" aria-label="Selected pattern" aria-hidden="true">
+        <header class="inspector__top">
+          <span class="inspector__label">On the counter</span>
+          <div class="inspector__top-actions">
+            <button class="icon-button favorite-button" id="favorite-pattern" type="button" aria-label="Add to favorites" title="Add to favorites">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z"></path></svg>
+            </button>
+            <button class="icon-button inspector-close" id="close-inspector" type="button" aria-label="Close details" title="Close details">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg>
+            </button>
+          </div>
+        </header>
+
+        <section class="title-view" id="title-view">
+          <div>
+            <h2 id="pattern-title">Pattern name</h2>
+            <p id="pattern-updated">Updated recently</p>
+          </div>
+          <button class="text-button" id="rename-pattern" type="button">Rename</button>
+        </section>
+
+        <form class="title-editor" id="title-editor" hidden>
+          <label for="rename-input">Pattern name</label>
+          <input id="rename-input" type="text" maxlength="160" required>
+          <div><button class="text-button" id="cancel-rename" type="button">Cancel</button><button class="small-primary" type="submit">Save</button></div>
+        </form>
+
+        <section class="preview-card">
+          <header><span>Live preview</span><span id="preview-kind">Pattern</span></header>
+          <div class="pattern-preview" id="pattern-preview"></div>
+        </section>
+
+        <section class="block-inventory">
+          <header><span>Inside this pattern</span><strong id="block-total">0 blocks</strong></header>
+          <div class="block-chips" id="block-chips"></div>
+        </section>
+
+        <div class="detail-actions">
+          <button class="action-tile" id="copy-pattern" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"></path></svg>
+            <span><strong>Copy blocks</strong><small>Ready to paste</small></span>
+          </button>
+          <button class="action-tile" id="duplicate-pattern" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="10" height="10" rx="2"></rect><path d="M9 15v4h10V9h-4"></path><path d="M8 10h4M10 8v4"></path></svg>
+            <span><strong>Duplicate</strong><small>Make a fresh copy</small></span>
+          </button>
+          <button class="action-tile action-tile--wide" id="open-pattern" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9"></path><path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"></path></svg>
+            <span><strong>Open in WordPress</strong><small>Use the full block editor</small></span>
+          </button>
+        </div>
+
+        <button class="danger-button" id="trash-pattern" type="button">Move pattern to trash</button>
+      </aside>
+    </main>
+  </div>
+
+  <dialog class="app-dialog create-dialog" id="create-dialog">
+    <form method="dialog" id="create-form">
+      <header class="dialog-header">
+        <div><span class="eyebrow">Stock the shelf</span><h2>Create a synced pattern</h2></div>
+        <button class="icon-button dialog-close" value="cancel" aria-label="Close" type="submit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg></button>
+      </header>
+      <label class="dialog-field" for="new-pattern-title"><span>Name</span><input id="new-pattern-title" name="title" type="text" maxlength="160" placeholder="Newsletter signup" required></label>
+      <fieldset class="recipe-picker">
+        <legend>Start with</legend>
+        <label><input type="radio" name="recipe" value="blank" checked><span class="recipe-card recipe-card--blank"><i></i></span><strong>Blank</strong><small>One paragraph</small></label>
+        <label><input type="radio" name="recipe" value="cta"><span class="recipe-card recipe-card--cta"><i></i><i></i><i></i></span><strong>Call to action</strong><small>Heading and button</small></label>
+        <label><input type="radio" name="recipe" value="quote"><span class="recipe-card recipe-card--quote"><i>“</i><i></i><i></i></span><strong>Pull quote</strong><small>Quote and citation</small></label>
+        <label><input type="radio" name="recipe" value="columns"><span class="recipe-card recipe-card--columns"><i></i><i></i></span><strong>Two columns</strong><small>A simple layout</small></label>
+      </fieldset>
+      <footer class="dialog-footer"><button class="text-button" value="cancel" type="submit">Cancel</button><button class="primary-button" id="create-submit" value="create" type="submit">Create pattern</button></footer>
+    </form>
+  </dialog>
+
+  <dialog class="app-dialog confirm-dialog" id="trash-dialog">
+    <form method="dialog" id="trash-form">
+      <span class="confirm-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 3h6l1 4H8zM7 7l1 14h8l1-14M10 11v6M14 11v6"></path></svg></span>
+      <h2>Move this pattern to trash?</h2>
+      <p><strong id="trash-pattern-name">This pattern</strong> will stop appearing in Pantry. Existing synced instances may be affected.</p>
+      <footer class="dialog-footer"><button class="text-button" value="cancel" type="submit">Keep it</button><button class="danger-button danger-button--solid" value="trash" type="submit">Move to trash</button></footer>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>

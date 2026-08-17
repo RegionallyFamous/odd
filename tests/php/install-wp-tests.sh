@@ -72,7 +72,7 @@ install_wp() {
 
 install_db() {
 	echo "-- creating database $DB_NAME on $DB_HOST"
-	local host port
+	local host port compose_file
 	if [[ "$DB_HOST" == *:* ]]; then
 		host="${DB_HOST%%:*}"
 		port="${DB_HOST##*:}"
@@ -80,8 +80,23 @@ install_db() {
 		host="$DB_HOST"
 		port=3306
 	fi
-	mysqladmin --host="$host" --port="$port" --user="$DB_USER" --password="$DB_PASS" -f drop "$DB_NAME" >/dev/null 2>&1 || true
-	mysqladmin --host="$host" --port="$port" --user="$DB_USER" --password="$DB_PASS" create "$DB_NAME"
+	if command -v mysqladmin >/dev/null 2>&1; then
+		mysqladmin --host="$host" --port="$port" --user="$DB_USER" --password="$DB_PASS" -f drop "$DB_NAME" >/dev/null 2>&1 || true
+		mysqladmin --host="$host" --port="$port" --user="$DB_USER" --password="$DB_PASS" create "$DB_NAME"
+		return
+	fi
+
+	compose_file="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/docker-compose.e2e.yml"
+	if command -v docker >/dev/null 2>&1 && [ -f "$compose_file" ]; then
+		docker compose -f "$compose_file" exec -T mysql \
+			mysqladmin --host=127.0.0.1 --port=3306 --user="$DB_USER" --password="$DB_PASS" -f drop "$DB_NAME" >/dev/null 2>&1 || true
+		docker compose -f "$compose_file" exec -T mysql \
+			mysqladmin --host=127.0.0.1 --port=3306 --user="$DB_USER" --password="$DB_PASS" create "$DB_NAME"
+		return
+	fi
+
+	echo "-- mysqladmin is unavailable and the local Docker database is not configured" >&2
+	return 1
 }
 
 write_config() {

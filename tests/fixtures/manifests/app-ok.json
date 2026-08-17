@@ -1,13 +1,16 @@
 {
-	"$schema": "../../../docs/schemas/manifest.schema.json",
-	"type": "app",
-	"slug": "example-app",
-	"name": "Example App",
-	"version": "1.0.0",
-	"window": {
-		"width": 640,
-		"height": 480,
-		"minWidth": 320,
-		"minHeight": 240
-	}
+  "$schema": "../../../docs/schemas/manifest.schema.json",
+  "type": "app",
+  "slug": "example-app",
+  "name": "Example App",
+  "version": "1.0.0",
+  "entry": "index.html",
+  "icon": "icon.svg",
+  "window": {
+    "width": 640,
+    "height": 480,
+    "minWidth": 320,
+    "minHeight": 240,
+    "resizable": true
+  }
 }

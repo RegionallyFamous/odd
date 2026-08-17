@@ -14,12 +14,63 @@ REQUIRED = {
     "odd/uninstall.php",
     "odd/languages/odd-outlandish-desktop-decorator.pot",
     "odd/includes/dependencies.php",
+    "odd/includes/playground-compat.php",
     "odd/includes/enqueue.php",
     "odd/includes/content/bootstrap.php",
     "odd/includes/apps/native-surfaces.php",
     "odd/includes/notes/bootstrap.php",
     "odd/src/panel/index.js",
     "odd/src/panel/styles.css",
+}
+
+ALLOWED = {
+    "odd/odd.php",
+    "odd/readme.txt",
+    "odd/uninstall.php",
+    "odd/assets/odd-eye.svg",
+    "odd/data/fallback-registry.json",
+    "odd/includes/dependencies.php",
+    "odd/includes/playground-compat.php",
+    "odd/includes/enqueue.php",
+    "odd/includes/native-window.php",
+    "odd/includes/apps/bootstrap.php",
+    "odd/includes/apps/loader.php",
+    "odd/includes/apps/native-surfaces.php",
+    "odd/includes/apps/registry.php",
+    "odd/includes/apps/repair.php",
+    "odd/includes/apps/rest.php",
+    "odd/includes/apps/serve-cookieauth.php",
+    "odd/includes/apps/storage.php",
+    "odd/includes/content/archive.php",
+    "odd/includes/content/bootstrap.php",
+    "odd/includes/content/bundle.php",
+    "odd/includes/content/catalog-fallback.php",
+    "odd/includes/content/catalog.php",
+    "odd/includes/content/rate-limit.php",
+    "odd/includes/content/reconcile.php",
+    "odd/includes/content/rest.php",
+    "odd/includes/notes/bootstrap.php",
+    "odd/includes/notes/class-notes-rest-controller.php",
+    "odd/includes/notes/class-notes-service.php",
+    "odd/includes/notes/template.php",
+    "odd/languages/odd-outlandish-desktop-decorator.pot",
+    "odd/src/panel/index.js",
+    "odd/src/panel/styles.css",
+}
+
+FORBIDDEN_SOURCE_TOKENS = {
+    "wp.desktop",
+    "desktopModeNativeWindows",
+    "wpDesktopNativeWindows",
+    "desktop_mode_register_window",
+    "desktop_mode_register_icon",
+    "desktop_mode_shell_config",
+    "oddout_apps_apply_manifest_extensions",
+    "odd-app-runtime",
+    "oddout_scene_registry",
+    "oddout_widget_registry",
+    "oddout_icons_get_sets",
+    "oddout_cursors_get_sets",
 }
 
 FORBIDDEN_PARTS = {
@@ -68,6 +119,14 @@ def main() -> int:
     try:
         with zipfile.ZipFile(args.zipfile) as zf:
             names = sorted(name for name in zf.namelist() if not name.endswith("/"))
+            source_violations: list[str] = []
+            for name in names:
+                if PurePosixPath(name).suffix.lower() not in {".php", ".js", ".json", ".css"}:
+                    continue
+                text = zf.read(name).decode("utf-8", errors="replace")
+                for token in FORBIDDEN_SOURCE_TOKENS:
+                    if token in text:
+                        source_violations.append(f"{name}: {token}")
     except FileNotFoundError:
         print(f"error: missing {args.zipfile}", file=sys.stderr)
         return 1
@@ -84,6 +143,19 @@ def main() -> int:
         print("error: release zip is missing required files:", file=sys.stderr)
         for name in missing:
             print(f"  {name}", file=sys.stderr)
+        return 1
+
+    unexpected = sorted(set(names).difference(ALLOWED))
+    if unexpected:
+        print("error: release zip contains files outside the Apps-only allowlist:", file=sys.stderr)
+        for name in unexpected:
+            print(f"  {name}", file=sys.stderr)
+        return 1
+
+    if source_violations:
+        print("error: release zip contains unsupported API/runtime tokens:", file=sys.stderr)
+        for violation in source_violations:
+            print(f"  {violation}", file=sys.stderr)
         return 1
 
     forbidden: list[str] = []

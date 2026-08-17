@@ -6,7 +6,6 @@ Outputs:
   site/favicon-32.png       — classic favicon fallback
   site/apple-touch-icon.png — 180x180 iOS home-screen icon
   site/og-apps-for-openstation.png — 1200x630 Open Graph + Twitter share image
-  site/og.png                      — legacy alias for previously cached links
 
 The canonical favicon.svg is hand-authored next to the PNGs; this script
 makes sure the rasterized fallbacks agree with it and bakes a social card.
@@ -296,9 +295,9 @@ def render_og() -> Image.Image:
 
 def write_og() -> None:
 	og = render_og()
-	for filename in ("og-apps-for-openstation.png", "og.png"):
-		og.save(SITE / filename, "PNG", optimize=True)
-		print(f"wrote site/{filename}")
+	filename = "og-apps-for-openstation.png"
+	og.save(SITE / filename, "PNG", optimize=True)
+	print(f"wrote site/{filename}")
 
 
 def main() -> None:

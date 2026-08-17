@@ -14,3 +14,11 @@ The generated catalog asset is
 OpenStation web components that ODD Notes must self-register when the host has
 not loaded them. The application state, REST, journaling, and rendering logic
 remains readable and testable under `src/`.
+
+Refresh that snapshot only from a clean checkout of the exact supported
+OpenStation release, then rebuild Notes:
+
+```bash
+npm run build:openstation-components -- .e2e/openstation-1.1.0
+npm run build:notes
+```

@@ -68,7 +68,7 @@ https://odd.regionallyfamous.com/catalog-preview/v1/
 ```
 
 Open [`/go/preview/`](https://odd.regionallyfamous.com/go/preview/) to
-launch WordPress Playground with ODD `main`, pinned Desktop Mode, and a
+launch WordPress Playground with ODD `main`, pinned OpenStation, and a
 small must-use plugin that points ODD at that preview catalog. This lets
 you test Shop install flows against the same static host as production
 without changing the live `/catalog/v1/` feed.
@@ -98,7 +98,6 @@ That means preview catalogs still prove:
   download URL fields.
 - Every `.wp` archive opens and its manifest type, slug, and version
   match the registry row.
-- Starter-pack references resolve.
 - Card images decode at the expected dimensions.
 - The preview build is deterministic.
 

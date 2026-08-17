@@ -6,12 +6,9 @@
  *
  *   GET  /apps                              List installed apps
  *   GET  /apps/{slug}                       Full manifest
- *   POST /apps/upload                       Install a .wp archive
  *   POST /apps/{slug}/toggle                Enable / disable
- *   DELETE /apps/{slug}                     Uninstall
  *   GET  /apps/serve/{slug}/{path...}       Serve a file from the app bundle
  *   GET  /apps/icon/{slug}                  Public icon for the app (no auth)
- *   POST /apps/runtime/errors               Client error ingest (logged-in)
  *   GET  /apps/store/{slug}/{segment}       KV store read { value }
  *   PUT/POST /apps/store/{slug}/{segment}   KV store write { value }
  *   DELETE /apps/store/{slug}/{segment}     KV store delete
@@ -96,30 +93,6 @@ add_action(
 
 		register_rest_route(
 			'odd/v1',
-			'/apps/upload',
-			array(
-				'methods'             => 'POST',
-				'callback'            => 'oddout_apps_rest_upload',
-				'permission_callback' => function () {
-					return current_user_can( 'manage_options' );
-				},
-			)
-		);
-
-		register_rest_route(
-			'odd/v1',
-			'/apps/runtime/errors',
-			array(
-				'methods'             => 'POST',
-				'callback'            => 'oddout_apps_rest_runtime_errors',
-				'permission_callback' => static function () {
-					return current_user_can( 'read' );
-				},
-			)
-		);
-
-		register_rest_route(
-			'odd/v1',
 			'/apps/store/(?P<slug>[a-z0-9-]+)/(?P<segment>[a-z0-9-]+)',
 			array(
 				'args' => array(
@@ -193,13 +166,6 @@ add_action(
 					'callback'            => 'oddout_apps_rest_get',
 					'permission_callback' => function () {
 						return current_user_can( 'read' );
-					},
-				),
-				array(
-					'methods'             => 'DELETE',
-					'callback'            => 'oddout_apps_rest_delete',
-					'permission_callback' => function () {
-						return current_user_can( 'manage_options' );
 					},
 				),
 			)
@@ -312,45 +278,6 @@ function oddout_apps_rest_get( WP_REST_Request $req ) {
 	return rest_ensure_response( $manifest );
 }
 
-function oddout_apps_rest_upload( WP_REST_Request $req ) {
-	$files = $req->get_file_params();
-	if ( empty( $files['file'] ) || ! isset( $files['file']['tmp_name'] ) ) {
-		return new WP_Error( 'no_file', __( 'No file uploaded. Use multipart field "file".', 'odd-outlandish-desktop-decorator' ), array( 'status' => 400 ) );
-	}
-	$file   = $files['file'];
-	$tmp    = $file['tmp_name'];
-	$name   = $file['name'];
-	$result = oddout_apps_install( $tmp, $name );
-	if ( is_wp_error( $result ) ) {
-		$data           = $result->get_error_data();
-		$data['status'] = isset( $data['status'] ) ? $data['status'] : 400;
-		$result->add_data( $data );
-		return $result;
-	}
-	$out = array(
-		'installed' => true,
-		'slug'      => sanitize_key( (string) ( $result['slug'] ?? '' ) ),
-		'type'      => 'app',
-		'manifest'  => $result,
-	);
-	if ( isset( $out['slug'] ) && '' !== $out['slug'] && function_exists( 'oddout_apps_serve_url_for_rest_payload' ) ) {
-		$serve = oddout_apps_serve_url_for_rest_payload( $out['slug'] );
-		if ( '' !== $serve ) {
-			$out['serve_url'] = $serve;
-		}
-	}
-	return rest_ensure_response( $out );
-}
-
-function oddout_apps_rest_delete( WP_REST_Request $req ) {
-	$slug   = sanitize_key( $req['slug'] );
-	$result = oddout_apps_uninstall( $slug );
-	if ( is_wp_error( $result ) ) {
-		return $result;
-	}
-	return rest_ensure_response( array( 'uninstalled' => true ) );
-}
-
 function oddout_apps_rest_toggle( WP_REST_Request $req ) {
 	$slug     = sanitize_key( $req['slug'] );
 	$enabled  = $req->get_param( 'enabled' );
@@ -457,22 +384,7 @@ function oddout_apps_rest_serve( WP_REST_Request $req ) {
 	}
 
 	$mime = oddout_apps_mime_for( $full );
-	$body = null;
 	$size = filesize( $full );
-
-	if ( oddout_apps_is_html_mime( $mime ) ) {
-		$raw = file_get_contents( $full ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-		if ( false !== $raw ) {
-			if ( function_exists( 'oddout_apps_prepare_app_html_output' ) ) {
-				$body = oddout_apps_prepare_app_html_output( $raw );
-			} elseif ( function_exists( 'oddout_apps_inject_runtime_importmap' ) ) {
-				$body = oddout_apps_inject_runtime_importmap( $raw );
-			}
-			if ( null !== $body ) {
-				$size = strlen( $body );
-			}
-		}
-	}
 
 	// Drain any admin-side output buffers so readfile streams the
 	// file bytes unmolested. Without this a stray debug notice or
@@ -497,27 +409,14 @@ function oddout_apps_rest_serve( WP_REST_Request $req ) {
 	// our own admin shell.
 	header( 'X-Frame-Options: SAMEORIGIN' );
 	if ( oddout_apps_is_html_mime( $mime ) && function_exists( 'oddout_apps_cookieauth_csp' ) ) {
-		$manifest = oddout_apps_manifest_load( $slug );
-		$csp      = oddout_apps_cookieauth_csp( $slug, is_array( $manifest ) ? $manifest : array() );
-		if ( is_string( $csp ) && '' !== $csp ) {
-			header( 'Content-Security-Policy: ' . $csp );
-		}
+		header( 'Content-Security-Policy: ' . oddout_apps_cookieauth_csp() );
 	}
-	if ( null !== $body ) {
-		oddout_emit_raw_response( $body );
-	} else {
-		// readfile() is used intentionally: the serve endpoint streams
-		// potentially multi-megabyte static assets to a sandboxed iframe
-		// and must not buffer the whole payload into memory.
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
-		$sent = readfile( $full );
-		if ( false === $sent && defined( 'WP_DEBUG' ) && WP_DEBUG && function_exists( 'error_log' ) ) {
-			// Headers are already flushed at this point, so we can't
-			// surface the failure to the client — but logging lets
-			// the admin spot a disk-read or permissions regression.
-			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-			error_log( sprintf( '[ODD Apps] readfile() failed for %s', $full ) );
-		}
+	// readfile() streams app assets without buffering large payloads.
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
+	$sent = readfile( $full );
+	if ( false === $sent && defined( 'WP_DEBUG' ) && WP_DEBUG && function_exists( 'error_log' ) ) {
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		error_log( sprintf( '[ODD Apps] readfile() failed for %s', $full ) );
 	}
 	exit;
 }
@@ -630,8 +529,8 @@ function oddout_apps_mime_for( $path ) {
  * Whether a Content-Type value is HTML (ignores charset and other parameters).
  *
  * oddout_apps_mime_for() always appends `; charset=utf-8` for .html — strict
- * equality with `text/html` would skip the entire cookie-auth / REST HTML
- * pipeline (import map, fetch bootstrap, CSP).
+ * equality with `text/html` would skip the cookie-auth / REST HTML security
+ * headers.
  *
  * @param string $mime Full header value, e.g. `text/html; charset=utf-8`.
  * @return bool
@@ -767,10 +666,6 @@ function oddout_apps_diag_asset_path_from_ref( $entry, $ref ) {
 	return implode( '/', $parts );
 }
 
-function oddout_apps_diag_bare_react_imports( $js ) {
-	return (bool) preg_match( '#\b(?:from|import)\s*(["\'])react(?:/jsx-runtime|-dom(?:/client)?)?\1#', (string) $js );
-}
-
 function oddout_apps_diag_file_probe( $slug, $path ) {
 	$slug = sanitize_key( (string) $slug );
 	$path = (string) $path;
@@ -805,17 +700,7 @@ function oddout_apps_diag_file_probe( $slug, $path ) {
 		return $row;
 	}
 
-	$head        = (string) @file_get_contents( $full, false, null, 0, 768 );
-	$row['head'] = $head;
-	if ( function_exists( 'oddout_apps_is_js_mime' ) && oddout_apps_is_js_mime( $row['mime'] ) ) {
-		$raw                                  = (string) @file_get_contents( $full, false, null, 0, 1024 * 1024 );
-		$row['bareReactImportsBeforeRewrite'] = oddout_apps_diag_bare_react_imports( $raw );
-		if ( function_exists( 'oddout_apps_rewrite_runtime_bare_imports' ) ) {
-			$rewritten                           = oddout_apps_rewrite_runtime_bare_imports( $raw );
-			$row['bareReactImportsAfterRewrite'] = oddout_apps_diag_bare_react_imports( $rewritten );
-			$row['rewriteChanged']               = $rewritten !== $raw;
-		}
-	}
+	$row['head'] = (string) @file_get_contents( $full, false, null, 0, 768 );
 	return $row;
 }
 
@@ -864,20 +749,19 @@ function oddout_apps_rest_diag( WP_REST_Request $req ) {
 	// Every function we rely on across the install→render→serve
 	// chain. If any of these is false, that's the failure mode.
 	$loaders = array(
-		'oddout_apps_list'                     => function_exists( 'oddout_apps_list' ),
-		'oddout_apps_index_load'               => function_exists( 'oddout_apps_index_load' ),
-		'oddout_apps_manifest_load'            => function_exists( 'oddout_apps_manifest_load' ),
-		'oddout_apps_dir_for'                  => function_exists( 'oddout_apps_dir_for' ),
-		'oddout_apps_register_surfaces'        => function_exists( 'oddout_apps_register_surfaces' ),
-		'oddout_apps_render_window_template'   => function_exists( 'oddout_apps_render_window_template' ),
-		'oddout_apps_cookieauth_url_for'       => function_exists( 'oddout_apps_cookieauth_url_for' ),
-		'oddout_apps_cookieauth_maybe_serve'   => function_exists( 'oddout_apps_cookieauth_maybe_serve' ),
-		'oddout_apps_repair_from_catalog'      => function_exists( 'oddout_apps_repair_from_catalog' ),
-		'oddout_apps_repair_meta_for'          => function_exists( 'oddout_apps_repair_meta_for' ),
-		'oddout_apps_forbidden_extensions'     => function_exists( 'oddout_apps_forbidden_extensions' ),
-		'oddout_apps_mime_for'                 => function_exists( 'oddout_apps_mime_for' ),
-		'oddout_apps_inject_runtime_importmap' => function_exists( 'oddout_apps_inject_runtime_importmap' ),
-		'openstation_register_window'          => function_exists( 'openstation_register_window' ),
+		'oddout_apps_list'                   => function_exists( 'oddout_apps_list' ),
+		'oddout_apps_index_load'             => function_exists( 'oddout_apps_index_load' ),
+		'oddout_apps_manifest_load'          => function_exists( 'oddout_apps_manifest_load' ),
+		'oddout_apps_dir_for'                => function_exists( 'oddout_apps_dir_for' ),
+		'oddout_apps_register_surfaces'      => function_exists( 'oddout_apps_register_surfaces' ),
+		'oddout_apps_render_window_template' => function_exists( 'oddout_apps_render_window_template' ),
+		'oddout_apps_cookieauth_url_for'     => function_exists( 'oddout_apps_cookieauth_url_for' ),
+		'oddout_apps_cookieauth_maybe_serve' => function_exists( 'oddout_apps_cookieauth_maybe_serve' ),
+		'oddout_apps_repair_from_catalog'    => function_exists( 'oddout_apps_repair_from_catalog' ),
+		'oddout_apps_repair_meta_for'        => function_exists( 'oddout_apps_repair_meta_for' ),
+		'oddout_apps_forbidden_extensions'   => function_exists( 'oddout_apps_forbidden_extensions' ),
+		'oddout_apps_mime_for'               => function_exists( 'oddout_apps_mime_for' ),
+		'openstation_register_window'        => function_exists( 'openstation_register_window' ),
 	);
 
 	// Hook priority — is serve-cookieauth actually on init@1?
@@ -956,52 +840,20 @@ function oddout_apps_rest_diag( WP_REST_Request $req ) {
 		: $after_scope_strip;
 	$regex_matches     = (bool) preg_match( '#^/odd-app/([a-z0-9-]+)(?:/(.*))?$#', $after_site_strip );
 
-	// Sanity: would the import-map injection corrupt an empty-head
-	// HTML? Run the actual function on a known-good minimal doc.
-	$importmap_ok    = null;
-	$runtime_imports = array();
-	if ( function_exists( 'oddout_apps_inject_runtime_importmap' ) ) {
-		$sample       = '<!doctype html><html><head></head><body></body></html>';
-		$transformed  = oddout_apps_inject_runtime_importmap( $sample );
-		$importmap_ok = is_string( $transformed ) && false !== stripos( $transformed, 'importmap' );
-		if ( preg_match( '#<script type="importmap">(.+)</script>#', $transformed, $matches ) ) {
-			$decoded = json_decode( $matches[1], true );
-			if ( is_array( $decoded ) && isset( $decoded['imports'] ) && is_array( $decoded['imports'] ) ) {
-				foreach ( $decoded['imports'] as $spec => $url ) {
-					$runtime_imports[ $spec ] = oddout_apps_diag_url_row( $url, $active_scope );
-				}
-			}
-		}
-	}
-
 	$entry        = array(
-		'raw'         => array(
-			'path'       => $entry_file,
-			'mime'       => $entry_mime,
-			'size'       => $entry_size,
-			'head'       => $entry_head,
-			'hasBaseTag' => false !== stripos( $entry_head, '<base' ),
-		),
-		'transformed' => null,
+		'path'       => $entry_file,
+		'mime'       => $entry_mime,
+		'size'       => $entry_size,
+		'head'       => $entry_head,
+		'hasBaseTag' => false !== stripos( $entry_head, '<base' ),
 	);
 	$asset_probes = array();
 	if ( $entry_real && is_readable( $entry_real ) && oddout_apps_is_html_mime( $entry_mime ) ) {
-		$raw_html             = (string) @file_get_contents( $entry_real );
-		$out_html             = function_exists( 'oddout_apps_prepare_app_html_output' )
-			? oddout_apps_prepare_app_html_output( $raw_html )
-			: ( function_exists( 'oddout_apps_inject_runtime_importmap' ) ? oddout_apps_inject_runtime_importmap( $raw_html ) : $raw_html );
-		$refs                 = oddout_apps_diag_html_refs( $out_html );
-		$entry['transformed'] = array(
-			'size'                    => strlen( $out_html ),
-			'hasImportmap'            => false !== stripos( $out_html, 'type="importmap"' ),
-			'hasFetchBootstrap'       => false !== strpos( $out_html, 'oddout_apps_iframe_fetch_bootstrap' ),
-			'hasDiagnosticsBootstrap' => false !== strpos( $out_html, 'oddout_apps_iframe_diagnostics_bootstrap' ),
-			'hasBaseTag'              => false !== stripos( $out_html, '<base' ),
-			'hasRootElement'          => (bool) preg_match( '#\bid=(["\'])root\1#i', $out_html ),
-			'scripts'                 => $refs['scripts'],
-			'styles'                  => $refs['styles'],
-			'head'                    => substr( $out_html, 0, 768 ),
-		);
+		$raw_html                = (string) @file_get_contents( $entry_real );
+		$refs                    = oddout_apps_diag_html_refs( $raw_html );
+		$entry['hasRootElement'] = (bool) preg_match( '#\bid=(["\'])root\1#i', $raw_html );
+		$entry['scripts']        = $refs['scripts'];
+		$entry['styles']         = $refs['styles'];
 		foreach ( array_merge( $refs['scripts'], $refs['styles'] ) as $ref ) {
 			$src        = isset( $ref['src'] ) ? $ref['src'] : ( isset( $ref['href'] ) ? $ref['href'] : '' );
 			$asset_path = oddout_apps_diag_asset_path_from_ref( $entry_file, $src );
@@ -1012,20 +864,6 @@ function oddout_apps_rest_diag( WP_REST_Request $req ) {
 			if ( count( $asset_probes ) >= 16 ) {
 				break;
 			}
-		}
-	}
-
-	$runtime_files = array();
-	if ( function_exists( 'oddout_apps_runtime_dir' ) ) {
-		$runtime_dir = oddout_apps_runtime_dir();
-		foreach ( array( 'react.js', 'react-dom.js', 'react-dom-client.js', 'react-jsx-runtime.js' ) as $name ) {
-			$full                   = realpath( $runtime_dir . '/' . $name );
-			$runtime_files[ $name ] = array(
-				'exists'   => $full && is_file( $full ),
-				'readable' => $full && is_readable( $full ),
-				'size'     => $full && is_file( $full ) ? (int) filesize( $full ) : 0,
-				'realpath' => $full ? $full : '',
-			);
 		}
 	}
 
@@ -1098,39 +936,7 @@ function oddout_apps_rest_diag( WP_REST_Request $req ) {
 				'after_site_strip'  => $after_site_strip,
 			)
 		),
-		oddout_apps_diag_check(
-			'importmap',
-			$importmap_ok ? 'pass' : 'fail',
-			$importmap_ok ? 'Runtime import map injection is available.' : 'Runtime import map injection failed.'
-		),
-		oddout_apps_diag_check(
-			'runtime_files',
-			empty(
-				array_filter(
-					$runtime_files,
-					static function ( $row ) {
-						return empty( $row['exists'] ) || empty( $row['readable'] );
-					}
-				)
-			) ? 'pass' : 'fail',
-			'React runtime module files are present and readable.',
-			$runtime_files
-		),
 	);
-
-	if ( is_array( $entry['transformed'] ) ) {
-		$checks[] = oddout_apps_diag_check(
-			'html_transform',
-			! empty( $entry['transformed']['hasImportmap'] )
-				&& ! empty( $entry['transformed']['hasFetchBootstrap'] )
-				&& ! empty( $entry['transformed']['hasDiagnosticsBootstrap'] )
-				&& empty( $entry['transformed']['hasBaseTag'] )
-				? 'pass'
-				: 'warn',
-			'HTML entry transform includes iframe bootstraps/import map and strips base tags.',
-			$entry['transformed']
-		);
-	}
 	if ( ! empty( $asset_probes ) ) {
 		$missing_assets = array_filter(
 			$asset_probes,
@@ -1138,16 +944,10 @@ function oddout_apps_rest_diag( WP_REST_Request $req ) {
 				return empty( $asset['exists'] ) || empty( $asset['readable'] );
 			}
 		);
-		$bare_after     = array_filter(
-			$asset_probes,
-			static function ( $asset ) {
-				return ! empty( $asset['bareReactImportsAfterRewrite'] );
-			}
-		);
 		$checks[]       = oddout_apps_diag_check(
 			'entry_assets',
-			empty( $missing_assets ) && empty( $bare_after ) ? 'pass' : 'fail',
-			'Referenced entry assets exist, are readable, and have React imports rewritten.',
+			empty( $missing_assets ) ? 'pass' : 'fail',
+			'Referenced entry assets exist and are readable.',
 			array( 'probed' => count( $asset_probes ) )
 		);
 	}
@@ -1166,10 +966,9 @@ function oddout_apps_rest_diag( WP_REST_Request $req ) {
 			'enabled'   => $enabled,
 			'row'       => $row,
 			'manifest'  => $manifest ? array(
-				'name'           => isset( $manifest['name'] ) ? $manifest['name'] : null,
-				'entry'          => $entry_file,
-				'icon'           => isset( $manifest['icon'] ) ? $manifest['icon'] : null,
-				'has_extensions' => ! empty( $manifest['extensions'] ),
+				'name'  => isset( $manifest['name'] ) ? $manifest['name'] : null,
+				'entry' => $entry_file,
+				'icon'  => isset( $manifest['icon'] ) ? $manifest['icon'] : null,
 			) : null,
 		),
 		'filesystem'   => array(
@@ -1186,12 +985,9 @@ function oddout_apps_rest_diag( WP_REST_Request $req ) {
 			'url_parts'         => $serve_url_row,
 			'rest_root'         => $rest_url_row,
 			'diag_url'          => oddout_apps_diag_url_row( $diag_url, $active_scope ),
-			'runtime_imports'   => $runtime_imports,
-			'runtime_files'     => $runtime_files,
 			'regex_matches'     => $regex_matches,
 			'after_scope_strip' => $after_scope_strip,
 			'after_site_strip'  => $after_site_strip,
-			'importmap_ok'      => $importmap_ok,
 		),
 		'entry'        => $entry,
 		'asset_probes' => $asset_probes,
@@ -1253,12 +1049,6 @@ function oddout_apps_rest_store_value_is_valid( $value ) {
 		return false;
 	}
 	return strlen( $encoded ) <= 64 * 1024;
-}
-
-function oddout_apps_rest_runtime_errors( WP_REST_Request $request ) {
-	unset( $request );
-
-	return rest_ensure_response( array( 'ok' => true ) );
 }
 
 function oddout_apps_rest_store_get( WP_REST_Request $request ) {

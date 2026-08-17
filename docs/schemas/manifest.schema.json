@@ -1,215 +1,80 @@
 {
-	"$schema": "https://json-schema.org/draft/2020-12/schema",
-	"$id": "https://raw.githubusercontent.com/RegionallyFamous/odd/main/docs/schemas/manifest.schema.json",
-	"title": "ODD .wp bundle manifest",
-	"description": "Authoritative schema for the manifest.json that ships at the root of every ODD .wp bundle. Mirrors the PHP validators in odd/includes/content/*.php. Bundle authors can enable live validation by adding `\"$schema\": \"https://raw.githubusercontent.com/RegionallyFamous/odd/main/docs/schemas/manifest.schema.json\"` to their manifest.\n\nThis schema is advisory — the canonical behaviour lives in the PHP validators and _tools/validators/validate_manifest.py. When the two disagree, the PHP validator wins at install time; this schema is kept in sync by CI (see tests/php/test-manifest-schema-alignment.php once that test lands).",
-	"type": "object",
-	"required": ["type", "name", "slug", "version"],
-	"additionalProperties": true,
-	"properties": {
-		"$schema": {
-			"type": "string",
-			"description": "Optional. Points at this schema so editors can provide completion / validation."
-		},
-		"type": {
-			"type": "string",
-			"enum": ["app", "scene", "icon-set", "cursor-set", "widget"],
-			"description": "Bundle type. Public v1 manifests must declare the canonical type explicitly."
-		},
-		"slug": {
-			"type": "string",
-			"pattern": "^[a-z0-9-]+$",
-			"minLength": 1,
-			"maxLength": 64,
-			"description": "Globally unique across every bundle type. Lowercase ASCII letters, digits, and hyphens only."
-		},
-		"name": {
-			"type": "string",
-			"minLength": 1,
-			"maxLength": 80
-		},
-		"label": {
-			"type": "string",
-			"description": "Optional human-readable label for UIs that want something shorter than `name`."
-		},
-		"version": {
-			"type": "string",
-			"minLength": 1,
-			"description": "Bundle version. SemVer (x.y.z) recommended so the catalog update-check can compare."
-		},
-		"author": { "type": "string" },
-		"description": { "type": "string" },
-		"category": {
-			"type": "string",
-			"description": "Optional Shop grouping label such as 'Generative', 'Atmosphere', or 'ODD Originals'."
-		},
-		"tags": {
-			"type": "array",
-			"items": { "type": "string", "minLength": 1 }
-		},
-		"entry": {
-			"type": "string",
-			"description": "Relative path to the entry script inside the bundle. Required for scenes (.js) and widgets (.js).",
-			"pattern": "^[^\\0]+$"
-		},
-		"preview": {
-			"type": "string",
-			"description": "Relative path to a preview image (.webp recommended). Required for scenes."
-		},
-		"icon": {
-			"type": "string",
-			"description": "Icon path for Shop cards, or a dashicons-* class for native Desktop Mode widget picker metadata."
-		},
-		"wallpaper": {
-			"type": "string",
-			"description": "Relative path to the 1920×1080 backdrop .webp. Required for scenes."
-		},
-		"fallbackColor": {
-			"type": "string",
-			"pattern": "^#[0-9A-Fa-f]{3,8}$"
-		},
-		"icons": {
-			"type": "object",
-			"description": "Icon-set manifests only. Desktop shortcut icon keys map to relative PNG/WebP image paths.",
-			"patternProperties": {
-				"^[a-z0-9_-]+$": {
-					"type": "string",
-					"pattern": "^[^\\0]+\\.(png|webp)$"
-				}
-			},
-			"additionalProperties": false
-		},
-		"cursors": {
-			"type": "object",
-			"description": "Cursor-set manifests only. Compatibility field for older clients; must be empty because ODD keeps the native browser cursor and themes only the living layer.",
-			"maxProperties": 0,
-			"additionalProperties": false
-		},
-		"effects": {
-			"type": "object",
-			"description": "Cursor-set manifests only. Living-layer color tokens.",
-			"properties": {
-				"accent": { "type": "string", "pattern": "^#[0-9A-Fa-f]{3,8}$" },
-				"spark": { "type": "string", "pattern": "^#[0-9A-Fa-f]{3,8}$" },
-				"warm": { "type": "string", "pattern": "^#[0-9A-Fa-f]{3,8}$" },
-				"ink": { "type": "string", "pattern": "^#[0-9A-Fa-f]{3,8}$" },
-				"recipe": {
-					"type": "string",
-					"enum": ["signal-bloom", "gel-pop", "paper-sparks", "solar-orbit", "moonlight-focus", "prism-slip", "terminal-static", "ink-magnet", "tiny-weather", "laser-ruler", "arcade-afterimage", "velvet-glow", "circuit-pulse", "confetti-gravity"]
-				}
-			},
-			"additionalProperties": false
-		},
-			"accent": {
-				"type": "string",
-				"pattern": "^#[0-9A-Fa-f]{3,8}$",
-				"description": "Icon-set accent colour surfaced in the Shop tile."
-			},
-			"css": {
-			"type": "array",
-			"description": "Widget manifests only. Relative paths to CSS files enqueued alongside the widget entry script.",
-			"items": { "type": "string" }
-		},
-		"movable": {
-			"type": "boolean",
-			"description": "Widget manifests only. Whether Desktop Mode can drag the widget out of the widget column."
-		},
-		"resizable": {
-			"type": "boolean",
-			"description": "Widget manifests only. Whether Desktop Mode can resize the widget card."
-		},
-		"minWidth": {
-			"type": "integer",
-			"minimum": 1,
-			"description": "Widget manifests only. Minimum native widget width."
-		},
-		"minHeight": {
-			"type": "integer",
-			"minimum": 1,
-			"description": "Widget manifests only. Minimum native widget height."
-		},
-		"maxWidth": {
-			"type": "integer",
-			"minimum": 1,
-			"description": "Widget manifests only. Optional maximum native widget width."
-		},
-		"maxHeight": {
-			"type": "integer",
-			"minimum": 1,
-			"description": "Widget manifests only. Optional maximum native widget height."
-		},
-		"defaultWidth": {
-			"type": "integer",
-			"minimum": 1,
-			"description": "Widget manifests only. First-mount native widget width."
-		},
-		"defaultHeight": {
-			"type": "integer",
-			"minimum": 1,
-			"description": "Widget manifests only. First-mount native widget height."
-		},
-		"capabilities": {
-			"type": "array",
-			"description": "Widget manifests only. Optional WordPress capabilities required by Desktop Mode before the widget is registered.",
-			"items": {
-				"type": "string",
-				"pattern": "^[a-z0-9_]+$"
-			},
-			"uniqueItems": true
-		},
-		"window": {
-			"type": "object",
-			"description": "App manifests only. Initial window geometry + flags passed to wp.desktop.registerWindow.",
-			"additionalProperties": true,
-			"properties": {
-				"width": { "type": "integer", "minimum": 1 },
-				"height": { "type": "integer", "minimum": 1 },
-				"minWidth": { "type": "integer", "minimum": 1 },
-				"minHeight": { "type": "integer", "minimum": 1 },
-				"resizable": { "type": "boolean" },
-				"initialState": { "type": "string", "enum": ["normal", "maximized", "minimized"] }
-			}
-		},
-		"csp": {
-			"type": "string",
-			"maxLength": 2048,
-			"description": "App bundles only. Optional extra Content-Security-Policy directives, sanitized and appended after the default policy on /odd-app/ HTML responses."
-		},
-		"surfaces": {
-			"type": "object",
-			"description": "App manifests only. Install-time defaults for Desktop Mode's core itemVisibility placement for the app launcher. Both keys default to the v1 surfaces (desktop: true, taskbar: false) when missing. Users override per install from the ODD Shop.",
-			"additionalProperties": false,
-			"properties": {
-				"desktop": { "type": "boolean", "description": "Render a desktop shortcut icon for this app." },
-				"taskbar": { "type": "boolean", "description": "Pin a pill to the bottom Desktop Mode taskbar. Clicking it opens the app's native window." }
-			}
-		}
-	},
-	"allOf": [
-		{
-			"if": { "properties": { "type": { "const": "scene" } }, "required": ["type"] },
-			"then": { "required": ["entry", "preview", "wallpaper"] }
-		},
-		{
-			"if": { "properties": { "type": { "const": "icon-set" } }, "required": ["type"] },
-			"then": {
-				"required": ["icons"],
-				"properties": {
-					"icons": {
-						"required": [
-							"odd", "my-wordpress", "content-graph", "recycle-bin", "fallback"
-						]
-					}
-				}
-			}
-		},
-		{
-			"if": { "properties": { "type": { "const": "cursor-set" } }, "required": ["type"] },
-			"then": {}
-		},
-		{
-			"if": { "properties": { "type": { "const": "widget" } }, "required": ["type"] },
-			"then": { "required": ["entry"] }
-		}
-	]
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/RegionallyFamous/odd/main/docs/schemas/manifest.schema.json",
+  "title": "ODD app bundle manifest",
+  "description": "Manifest for an Apps-only ODD .wp archive.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["type", "name", "slug", "version", "entry", "icon"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "type": {"const": "app"},
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "maxLength": 64
+    },
+    "name": {"type": "string", "minLength": 1, "maxLength": 80},
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "author": {"type": "string", "maxLength": 120},
+    "description": {"type": "string", "maxLength": 500},
+    "entry": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9._-]+(?:/[a-zA-Z0-9._-]+)*$"
+    },
+    "icon": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9._-]+(?:/[a-zA-Z0-9._-]+)*\\.(?:svg|png|webp)$"
+    },
+    "capability": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+    "native": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["script"],
+      "properties": {
+        "script": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9._-]+(?:/[a-zA-Z0-9._-]+)*\\.js$"
+        },
+        "style": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9._-]+(?:/[a-zA-Z0-9._-]+)*\\.css$"
+        },
+        "template": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"}
+      }
+    },
+    "window": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {"type": "string", "maxLength": 80},
+        "width": {"type": "integer", "minimum": 320, "maximum": 1600},
+        "height": {"type": "integer", "minimum": 240, "maximum": 1200},
+        "minWidth": {"type": "integer", "minimum": 240, "maximum": 1600},
+        "minHeight": {"type": "integer", "minimum": 180, "maximum": 1200},
+        "min_width": {"type": "integer", "minimum": 240, "maximum": 1600},
+        "min_height": {"type": "integer", "minimum": 180, "maximum": 1200},
+        "resizable": {"type": "boolean"}
+      }
+    },
+    "desktopIcon": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "title": {"type": "string", "maxLength": 80},
+        "position": {"type": "integer", "minimum": 0, "maximum": 10000}
+      }
+    },
+    "surfaces": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "desktop": {"type": "boolean"},
+        "taskbar": {"type": "boolean"}
+      }
+    }
+  }
 }

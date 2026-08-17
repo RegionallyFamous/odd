@@ -2,8 +2,8 @@
 /**
  * ODD — shared `.wp` archive helpers.
  *
- * Every content type (apps, icon sets, cursor sets, scenes, widgets) installs from
- * the same kind of ZIP archive with the same security envelope:
+ * Every app installs from the same kind of ZIP archive with the same
+ * security envelope:
  *
  *   1. Extension must be `.wp` (no `.odd`, no other aliases).
  *   2. ZIP parses via ZipArchive::RDONLY.
@@ -13,8 +13,8 @@
  *   5. Total uncompressed size ≤ 25 MB.
  *   6. `manifest.json` at the archive root, valid JSON.
  *
- * The per-type validators call into these primitives for the envelope
- * checks and then layer their own field-level validation on top.
+ * The app validator calls into these primitives for the envelope checks and
+ * then layers field-level validation on top.
  *
  * Nothing here writes to disk. `oddout_content_archive_extract()` is the
  * one side-effecting primitive, used after validation succeeds.
@@ -23,9 +23,7 @@
 defined( 'ABSPATH' ) || exit;
 
 if ( ! defined( 'ODDOUT_CONTENT_MAX_UNCOMPRESSED' ) ) {
-	// 25 MB uncompressed cap per bundle. Matches ODDOUT_APPS_MAX_UNCOMPRESSED
-	// from the Apps installer so the limits compose cleanly when a
-	// future pack (`type: "pack"`) bundles multiple child archives.
+	// 25 MB uncompressed cap per app bundle. Matches the Apps installer.
 	define( 'ODDOUT_CONTENT_MAX_UNCOMPRESSED', 25 * 1024 * 1024 );
 }
 
@@ -36,7 +34,7 @@ if ( ! defined( 'ODDOUT_CONTENT_MAX_FILES' ) ) {
 /**
  * Server-executable file extensions that must never appear inside a
  * bundle. Forks from {@see oddout_apps_forbidden_extensions()} so the
- * universal installer doesn't depend on the Apps include being loaded
+ * bundle installer doesn't depend on the Apps include being loaded
  * first — `bundle.php` is required before `apps/bootstrap.php` on
  * request pipelines where only one of the two runs.
  */
@@ -227,14 +225,10 @@ function oddout_content_validate_header( $manifest ) {
 	}
 
 	$type = strtolower( (string) $manifest['type'] );
-	if ( ! in_array( $type, array( 'app', 'icon-set', 'cursor-set', 'scene', 'widget' ), true ) ) {
+	if ( 'app' !== $type ) {
 		return new WP_Error(
 			'invalid_type',
-			sprintf(
-				/* translators: %s manifest.type value */
-				__( 'Unknown bundle type "%s". Supported: app, icon-set, cursor-set, scene, widget.', 'odd-outlandish-desktop-decorator' ),
-				$type
-			)
+			__( 'Only app bundles are supported.', 'odd-outlandish-desktop-decorator' )
 		);
 	}
 
@@ -281,8 +275,7 @@ function oddout_content_sanitize_relative_path( $rel ) {
  *
  * @param string $tmp_path   Uploaded archive on disk.
  * @param string $parent_dir Absolute path of the parent type directory
- *                           (e.g. uploads/odd/icon-sets/). Created
- *                           if it doesn't exist.
+ *                           (uploads/odd/apps/). Created if needed.
  * @param string $slug       Sanitised slug — final dir is $parent_dir/$slug/.
  * @return true|WP_Error
  */

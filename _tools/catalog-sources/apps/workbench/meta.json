@@ -10,5 +10,10 @@
     "text",
     "developer",
     "local-first"
-  ]
+  ],
+  "requires": {
+    "odd": "1.1.8",
+    "openStation": "1.1.0",
+    "api": "2.4.0"
+  }
 }

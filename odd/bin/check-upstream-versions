@@ -1,0 +1,239 @@
+#!/usr/bin/env python3
+"""Verify that ODD uses the current WordPress and OpenStation releases."""
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import subprocess
+import sys
+import time
+import urllib.parse
+import urllib.request
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[2]
+ODD_MAIN = ROOT / "odd/odd.php"
+COMPONENT_SNAPSHOT = (
+    ROOT / "_tools/catalog-sources/apps/odd-notes/component-snapshot/"
+    "openstation-ui-components.min.js"
+)
+BLUEPRINTS = (
+    ROOT / "blueprint.json",
+    ROOT / "blueprint-dev.json",
+    ROOT / "blueprint-preview.json",
+    ROOT / "site/playground/blueprint.json",
+    ROOT / "site/playground/blueprint-dev.json",
+    ROOT / "site/playground/blueprint-preview.json",
+)
+VERSION_RE = re.compile(
+    r"define\(\s*['\"]ODDOUT_OPENSTATION_MIN_VERSION['\"]\s*,\s*['\"]([^'\"]+)"
+)
+HEADER_RE = re.compile(r"^\s*\*\s*Version:\s*([^\s]+)\s*$", re.MULTILINE)
+
+
+def fetch_json(url: str) -> dict:
+    request = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "application/json",
+            "User-Agent": "ODD-upstream-version-gate/1.0",
+        },
+    )
+    last_error: Exception | None = None
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                value = json.load(response)
+            if not isinstance(value, dict):
+                raise ValueError(f"expected an object from {url}")
+            return value
+        except Exception as error:  # Network failures need a bounded retry.
+            last_error = error
+            if attempt < 2:
+                time.sleep(1 + attempt)
+    raise RuntimeError(f"could not fetch {url}: {last_error}")
+
+
+def current_versions() -> tuple[str, str, str]:
+    core = fetch_json("https://api.wordpress.org/core/version-check/1.7/")
+    offers = core.get("offers")
+    if not isinstance(offers, list) or not offers:
+        raise RuntimeError("WordPress version API returned no offers")
+    wordpress = str(offers[0].get("current") or "")
+
+    query = urllib.parse.urlencode(
+        {
+            "action": "plugin_information",
+            "request[slug]": "desktop-mode",
+            "request[fields][sections]": "0",
+        }
+    )
+    plugin = fetch_json(f"https://api.wordpress.org/plugins/info/1.2/?{query}")
+    wporg_openstation = str(plugin.get("version") or "")
+
+    release = fetch_json(
+        "https://api.github.com/repos/WordPress/openstation/releases/latest"
+    )
+    github_openstation = str(release.get("tag_name") or "").removeprefix("v")
+    return wordpress, wporg_openstation, github_openstation
+
+
+def configured_openstation_version() -> str:
+    match = VERSION_RE.search(ODD_MAIN.read_text(encoding="utf-8"))
+    if not match:
+        raise RuntimeError("ODDOUT_OPENSTATION_MIN_VERSION is missing")
+    return match.group(1)
+
+
+def blueprint_problems(wordpress: str, openstation: str) -> list[str]:
+    expected_zip = (
+        "https://downloads.wordpress.org/plugin/"
+        f"desktop-mode.{openstation}.zip"
+    )
+    expected_core_command = f"wp core update --version={wordpress} --force"
+    problems: list[str] = []
+    for path in BLUEPRINTS:
+        try:
+            blueprint = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            problems.append(f"{path.relative_to(ROOT)}: {error}")
+            continue
+        if blueprint.get("preferredVersions", {}).get("wp") != "latest":
+            problems.append(f'{path.relative_to(ROOT)}: preferredVersions.wp must be "latest"')
+        commands = [
+            str(step.get("command") or "")
+            for step in blueprint.get("steps", [])
+            if isinstance(step, dict) and step.get("step") == "wp-cli"
+        ]
+        if expected_core_command not in commands:
+            problems.append(
+                f"{path.relative_to(ROOT)}: missing {expected_core_command!r}"
+            )
+        plugin_urls = [
+            str(step.get("pluginData", {}).get("url") or "")
+            for step in blueprint.get("steps", [])
+            if isinstance(step, dict)
+            and step.get("step") == "installPlugin"
+            and isinstance(step.get("pluginData"), dict)
+        ]
+        if expected_zip not in plugin_urls:
+            problems.append(
+                f"{path.relative_to(ROOT)}: missing current OpenStation ZIP {expected_zip}"
+            )
+    return problems
+
+
+def checkout_problems(path: Path, version: str) -> list[str]:
+    problems: list[str] = []
+    main = path / "desktop-mode.php"
+    if not main.is_file():
+        return [f"{path}: desktop-mode.php is missing"]
+    match = HEADER_RE.search(main.read_text(encoding="utf-8"))
+    header_version = match.group(1) if match else ""
+    if header_version != version:
+        problems.append(
+            f"{path}: plugin header is {header_version or 'unknown'}, expected {version}"
+        )
+    try:
+        tag = subprocess.check_output(
+            ["git", "-C", str(path), "describe", "--tags", "--exact-match", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+            timeout=20,
+        ).strip()
+        commit = subprocess.check_output(
+            ["git", "-C", str(path), "rev-parse", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+            timeout=20,
+        ).strip()
+        status = subprocess.check_output(
+            ["git", "-C", str(path), "status", "--porcelain"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+            timeout=20,
+        ).strip()
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return [f"{path}: checkout is not detached at an exact release tag"]
+    if tag != f"v{version}":
+        problems.append(f"{path}: checked out at {tag!r}, expected 'v{version}'")
+    if status:
+        problems.append(f"{path}: checkout has local changes")
+    try:
+        snapshot_head = COMPONENT_SNAPSHOT.read_text(encoding="utf-8")[:240]
+    except OSError as error:
+        problems.append(f"component snapshot is unreadable: {error}")
+    else:
+        expected_banner = f"OpenStation v{version} ({commit}) selected UI components"
+        if expected_banner not in snapshot_head:
+            problems.append(
+                "ODD Notes component snapshot was not generated from the "
+                f"checked-out release ({expected_banner})"
+            )
+    return problems
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--openstation-checkout", type=Path)
+    parser.add_argument("--require-checkout", action="store_true")
+    args = parser.parse_args()
+
+    try:
+        wordpress, wporg_openstation, github_openstation = current_versions()
+        configured = configured_openstation_version()
+    except RuntimeError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
+
+    problems: list[str] = []
+    if not wordpress:
+        problems.append("WordPress version API returned an empty version")
+    if not wporg_openstation:
+        problems.append("WordPress.org returned an empty OpenStation version")
+    if wporg_openstation != github_openstation:
+        problems.append(
+            "OpenStation releases disagree: "
+            f"WordPress.org={wporg_openstation}, GitHub={github_openstation}"
+        )
+    if configured != wporg_openstation:
+        problems.append(
+            f"ODD requires OpenStation {configured}; current is {wporg_openstation}"
+        )
+    try:
+        snapshot_head = COMPONENT_SNAPSHOT.read_text(encoding="utf-8")[:240]
+    except OSError as error:
+        problems.append(f"component snapshot is unreadable: {error}")
+    else:
+        if f"OpenStation v{wporg_openstation} (" not in snapshot_head:
+            problems.append(
+                "ODD Notes component snapshot does not identify the current "
+                f"OpenStation v{wporg_openstation} release"
+            )
+    problems.extend(blueprint_problems(wordpress, wporg_openstation))
+
+    checkout = args.openstation_checkout
+    if checkout is None:
+        candidate = ROOT / f".e2e/openstation-{wporg_openstation}"
+        checkout = candidate if candidate.exists() else None
+    if checkout is not None:
+        problems.extend(checkout_problems(checkout.resolve(), wporg_openstation))
+    elif args.require_checkout:
+        problems.append("a clean OpenStation release checkout is required")
+
+    if problems:
+        for problem in problems:
+            print(f"error: {problem}", file=sys.stderr)
+        return 1
+    print(
+        "upstream versions ok: "
+        f"WordPress {wordpress}; OpenStation {wporg_openstation}; "
+        f"checkout {checkout.resolve() if checkout else 'not requested'}"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

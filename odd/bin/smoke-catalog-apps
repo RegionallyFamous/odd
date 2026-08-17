@@ -11,13 +11,10 @@
  *   6. fail on console/page errors, missing content, blank canvases,
  *      horizontal overflow, external network requests, or non-namespaced
  *      localStorage writes
- *   7. for catalog games, also fail on document scroll, missing sidebars,
- *      missing stage/canvas framing, or visible keyboard-instruction copy
- *
  * Usage:
  *   odd/bin/smoke-catalog-apps
- *   odd/bin/smoke-catalog-apps plugin-panic four-oh-four-runner
- *   odd/bin/smoke-catalog-apps --only plugin-panic,cache-invaders
+ *   odd/bin/smoke-catalog-apps odd-notes workbench
+ *   odd/bin/smoke-catalog-apps --only pantry,workbench
  *   odd/bin/smoke-catalog-apps --headed --screenshots-dir /tmp/odd-app-smoke
  */
 
@@ -31,17 +28,13 @@ const { spawnSync } = require( 'node:child_process' );
 
 const REPO_ROOT = path.resolve( __dirname, '..', '..' );
 const APPS_DIR = path.join( REPO_ROOT, '_tools', 'catalog-sources', 'apps' );
-const RUNTIME_DIR = path.join( REPO_ROOT, 'odd', 'apps', 'runtime' );
+const CATALOG_BUNDLES_DIR = path.join( REPO_ROOT, 'site', 'catalog', 'v1', 'bundles' );
 const VALIDATE_MANIFEST = path.join( REPO_ROOT, 'odd', 'bin', 'validate-manifest' );
 const DEFAULT_SCREENSHOTS_DIR = path.join( REPO_ROOT, 'test-results', 'catalog-app-smoke' );
 const VIEWPORTS = [
 	{ name: 'desktop', width: 1000, height: 760 },
 	{ name: 'mobile', width: 390, height: 740 },
 ];
-const GAME_EXTRA_VIEWPORTS = [
-	{ name: 'compact', width: 420, height: 500 },
-];
-
 function usage() {
 	console.log( `usage: odd/bin/smoke-catalog-apps [--only slug1,slug2] [--headed] [--no-screenshots] [--screenshots-dir DIR] [slug ...]` );
 }
@@ -81,29 +74,16 @@ function parseArgs() {
 }
 
 function listAllAppSlugs() {
-	if ( ! fs.existsSync( APPS_DIR ) ) {
+	const catalogConfig = path.join( REPO_ROOT, '_tools', 'catalog-sources', 'catalog.json' );
+	if ( ! fs.existsSync( catalogConfig ) ) {
 		return [];
 	}
-	return fs.readdirSync( APPS_DIR )
-		.filter( ( slug ) => fs.statSync( path.join( APPS_DIR, slug ) ).isDirectory() )
-		.sort();
+	const config = JSON.parse( fs.readFileSync( catalogConfig, 'utf8' ) );
+	return Array.isArray( config.apps ) ? [ ...config.apps ].sort() : [];
 }
 
 function unique( values ) {
 	return Array.from( new Set( values ) );
-}
-
-function readMetaTags( sourceDir ) {
-	const metaPath = path.join( sourceDir, 'meta.json' );
-	if ( ! fs.existsSync( metaPath ) ) {
-		return [];
-	}
-	try {
-		const meta = JSON.parse( fs.readFileSync( metaPath, 'utf8' ) );
-		return Array.isArray( meta.tags ) ? meta.tags : [];
-	} catch ( _error ) {
-		return [];
-	}
 }
 
 function contentTypeFor( filePath ) {
@@ -120,54 +100,6 @@ function contentTypeFor( filePath ) {
 	return 'application/octet-stream';
 }
 
-function runtimeImportMapHtml() {
-	const imports = {
-		react: '/odd-app-runtime/react.js',
-		'react-dom': '/odd-app-runtime/react-dom.js',
-		'react-dom/client': '/odd-app-runtime/react-dom-client.js',
-		'react/jsx-runtime': '/odd-app-runtime/react-jsx-runtime.js',
-	};
-	return `<script type="importmap">${ JSON.stringify( { imports } ) }</script>`;
-}
-
-function injectRuntimeImportMap( html ) {
-	if ( /type\s*=\s*["']importmap["']/i.test( html ) ) {
-		return html;
-	}
-	const map = runtimeImportMapHtml();
-	if ( /<head>/i.test( html ) ) {
-		return html.replace( /<head>/i, `<head>\n${ map }` );
-	}
-	if ( /<head\b[^>]*>/i.test( html ) ) {
-		return html.replace( /<head\b[^>]*>/i, ( tag ) => `${ tag }\n${ map }` );
-	}
-	return `${ map }\n${ html }`;
-}
-
-function rewriteRuntimeBareImports( js ) {
-	if ( ! js || ( ! js.includes( '"react' ) && ! js.includes( "'react" ) ) ) {
-		return js;
-	}
-	return js.replace(
-		/(\b(?:from|import)\s*)(["'])(react(?:\/jsx-runtime|-dom(?:\/client)?)?)\2/g,
-		( _match, prefix, quote, specifier ) => {
-			const runtimeSlug = specifier.replace( /\//g, '-' ).replace( /[^a-z0-9-]/g, '' );
-			return `${ prefix }${ quote }/odd-app-runtime/${ runtimeSlug }.js${ quote }`;
-		}
-	);
-}
-
-function transformBodyForServe( filePath, body ) {
-	const contentType = contentTypeFor( filePath );
-	if ( contentType.startsWith( 'text/html' ) ) {
-		return Buffer.from( injectRuntimeImportMap( body.toString( 'utf8' ) ), 'utf8' );
-	}
-	if ( contentType.startsWith( 'text/javascript' ) || contentType.startsWith( 'application/javascript' ) ) {
-		return Buffer.from( rewriteRuntimeBareImports( body.toString( 'utf8' ) ), 'utf8' );
-	}
-	return body;
-}
-
 function readRequestBody( req ) {
 	return new Promise( ( resolve, reject ) => {
 		const chunks = [];
@@ -177,13 +109,131 @@ function readRequestBody( req ) {
 	} );
 }
 
-function sendJson( res, status, value ) {
+function sendJson( res, status, value, headers = {} ) {
 	const body = Buffer.from( JSON.stringify( value ), 'utf8' );
 	res.writeHead( status, {
 		'content-type': 'application/json; charset=utf-8',
 		'x-content-type-options': 'nosniff',
+		...headers,
 	} );
 	res.end( body );
+}
+
+function createWpPatternFixtures() {
+	return [
+		{
+			id: 101,
+			date: '2026-08-09T14:30:00',
+			modified: '2026-08-15T16:45:00',
+			status: 'publish',
+			title: { raw: 'Announcement bar', rendered: 'Announcement bar' },
+			content: {
+				raw: '<!-- wp:group --><div class="wp-block-group"><!-- wp:heading {"level":3} --><h3 class="wp-block-heading">A bright little announcement</h3><!-- /wp:heading --><!-- wp:paragraph --><p>Share one useful update across the site.</p><!-- /wp:paragraph --><!-- wp:buttons --><div class="wp-block-buttons"><!-- wp:button --><div class="wp-block-button"><a class="wp-block-button__link wp-element-button">Learn more</a></div><!-- /wp:button --></div><!-- /wp:buttons --></div><!-- /wp:group -->',
+				rendered: '<div class="wp-block-group"><h3 class="wp-block-heading">A bright little announcement</h3><p>Share one useful update across the site.</p><div class="wp-block-buttons"><div class="wp-block-button"><a class="wp-block-button__link wp-element-button">Learn more</a></div></div></div>',
+			},
+		},
+		{
+			id: 102,
+			date: '2026-07-20T10:00:00',
+			modified: '2026-08-12T09:20:00',
+			status: 'publish',
+			title: { raw: 'Customer pull quote', rendered: 'Customer pull quote' },
+			content: {
+				raw: '<!-- wp:quote --><blockquote class="wp-block-quote"><!-- wp:paragraph --><p>This reusable quote keeps every landing page consistent.</p><!-- /wp:paragraph --><cite>Happy customer</cite></blockquote><!-- /wp:quote -->',
+				rendered: '<blockquote class="wp-block-quote"><p>This reusable quote keeps every landing page consistent.</p><cite>Happy customer</cite></blockquote>',
+			},
+		},
+		{
+			id: 103,
+			date: '2026-07-04T12:00:00',
+			modified: '2026-08-01T11:10:00',
+			status: 'publish',
+			title: { raw: 'Two-column introduction', rendered: 'Two-column introduction' },
+			content: {
+				raw: '<!-- wp:columns --><div class="wp-block-columns"><!-- wp:column --><div class="wp-block-column"><!-- wp:heading {"level":3} --><h3 class="wp-block-heading">First idea</h3><!-- /wp:heading --><!-- wp:paragraph --><p>Give the first idea room to breathe.</p><!-- /wp:paragraph --></div><!-- /wp:column --><!-- wp:column --><div class="wp-block-column"><!-- wp:heading {"level":3} --><h3 class="wp-block-heading">Second idea</h3><!-- /wp:heading --><!-- wp:paragraph --><p>Balance it with a useful second idea.</p><!-- /wp:paragraph --></div><!-- /wp:column --></div><!-- /wp:columns -->',
+				rendered: '<div class="wp-block-columns"><div class="wp-block-column"><h3 class="wp-block-heading">First idea</h3><p>Give the first idea room to breathe.</p></div><div class="wp-block-column"><h3 class="wp-block-heading">Second idea</h3><p>Balance it with a useful second idea.</p></div></div>',
+			},
+		},
+	];
+}
+
+function smokeRenderedContent( raw ) {
+	return String( raw || '' ).replace( /<!--([\s\S]*?)-->/g, '' );
+}
+
+async function maybeServeWpApiStub( req, res, pathname, patterns ) {
+	const collectionPath = '/wp-json/wp/v2/blocks';
+	if ( pathname === collectionPath ) {
+		if ( req.method === 'GET' ) {
+			sendJson( res, 200, patterns, {
+				'x-wp-total': String( patterns.length ),
+				'x-wp-totalpages': '1',
+			} );
+			return true;
+		}
+		if ( req.method === 'POST' ) {
+			let payload = {};
+			try {
+				payload = JSON.parse( await readRequestBody( req ) || '{}' );
+			} catch ( _error ) {
+				payload = {};
+			}
+			const id = patterns.reduce( ( highest, pattern ) => Math.max( highest, pattern.id ), 100 ) + 1;
+			const now = new Date().toISOString().slice( 0, 19 );
+			const created = {
+				id,
+				date: now,
+				modified: now,
+				status: payload.status || 'publish',
+				title: { raw: String( payload.title || 'Untitled pattern' ), rendered: String( payload.title || 'Untitled pattern' ) },
+				content: { raw: String( payload.content || '' ), rendered: smokeRenderedContent( payload.content ) },
+			};
+			patterns.unshift( created );
+			sendJson( res, 201, created );
+			return true;
+		}
+	}
+
+	const itemMatch = pathname.match( /^\/wp-json\/wp\/v2\/blocks\/(\d+)$/ );
+	if ( ! itemMatch ) {
+		return false;
+	}
+	const id = Number( itemMatch[ 1 ] );
+	const index = patterns.findIndex( ( pattern ) => pattern.id === id );
+	if ( index < 0 ) {
+		sendJson( res, 404, { code: 'rest_post_invalid_id', message: 'Invalid pattern ID.' } );
+		return true;
+	}
+	if ( req.method === 'GET' ) {
+		sendJson( res, 200, patterns[ index ] );
+		return true;
+	}
+	if ( req.method === 'POST' ) {
+		let payload = {};
+		try {
+			payload = JSON.parse( await readRequestBody( req ) || '{}' );
+		} catch ( _error ) {
+			payload = {};
+		}
+		const current = patterns[ index ];
+		const next = {
+			...current,
+			modified: new Date().toISOString().slice( 0, 19 ),
+			title: payload.title === undefined ? current.title : { raw: String( payload.title ), rendered: String( payload.title ) },
+			content: payload.content === undefined ? current.content : { raw: String( payload.content ), rendered: smokeRenderedContent( payload.content ) },
+		};
+		patterns.splice( index, 1, next );
+		sendJson( res, 200, next );
+		return true;
+	}
+	if ( req.method === 'DELETE' ) {
+		const [ previous ] = patterns.splice( index, 1 );
+		sendJson( res, 200, { deleted: true, previous } );
+		return true;
+	}
+
+	sendJson( res, 405, { code: 'rest_no_route', message: 'Unsupported smoke request.' } );
+	return true;
 }
 
 async function maybeServeOddApiStub( req, res, pathname, appStore ) {
@@ -192,11 +242,6 @@ async function maybeServeOddApiStub( req, res, pathname, appStore ) {
 		: pathname;
 	if ( ! restPath.startsWith( '/odd/v1/' ) ) {
 		return false;
-	}
-
-	if ( restPath === '/odd/v1/apps/runtime/errors' ) {
-		sendJson( res, 200, { ok: true } );
-		return true;
 	}
 
 	const storeSegment = restPath.match( /^\/odd\/v1\/apps\/store\/([a-z0-9-]+)\/([A-Za-z0-9-]+)$/ );
@@ -255,6 +300,7 @@ async function maybeServeOddApiStub( req, res, pathname, appStore ) {
 
 function serveDirectory( root ) {
 	const appStore = new Map();
+	const wpPatterns = createWpPatternFixtures();
 	const server = http.createServer( async ( req, res ) => {
 		try {
 			const url = new URL( req.url || '/', 'http://127.0.0.1' );
@@ -262,21 +308,7 @@ function serveDirectory( root ) {
 			if ( await maybeServeOddApiStub( req, res, pathname, appStore ) ) {
 				return;
 			}
-			if ( pathname.startsWith( '/odd-app-runtime/' ) ) {
-				const runtimeName = path.basename( pathname );
-				const runtimePath = path.resolve( RUNTIME_DIR, runtimeName );
-				if ( ! runtimePath.startsWith( RUNTIME_DIR + path.sep ) || ! runtimeName.endsWith( '.js' ) ) {
-					res.writeHead( 403 );
-					res.end( 'forbidden' );
-					return;
-				}
-				const raw = await fsp.readFile( runtimePath );
-				const body = transformBodyForServe( runtimePath, raw );
-				res.writeHead( 200, {
-					'content-type': 'text/javascript; charset=utf-8',
-					'x-content-type-options': 'nosniff',
-				} );
-				res.end( body );
+			if ( await maybeServeWpApiStub( req, res, pathname, wpPatterns ) ) {
 				return;
 			}
 			if ( pathname.endsWith( '/' ) ) {
@@ -289,12 +321,11 @@ function serveDirectory( root ) {
 				return;
 			}
 			const raw = await fsp.readFile( filePath );
-			const body = transformBodyForServe( filePath, raw );
 			res.writeHead( 200, {
 				'content-type': contentTypeFor( filePath ),
 				'x-content-type-options': 'nosniff',
 			} );
-			res.end( body );
+			res.end( raw );
 		} catch ( error ) {
 			res.writeHead( error && error.code === 'ENOENT' ? 404 : 500 );
 			res.end( 'not found' );
@@ -331,13 +362,13 @@ function runChecked( cmd, args, options = {} ) {
 
 function extractBundle( slug, tempRoot ) {
 	const sourceDir = path.join( APPS_DIR, slug );
-	const bundlePath = path.join( sourceDir, 'bundle.wp' );
+	const bundlePath = path.join( CATALOG_BUNDLES_DIR, `${ slug }.wp` );
 	const extractDir = path.join( tempRoot, slug );
 	if ( ! fs.existsSync( sourceDir ) ) {
 		throw new Error( `${ slug }: missing app source directory` );
 	}
 	if ( ! fs.existsSync( bundlePath ) ) {
-		throw new Error( `${ slug }: missing bundle.wp` );
+		throw new Error( `${ slug }: missing built catalog bundle` );
 	}
 	fs.mkdirSync( extractDir, { recursive: true } );
 	runChecked( 'unzip', [ '-qq', bundlePath, '-d', extractDir ] );
@@ -357,8 +388,7 @@ function extractBundle( slug, tempRoot ) {
 	if ( ! fs.existsSync( path.join( extractDir, entry ) ) ) {
 		throw new Error( `${ slug }: entry "${ entry }" missing from bundle.wp` );
 	}
-	const tags = readMetaTags( sourceDir );
-	return { slug, sourceDir, bundlePath, extractDir, manifest, entry, tags, isGame: tags.includes( 'game' ) };
+	return { slug, bundlePath, extractDir, manifest, entry };
 }
 
 async function exercisePage( page ) {
@@ -386,7 +416,7 @@ async function exercisePage( page ) {
 
 async function inspectPage( page ) {
 	return page.evaluate( () => {
-		const canvas = document.querySelector( '#game-canvas' ) || document.querySelector( 'canvas' );
+		const canvas = document.querySelector( 'canvas' );
 		let canvasInfo = null;
 		if ( canvas ) {
 			const box = canvas.getBoundingClientRect();
@@ -406,84 +436,12 @@ async function inspectPage( page ) {
 				nonblank,
 			};
 		}
-		const sidebarOverlap = Array.from( document.querySelectorAll( '.side-panel, aside[class*="panel"]' ) )
-			.map( ( panel ) => {
-				const panelBox = panel.getBoundingClientRect();
-				const children = Array.from( panel.children )
-					.map( ( child ) => {
-						const style = getComputedStyle( child );
-						const box = child.getBoundingClientRect();
-						return { box, style };
-					} )
-					.filter( ( item ) => {
-						return item.style.display !== 'none' &&
-							item.style.visibility !== 'hidden' &&
-							item.style.position !== 'absolute' &&
-							item.box.width > 1 &&
-							item.box.height > 1;
-					} )
-					.map( ( item ) => item.box )
-					.sort( ( a, b ) => a.top - b.top );
-				let overlap = 0;
-				let overflow = 0;
-				for ( let i = 1; i < children.length; i++ ) {
-					overlap = Math.max( overlap, children[ i - 1 ].bottom - children[ i ].top );
-				}
-				for ( const box of children ) {
-					overflow = Math.max(
-						overflow,
-						panelBox.top - box.top,
-						box.bottom - panelBox.bottom,
-						panelBox.left - box.left,
-						box.right - panelBox.right
-					);
-				}
-				return {
-					overlap: Math.max( 0, Math.round( overlap ) ),
-					overflow: Math.max( 0, Math.round( overflow ) ),
-				};
-			} )
-			.reduce( ( worst, current ) => {
-				return {
-					overlap: Math.max( worst.overlap, current.overlap ),
-					overflow: Math.max( worst.overflow, current.overflow ),
-				};
-			}, { overlap: 0, overflow: 0 } );
-		const coveredControls = Array.from( document.querySelectorAll( '.control-deck [data-action], .control-deck #reset-button' ) )
-			.map( ( control ) => {
-				const box = control.getBoundingClientRect();
-				const style = getComputedStyle( control );
-				const centerX = box.left + box.width / 2;
-				const centerY = box.top + box.height / 2;
-				const hit = document.elementFromPoint( centerX, centerY );
-				const name = control.getAttribute( 'data-action' ) || control.id || control.getAttribute( 'aria-label' ) || 'control';
-				return {
-					name,
-					width: Math.round( box.width ),
-					height: Math.round( box.height ),
-					hidden: style.display === 'none' || style.visibility === 'hidden',
-					covered: ! hit || ( hit !== control && ! control.contains( hit ) ),
-				};
-			} )
-			.filter( ( control ) => {
-				return control.hidden || control.covered || control.width < 20 || control.height < 20;
-			} );
 		return {
 			title: document.title,
 			bodyTextLength: ( document.body.innerText || '' ).trim().length,
-			bodyText: ( document.body.innerText || '' ).trim(),
 			canvas: canvasInfo,
-			actionButtons: document.querySelectorAll( '[data-action]' ).length,
-			sidePanels: document.querySelectorAll( '.side-panel, aside[class*="panel"]' ).length,
-			stageShells: document.querySelectorAll( '.stage-shell, .board-wrap, .canvas-wrap, #game-canvas' ).length,
 			storageKeys: Object.keys( localStorage ).sort(),
 			horizontalOverflow: Math.max( 0, document.documentElement.scrollWidth - window.innerWidth ),
-			verticalOverflow: Math.max( 0, document.documentElement.scrollHeight - window.innerHeight ),
-			bodyOverflowY: getComputedStyle( document.body ).overflowY,
-			documentOverflowY: getComputedStyle( document.documentElement ).overflowY,
-			sidebarChildOverlap: sidebarOverlap.overlap,
-			sidebarChildOverflow: sidebarOverlap.overflow,
-			coveredControls,
 		};
 	} );
 }
@@ -522,32 +480,6 @@ function assertPageMetrics( app, viewport, metrics, events ) {
 	}
 	if ( metrics.horizontalOverflow > 2 ) {
 		problems.push( `horizontal overflow ${ Math.ceil( metrics.horizontalOverflow ) }px` );
-	}
-	if ( app.isGame ) {
-		if ( metrics.verticalOverflow > 2 ) {
-			problems.push( `game document scrolls vertically by ${ Math.ceil( metrics.verticalOverflow ) }px` );
-		}
-		if ( metrics.bodyOverflowY !== 'hidden' && metrics.documentOverflowY !== 'hidden' ) {
-			problems.push( `game body/html overflow-y must be hidden (body=${ metrics.bodyOverflowY }, html=${ metrics.documentOverflowY })` );
-		}
-		if ( metrics.sidePanels < 1 ) {
-			problems.push( 'game is missing a sidebar/side panel' );
-		}
-		if ( metrics.stageShells < 1 ) {
-			problems.push( 'game is missing a stable stage/canvas shell' );
-		}
-		if ( metrics.sidebarChildOverlap > 2 ) {
-			problems.push( `game sidebar children overlap by ${ metrics.sidebarChildOverlap }px` );
-		}
-		if ( metrics.sidebarChildOverflow > 2 ) {
-			problems.push( `game sidebar clips children by ${ metrics.sidebarChildOverflow }px` );
-		}
-		if ( metrics.coveredControls.length ) {
-			problems.push( `game controls are not clickable: ${ metrics.coveredControls.map( ( control ) => `${ control.name }(${ control.width }x${ control.height })` ).join( ', ' ) }` );
-		}
-		if ( /\b(Keys?|Keyboard|Space|Arrow|Up rotates|Down ducks|P pauses|C holds)\b/i.test( metrics.bodyText ) ) {
-			problems.push( 'game exposes visible keyboard-instruction copy' );
-		}
 	}
 	if ( metrics.canvas && metrics.canvas.nonblank < 64 ) {
 		problems.push( `canvas appears blank (${ metrics.canvas.nonblank } nonblank samples)` );
@@ -629,8 +561,7 @@ async function run() {
 		console.log( `[smoke-catalog-apps] testing ${ apps.length } app bundle(s)` );
 		const results = [];
 		for ( const app of apps ) {
-			const viewports = app.isGame ? VIEWPORTS.concat( GAME_EXTRA_VIEWPORTS ) : VIEWPORTS;
-			for ( const viewport of viewports ) {
+			for ( const viewport of VIEWPORTS ) {
 				const result = await smokeOneViewport(
 					browser,
 					server,

@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       ODD — Apps for OpenStation
  * Plugin URI:        https://weirdpress.com/odd
- * Description:       A growing collection of apps for OpenStation, beginning with ODD Notes.
- * Version:           1.1.7
+ * Description:       A growing collection of useful, polished apps for OpenStation.
+ * Version:           1.1.8
  * Requires at least: 6.8
  * Requires PHP:      8.1
  * Requires Plugins:  desktop-mode
@@ -19,7 +19,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'ODDOUT_VERSION', '1.1.7' );
+define( 'ODDOUT_VERSION', '1.1.8' );
 define( 'ODDOUT_OPENSTATION_MIN_VERSION', '1.1.0' );
 define( 'ODDOUT_FILE', __FILE__ );
 define( 'ODDOUT_DIR', plugin_dir_path( __FILE__ ) );
@@ -113,7 +113,7 @@ function oddout_write_file( $path, $contents ) {
  *
  * These responses are already constrained by MIME type, capability checks,
  * archive validation, and realpath confinement. Generic HTML/JS/CSS escaping
- * would corrupt app bundles, import maps, and generated stylesheets.
+ * would corrupt app bundle assets.
  *
  * @param string $body Response body.
  */
@@ -241,6 +241,7 @@ function oddout_https_rest_url( $path = '' ) {
 define( 'ODDOUT_URL', untrailingslashit( oddout_url_current_scheme( plugins_url( '', __FILE__ ) ) ) );
 
 require_once ODDOUT_DIR . 'includes/dependencies.php';
+require_once ODDOUT_DIR . 'includes/playground-compat.php';
 require_once ODDOUT_DIR . 'includes/apps/bootstrap.php';
 require_once ODDOUT_DIR . 'includes/content/bootstrap.php';
 require_once ODDOUT_DIR . 'includes/notes/bootstrap.php';
@@ -250,7 +251,7 @@ require_once ODDOUT_DIR . 'includes/native-window.php';
 /**
  * Wire every registered ODD script handle up to `wp_set_script_translations`
  * so strings wrapped with
- * `wp.i18n.__()` in the panel / widgets honour the active locale.
+ * `wp.i18n.__()` in the Shop and Notes app honours the active locale.
  *
  * The JSON files live at `languages/odd-outlandish-desktop-decorator-<locale>-<handle-md5>.json`
  * when they exist. `languages/odd-outlandish-desktop-decorator.pot` is generated at release time

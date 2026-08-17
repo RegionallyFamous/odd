@@ -1,8 +1,0 @@
-{
-	"_comment": "Default tick-duration budgets for scene-perf.test.js. Override per-scene under `scenes.<slug>.{normal,low}` when a scene has a legitimate reason to be heavier. Values in milliseconds. Gate is enabled when the ODD_ENFORCE_PERF_BUDGETS=1 env var is set. Numbers are intentionally generous while the baseline stabilizes across Node versions.",
-	"defaults": {
-		"normal": { "median": 4, "p95": 12 },
-		"low": { "median": 3, "p95": 8 }
-	},
-	"scenes": {}
-}

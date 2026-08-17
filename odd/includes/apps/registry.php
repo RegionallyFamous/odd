@@ -127,10 +127,9 @@ function oddout_apps_install( $tmp_path, $filename ) {
 		return $extracted;
 	}
 
-	// Manifest authors can declare the default surfaces (desktop
-	// icon + taskbar icon) per app; users can override after install.
-		// Defaults favor a visible desktop launcher and keep the taskbar
-		// quiet unless the manifest opts into the dock.
+	// Manifest authors can declare the default surfaces per app; users can
+	// override them after install. Defaults favor a visible desktop launcher
+	// and keep the dock quiet unless the manifest opts in.
 	$surfaces = array(
 		'desktop' => isset( $manifest['surfaces']['desktop'] ) ? (bool) $manifest['surfaces']['desktop'] : true,
 		'taskbar' => isset( $manifest['surfaces']['taskbar'] ) ? (bool) $manifest['surfaces']['taskbar'] : false,
@@ -155,8 +154,6 @@ function oddout_apps_install( $tmp_path, $filename ) {
 	$manifest['surfaces']  = $surfaces;
 	oddout_apps_manifest_save( $slug, $manifest );
 	oddout_apps_seed_core_item_visibility( $slug, $surfaces );
-
-	oddout_apps_apply_manifest_extensions( $manifest );
 
 	/**
 	 * Fires after an app is successfully installed.
@@ -399,8 +396,7 @@ function oddout_apps_row_surfaces( $row ) {
 function oddout_apps_list() {
 	$index = oddout_apps_index_load();
 	// Publish only approved first-party catalog apps. Preserve any other
-	// installed app data on disk without exposing retired launchers in
-	// OpenStation.
+	// installed app data on disk without exposing unapproved launchers.
 	$allowed_slugs = function_exists( 'oddout_catalog_allowed_slugs' )
 		? oddout_catalog_allowed_slugs()
 		: array( 'odd-notes' );
@@ -457,104 +453,3 @@ add_filter(
 	},
 	5
 );
-
-/**
- * Reapply manifest.extensions for every installed app on every load
- * of a context that actually renders the Desktop shell or speaks to
- * the ODD REST namespace. This is how apps' muses / commands /
- * widgets / rituals / motion primitives stay registered.
- *
- * Gated to admin / REST / ajax: the public front-end, wp-cron,
- * WP-CLI, and `wp_installing()` have no use for these filters, and
- * the loop costs one get_option + JSON decode + filter registration
- * per enabled app. Skipping them on irrelevant requests adds up when
- * you consider cron waking the site dozens of times an hour.
- */
-add_action(
-	'init',
-	function () {
-		if ( ! defined( 'ODDOUT_APPS_ENABLED' ) || ! ODDOUT_APPS_ENABLED ) {
-			return;
-		}
-		if ( wp_installing() ) {
-			return;
-		}
-		if ( defined( 'WP_CLI' ) && WP_CLI ) {
-			return;
-		}
-		if ( wp_doing_cron() ) {
-			return;
-		}
-		$needs_extensions = is_admin() || wp_doing_ajax() || ( defined( 'REST_REQUEST' ) && REST_REQUEST );
-		if ( ! $needs_extensions ) {
-			return;
-		}
-		foreach ( oddout_apps_list() as $row ) {
-			if ( empty( $row['enabled'] ) ) {
-				continue;
-			}
-			try {
-				$manifest = oddout_apps_manifest_load( $row['slug'] );
-				if ( $manifest ) {
-					oddout_apps_apply_manifest_extensions( $manifest );
-				}
-			} catch ( \Throwable $e ) {
-				// A malformed third-party manifest must never crash the
-				// admin. Swallow, log when debugging, and move on.
-				if ( defined( 'WP_DEBUG' ) && WP_DEBUG && function_exists( 'error_log' ) ) {
-					// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-					error_log( sprintf( '[ODD Apps] skipped manifest for %s: %s', $row['slug'], $e->getMessage() ) );
-				}
-			}
-		}
-	},
-	6
-);
-
-/**
- * Wire `manifest.extensions` into ODD's existing extension helpers.
- *
- * Shape:
- *   extensions: {
- *     muses: [ { slug, ... } ],
- *     commands: [ ... ],
- *     widgets: [ ... ],
- *     rituals: [ ... ],
- *     motionPrimitives: [ ... ],
- *   }
- *
- * Each array calls into the matching oddout_register_* helper so third-
- * party apps get the same lifecycle + dedupe guarantees as core code.
- * Invalid entries are skipped silently — a bad manifest must never
- * crash the admin.
- */
-function oddout_apps_apply_manifest_extensions( $manifest ) {
-	if ( ! is_array( $manifest ) || empty( $manifest['extensions'] ) || ! is_array( $manifest['extensions'] ) ) {
-		return;
-	}
-	$ext = $manifest['extensions'];
-
-	$handlers = array(
-		'muses'            => 'oddout_register_muse',
-		'commands'         => 'oddout_register_command',
-		'widgets'          => 'oddout_register_widget',
-		'rituals'          => 'oddout_register_ritual',
-		'motionPrimitives' => 'oddout_register_motion_primitive',
-	);
-	foreach ( $handlers as $key => $fn ) {
-		if ( empty( $ext[ $key ] ) || ! is_array( $ext[ $key ] ) || ! function_exists( $fn ) ) {
-			continue;
-		}
-		foreach ( $ext[ $key ] as $entry ) {
-			if ( ! is_array( $entry ) || empty( $entry['slug'] ) ) {
-				continue;
-			}
-			// Tag origin so the debug inspector can tell app-sourced
-			// registrations from core and plugin ones.
-			if ( ! isset( $entry['source'] ) ) {
-				$entry['source'] = 'app:' . sanitize_key( $manifest['slug'] );
-			}
-			call_user_func( $fn, $entry );
-		}
-	}
-}

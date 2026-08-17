@@ -18,8 +18,8 @@ jobs:
       - run: odd/bin/check-plugin-metadata
 
   # Build the remote catalog from _tools/catalog-sources/ and enforce
-  # byte-for-byte determinism, schema validity, SHA256/size matches,
-  # and that every starter-pack slug resolves. Also exercises the
+  # byte-for-byte determinism, schema validity, and SHA256/size matches.
+  # Also exercises the
   # builder so a broken template or missing asset is caught on PR
   # rather than at publish time.
   catalog-build-and-validate:
@@ -39,8 +39,6 @@ jobs:
         env:
           ODD_VALIDATE_REBUILD: '1'
         run: odd/bin/validate-catalog
-      - name: Validate cursor set sources
-        run: odd/bin/validate-cursor-sets
 
   json-valid:
     runs-on: ubuntu-latest
@@ -73,6 +71,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: odd/bin/validate-blueprint
+      - name: Verify current WordPress and OpenStation releases
+        run: odd/bin/check-upstream-versions
 
   check-licenses:
     runs-on: ubuntu-latest
@@ -96,21 +96,18 @@ jobs:
         env:
           ODD_REQUIRE_JSONSCHEMA: '1'
         run: |
-          odd/bin/validate-manifest \
-            tests/fixtures/manifests/scene-ok.json \
-            tests/fixtures/manifests/iconset-ok.json \
-            tests/fixtures/manifests/cursorset-ok.json \
-            tests/fixtures/manifests/widget-ok.json \
-            tests/fixtures/manifests/app-ok.json
-      - name: Validate bad manifest fixture (must fail)
+          odd/bin/validate-manifest tests/fixtures/manifests/app-ok.json
+      - name: Reject a non-app manifest (must fail)
         env:
           ODD_REQUIRE_JSONSCHEMA: '1'
         run: |
-          if odd/bin/validate-manifest tests/fixtures/manifests/scene-bad.json; then
-            echo "schema failed to catch known-bad manifest" >&2
+          cp tests/fixtures/manifests/app-ok.json /tmp/non-app.json
+          sed -i 's/"type": "app"/"type": "widget"/' /tmp/non-app.json
+          if odd/bin/validate-manifest /tmp/non-app.json; then
+            echo "schema failed to reject a non-app manifest" >&2
             exit 1
           fi
-          echo "bad manifest was rejected as expected"
+          echo "non-app manifest was rejected as expected"
 
   vitest:
     runs-on: ubuntu-latest
@@ -224,6 +221,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+      - run: odd/bin/check-apps-only
       - run: odd/bin/build-zip
       - run: odd/bin/check-zip-contents --list
       - uses: actions/upload-artifact@v7

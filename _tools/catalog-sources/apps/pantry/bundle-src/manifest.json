@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/RegionallyFamous/odd/main/docs/schemas/manifest.schema.json",
+  "type": "app",
+  "slug": "pantry",
+  "name": "Pantry",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A focused shelf for browsing and managing WordPress synced patterns.",
+  "icon": "icon.webp",
+  "entry": "index.html",
+  "capability": "manage_options",
+  "window": {
+    "title": "Pantry",
+    "width": 1120,
+    "height": 720,
+    "minWidth": 360,
+    "minHeight": 480,
+    "resizable": true
+  },
+  "desktopIcon": {
+    "title": "Pantry",
+    "position": 42
+  },
+  "surfaces": {
+    "desktop": true,
+    "taskbar": false
+  }
+}

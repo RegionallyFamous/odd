@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" role="img" aria-label="Oddling">
-  <path d="M18 56c0-23 10-35 22-35s22 12 22 35Z" fill="#77e5f4"/>
-  <path d="M25 22c2-8 6-12 11-12M54 22c-2-8-6-12-11-12" fill="none" stroke="#ff3d9a" stroke-width="4" stroke-linecap="round"/>
-  <circle cx="31" cy="42" r="6" fill="#10101f"/>
-  <circle cx="50" cy="42" r="6" fill="#10101f"/>
-  <circle cx="33" cy="40" r="2" fill="#fff"/>
-  <circle cx="52" cy="40" r="2" fill="#fff"/>
-</svg>

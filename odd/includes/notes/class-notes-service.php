@@ -489,7 +489,7 @@ class ODDOUT_Notes_Service {
 	}
 
 	/**
-	 * Fill the positioning values OpenStation's wallpaper renderer expects.
+	 * Fill the positioning values OpenStation's desktop note renderer expects.
 	 *
 	 * @param int    $post_id Note id.
 	 * @param string $text    Full text.

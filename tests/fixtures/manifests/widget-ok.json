@@ -1,9 +1,0 @@
-{
-	"$schema": "../../../docs/schemas/manifest.schema.json",
-	"type": "widget",
-	"slug": "example-widget",
-	"name": "Example Widget",
-	"version": "1.0.0",
-	"entry": "widget.js",
-	"css": ["widget.css"]
-}

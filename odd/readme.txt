@@ -5,7 +5,7 @@ Requires at least: 6.8
 Tested up to: 7.0
 Requires PHP: 8.1
 Requires Plugins: desktop-mode
-Stable tag: 1.1.7
+Stable tag: 1.1.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,7 +21,7 @@ ODD is here to fill that desktop with good stuff.
 
 We are building useful little tools, playful experiments, and apps that make WordPress more fun to spend time in. Some will help you get work done. Some may be delightfully unnecessary. All of them should feel like they belong in OpenStation.
 
-We started with one app because we want each one to be good. ODD Notes was first; ODD Workbench is next.
+We started with one app because we want each one to be good. ODD Notes was first; ODD Workbench is the second.
 
 = Meet ODD Notes =
 
@@ -116,6 +116,13 @@ To rebuild the distributed files:
 
 == Changelog ==
 
+= 1.1.8 =
+
+* Made newly installed app launchers appear in OpenStation without a page refresh.
+* Added a refresh-and-retry path when an app window has not registered yet.
+* Fixed Workbench's iframe template so it renders after reload, fills its bounded, resizable window, and verified all six tools.
+* Tightened bundle validation, iframe policy, catalog generation, packaging, and current-version checks.
+
 = 1.1.7 =
 
 * Added ODD Workbench to the production Shop with six local-first text, Markdown, slug, JSON, diff, and encoding utilities.
@@ -135,13 +142,13 @@ To rebuild the distributed files:
 * Fixed note updates in Playground and eliminated false edit-conflict prompts caused by harmless retries or stale identical drafts.
 * Isolated recovery journals by WordPress installation and user.
 * Redesigned the Shop and Notes app, including consistent monochrome action icons.
-* Removed legacy wallpaper, icon-set, cursor, widget, and custom placement runtime surfaces.
-
-= 1.1.4 =
-
-* Improved compatibility with the previous Desktop Mode 0.8.8 host runtime.
+* Focused the product, catalog, and distributable package exclusively on apps.
 
 == Upgrade Notice ==
+
+= 1.1.8 =
+
+Apps now appear and open in the same OpenStation session in which they are installed.
 
 = 1.1.7 =
 

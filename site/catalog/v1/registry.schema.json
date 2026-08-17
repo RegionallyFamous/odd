@@ -1,10 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://odd.regionallyfamous.com/catalog/v1/registry.schema.json",
-  "title": "ODD Catalog Registry",
+  "title": "ODD Apps Catalog Registry",
   "type": "object",
+  "additionalProperties": false,
   "required": [
+    "$schema",
     "version",
+    "generated_at",
     "bundles"
   ],
   "properties": {
@@ -18,69 +21,40 @@
     "generated_at": {
       "type": "string"
     },
-    "starter_pack": {
-      "type": "object",
-      "properties": {
-        "scenes": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "iconSets": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "cursorSets": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "widgets": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "apps": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      }
-    },
     "bundles": {
       "type": "array",
       "items": {
         "type": "object",
+        "additionalProperties": false,
         "required": [
           "type",
           "slug",
           "name",
           "version",
+          "author",
+          "description",
+          "tags",
           "icon_url",
+          "card_url",
+          "card_bytes",
           "download_url",
           "sha256",
           "size",
-          "card_url"
+          "department",
+          "search_text",
+          "search_tokens"
         ],
         "properties": {
           "type": {
-            "type": "string",
-            "enum": [
-              "app"
-            ]
+            "const": "app"
           },
           "slug": {
             "type": "string",
             "pattern": "^[a-z0-9][a-z0-9-]*$"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           },
           "version": {
             "type": "string",
@@ -92,32 +66,17 @@
           "description": {
             "type": "string"
           },
-          "category": {
-            "type": "string"
-          },
-          "channel": {
-            "type": "string",
-            "enum": [
-              "preview"
-            ]
-          },
-          "department": {
-            "type": "string"
-          },
           "tags": {
             "type": "array",
             "items": {
               "type": "string"
             }
           },
-          "search_text": {
-            "type": "string"
-          },
-          "search_tokens": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+          "channel": {
+            "type": "string",
+            "enum": [
+              "preview"
+            ]
           },
           "icon_url": {
             "type": "string"
@@ -140,22 +99,31 @@
             "type": "integer",
             "minimum": 1
           },
-          "accent": {
+          "department": {
+            "const": "apps"
+          },
+          "search_text": {
             "type": "string"
+          },
+          "search_tokens": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "requires": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
+              "api": {
+                "type": "string",
+                "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+              },
               "odd": {
                 "type": "string",
                 "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
               },
               "openStation": {
-                "type": "string",
-                "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
-              },
-              "api": {
                 "type": "string",
                 "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
               }
