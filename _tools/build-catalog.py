@@ -316,10 +316,13 @@ def validate_raster_icon(data: bytes, suffix: str, label: str) -> None:
         fail(f"{label}: visible icon fill is too small")
     if transparent_edge_ratio(rgba) < MIN_TRANSPARENT_EDGE_RATIO:
         fail(f"{label}: app icon needs transparent edges")
+    pixels = (
+        rgba.get_flattened_data()
+        if hasattr(rgba, "get_flattened_data")
+        else rgba.getdata()
+    )
     visible_colors = [
-        pixel[:3]
-        for pixel in rgba.get_flattened_data()
-        if pixel[3] >= VISIBLE_ALPHA
+        pixel[:3] for pixel in pixels if pixel[3] >= VISIBLE_ALPHA
     ]
     if any(
         max(abs(channel - target) for channel, target in zip(color, ICON_NEUTRAL)) > 4
