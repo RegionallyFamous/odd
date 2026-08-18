@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { build } from 'esbuild';
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -10,7 +10,13 @@ const repoRoot = resolve( scriptDir, '../..' );
 const appRoot = resolve( repoRoot, '_tools/catalog-sources/apps/odd-notes' );
 const entry = resolve( appRoot, 'src/index.ts' );
 const vendorPath = resolve( appRoot, 'component-snapshot/openstation-ui-components.min.js' );
-const outputPath = resolve( appRoot, 'bundle-src/assets/js/odd-notes.min.js' );
+const outputFlag = process.argv.indexOf( '--output' );
+if ( outputFlag !== -1 && ! process.argv[ outputFlag + 1 ] ) {
+	throw new Error( '--output requires a path.' );
+}
+const outputPath = outputFlag === -1
+	? resolve( appRoot, 'bundle-src/assets/js/odd-notes.min.js' )
+	: resolve( process.cwd(), process.argv[ outputFlag + 1 ] );
 
 const [ vendor, runtime ] = await Promise.all( [
 	readFile( vendorPath, 'utf8' ),
@@ -34,5 +40,9 @@ if ( runtime.outputFiles.length !== 1 ) {
 }
 
 const output = `${ vendor.trimEnd() }\n${ runtime.outputFiles[ 0 ].text.trim() }\n`;
+await mkdir( dirname( outputPath ), { recursive: true } );
 await writeFile( outputPath, output );
-console.log( `built ${ outputPath.replace( `${ repoRoot }/`, '' ) } (${ output.length.toLocaleString() } bytes)` );
+const displayPath = outputPath.startsWith( `${ repoRoot }/` )
+	? outputPath.replace( `${ repoRoot }/`, '' )
+	: outputPath;
+console.log( `built ${ displayPath } (${ output.length.toLocaleString() } bytes)` );

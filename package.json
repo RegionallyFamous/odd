@@ -1,12 +1,13 @@
 {
   "name": "odd-integration-tests",
-  "version": "1.1.10",
+  "version": "1.1.11",
   "private": true,
   "description": "Tests and release tooling for the Apps-only ODD Shop.",
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "verify:app": "odd/bin/verify-app",
     "build:notes": "node odd/bin/build-notes-app",
     "build:openstation-components": "node odd/bin/refresh-openstation-components",
     "e2e:local": "bash bin/e2e-local.sh all",
@@ -25,10 +26,11 @@
     "@axe-core/playwright": "^4.10.1",
     "@playwright/test": "^1.59.1",
     "@wordpress/hooks": "^4.10.0",
-    "esbuild": "^0.21.5",
+    "esbuild": "^0.28.2",
+    "html-validate": "^10.17.0",
     "husky": "^9.1.7",
     "jsdom": "^24.1.0",
     "lint-staged": "^16.4.0",
-    "vitest": "^1.6.0"
+    "vitest": "^4.1.10"
   }
 }

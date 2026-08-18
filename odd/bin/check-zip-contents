@@ -28,6 +28,7 @@ ALLOWED = {
     "odd/readme.txt",
     "odd/uninstall.php",
     "odd/assets/odd-eye.svg",
+    "odd/assets/odd-browser-api.js",
     "odd/data/fallback-registry.json",
     "odd/includes/dependencies.php",
     "odd/includes/playground-compat.php",

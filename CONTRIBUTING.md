@@ -41,6 +41,15 @@ use a clean release worktree or the official WordPress.org ZIP.
   style enforced by the catalog builder.
 - Do not edit `bundle.wp` or generated ODD Notes JavaScript directly.
 
+Before handing off a first-party app change, run its isolated verification
+gate. It validates the source manifest and clean catalog rebuild, compares the
+committed generated output, smoke-tests desktop and mobile packages, and saves
+screenshots for independent review:
+
+```sh
+npm run verify:app -- <slug>
+```
+
 This is the normal catalog-only release lane. Keep the plugin version and
 runtime source unchanged unless an app genuinely needs a new host capability.
 Catalog app versions move independently, and merging to `main` publishes their

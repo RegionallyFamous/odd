@@ -5,6 +5,12 @@ on:
   push:
     branches: [main]
   workflow_call:
+    inputs:
+      run-plugin-check:
+        description: "Run Plugin Check from a locally built package."
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   check-version:
@@ -92,16 +98,17 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - name: Install jsonschema
-        run: python -m pip install --quiet jsonschema
-      - name: Validate good manifest fixtures (must pass)
-        env:
-          ODD_REQUIRE_JSONSCHEMA: '1'
+      - name: Install pinned catalog validators
+        run: python -m pip install --quiet -r requirements-catalog.txt
+      - name: Validate fixtures and every catalog source manifest
         run: |
+          set -euo pipefail
           odd/bin/validate-manifest tests/fixtures/manifests/app-ok.json
+          while IFS= read -r -d '' manifest; do
+            echo "validating $manifest"
+            odd/bin/validate-manifest "$manifest"
+          done < <(find _tools/catalog-sources/apps -name manifest.json -type f -print0)
       - name: Reject a non-app manifest (must fail)
-        env:
-          ODD_REQUIRE_JSONSCHEMA: '1'
         run: |
           cp tests/fixtures/manifests/app-ok.json /tmp/non-app.json
           sed -i 's/"type": "app"/"type": "widget"/' /tmp/non-app.json
@@ -110,6 +117,23 @@ jobs:
             exit 1
           fi
           echo "non-app manifest was rejected as expected"
+      - name: Reject relationally invalid window bounds (must fail)
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          source = Path("tests/fixtures/manifests/app-ok.json")
+          target = Path("/tmp/invalid-window-bounds.json")
+          manifest = json.loads(source.read_text(encoding="utf-8"))
+          manifest["window"]["minWidth"] = manifest["window"]["width"] + 1
+          target.write_text(json.dumps(manifest), encoding="utf-8")
+          PY
+          if odd/bin/validate-manifest /tmp/invalid-window-bounds.json; then
+            echo "validator accepted minWidth greater than width" >&2
+            exit 1
+          fi
+          echo "relationally invalid manifest was rejected as expected"
 
   vitest:
     runs-on: ubuntu-latest
@@ -208,13 +232,9 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '22'
-      # `html-validate` via npx keeps us off a second lockfile; the
-      # site is one static page so a fresh install per CI run is
-      # cheap. Rules are tuned in .htmlvalidate.json at the repo
-      # root (we keep WCAG h30 + inline-style off; everything else
-      # is the html-validate recommended baseline).
+      - run: npm ci --no-audit --no-fund
       - name: Validate site/index.html
-        run: npx --yes html-validate@latest site/index.html
+        run: npm exec -- html-validate site/index.html
       - name: Require a site entry for every app
         run: python3 _tools/check-app-docs.py
 
@@ -226,16 +246,33 @@ jobs:
         with:
           python-version: '3.12'
       - run: odd/bin/check-apps-only
-      - run: odd/bin/build-zip
+      - name: Build a reproducible release package
+        run: |
+          set -euo pipefail
+          odd/bin/build-zip
+          first_sha256="$(sha256sum dist/odd.zip | awk '{print $1}')"
+          odd/bin/build-zip
+          second_sha256="$(sha256sum dist/odd.zip | awk '{print $1}')"
+          test "$first_sha256" = "$second_sha256"
+          (
+            cd dist
+            sha256sum --check odd.zip.sha256
+          )
       - run: odd/bin/check-zip-contents --list
       - uses: actions/upload-artifact@v7
         with:
           name: odd-zip
-          path: dist/odd.zip
+          path: |
+            dist/odd.zip
+            dist/odd.zip.sha256
           if-no-files-found: error
           retention-days: 14
 
   plugin-check:
+    # Reusable workflows inherit the caller's event name. The ref-type check
+    # keeps direct PR/main CI covered while allowing the tagged release caller
+    # to disable this source-built copy in favor of its exact-artifact gate.
+    if: ${{ inputs['run-plugin-check'] || github.ref_type != 'tag' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

@@ -34,6 +34,27 @@ defined( 'ABSPATH' ) || exit;
 if ( ! defined( 'ODDOUT_APPS_KV_USER_META' ) ) {
 	define( 'ODDOUT_APPS_KV_USER_META', 'oddout_apps_kv' );
 }
+if ( ! defined( 'ODDOUT_APPS_KV_MAX_SEGMENTS' ) ) {
+	define( 'ODDOUT_APPS_KV_MAX_SEGMENTS', 32 );
+}
+if ( ! defined( 'ODDOUT_APPS_KV_MAX_SEGMENT_BYTES' ) ) {
+	define( 'ODDOUT_APPS_KV_MAX_SEGMENT_BYTES', 64 );
+}
+if ( ! defined( 'ODDOUT_APPS_KV_MAX_VALUE_BYTES' ) ) {
+	define( 'ODDOUT_APPS_KV_MAX_VALUE_BYTES', 64 * 1024 );
+}
+if ( ! defined( 'ODDOUT_APPS_KV_MAX_BUCKET_BYTES' ) ) {
+	define( 'ODDOUT_APPS_KV_MAX_BUCKET_BYTES', 256 * 1024 );
+}
+if ( ! defined( 'ODDOUT_APPS_KV_MAX_TREE_BYTES' ) ) {
+	define( 'ODDOUT_APPS_KV_MAX_TREE_BYTES', 1024 * 1024 );
+}
+if ( ! defined( 'ODDOUT_APPS_KV_MAX_DEPTH' ) ) {
+	define( 'ODDOUT_APPS_KV_MAX_DEPTH', 16 );
+}
+if ( ! defined( 'ODDOUT_APPS_KV_MAX_NODES' ) ) {
+	define( 'ODDOUT_APPS_KV_MAX_NODES', 4096 );
+}
 
 function oddout_apps_rest_slug_arg() {
 	return array(
@@ -42,9 +63,28 @@ function oddout_apps_rest_slug_arg() {
 		'pattern'           => '^[a-z0-9-]+$',
 		'sanitize_callback' => 'sanitize_key',
 		'validate_callback' => static function ( $value ) {
-			return is_string( $value ) && (bool) preg_match( '/^[a-z0-9-]+$/', $value );
+			return is_string( $value ) && strlen( $value ) <= ODDOUT_APPS_KV_MAX_SEGMENT_BYTES && (bool) preg_match( '/^[a-z0-9-]+$/', $value );
 		},
 	);
+}
+
+/**
+ * Storage belongs only to an installed, enabled app and is protected by the
+ * same normalized capability as that app's executable assets.
+ */
+function oddout_apps_rest_store_permission( WP_REST_Request $request ) {
+	$slug  = sanitize_key( (string) $request['slug'] );
+	$index = oddout_apps_index_load();
+	if ( '' === $slug || ! isset( $index[ $slug ] ) || ! is_array( $index[ $slug ] ) || empty( $index[ $slug ]['enabled'] ) ) {
+		return new WP_Error( 'app_store_unavailable', __( 'App storage is unavailable.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 404 ) );
+	}
+	$capability = function_exists( 'oddout_apps_normalize_capability' )
+		? oddout_apps_normalize_capability( isset( $index[ $slug ]['capability'] ) ? (string) $index[ $slug ]['capability'] : '', $slug )
+		: 'manage_options';
+	if ( ! current_user_can( $capability ) ) {
+		return new WP_Error( 'app_store_forbidden', __( 'You cannot access this app storage.', 'odd-outlandish-desktop-decorator' ), array( 'status' => rest_authorization_required_code() ) );
+	}
+	return true;
 }
 
 function oddout_apps_rest_segment_arg() {
@@ -54,7 +94,7 @@ function oddout_apps_rest_segment_arg() {
 		'pattern'           => '^[a-z0-9-]+$',
 		'sanitize_callback' => 'sanitize_key',
 		'validate_callback' => static function ( $value ) {
-			return is_string( $value ) && (bool) preg_match( '/^[a-z0-9-]+$/', $value );
+			return is_string( $value ) && strlen( $value ) <= ODDOUT_APPS_KV_MAX_SEGMENT_BYTES && (bool) preg_match( '/^[a-z0-9-]+$/', $value );
 		},
 	);
 }
@@ -102,9 +142,7 @@ add_action(
 				array(
 					'methods'             => 'GET',
 					'callback'            => 'oddout_apps_rest_store_get',
-					'permission_callback' => static function () {
-						return current_user_can( 'read' );
-					},
+					'permission_callback' => 'oddout_apps_rest_store_permission',
 				),
 				array(
 					'methods'             => array( 'PUT', 'POST' ),
@@ -116,16 +154,12 @@ add_action(
 							'validate_callback' => 'oddout_apps_rest_store_value_is_valid',
 						),
 					),
-					'permission_callback' => static function () {
-						return current_user_can( 'read' );
-					},
+					'permission_callback' => 'oddout_apps_rest_store_permission',
 				),
 				array(
 					'methods'             => 'DELETE',
 					'callback'            => 'oddout_apps_rest_store_delete',
-					'permission_callback' => static function () {
-						return current_user_can( 'read' );
-					},
+					'permission_callback' => 'oddout_apps_rest_store_permission',
 				),
 			)
 		);
@@ -140,16 +174,12 @@ add_action(
 				array(
 					'methods'             => 'GET',
 					'callback'            => 'oddout_apps_rest_store_keys',
-					'permission_callback' => static function () {
-						return current_user_can( 'read' );
-					},
+					'permission_callback' => 'oddout_apps_rest_store_permission',
 				),
 				array(
 					'methods'             => 'DELETE',
 					'callback'            => 'oddout_apps_rest_store_clear',
-					'permission_callback' => static function () {
-						return current_user_can( 'read' );
-					},
+					'permission_callback' => 'oddout_apps_rest_store_permission',
 				),
 			)
 		);
@@ -195,6 +225,19 @@ add_action(
 					),
 				),
 				'permission_callback' => function () {
+					return current_user_can( 'manage_options' );
+				},
+			)
+		);
+
+		register_rest_route(
+			'odd/v1',
+			'/apps/(?P<slug>[a-z0-9-]+)/repair',
+			array(
+				'methods'             => 'POST',
+				'callback'            => 'oddout_apps_rest_repair',
+				'args'                => array( 'slug' => oddout_apps_rest_slug_arg() ),
+				'permission_callback' => static function () {
 					return current_user_can( 'manage_options' );
 				},
 			)
@@ -319,6 +362,23 @@ function oddout_apps_rest_toggle( WP_REST_Request $req ) {
 	);
 }
 
+function oddout_apps_rest_repair( WP_REST_Request $req ) {
+	$slug = sanitize_key( (string) $req['slug'] );
+	if ( '' === $slug || ! oddout_apps_exists( $slug ) ) {
+		return new WP_Error( 'not_installed', __( 'App is not installed.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 404 ) );
+	}
+	$result = oddout_apps_repair_from_catalog( $slug, 'explicit_rest_repair' );
+	if ( is_wp_error( $result ) ) {
+		return $result;
+	}
+	return rest_ensure_response(
+		array(
+			'repaired' => true,
+			'slug'     => $slug,
+		)
+	);
+}
+
 /**
  * Serve a file from an app bundle.
  *
@@ -361,21 +421,13 @@ function oddout_apps_rest_serve( WP_REST_Request $req ) {
 	}
 
 	$ext = strtolower( pathinfo( $path, PATHINFO_EXTENSION ) );
-	if ( in_array( $ext, oddout_apps_forbidden_extensions(), true ) ) {
+	if ( oddout_apps_extension_is_forbidden( $ext ) ) {
 		return new WP_Error( 'forbidden', __( 'This file type cannot be served.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 403 ) );
 	}
 
 	$base      = oddout_apps_dir_for( $slug );
 	$real_base = realpath( $base );
 	$full      = realpath( $base . $path );
-	if ( ( ! $real_base || ! $full ) && '' !== $path && function_exists( 'oddout_apps_repair_from_catalog' ) ) {
-		$repair = oddout_apps_repair_from_catalog( $slug, $path );
-		if ( true === $repair ) {
-			clearstatcache();
-			$real_base = realpath( $base );
-			$full      = realpath( $base . $path );
-		}
-	}
 	if ( ! oddout_apps_realpath_is_inside( $full ? $full : '', $real_base ? $real_base : '' ) ) {
 		return new WP_Error( 'not_found', __( 'File not found.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 404 ) );
 	}
@@ -384,7 +436,15 @@ function oddout_apps_rest_serve( WP_REST_Request $req ) {
 	}
 
 	$mime = oddout_apps_mime_for( $full );
-	$size = filesize( $full );
+	$body = null;
+	if ( oddout_apps_is_html_mime( $mime ) && function_exists( 'oddout_apps_inject_runtime' ) ) {
+		$source = file_get_contents( $full ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		if ( false === $source ) {
+			return new WP_Error( 'read_failed', __( 'App entry could not be read.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 500 ) );
+		}
+		$body = oddout_apps_inject_runtime( $source, $slug );
+	}
+	$size = null !== $body ? strlen( $body ) : filesize( $full );
 
 	// Drain any admin-side output buffers so readfile streams the
 	// file bytes unmolested. Without this a stray debug notice or
@@ -404,16 +464,21 @@ function oddout_apps_rest_serve( WP_REST_Request $req ) {
 		header( 'Content-Length: ' . (int) $size );
 	}
 	header( 'Referrer-Policy: no-referrer' );
-	// Apps load into a sandboxed iframe. Explicit framing headers
-	// prevent a third-party site from embedding the serve URL outside
-	// our own admin shell.
+	header( 'Cross-Origin-Resource-Policy: same-origin' );
+	// Browser apps are trusted same-origin code. These framing restrictions
+	// reduce accidental capability; they are not an origin isolation boundary.
 	header( 'X-Frame-Options: SAMEORIGIN' );
 	if ( oddout_apps_is_html_mime( $mime ) && function_exists( 'oddout_apps_cookieauth_csp' ) ) {
 		header( 'Content-Security-Policy: ' . oddout_apps_cookieauth_csp() );
 	}
-	// readfile() streams app assets without buffering large payloads.
-	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
-	$sent = readfile( $full );
+	if ( null !== $body ) {
+		echo $body; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- validated bundle HTML plus server-owned runtime.
+		$sent = strlen( $body );
+	} else {
+		// readfile() streams non-HTML app assets without buffering them.
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
+		$sent = readfile( $full );
+	}
 	if ( false === $sent && defined( 'WP_DEBUG' ) && WP_DEBUG && function_exists( 'error_log' ) ) {
 		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 		error_log( sprintf( '[ODD Apps] readfile() failed for %s', $full ) );
@@ -458,14 +523,6 @@ function oddout_apps_rest_icon( WP_REST_Request $req ) {
 	$base      = oddout_apps_dir_for( $slug );
 	$real_base = realpath( $base );
 	$full      = realpath( $base . $icon );
-	if ( ( ! $real_base || ! $full ) && function_exists( 'oddout_apps_repair_from_catalog' ) ) {
-		$repair = oddout_apps_repair_from_catalog( $slug, $icon );
-		if ( true === $repair ) {
-			clearstatcache();
-			$real_base = realpath( $base );
-			$full      = realpath( $base . $icon );
-		}
-	}
 	if ( ! oddout_apps_realpath_is_inside( $full ? $full : '', $real_base ? $real_base : '' ) ) {
 		return new WP_Error( 'not_found', __( 'App not found.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 404 ) );
 	}
@@ -1004,6 +1061,41 @@ function oddout_apps_rest_diag( WP_REST_Request $req ) {
 	return rest_ensure_response( $diag );
 }
 
+/** Encode numeric-only public identifiers so PHP keeps JSON maps as objects. */
+function oddout_apps_kv_map_key( $identifier ) {
+	$identifier = (string) $identifier;
+	return (bool) preg_match( '/^[0-9]+$/', $identifier ) ? '~' . $identifier : $identifier;
+}
+
+/** Recover a public identifier from an internal app-storage map key. */
+function oddout_apps_kv_identifier_from_map_key( $key ) {
+	$key = (string) $key;
+	if ( preg_match( '/^~([0-9]+)$/', $key, $matches ) ) {
+		return $matches[1];
+	}
+	return preg_match( '/^[a-z0-9-]+$/', $key ) ? $key : '';
+}
+
+/** Normalize legacy PHP-coerced numeric keys into collision-free map keys. */
+function oddout_apps_kv_normalize_stores( array $stores ) {
+	$normalized = array();
+	foreach ( $stores as $slug_key => $bucket ) {
+		$slug = oddout_apps_kv_identifier_from_map_key( $slug_key );
+		if ( '' === $slug || ! is_array( $bucket ) ) {
+			$normalized[ (string) $slug_key ] = $bucket;
+			continue;
+		}
+		$clean_bucket = array();
+		foreach ( $bucket as $segment_key => $value ) {
+			$segment                  = oddout_apps_kv_identifier_from_map_key( $segment_key );
+			$map_key                  = '' === $segment ? (string) $segment_key : oddout_apps_kv_map_key( $segment );
+			$clean_bucket[ $map_key ] = $value;
+		}
+		$normalized[ oddout_apps_kv_map_key( $slug ) ] = $clean_bucket;
+	}
+	return $normalized;
+}
+
 function oddout_apps_kv_load_tree( $user_id ) {
 	$user_id = (int) $user_id;
 	$root    = get_user_meta( $user_id, ODDOUT_APPS_KV_USER_META, true );
@@ -1014,7 +1106,7 @@ function oddout_apps_kv_load_tree( $user_id ) {
 	}
 	if ( isset( $root['stores'] ) && is_array( $root['stores'] ) ) {
 		return array(
-			'stores' => $root['stores'],
+			'stores' => oddout_apps_kv_normalize_stores( $root['stores'] ),
 		);
 	}
 
@@ -1024,6 +1116,7 @@ function oddout_apps_kv_load_tree( $user_id ) {
 }
 
 function oddout_apps_kv_save_tree( $user_id, array $stores ) {
+	$stores = oddout_apps_kv_normalize_stores( $stores );
 	update_user_meta(
 		(int) $user_id,
 		ODDOUT_APPS_KV_USER_META,
@@ -1031,16 +1124,22 @@ function oddout_apps_kv_save_tree( $user_id, array $stores ) {
 			'stores' => $stores,
 		)
 	);
+	$stored = oddout_apps_kv_load_tree( (int) $user_id );
+	if ( ! isset( $stored['stores'] ) || $stored['stores'] !== $stores ) {
+		return new WP_Error( 'app_store_write_failed', __( 'App storage could not be saved.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 500 ) );
+	}
+	return true;
 }
 
 function oddout_apps_kv_segments_for_slug( $user_id, $slug ) {
 	$slug = sanitize_key( (string) $slug );
 	$tree = oddout_apps_kv_load_tree( $user_id );
-	if ( '' === $slug || ! isset( $tree['stores'][ $slug ] ) || ! is_array( $tree['stores'][ $slug ] ) ) {
+	$key  = oddout_apps_kv_map_key( $slug );
+	if ( '' === $slug || ! isset( $tree['stores'][ $key ] ) || ! is_array( $tree['stores'][ $key ] ) ) {
 		return array();
 	}
 
-	return $tree['stores'][ $slug ];
+	return $tree['stores'][ $key ];
 }
 
 function oddout_apps_rest_store_value_is_valid( $value ) {
@@ -1048,7 +1147,106 @@ function oddout_apps_rest_store_value_is_valid( $value ) {
 	if ( false === $encoded ) {
 		return false;
 	}
-	return strlen( $encoded ) <= 64 * 1024;
+	if ( strlen( $encoded ) > ODDOUT_APPS_KV_MAX_VALUE_BYTES ) {
+		return false;
+	}
+	$decoded = json_decode( $encoded, true );
+	$nodes   = 0;
+	return oddout_apps_kv_value_shape_is_valid( $decoded, 0, $nodes );
+}
+
+function oddout_apps_kv_value_shape_is_valid( $value, $depth, &$nodes ) {
+	++$nodes;
+	if ( $nodes > ODDOUT_APPS_KV_MAX_NODES || $depth > ODDOUT_APPS_KV_MAX_DEPTH ) {
+		return false;
+	}
+	if ( ! is_array( $value ) ) {
+		return is_null( $value ) || is_scalar( $value );
+	}
+	foreach ( $value as $child ) {
+		if ( ! oddout_apps_kv_value_shape_is_valid( $child, $depth + 1, $nodes ) ) {
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
+ * Validate a proposed per-user store tree before any mutation is persisted.
+ *
+ * @return true|WP_Error
+ */
+function oddout_apps_kv_validate_stores( array $stores ) {
+	foreach ( $stores as $slug_key => $bucket ) {
+		$slug = oddout_apps_kv_identifier_from_map_key( $slug_key );
+		if ( '' === $slug || ! preg_match( '/^[a-z0-9-]+$/', $slug ) || ! is_array( $bucket ) ) {
+			return new WP_Error( 'app_store_invalid_tree', __( 'App storage contains an invalid bucket.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 400 ) );
+		}
+		if ( count( $bucket ) > ODDOUT_APPS_KV_MAX_SEGMENTS ) {
+			return new WP_Error( 'app_store_segment_quota', __( 'This app has reached its storage segment limit.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 413 ) );
+		}
+		foreach ( $bucket as $segment_key => $value ) {
+			$segment = oddout_apps_kv_identifier_from_map_key( $segment_key );
+			if ( '' === $segment || strlen( $segment ) > ODDOUT_APPS_KV_MAX_SEGMENT_BYTES || ! preg_match( '/^[a-z0-9-]+$/', $segment ) || ! oddout_apps_rest_store_value_is_valid( $value ) ) {
+				return new WP_Error( 'app_store_value_quota', __( 'An app storage segment is invalid or too large.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 413 ) );
+			}
+		}
+		$bucket_json = wp_json_encode( $bucket );
+		if ( false === $bucket_json || strlen( $bucket_json ) > ODDOUT_APPS_KV_MAX_BUCKET_BYTES ) {
+			return new WP_Error( 'app_store_bucket_quota', __( 'This app has reached its storage bucket limit.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 413 ) );
+		}
+	}
+	$tree_json = wp_json_encode( array( 'stores' => $stores ) );
+	if ( false === $tree_json || strlen( $tree_json ) > ODDOUT_APPS_KV_MAX_TREE_BYTES ) {
+		return new WP_Error( 'app_store_tree_quota', __( 'Your installed apps have reached the total storage limit.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 413 ) );
+	}
+	return true;
+}
+
+function oddout_apps_rest_store_mutation_rate_limit() {
+	return function_exists( 'oddout_bundle_rate_limit_check' )
+		? oddout_bundle_rate_limit_check( 'app_store_mutation' )
+		: true;
+}
+
+/** Acquire an atomic per-user lock for whole-tree app storage mutations. */
+function oddout_apps_kv_mutation_lock_acquire( $user_id ) {
+	$user_id  = (int) $user_id;
+	$lock_key = 'oddout_apps_kv_lock_' . $user_id;
+	$owner    = oddout_apps_atomic_lock_acquire( $lock_key, 30, true );
+	if ( is_wp_error( $owner ) ) {
+		return new WP_Error(
+			'app_store_busy',
+			__( 'App storage is busy. Please retry this change.', 'odd-outlandish-desktop-decorator' ),
+			array( 'status' => 409 )
+		);
+	}
+
+	return array(
+		'key'   => $lock_key,
+		'owner' => $owner,
+	);
+}
+
+/** Release a per-user storage lock only when this request still owns it. */
+function oddout_apps_kv_mutation_lock_release( array $lock ) {
+	if ( empty( $lock['key'] ) || empty( $lock['owner'] ) ) {
+		return false;
+	}
+	return oddout_apps_atomic_lock_release( $lock['key'], $lock['owner'] );
+}
+
+/** Assert and renew a storage lease immediately before whole-tree persistence. */
+function oddout_apps_kv_mutation_lease_refresh( array &$lock ) {
+	if ( empty( $lock['key'] ) || empty( $lock['owner'] ) ) {
+		return new WP_Error( 'app_store_busy', __( 'App storage is busy. Please retry this change.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 409 ) );
+	}
+	$owner = oddout_apps_atomic_lock_refresh( $lock['key'], $lock['owner'] );
+	if ( is_wp_error( $owner ) ) {
+		return new WP_Error( 'app_store_busy', __( 'App storage is busy. Please retry this change.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 409 ) );
+	}
+	$lock['owner'] = $owner;
+	return true;
 }
 
 function oddout_apps_rest_store_get( WP_REST_Request $request ) {
@@ -1056,9 +1254,10 @@ function oddout_apps_rest_store_get( WP_REST_Request $request ) {
 	$slug    = sanitize_key( (string) $request['slug'] );
 	$segment = sanitize_key( (string) $request['segment'] );
 	$bucket  = oddout_apps_kv_segments_for_slug( $user_id, $slug );
+	$key     = oddout_apps_kv_map_key( $segment );
 	$value   = null;
-	if ( isset( $bucket[ $segment ] ) ) {
-		$value = $bucket[ $segment ];
+	if ( array_key_exists( $key, $bucket ) ) {
+		$value = $bucket[ $key ];
 	}
 
 	return rest_ensure_response(
@@ -1083,15 +1282,43 @@ function oddout_apps_rest_store_put( WP_REST_Request $request ) {
 			array( 'status' => 400 )
 		);
 	}
-
-	$value       = $params['value'];
-	$tree        = oddout_apps_kv_load_tree( $user_id );
-	$tree_stores = isset( $tree['stores'] ) && is_array( $tree['stores'] ) ? $tree['stores'] : array();
-	if ( ! isset( $tree_stores[ $slug ] ) || ! is_array( $tree_stores[ $slug ] ) ) {
-		$tree_stores[ $slug ] = array();
+	$rate = oddout_apps_rest_store_mutation_rate_limit();
+	if ( is_wp_error( $rate ) ) {
+		return $rate;
 	}
-	$tree_stores[ $slug ][ $segment ] = $value;
-	oddout_apps_kv_save_tree( $user_id, $tree_stores );
+
+	$value = $params['value'];
+	if ( ! oddout_apps_rest_store_value_is_valid( $value ) ) {
+		return new WP_Error( 'app_store_value_quota', __( 'The app storage value is invalid or too large.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 413 ) );
+	}
+	$lock = oddout_apps_kv_mutation_lock_acquire( $user_id );
+	if ( is_wp_error( $lock ) ) {
+		return $lock;
+	}
+	try {
+		$tree        = oddout_apps_kv_load_tree( $user_id );
+		$tree_stores = isset( $tree['stores'] ) && is_array( $tree['stores'] ) ? $tree['stores'] : array();
+		$slug_key    = oddout_apps_kv_map_key( $slug );
+		$segment_key = oddout_apps_kv_map_key( $segment );
+		if ( ! isset( $tree_stores[ $slug_key ] ) || ! is_array( $tree_stores[ $slug_key ] ) ) {
+			$tree_stores[ $slug_key ] = array();
+		}
+		$tree_stores[ $slug_key ][ $segment_key ] = $value;
+		$quota                                    = oddout_apps_kv_validate_stores( $tree_stores );
+		if ( is_wp_error( $quota ) ) {
+			return $quota;
+		}
+		$lease = oddout_apps_kv_mutation_lease_refresh( $lock );
+		if ( is_wp_error( $lease ) ) {
+			return $lease;
+		}
+		$saved = oddout_apps_kv_save_tree( $user_id, $tree_stores );
+		if ( is_wp_error( $saved ) ) {
+			return $saved;
+		}
+	} finally {
+		oddout_apps_kv_mutation_lock_release( $lock );
+	}
 
 	return rest_ensure_response(
 		array(
@@ -1104,15 +1331,36 @@ function oddout_apps_rest_store_delete( WP_REST_Request $request ) {
 	$user_id = get_current_user_id();
 	$slug    = sanitize_key( (string) $request['slug'] );
 	$segment = sanitize_key( (string) $request['segment'] );
-
-	$tree        = oddout_apps_kv_load_tree( $user_id );
-	$tree_stores = isset( $tree['stores'] ) && is_array( $tree['stores'] ) ? $tree['stores'] : array();
-
-	if ( isset( $tree_stores[ $slug ][ $segment ] ) ) {
-		unset( $tree_stores[ $slug ][ $segment ] );
+	$rate    = oddout_apps_rest_store_mutation_rate_limit();
+	if ( is_wp_error( $rate ) ) {
+		return $rate;
 	}
 
-	oddout_apps_kv_save_tree( $user_id, $tree_stores );
+	$lock = oddout_apps_kv_mutation_lock_acquire( $user_id );
+	if ( is_wp_error( $lock ) ) {
+		return $lock;
+	}
+	try {
+		$tree        = oddout_apps_kv_load_tree( $user_id );
+		$tree_stores = isset( $tree['stores'] ) && is_array( $tree['stores'] ) ? $tree['stores'] : array();
+		$slug_key    = oddout_apps_kv_map_key( $slug );
+		$segment_key = oddout_apps_kv_map_key( $segment );
+
+		if ( isset( $tree_stores[ $slug_key ] ) && is_array( $tree_stores[ $slug_key ] ) && array_key_exists( $segment_key, $tree_stores[ $slug_key ] ) ) {
+			unset( $tree_stores[ $slug_key ][ $segment_key ] );
+		}
+
+		$lease = oddout_apps_kv_mutation_lease_refresh( $lock );
+		if ( is_wp_error( $lease ) ) {
+			return $lease;
+		}
+		$saved = oddout_apps_kv_save_tree( $user_id, $tree_stores );
+		if ( is_wp_error( $saved ) ) {
+			return $saved;
+		}
+	} finally {
+		oddout_apps_kv_mutation_lock_release( $lock );
+	}
 
 	return new WP_REST_Response( null, 204 );
 }
@@ -1122,7 +1370,14 @@ function oddout_apps_rest_store_keys( WP_REST_Request $request ) {
 	$slug    = sanitize_key( (string) $request['slug'] );
 
 	$segments = oddout_apps_kv_segments_for_slug( $user_id, $slug );
-	$keys     = array_keys( $segments );
+	$keys     = array_values(
+		array_filter(
+			array_map( 'oddout_apps_kv_identifier_from_map_key', array_keys( $segments ) ),
+			static function ( $key ) {
+				return '' !== $key;
+			}
+		)
+	);
 	sort( $keys, SORT_NATURAL );
 
 	return rest_ensure_response( $keys );
@@ -1131,13 +1386,32 @@ function oddout_apps_rest_store_keys( WP_REST_Request $request ) {
 function oddout_apps_rest_store_clear( WP_REST_Request $request ) {
 	$user_id = get_current_user_id();
 	$slug    = sanitize_key( (string) $request['slug'] );
+	$rate    = oddout_apps_rest_store_mutation_rate_limit();
+	if ( is_wp_error( $rate ) ) {
+		return $rate;
+	}
 
-	$tree        = oddout_apps_kv_load_tree( $user_id );
-	$tree_stores = isset( $tree['stores'] ) && is_array( $tree['stores'] ) ? $tree['stores'] : array();
+	$lock = oddout_apps_kv_mutation_lock_acquire( $user_id );
+	if ( is_wp_error( $lock ) ) {
+		return $lock;
+	}
+	try {
+		$tree        = oddout_apps_kv_load_tree( $user_id );
+		$tree_stores = isset( $tree['stores'] ) && is_array( $tree['stores'] ) ? $tree['stores'] : array();
 
-	unset( $tree_stores[ $slug ] );
+		unset( $tree_stores[ oddout_apps_kv_map_key( $slug ) ] );
 
-	oddout_apps_kv_save_tree( $user_id, $tree_stores );
+		$lease = oddout_apps_kv_mutation_lease_refresh( $lock );
+		if ( is_wp_error( $lease ) ) {
+			return $lease;
+		}
+		$saved = oddout_apps_kv_save_tree( $user_id, $tree_stores );
+		if ( is_wp_error( $saved ) ) {
+			return $saved;
+		}
+	} finally {
+		oddout_apps_kv_mutation_lock_release( $lock );
+	}
 
 	return new WP_REST_Response( null, 204 );
 }

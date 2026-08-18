@@ -7,6 +7,36 @@ All notable changes to ODD are documented here. The format follows
 <a id="unreleased"></a>
 ## [Unreleased]
 
+<a id="v1.1.11"></a>
+## [1.1.11] — 2026-08-17
+
+### Added
+- Added a frozen, scoped browser API for catalog apps to make authenticated
+  WordPress requests, store private per-user data, and open permitted admin
+  destinations without exposing host internals.
+- Added ODD Pantry and end-to-end coverage for creating, organizing,
+  favoriting, duplicating, persisting, and removing synced patterns.
+- Added project-scoped Codex feature agents and a deterministic per-app
+  verification command for future functionality.
+
+### Changed
+- Catalog installs, updates, repairs, rollback, recovery, and per-user storage
+  now use owner-fenced leases around shared filesystem and database state.
+- Manifest, archive, and serving validation now share the same path, type,
+  native-asset, and executable-file rules.
+- Release workflows now test and publish one reproducible, checksummed plugin
+  archive across installation smoke, browser E2E, and Plugin Check.
+- Incompatible catalog apps now show a disabled update-required state instead
+  of offering an install or update that the server would reject.
+
+### Fixed
+- Prevented interrupted or concurrent app operations from losing registry,
+  catalog, repair, or per-user storage changes.
+- Preserved installed app placement and manifest state across updates and
+  recovery.
+- Prevented existing GitHub releases and their assets from being overwritten
+  by a force-moved or rerun tag workflow.
+
 <a id="v1.1.10"></a>
 ## [1.1.10] — 2026-08-17
 

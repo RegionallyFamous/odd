@@ -38,11 +38,47 @@
  *     `manage_options`) — same surface as the REST serve route.
  *   - Path is regex-constrained; realpath() confines the read to
  *     the app's own directory.
- *   - `X-Frame-Options: SAMEORIGIN` + `Referrer-Policy: no-referrer`
- *     mirror the REST route headers.
+ *   - Apps are trusted same-origin code. CSP, frame, and permissions headers
+ *     reduce accidental capability; they are not an isolation boundary.
  */
 
 defined( 'ABSPATH' ) || exit;
+
+/**
+ * Inject the fixed, versioned app runtime before an entry document's scripts.
+ * Installed catalog apps are trusted same-origin code; this exposes only the
+ * supported REST/storage/confirmation adapter, not arbitrary host internals.
+ */
+function oddout_apps_inject_runtime( $html, $slug ) {
+	$html = (string) $html;
+	$slug = sanitize_key( (string) $slug );
+	if ( '' === $slug || false !== strpos( $html, 'data-odd-app-api="1"' ) ) {
+		return $html;
+	}
+	$runtime_path = ODDOUT_DIR . 'assets/odd-browser-api.js';
+	if ( ! is_readable( $runtime_path ) ) {
+		return $html;
+	}
+	$runtime = file_get_contents( $runtime_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+	if ( false === $runtime ) {
+		return $html;
+	}
+	$config = array(
+		'apiVersion' => 1,
+		'slug'       => $slug,
+		'windowId'   => 'odd-app-' . $slug,
+		'restRoot'   => oddout_https_rest_url(),
+		'restNonce'  => wp_create_nonce( 'wp_rest' ),
+		'adminUrl'   => oddout_url_with_playground_scope( admin_url( '/' ) ),
+	);
+	$json   = wp_json_encode( $config, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
+	$boot   = '<script type="application/json" id="odd-browser-api-config" data-odd-app-api="1">' . $json . '</script>'
+		. '<script data-odd-app-api="1">' . str_replace( '</script', '<\\/script', $runtime ) . '</script>';
+	if ( preg_match( '#<head\b[^>]*>#i', $html ) ) {
+		return (string) preg_replace( '#<head\b[^>]*>#i', '$0' . $boot, $html, 1 );
+	}
+	return $boot . $html;
+}
 
 /**
  * Normalize REQUEST_URI path for `/odd-app/` matching on subdirectory installs.
@@ -335,7 +371,7 @@ function oddout_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 	}
 
 	$ext = strtolower( pathinfo( $path, PATHINFO_EXTENSION ) );
-	if ( in_array( $ext, oddout_apps_forbidden_extensions(), true ) ) {
+	if ( oddout_apps_extension_is_forbidden( $ext ) ) {
 		if ( $debug_on ) {
 			oddout_apps_debug_emit(
 				array_merge(
@@ -354,20 +390,6 @@ function oddout_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 	$base      = oddout_apps_dir_for( $slug );
 	$real_base = realpath( $base );
 	$full      = realpath( $base . $path );
-	if ( ( ! $real_base || ! $full ) && '' !== $path ) {
-		$repaired = function_exists( 'oddout_apps_repair_from_catalog' )
-			? oddout_apps_repair_from_catalog( $slug, $path )
-			: false;
-		if ( $debug_on ) {
-			$debug_trace['repair_attempted'] = true;
-			$debug_trace['repair_result']    = is_wp_error( $repaired ) ? $repaired->get_error_code() : ( $repaired ? 'ok' : 'skipped' );
-		}
-		if ( true === $repaired ) {
-			clearstatcache();
-			$real_base = realpath( $base );
-			$full      = realpath( $base . $path );
-		}
-	}
 	if ( $debug_on ) {
 		$debug_trace['base']      = $base;
 		$debug_trace['real_base'] = $real_base;
@@ -389,7 +411,16 @@ function oddout_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 	}
 
 	$mime = oddout_apps_mime_for( $full );
-	$size = filesize( $full );
+	$body = null;
+	if ( oddout_apps_is_html_mime( $mime ) ) {
+		$source = file_get_contents( $full ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		if ( false === $source ) {
+			status_header( 500 );
+			exit;
+		}
+		$body = oddout_apps_inject_runtime( $source, $slug );
+	}
+	$size = null !== $body ? strlen( $body ) : filesize( $full );
 
 	if ( $debug_on ) {
 		$debug_trace['mime']      = $mime;
@@ -417,10 +448,16 @@ function oddout_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 		header( 'Content-Length: ' . (int) $size );
 	}
 	header( 'Referrer-Policy: no-referrer' );
+	header( 'Cross-Origin-Resource-Policy: same-origin' );
 	header( 'X-Frame-Options: SAMEORIGIN' );
 	header( 'Permissions-Policy: camera=(), microphone=(), geolocation=()' );
-	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
-	$sent = readfile( $full );
+	if ( null !== $body ) {
+		echo $body; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- validated bundle HTML plus server-owned runtime.
+		$sent = strlen( $body );
+	} else {
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
+		$sent = readfile( $full );
+	}
 	if ( false === $sent && defined( 'WP_DEBUG' ) && WP_DEBUG && function_exists( 'error_log' ) ) {
 		// Headers are already flushed by the time we're streaming, so log a
 		// disk-read regression instead of attempting a second response.

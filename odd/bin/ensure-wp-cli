@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+
+# Install the exact WP-CLI release used by ODD's WordPress smoke tests.
+# setup-php can occasionally report success after a GitHub rate-limit prevents
+# its tools download, so callers run this explicit, checksummed fallback.
+
+set -euo pipefail
+
+wp_cli_version="2.12.0"
+wp_cli_sha256="ce34ddd838f7351d6759068d09793f26755463b4a4610a5a5c0a97b68220d85c"
+# Official builds commit that promoted the stable PHAR to v2.12.0.
+wp_cli_builds_commit="05989a431e982caf17cd94508ff9b4c5fb12ae44"
+
+if command -v wp >/dev/null 2>&1; then
+    installed_version="$(wp --allow-root cli version 2>/dev/null | tail -n 1 || true)"
+    if [[ "$installed_version" == "WP-CLI ${wp_cli_version}" ]]; then
+        echo "WP-CLI ${wp_cli_version} is available at $(command -v wp)"
+        exit 0
+    fi
+    echo "Replacing unexpected WP-CLI version: ${installed_version:-unknown}" >&2
+fi
+
+download_dir="$(mktemp -d)"
+trap 'rm -rf "$download_dir"' EXIT
+download_path="${download_dir}/wp-cli.phar"
+
+urls=(
+    "https://github.com/wp-cli/wp-cli/releases/download/v${wp_cli_version}/wp-cli-${wp_cli_version}.phar"
+    "https://raw.githubusercontent.com/wp-cli/builds/${wp_cli_builds_commit}/phar/wp-cli.phar"
+)
+
+downloaded=0
+for url in "${urls[@]}"; do
+    echo "Downloading WP-CLI ${wp_cli_version} from ${url}"
+    if curl \
+        --fail \
+        --location \
+        --silent \
+        --show-error \
+        --retry 5 \
+        --retry-all-errors \
+        --retry-delay 2 \
+        --connect-timeout 20 \
+        --max-time 180 \
+        --output "$download_path" \
+        "$url"; then
+        actual_sha256="$(shasum -a 256 "$download_path" | awk '{print $1}')"
+        if [[ "$actual_sha256" == "$wp_cli_sha256" ]]; then
+            downloaded=1
+            break
+        fi
+        echo "Checksum mismatch from ${url}: ${actual_sha256}" >&2
+    fi
+done
+
+if [[ "$downloaded" != "1" ]]; then
+    echo "Unable to download a verified WP-CLI ${wp_cli_version} PHAR" >&2
+    exit 1
+fi
+
+if [[ -n "${RUNNER_TEMP:-}" ]]; then
+    install_root="${RUNNER_TEMP}/odd-wp-cli"
+else
+    install_root="${download_dir}/installed"
+fi
+install_dir="${install_root}/bin"
+install_path="${install_dir}/wp"
+mkdir -p "$install_dir"
+install -m 0755 "$download_path" "$install_path"
+
+"$install_path" --allow-root cli version | grep -Fx "WP-CLI ${wp_cli_version}"
+"$install_path" --allow-root --info
+
+if [[ -n "${GITHUB_PATH:-}" ]]; then
+    echo "$install_dir" >> "$GITHUB_PATH"
+fi
+
+echo "Installed verified WP-CLI ${wp_cli_version} at ${install_path}"

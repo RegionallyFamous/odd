@@ -11,6 +11,8 @@ permissions:
 jobs:
   quality-gates:
     uses: ./.github/workflows/ci.yml
+    with:
+      run-plugin-check: false
 
   release:
     needs: quality-gates
@@ -65,24 +67,61 @@ jobs:
           odd/bin/build-zip
           odd/bin/check-zip-contents --list
 
-      # The quality-gates workflow already runs WordPress Plugin Check for this
-      # tag. Running the action a second time in the same workflow run uploads
-      # the same fixed artifact name and fails with a 409 conflict.
-
-      - name: Upload zip for install-smoke
+      - name: Upload immutable release package
         uses: actions/upload-artifact@v7
         with:
           name: odd-zip-release
-          path: dist/odd.zip
+          path: |
+            dist/odd.zip
+            dist/odd.zip.sha256
           if-no-files-found: error
           retention-days: 1
 
   install-smoke:
     needs: release
     uses: ./.github/workflows/install-smoke.yml
+    with:
+      artifact-name: odd-zip-release
+      zip-path: dist/odd.zip
+
+  browser-e2e:
+    needs: release
+    uses: ./.github/workflows/e2e.yml
+    with:
+      artifact-name: odd-zip-release
+      zip-path: dist/odd.zip
+
+  plugin-check-exact-artifact:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download exact release package
+        uses: actions/download-artifact@v8
+        with:
+          name: odd-zip-release
+          path: dist
+
+      - name: Verify and expand exact release package
+        run: |
+          set -euo pipefail
+          (
+            cd dist
+            sha256sum --check odd.zip.sha256
+          )
+          odd/bin/check-zip-contents dist/odd.zip
+          mkdir -p dist/plugin
+          unzip -q dist/odd.zip -d dist/plugin
+
+      - name: Run WordPress Plugin Check against exact artifact
+        uses: WordPress/plugin-check-action@v1
+        with:
+          build-dir: './dist/plugin/odd'
+          slug: 'odd-outlandish-desktop-decorator'
 
   publish:
-    needs: [release, install-smoke]
+    needs: [release, install-smoke, browser-e2e, plugin-check-exact-artifact]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -97,6 +136,14 @@ jobs:
           name: odd-zip-release
           path: dist
 
+      - name: Verify immutable release package
+        run: |
+          set -euo pipefail
+          (
+            cd dist
+            sha256sum --check odd.zip.sha256
+          )
+
       - name: Resolve release notes from CHANGELOG
         id: notes
         run: |
@@ -110,14 +157,19 @@ jobs:
             echo "source=generated" >>"$GITHUB_OUTPUT"
           fi
 
-      - name: Create GitHub release and upload zip
+      - name: Create immutable GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NOTES_SOURCE: ${{ steps.notes.outputs.source }}
           NOTES_FILE: ${{ steps.notes.outputs.notes-file }}
         run: |
-          set -e
+          set -euo pipefail
           tag="${GITHUB_REF_NAME}"
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "error: GitHub release $tag already exists; refusing to replace its assets" >&2
+            exit 1
+          fi
 
           if [ "$NOTES_SOURCE" = "changelog" ]; then
             notes_arg=( --notes-file "$NOTES_FILE" )
@@ -125,23 +177,10 @@ jobs:
             notes_arg=( --generate-notes )
           fi
 
-          # First attempt; retry once after a short nap if the asset upload
-          # hits the "Error creating policy" 409 flake called out in CLAUDE.md.
-          if ! gh release create "$tag" dist/odd.zip \
-              --title "$tag" \
-              --latest=true \
-              "${notes_arg[@]}"; then
-              echo "release create failed - retrying after 3s"
-              sleep 3
-              if gh release view "$tag" >/dev/null 2>&1; then
-                  gh release upload "$tag" dist/odd.zip --clobber
-              else
-                  gh release create "$tag" dist/odd.zip \
-                      --title "$tag" \
-                      --latest=true \
-                      "${notes_arg[@]}"
-              fi
-          fi
+          gh release create "$tag" dist/odd.zip dist/odd.zip.sha256 \
+            --title "$tag" \
+            --latest=true \
+            "${notes_arg[@]}"
 
       - name: Verify latest download redirect
         run: |

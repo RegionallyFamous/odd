@@ -4,7 +4,9 @@
 Updates all declared versions in sync:
   1. `Version:` header in odd/odd.php
   2. `ODDOUT_VERSION` constant in odd/odd.php
-  3. ODD Playground installs that still use **`git:directory`** are repinned
+  3. `Stable tag:` in odd/readme.txt
+  4. package.json and package-lock.json root package metadata
+  5. ODD Playground installs that still use **`git:directory`** are repinned
      to the matching release tag/commit. Current public Playgrounds install
      ODD from WordPress.org and are left alone.
 
@@ -27,7 +29,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 PLUGIN_DIR = HERE.parent
 PLUGIN = PLUGIN_DIR / "odd.php"
+README = PLUGIN_DIR / "readme.txt"
 REPO_ROOT = PLUGIN_DIR.parent
+PACKAGE_JSON = REPO_ROOT / "package.json"
+PACKAGE_LOCK = REPO_ROOT / "package-lock.json"
 BLUEPRINT = REPO_ROOT / "blueprint.json"
 SITE_BLUEPRINT = REPO_ROOT / "site" / "playground" / "blueprint.json"
 
@@ -62,6 +67,50 @@ def bump_plugin(text: str, new_version: str) -> tuple[str, list[str]]:
     lines.append("  odd.php: ODDOUT_VERSION constant -> " + new_version)
 
     return new_text, lines
+
+
+def bump_readme(text: str, new_version: str) -> tuple[str, list[str]]:
+    """Replace the WordPress.org Stable tag in readme.txt."""
+
+    new_text, substitutions = re.subn(
+        r"(^Stable tag:\s*)[0-9]+\.[0-9]+\.[0-9]+(\s*)$",
+        lambda match: f"{match.group(1)}{new_version}{match.group(2)}",
+        text,
+        count=1,
+        flags=re.MULTILINE,
+    )
+    if substitutions != 1:
+        raise SystemExit("error: could not find `Stable tag:` in odd/readme.txt")
+    return new_text, [f"  odd/readme.txt: Stable tag -> {new_version}"]
+
+
+def bump_package_metadata(
+    text: str,
+    new_version: str,
+    label: str,
+    *,
+    lockfile: bool = False,
+) -> tuple[str, list[str]]:
+    """Replace the repository tooling package's version metadata."""
+
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"error: {label} is not valid JSON: {exc}") from exc
+    if not isinstance(data, dict) or not isinstance(data.get("version"), str):
+        raise SystemExit(f"error: {label} has no root version")
+
+    data["version"] = new_version
+    lines = [f"  {label}: version -> {new_version}"]
+    if lockfile:
+        packages = data.get("packages")
+        root_package = packages.get("") if isinstance(packages, dict) else None
+        if not isinstance(root_package, dict) or not isinstance(root_package.get("version"), str):
+            raise SystemExit(f"error: {label} has no packages[''].version")
+        root_package["version"] = new_version
+        lines.append(f"  {label}: packages[''].version -> {new_version}")
+
+    return json.dumps(data, indent=2) + "\n", lines
 
 
 def peel_release_tag(repo_root: Path, version: str) -> str | None:
@@ -184,21 +233,44 @@ def main() -> int:
         print(f"error: '{args.version}' is not x.y.z semver", file=sys.stderr)
         return 2
 
-    if not PLUGIN.exists():
-        print(f"error: missing {PLUGIN}", file=sys.stderr)
-        return 1
-    if not BLUEPRINT.exists():
-        print(f"error: missing {BLUEPRINT}", file=sys.stderr)
-        return 1
-    if not SITE_BLUEPRINT.exists():
-        print(f"error: missing {SITE_BLUEPRINT}", file=sys.stderr)
-        return 1
+    for required in (
+        PLUGIN,
+        README,
+        PACKAGE_JSON,
+        PACKAGE_LOCK,
+        BLUEPRINT,
+        SITE_BLUEPRINT,
+    ):
+        if not required.exists():
+            print(f"error: missing {required}", file=sys.stderr)
+            return 1
 
     summary: list[str] = []
 
     plugin_text = PLUGIN.read_text()
     new_plugin_text, plugin_lines = bump_plugin(plugin_text, args.version)
     summary.extend(plugin_lines)
+
+    readme_text = README.read_text()
+    new_readme_text, readme_lines = bump_readme(readme_text, args.version)
+    summary.extend(readme_lines)
+
+    package_text = PACKAGE_JSON.read_text()
+    new_package_text, package_lines = bump_package_metadata(
+        package_text,
+        args.version,
+        "package.json",
+    )
+    summary.extend(package_lines)
+
+    package_lock_text = PACKAGE_LOCK.read_text()
+    new_package_lock_text, package_lock_lines = bump_package_metadata(
+        package_lock_text,
+        args.version,
+        "package-lock.json",
+        lockfile=True,
+    )
+    summary.extend(package_lock_lines)
 
     blueprint_text = BLUEPRINT.read_text()
     new_blueprint_text, blueprint_lines = bump_blueprint(
@@ -226,6 +298,12 @@ def main() -> int:
 
     if new_plugin_text != plugin_text:
         PLUGIN.write_text(new_plugin_text)
+    if new_readme_text != readme_text:
+        README.write_text(new_readme_text)
+    if new_package_text != package_text:
+        PACKAGE_JSON.write_text(new_package_text)
+    if new_package_lock_text != package_lock_text:
+        PACKAGE_LOCK.write_text(new_package_lock_text)
     if new_blueprint_text != blueprint_text:
         BLUEPRINT.write_text(new_blueprint_text)
     if new_site_blueprint_text != site_blueprint_text:

@@ -50,6 +50,14 @@ if (
 	);
 }
 
+// The hermetic fixture has no production signing key. Signature verification
+// is covered by catalog validation and release gates; browser/install smoke
+// still verifies every downloaded archive against the fixture registry's exact
+// size and SHA-256. Without this explicit test-only exemption, ODD falls back
+// to its frozen shipped registry and can accidentally install old hashes while
+// the browser suite appears to exercise the newly built catalog.
+add_filter( 'oddout_catalog_signature_required', '__return_false' );
+
 /**
  * Intercept HTTP requests to the ODD catalog domain and serve fixtures
  * from disk. Returning anything other than `false` short-circuits the

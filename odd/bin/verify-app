@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+cd "$repo_root"
+
+usage() {
+	cat <<'EOF'
+usage: odd/bin/verify-app <slug> [--screenshots-dir DIR] [--headed]
+
+Build and verify one catalog app without publishing it.
+EOF
+}
+
+if [[ $# -eq 1 && ( "$1" == "--help" || "$1" == "-h" ) ]]; then
+	usage
+	exit 0
+fi
+
+if [[ $# -lt 1 ]]; then
+	usage >&2
+	exit 2
+fi
+
+slug="$1"
+shift
+
+if [[ ! "$slug" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+	echo "verify-app: invalid app slug: $slug" >&2
+	exit 2
+fi
+
+app_dir="_tools/catalog-sources/apps/$slug"
+manifest="$app_dir/bundle-src/manifest.json"
+
+if [[ ! -f "$manifest" ]]; then
+	echo "verify-app: app source manifest not found: $manifest" >&2
+	exit 2
+fi
+
+screenshots_dir="test-results/${slug}-feature-team"
+headed=0
+
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+		--screenshots-dir)
+			if [[ $# -lt 2 || -z "$2" ]]; then
+				echo "verify-app: --screenshots-dir requires a directory" >&2
+				exit 2
+			fi
+			screenshots_dir="$2"
+			shift 2
+			;;
+		--headed)
+			headed=1
+			shift
+			;;
+		--help|-h)
+			usage
+			exit 0
+			;;
+		*)
+			echo "verify-app: unknown option: $1" >&2
+			usage >&2
+			exit 2
+			;;
+	esac
+done
+
+mkdir -p "$repo_root/test-results"
+verification_root="$(mktemp -d "$repo_root/test-results/.verify-app.XXXXXX")"
+cleanup() {
+	case "$verification_root" in
+		"$repo_root"/test-results/.verify-app.*)
+			rm -rf -- "$verification_root"
+			;;
+		*)
+			echo "verify-app: refusing to clean unexpected temporary path: $verification_root" >&2
+			;;
+	esac
+}
+trap cleanup EXIT
+
+echo "[verify-app] checking JavaScript syntax"
+while IFS= read -r -d '' javascript_file; do
+	node --check "$javascript_file"
+done < <(find "$app_dir/bundle-src" -type f -name '*.js' -print0 | sort -z)
+
+if [[ "$slug" == "odd-notes" ]]; then
+	echo "[verify-app] checking compiled ODD Notes runtime"
+	notes_build="$verification_root/odd-notes.min.js"
+	node odd/bin/build-notes-app --output "$notes_build"
+	if ! cmp -s "$notes_build" "$app_dir/bundle-src/assets/js/odd-notes.min.js"; then
+		echo "verify-app: committed ODD Notes runtime is stale; run 'npm run build:notes'" >&2
+		exit 1
+	fi
+fi
+
+echo "[verify-app] validating source manifest"
+ODD_REQUIRE_JSONSCHEMA=1 odd/bin/validate-manifest "$manifest"
+isolated_catalog="$verification_root/catalog/v1"
+catalog_env=(
+	"ODD_CATALOG_SOURCE_ROOT=$repo_root/_tools/catalog-sources"
+	"ODD_CATALOG_OUT_ROOT=$isolated_catalog"
+	"ODD_CATALOG_WRITE_FALLBACK=0"
+	"ODD_CATALOG_CHANNEL=stable"
+	"ODD_CATALOG_BASE_URL=https://odd.regionallyfamous.com/catalog/v1"
+	"ODD_CATALOG_GENERATED_AT="
+	"ODD_CATALOG_SIGNING_KEY="
+	"ODD_CATALOG_REQUIRE_SIGNATURE=0"
+)
+
+echo "[verify-app] building isolated deterministic catalog"
+env "${catalog_env[@]}" python3 _tools/build-catalog.py
+
+echo "[verify-app] validating isolated catalog rebuild"
+env "${catalog_env[@]}" \
+	ODD_VALIDATE_REBUILD=1 \
+	ODD_VALIDATE_FALLBACK_REGISTRY=0 \
+	ODD_VALIDATE_REQUIRE_CATALOG_SIGNATURE=0 \
+	odd/bin/validate-catalog
+
+catalog_diff="$(diff -qr "$isolated_catalog" "$repo_root/site/catalog/v1" || true)"
+if [[ -n "$catalog_diff" ]]; then
+	echo "verify-app: generated catalog does not match the validated source rebuild:" >&2
+	echo "$catalog_diff" >&2
+	echo "verify-app: run 'python3 _tools/build-catalog.py', review the generated diff, and retry" >&2
+	exit 1
+fi
+
+echo "[verify-app] smoke-testing packaged app"
+smoke_args=( "$slug" --screenshots-dir "$screenshots_dir" )
+if [[ "$headed" -eq 1 ]]; then
+	smoke_args+=( --headed )
+fi
+ODD_CATALOG_BUNDLES_DIR="$isolated_catalog/bundles" odd/bin/smoke-catalog-apps "${smoke_args[@]}"
+
+echo "[verify-app] checking patch whitespace"
+git diff HEAD --check
+
+whitespace_failed=0
+while IFS= read -r -d '' untracked_file; do
+	set +e
+	untracked_check="$(git diff --no-index --check -- /dev/null "$untracked_file" 2>&1)"
+	check_status=$?
+	set -e
+	if [[ "$check_status" -gt 1 ]]; then
+		echo "$untracked_check" >&2
+		echo "verify-app: could not inspect untracked file: $untracked_file" >&2
+		exit "$check_status"
+	fi
+	if [[ -n "$untracked_check" ]]; then
+		echo "$untracked_check" >&2
+		whitespace_failed=1
+	fi
+done < <(
+	git ls-files --others --exclude-standard -z -- \
+		"$app_dir" \
+		"site/catalog/v1/bundles/$slug.wp" \
+		"site/catalog/v1/cards/app-$slug.webp" \
+		"site/catalog/v1/icons/$slug.webp"
+)
+if [[ "$whitespace_failed" -ne 0 ]]; then
+	echo "verify-app: whitespace errors found in untracked app files" >&2
+	exit 1
+fi
+
+echo "[verify-app] ok: $slug"
+echo "[verify-app] screenshots: $screenshots_dir"

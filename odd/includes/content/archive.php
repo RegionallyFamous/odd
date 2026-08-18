@@ -57,6 +57,17 @@ function oddout_content_forbidden_extensions() {
 	);
 }
 
+/** Reject executable suffixes, including current and future versioned PHP forms. */
+function oddout_content_extension_is_forbidden( $extension ) {
+	$extension = strtolower( ltrim( (string) $extension, '.' ) );
+	return in_array( $extension, oddout_content_forbidden_extensions(), true ) || (bool) preg_match( '/^php[0-9]+$/', $extension );
+}
+
+/** Reject traversal components without banning safe same-segment double dots. */
+function oddout_content_path_has_parent_component( $path ) {
+	return in_array( '..', explode( '/', (string) $path ), true );
+}
+
 /**
  * Validate one ZIP entry path before extraction.
  *
@@ -71,7 +82,7 @@ function oddout_content_archive_entry_path_is_safe( $name ) {
 	$name = (string) $name;
 	if (
 		'' === $name ||
-		false !== strpos( $name, '..' ) ||
+		oddout_content_path_has_parent_component( $name ) ||
 		false !== strpos( $name, '\\' ) ||
 		false !== strpos( $name, "\0" ) ||
 		'/' === $name[0]
@@ -151,7 +162,7 @@ function oddout_content_archive_scan( ZipArchive $zip ) {
 		}
 
 		$file_ext = strtolower( pathinfo( $name, PATHINFO_EXTENSION ) );
-		if ( in_array( $file_ext, $forbidden, true ) ) {
+		if ( in_array( $file_ext, $forbidden, true ) || oddout_content_extension_is_forbidden( $file_ext ) ) {
 			return new WP_Error( 'forbidden_file_type', sprintf( /* translators: %s entry name */ __( 'Server-executable files are not allowed. Found: %s', 'odd-outlandish-desktop-decorator' ), $name ) );
 		}
 
@@ -213,10 +224,18 @@ function oddout_content_validate_header( $manifest ) {
 		return new WP_Error( 'invalid_manifest', __( 'manifest.json must be a JSON object.', 'odd-outlandish-desktop-decorator' ) );
 	}
 	foreach ( array( 'type', 'name', 'slug', 'version' ) as $field ) {
-		if ( empty( $manifest[ $field ] ) || ! is_string( $manifest[ $field ] ) ) {
+		if ( ! array_key_exists( $field, $manifest ) || ! is_string( $manifest[ $field ] ) || '' === $manifest[ $field ] ) {
 			return new WP_Error(
 				'missing_manifest_field',
 				sprintf( /* translators: %s manifest field */ __( 'manifest.json is missing required field: %s', 'odd-outlandish-desktop-decorator' ), $field )
+			);
+		}
+	}
+	foreach ( array( 'author', 'description' ) as $field ) {
+		if ( array_key_exists( $field, $manifest ) && ! is_string( $manifest[ $field ] ) ) {
+			return new WP_Error(
+				'invalid_' . $field,
+				sprintf( /* translators: %s manifest field */ __( 'Manifest %s must be text.', 'odd-outlandish-desktop-decorator' ), $field )
 			);
 		}
 	}
@@ -256,7 +275,7 @@ function oddout_content_sanitize_relative_path( $rel ) {
 	if ( false !== strpos( $rel, "\0" ) ) {
 		return '';
 	}
-	if ( false !== strpos( $rel, '..' ) ) {
+	if ( oddout_content_path_has_parent_component( $rel ) ) {
 		return '';
 	}
 	if ( '/' === $rel[0] ) {

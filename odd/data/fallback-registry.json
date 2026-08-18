@@ -7,7 +7,7 @@
       "type": "app",
       "slug": "odd-notes",
       "name": "ODD Notes",
-      "version": "1.3.1",
+      "version": "1.3.2",
       "author": "Regionally Famous",
       "description": "A local-first notes library for OpenStation, saved as private WordPress content with favorites, tags, sharing, archives, and revision history.",
       "tags": [
@@ -20,8 +20,8 @@
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-odd-notes.webp",
       "card_bytes": 10970,
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/odd-notes.wp",
-      "sha256": "292d1379705891e521116acdac713739b903007a826c39ef0c586245dd914d8c",
-      "size": 49536,
+      "sha256": "c79be6154cfa2efd29829c2dd19307b082b2d8671230e6de1e8c9d68669e5d0d",
+      "size": 49532,
       "requires": {
         "odd": "1.1.5",
         "openStation": "1.1.0",
@@ -69,7 +69,7 @@
       "type": "app",
       "slug": "pantry",
       "name": "ODD Pantry",
-      "version": "1.0.1",
+      "version": "1.0.5",
       "author": "Regionally Famous",
       "description": "Keep WordPress synced patterns tidy. Browse, preview, search, copy, duplicate, rename, and retire reusable blocks from one focused shelf.",
       "tags": [
@@ -83,15 +83,15 @@
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-pantry.webp",
       "card_bytes": 39166,
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/pantry.wp",
-      "sha256": "37dd3d189901d01746d307a4f9937ad278c56d67138f31aab6df4d74aabd0061",
-      "size": 22303,
+      "sha256": "63155a9a5915be5c5dbe0add580f838fb308070e5377193966c3a547c563e48b",
+      "size": 24205,
       "requires": {
         "odd": "1.1.8",
         "openStation": "1.1.0",
-        "api": "2.4.0"
+        "api": "2.5.0"
       },
       "department": "apps",
-      "search_text": "app pantry odd regionally famous keep wordpress synced patterns tidy browse preview search copy duplicate rename and retire reusable blocks from one focused shelf content productivity 1 8 openstation 0 api 2 4 apps",
+      "search_text": "app pantry odd regionally famous keep wordpress synced patterns tidy browse preview search copy duplicate rename and retire reusable blocks from one focused shelf content productivity 1 8 openstation 0 api 2 5 apps",
       "search_tokens": [
         "app",
         "pantry",
@@ -125,7 +125,7 @@
         "0",
         "api",
         "2",
-        "4",
+        "5",
         "apps"
       ]
     },
@@ -133,7 +133,7 @@
       "type": "app",
       "slug": "workbench",
       "name": "ODD Workbench",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "author": "Regionally Famous",
       "description": "Six sharp little utilities for cleaning text, previewing Markdown, making slugs, formatting JSON, comparing drafts, and converting common encodings.",
       "tags": [
@@ -147,8 +147,8 @@
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-workbench.webp",
       "card_bytes": 54244,
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/workbench.wp",
-      "sha256": "a73d2e4b992fe6a09492f960e44a2b1f22d5cbf28c6a8a0e7f925ff62c16a9af",
-      "size": 21017,
+      "sha256": "686dc173366d433377b3d931f809331c0f5705100240fd8997b6dc2d570a2777",
+      "size": 21286,
       "requires": {
         "odd": "1.1.8",
         "openStation": "1.1.0",

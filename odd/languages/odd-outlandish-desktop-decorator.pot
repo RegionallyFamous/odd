@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: odd\n"
 "Report-Msgid-Bugs-To: https://github.com/RegionallyFamous/odd/issues\n"
-"POT-Creation-Date: 2026-08-17 10:13-0500\n"
+"POT-Creation-Date: 2026-08-17 20:22-0700\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -16,7 +16,7 @@ msgstr ""
 msgid " app"
 msgstr ""
 
-#: odd/src/panel/index.js:374
+#: odd/src/panel/index.js:405
 msgid " apps"
 msgstr ""
 
@@ -24,31 +24,31 @@ msgstr ""
 msgid " could not open. OpenStation did not register its window."
 msgstr ""
 
-#: odd/src/panel/index.js:284
+#: odd/src/panel/index.js:307
 msgid " from this site?"
 msgstr ""
 
-#: odd/src/panel/index.js:267
+#: odd/src/panel/index.js:282
 msgid " was installed, but OpenStation could not refresh its launcher. Try Open app again; if it still fails, reload once."
 msgstr ""
 
-#: odd/src/panel/index.js:289
+#: odd/src/panel/index.js:320
 msgid " was removed, but OpenStation could not refresh its launcher."
 msgstr ""
 
-#: odd/includes/content/bundle.php:94
+#: odd/includes/content/bundle.php:98
 msgid "A bundle named \"%s\" is already installed. Remove it before reinstalling."
 msgstr ""
 
-#: odd/includes/content/catalog.php:865
+#: odd/includes/content/catalog.php:891
 msgid "A catalog operation is already in progress. Please try again in a moment."
 msgstr ""
 
-#: odd/src/panel/index.js:240
+#: odd/src/panel/index.js:251
 msgid "A focused notes app stored in WordPress."
 msgstr ""
 
-#: odd/src/panel/index.js:407
+#: odd/src/panel/index.js:438
 msgid "A growing collection of useful things made to feel completely at home in OpenStation."
 msgstr ""
 
@@ -64,87 +64,105 @@ msgstr ""
 msgid "All notes"
 msgstr ""
 
-#: odd/src/panel/index.js:253
+#: odd/src/panel/index.js:267
 msgid "An administrator must install this app."
 msgstr ""
 
-#: odd/includes/apps/repair.php:63
+#: odd/includes/apps/repair.php:75
 msgid "An app repair is already in progress."
 msgstr ""
 
-#: odd/includes/apps/registry.php:114
+#: odd/includes/apps/rest.php:1191
+msgid "An app storage segment is invalid or too large."
+msgstr ""
+
+#: odd/includes/apps/registry.php:411
 msgid "An installation of this app is already in progress."
 msgstr ""
 
-#: odd/includes/content/bundle.php:121
-msgid "An installation of this bundle is already in progress."
-msgstr ""
-
-#: odd/includes/content/bundle.php:101
+#: odd/includes/content/bundle.php:105
 msgid "An installed bundle with this slug has a different type."
 msgstr ""
 
-#: odd/includes/content/catalog.php:2036
+#: odd/includes/content/catalog.php:2157
 msgid "An update is available. Pass allow_update=1 to reinstall."
 msgstr ""
 
-#: odd/includes/apps/registry.php:99
-msgid "App \"%s\" is already installed. Delete it before reinstalling."
+#: odd/includes/apps/registry.php:618
+msgid "An update must have a newer version than the installed app."
 msgstr ""
 
-#: odd/includes/apps/loader.php:81
+#: odd/includes/apps/registry.php:149
+msgid "Another app registry change is already in progress."
+msgstr ""
+
+#: odd/includes/apps/registry.php:304
+msgid "Another request changed the app transaction journal."
+msgstr ""
+
+#: odd/includes/apps/registry.php:608
+msgid "App \"%s\" is already installed."
+msgstr ""
+
+#: odd/includes/apps/loader.php:109
 msgid "App archive exceeds 2000 files."
 msgstr ""
 
-#: odd/includes/apps/loader.php:195
+#: odd/includes/apps/loader.php:225
 msgid "App archives must declare manifest type \"app\"."
 msgstr ""
 
-#: odd/includes/apps/loader.php:65
+#: odd/includes/apps/loader.php:93
 msgid "App archives must have a .wp extension."
 msgstr ""
 
-#: odd/includes/apps/loader.php:145
+#: odd/includes/apps/loader.php:173
 msgid "App contains unresolved module import \"%1$s\" in %2$s."
 msgstr ""
 
-#: odd/includes/apps/loader.php:257
+#: odd/includes/apps/loader.php:315
 msgid "App entries may not override the document base URL."
 msgstr ""
 
-#: odd/includes/apps/loader.php:267
+#: odd/includes/apps/loader.php:325
 msgid "App entry contains a non-local asset reference: %s"
 msgstr ""
 
-#: odd/includes/apps/loader.php:278
+#: odd/includes/apps/loader.php:330
 msgid "App entry contains an unsafe asset path: %s"
 msgstr ""
 
-#: odd/includes/apps/loader.php:253
+#: odd/includes/apps/loader.php:311
+#: odd/includes/apps/rest.php:443
 msgid "App entry could not be read."
 msgstr ""
 
-#: odd/includes/apps/loader.php:285
+#: odd/includes/apps/loader.php:347
 msgid "App entry references a missing asset: %s"
 msgstr ""
 
-#: odd/includes/apps/registry.php:200
+#: odd/includes/apps/registry.php:881
+#: odd/includes/apps/rest.php:368
 msgid "App is not installed."
 msgstr ""
 
-#: odd/includes/apps/loader.php:168
+#: odd/includes/apps/loader.php:196
 msgid "App is too large (%1$s MB uncompressed). Maximum is %2$s MB."
 msgstr ""
 
-#: odd/includes/apps/loader.php:221
+#: odd/includes/apps/loader.php:279
 msgid "App manifest contains unsupported fields: %s"
 msgstr ""
 
-#: odd/includes/apps/rest.php:276
+#: odd/includes/apps/rest.php:319
 msgid "App not found."
 msgstr ""
 
-#: odd/includes/apps/repair.php:148
+#: odd/includes/apps/registry.php:560
+msgid "App operation must be install, update, or repair."
+msgstr ""
+
+#: odd/includes/apps/repair.php:169
 msgid "App repair is not available on this install."
 msgstr ""
 
@@ -152,31 +170,51 @@ msgstr ""
 msgid "App repair is unavailable."
 msgstr ""
 
-#: odd/includes/apps/loader.php:141
+#: odd/includes/apps/loader.php:775
+msgid "App rollback target is missing."
+msgstr ""
+
+#: odd/includes/apps/loader.php:169
 msgid "App service workers are not allowed. Found in: %s"
 msgstr ""
 
-#: odd/includes/apps/loader.php:229
-msgid "App slug must contain only lowercase letters, numbers, and hyphens."
+#: odd/includes/apps/loader.php:287
+msgid "App slug must start with a lowercase letter or number, contain only lowercase letters, numbers, and hyphens, and be at most 64 characters."
 msgstr ""
 
-#: odd/includes/apps/rest.php:40
+#: odd/includes/apps/rest.php:61
 msgid "App slug."
 msgstr ""
 
-#: odd/includes/apps/rest.php:52
+#: odd/includes/apps/rest.php:1183
+msgid "App storage contains an invalid bucket."
+msgstr ""
+
+#: odd/includes/apps/rest.php:1129
+msgid "App storage could not be saved."
+msgstr ""
+
+#: odd/includes/apps/rest.php:1220
+msgid "App storage is busy. Please retry this change."
+msgstr ""
+
+#: odd/includes/apps/rest.php:79
+msgid "App storage is unavailable."
+msgstr ""
+
+#: odd/includes/apps/rest.php:92
 msgid "App storage segment."
 msgstr ""
 
-#: odd/includes/apps/loader.php:233
+#: odd/includes/apps/loader.php:291
 msgid "App version must use semantic versioning."
 msgstr ""
 
-#: odd/src/panel/index.js:367
+#: odd/src/panel/index.js:398
 msgid "Apps"
 msgstr ""
 
-#: odd/src/panel/index.js:367
+#: odd/src/panel/index.js:398
 msgid "Apps for OpenStation"
 msgstr ""
 
@@ -184,183 +222,191 @@ msgstr ""
 msgid "Archive"
 msgstr ""
 
-#: odd/includes/apps/loader.php:115
+#: odd/includes/apps/loader.php:143
 msgid "Archive contains a duplicate file: %s"
 msgstr ""
 
-#: odd/includes/apps/loader.php:109
+#: odd/includes/apps/loader.php:137
 msgid "Archive contains a hidden file or directory: %s"
 msgstr ""
 
-#: odd/includes/apps/loader.php:103
+#: odd/includes/apps/loader.php:131
 msgid "Archive contains a path-traversal entry: %s"
 msgstr ""
 
-#: odd/includes/apps/loader.php:125
+#: odd/includes/apps/loader.php:153
 msgid "Archive contains a symlink: %s"
 msgstr ""
 
-#: odd/includes/apps/loader.php:91
+#: odd/includes/apps/loader.php:119
 msgid "Archive contains an unreadable entry."
 msgstr ""
 
-#: odd/includes/apps/loader.php:137
+#: odd/includes/apps/loader.php:165
 msgid "Archive contains an unreadable script: %s"
 msgstr ""
 
-#: odd/src/panel/index.js:235
+#: odd/src/panel/index.js:243
 msgid "Available"
 msgstr ""
 
-#: odd/includes/apps/rest.php:360
+#: odd/includes/apps/rest.php:420
 msgid "Bad app path."
 msgstr ""
 
-#: odd/includes/content/archive.php:143
+#: odd/includes/content/archive.php:154
 msgid "Bundle contains a path-traversal entry: %s"
 msgstr ""
 
-#: odd/includes/content/archive.php:150
+#: odd/includes/content/archive.php:161
 msgid "Bundle contains a symlink: %s"
 msgstr ""
 
-#: odd/includes/content/archive.php:138
+#: odd/includes/content/archive.php:149
 msgid "Bundle contains an unreadable entry."
 msgstr ""
 
-#: odd/includes/content/archive.php:130
+#: odd/includes/content/archive.php:141
 msgid "Bundle exceeds %d files."
 msgstr ""
 
-#: odd/includes/content/catalog.php:2037
+#: odd/includes/content/catalog.php:2158
 msgid "Bundle is already installed."
 msgstr ""
 
-#: odd/includes/content/catalog.php:2017
+#: odd/includes/content/catalog.php:2138
 msgid "Bundle is not compatible with this ODD runtime."
 msgstr ""
 
-#: odd/includes/content/catalog.php:2010
+#: odd/includes/content/catalog.php:2131
 msgid "Bundle is not in the catalog."
 msgstr ""
 
-#: odd/includes/content/archive.php:175
+#: odd/includes/content/archive.php:186
 msgid "Bundle is too large (%1$s MB uncompressed). Maximum is %2$s MB."
 msgstr ""
 
-#: odd/includes/content/catalog.php:976
+#: odd/includes/content/bundle.php:48
+msgid "Bundle operation must be install, update, or repair."
+msgstr ""
+
+#: odd/includes/content/catalog.php:1034
 msgid "Bundle sha256 mismatch. Expected %1$s, downloaded %2$s."
 msgstr ""
 
-#: odd/includes/content/catalog.php:991
+#: odd/includes/content/catalog.php:1049
 msgid "Bundle size mismatch. Expected %1$d bytes, downloaded %2$d bytes."
 msgstr ""
 
-#: odd/includes/content/archive.php:101
+#: odd/includes/content/archive.php:112
 msgid "Bundles must have a .wp extension."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1889
+#: odd/includes/content/catalog.php:2007
 msgid "Bypass the short update-check cache."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1388
+#: odd/includes/content/catalog.php:1464
 msgid "Catalog body exceeded the maximum allowed size."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1836
+#: odd/includes/content/catalog.php:1954
 msgid "Catalog bundle slug to install."
 msgstr ""
 
-#: odd/includes/content/catalog.php:916
+#: odd/includes/content/catalog.php:974
 msgid "Catalog download URL must stay under the configured catalog base."
 msgstr ""
 
-#: odd/includes/content/catalog.php:897
+#: odd/includes/content/catalog.php:955
 msgid "Catalog downloads must use HTTPS."
 msgstr ""
 
-#: odd/includes/content/catalog.php:891
+#: odd/includes/content/catalog.php:949
 msgid "Catalog entry has no download URL."
 msgstr ""
 
-#: odd/includes/content/catalog.php:908
+#: odd/includes/content/catalog.php:966
 msgid "Catalog entry is missing a required sha256 digest."
 msgstr ""
 
-#: odd/src/panel/index.js:422
+#: odd/src/panel/index.js:453
 msgid "Catalog online"
 msgstr ""
 
-#: odd/includes/content/catalog.php:1338
+#: odd/includes/content/catalog.php:2217
+msgid "Catalog operation must be install, update, or repair."
+msgstr ""
+
+#: odd/includes/content/catalog.php:1414
 msgid "Catalog registry URL must use HTTPS."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1318
+#: odd/includes/content/catalog.php:1394
 msgid "Catalog registry contains a bundle URL outside the configured catalog base."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1308
+#: odd/includes/content/catalog.php:1384
 msgid "Catalog registry contains a bundle with a missing URL field."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1289
+#: odd/includes/content/catalog.php:1365
 msgid "Catalog registry contains a bundle with an invalid sha256."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1298
+#: odd/includes/content/catalog.php:1374
 msgid "Catalog registry contains a bundle with an invalid size."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1223
+#: odd/includes/content/catalog.php:1299
 msgid "Catalog registry contains a bundle with an invalid slug."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1248
+#: odd/includes/content/catalog.php:1324
 msgid "Catalog registry contains a bundle with an invalid version."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1257
+#: odd/includes/content/catalog.php:1333
 msgid "Catalog registry contains a bundle with malformed compatibility requirements."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1239
+#: odd/includes/content/catalog.php:1315
 msgid "Catalog registry contains a bundle without a name."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1201
+#: odd/includes/content/catalog.php:1277
 msgid "Catalog registry contains a malformed bundle row."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1275
+#: odd/includes/content/catalog.php:1351
 msgid "Catalog registry contains an invalid compatibility requirement version."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1210
+#: odd/includes/content/catalog.php:1286
 msgid "Catalog registry contains an unsupported bundle type."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1265
+#: odd/includes/content/catalog.php:1341
 msgid "Catalog registry contains an unsupported compatibility requirement."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1230
+#: odd/includes/content/catalog.php:1306
 msgid "Catalog registry contains duplicate bundle slugs."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1192
+#: odd/includes/content/catalog.php:1268
 msgid "Catalog registry is missing the bundles array."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1182
+#: odd/includes/content/catalog.php:1258
 msgid "Catalog registry must be a JSON object."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1187
+#: odd/includes/content/catalog.php:1263
 msgid "Catalog registry version must be 1."
 msgstr ""
 
-#: odd/includes/apps/repair.php:173
+#: odd/includes/apps/repair.php:194
 msgid "Catalog row is missing sha256, so repair cannot verify the archive."
 msgstr ""
 
@@ -380,11 +426,11 @@ msgstr ""
 msgid "Catalog signatures require the PHP sodium extension."
 msgstr ""
 
-#: odd/src/panel/index.js:440
+#: odd/src/panel/index.js:471
 msgid "Catalog unavailable"
 msgstr ""
 
-#: odd/includes/content/catalog.php:2048
+#: odd/includes/content/catalog.php:2169
 msgid "Catalog version is not newer than the installed version."
 msgstr ""
 
@@ -396,36 +442,120 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
-#: odd/includes/content/archive.php:289
+#: odd/includes/apps/loader.php:581
+msgid "Could not clean an interrupted app transaction."
+msgstr ""
+
+#: odd/includes/apps/registry.php:776
+msgid "Could not commit the app registry transaction."
+msgstr ""
+
+#: odd/includes/content/archive.php:308
 msgid "Could not create bundle directory."
 msgstr ""
 
-#: odd/includes/apps/loader.php:502
-#: odd/includes/content/archive.php:304
+#: odd/includes/apps/loader.php:625
+#: odd/includes/content/archive.php:323
 msgid "Could not create staging directory."
 msgstr ""
 
-#: odd/includes/content/catalog.php:945
+#: odd/includes/content/catalog.php:1003
 msgid "Could not download bundle: %s"
 msgstr ""
 
-#: odd/includes/content/archive.php:322
+#: odd/includes/content/archive.php:341
 msgid "Could not finalise bundle installation."
 msgstr ""
 
-#: odd/includes/apps/loader.php:523
+#: odd/includes/apps/loader.php:735
 msgid "Could not finalize app installation."
 msgstr ""
 
-#: odd/includes/content/catalog.php:2182
+#: odd/includes/apps/registry.php:452
+msgid "Could not finish the app transaction journal."
+msgstr ""
+
+#: odd/src/panel/index.js:313
+msgid "Could not open the confirmation dialog."
+msgstr ""
+
+#: odd/includes/apps/loader.php:718
+msgid "Could not preserve the currently installed app."
+msgstr ""
+
+#: odd/includes/apps/loader.php:721
+msgid "Could not record the app replacement transaction."
+msgstr ""
+
+#: odd/includes/apps/registry.php:663
+msgid "Could not record the prepared app transaction."
+msgstr ""
+
+#: odd/includes/apps/loader.php:738
+msgid "Could not record the promoted app transaction."
+msgstr ""
+
+#: odd/includes/apps/registry.php:386
+msgid "Could not remove incomplete app registry records."
+msgstr ""
+
+#: odd/includes/apps/registry.php:852
+msgid "Could not remove the app registry records."
+msgstr ""
+
+#: odd/includes/apps/loader.php:757
+msgid "Could not remove the app transaction backup."
+msgstr ""
+
+#: odd/includes/apps/loader.php:785
+msgid "Could not remove the failed app candidate."
+msgstr ""
+
+#: odd/includes/apps/loader.php:813
+msgid "Could not remove the failed app installation."
+msgstr ""
+
+#: odd/includes/apps/registry.php:835
+msgid "Could not remove the installed app files."
+msgstr ""
+
+#: odd/includes/apps/loader.php:794
+msgid "Could not restore the previous app directory."
+msgstr ""
+
+#: odd/includes/apps/registry.php:365
+msgid "Could not restore the previous app registry records."
+msgstr ""
+
+#: odd/includes/apps/repair.php:59
+msgid "Could not save app repair status."
+msgstr ""
+
+#: odd/includes/apps/registry.php:975
+msgid "Could not save the app placement."
+msgstr ""
+
+#: odd/includes/apps/registry.php:752
+msgid "Could not save the app registry; the previous app was restored."
+msgstr ""
+
+#: odd/includes/apps/registry.php:901
+msgid "Could not save the app setting."
+msgstr ""
+
+#: odd/includes/apps/registry.php:637
+msgid "Could not start the app installation transaction."
+msgstr ""
+
+#: odd/includes/content/catalog.php:2316
 msgid "Downloaded bundle slug does not match the catalog entry."
 msgstr ""
 
-#: odd/includes/content/catalog.php:2193
+#: odd/includes/content/catalog.php:2327
 msgid "Downloaded bundle type does not match the catalog entry."
 msgstr ""
 
-#: odd/includes/content/catalog.php:2205
+#: odd/includes/content/catalog.php:2339
 msgid "Downloaded bundle version does not match the catalog entry."
 msgstr ""
 
@@ -433,15 +563,15 @@ msgstr ""
 msgid "Duplicate"
 msgstr ""
 
-#: odd/includes/apps/loader.php:247
+#: odd/includes/apps/loader.php:305
 msgid "Entry file \"%s\" not found in archive."
 msgstr ""
 
-#: odd/src/panel/index.js:339
+#: odd/src/panel/index.js:370
 msgid "Everything is up to date."
 msgstr ""
 
-#: odd/includes/apps/rest.php:189
+#: odd/includes/apps/rest.php:219
 msgid "Fallback OpenStation launch surface metadata for this app."
 msgstr ""
 
@@ -457,12 +587,12 @@ msgstr ""
 msgid "Favorites, tags & sharing"
 msgstr ""
 
-#: odd/includes/apps/loader.php:75
-#: odd/includes/content/archive.php:111
+#: odd/includes/apps/loader.php:103
+#: odd/includes/content/archive.php:122
 msgid "File is not a valid ZIP archive."
 msgstr ""
 
-#: odd/includes/apps/rest.php:380
+#: odd/includes/apps/rest.php:432
 msgid "File not found."
 msgstr ""
 
@@ -470,15 +600,15 @@ msgstr ""
 msgid "Group related notes"
 msgstr ""
 
-#: odd/includes/apps/loader.php:307
+#: odd/includes/apps/loader.php:364
 msgid "Icon file \"%s\" not found in archive."
 msgstr ""
 
-#: odd/src/panel/index.js:247
+#: odd/src/panel/index.js:259
 msgid "Install app"
 msgstr ""
 
-#: odd/src/panel/index.js:420
+#: odd/src/panel/index.js:451
 msgid "Install what you need. New apps arrive through the catalog."
 msgstr ""
 
@@ -486,30 +616,34 @@ msgstr ""
 msgid "Installed"
 msgstr ""
 
-#: odd/includes/content/bundle.php:198
+#: odd/includes/content/bundle.php:177
 msgid "Internal error: type module missing."
 msgstr ""
 
-#: odd/includes/apps/registry.php:176
-#: odd/includes/apps/repair.php:145
+#: odd/includes/apps/registry.php:815
+#: odd/includes/apps/repair.php:166
 msgid "Invalid app slug."
 msgstr ""
 
-#: odd/includes/content/bundle.php:188
+#: odd/includes/content/bundle.php:167
 msgid "Invalid bundle slug."
 msgstr ""
 
-#: odd/includes/apps/loader.php:480
-#: odd/includes/content/archive.php:285
+#: odd/includes/apps/loader.php:594
+#: odd/includes/content/archive.php:304
 msgid "Invalid slug."
 msgstr ""
 
-#: odd/includes/apps/registry.php:242
+#: odd/includes/apps/registry.php:934
 msgid "Invalid surfaces payload."
 msgstr ""
 
-#: odd/includes/apps/rest.php:114
+#: odd/includes/apps/rest.php:152
 msgid "JSON value to store for this app segment."
+msgstr ""
+
+#: odd/src/panel/index.js:309
+msgid "Keep it"
 msgstr ""
 
 #: odd/includes/notes/template.php:70
@@ -520,84 +654,96 @@ msgstr ""
 msgid "Make this thought easy to find and share."
 msgstr ""
 
-#: odd/includes/apps/loader.php:313
+#: odd/includes/apps/loader.php:253
+msgid "Manifest $schema must be text."
+msgstr ""
+
+#: odd/includes/apps/loader.php:244
+msgid "Manifest %1$s must be text of at most %2$d characters."
+msgstr ""
+
+#: odd/includes/content/archive.php:238
+msgid "Manifest %s must be text."
+msgstr ""
+
+#: odd/includes/apps/loader.php:373
 msgid "Manifest capability is invalid."
 msgstr ""
 
-#: odd/includes/apps/loader.php:386
+#: odd/includes/apps/loader.php:453
 msgid "Manifest desktopIcon contains unsupported fields."
 msgstr ""
 
-#: odd/includes/apps/loader.php:381
+#: odd/includes/apps/loader.php:448
 msgid "Manifest desktopIcon must be an object."
 msgstr ""
 
-#: odd/includes/apps/loader.php:401
+#: odd/includes/apps/loader.php:475
 msgid "Manifest desktopIcon position must be an integer from 0 through 10000."
 msgstr ""
 
-#: odd/includes/apps/loader.php:390
-msgid "Manifest desktopIcon title must be text of at most 80 bytes."
+#: odd/includes/apps/loader.php:464
+msgid "Manifest desktopIcon title must be text of at most 80 characters."
 msgstr ""
 
-#: odd/includes/apps/loader.php:243
+#: odd/includes/apps/loader.php:301
 msgid "Manifest entry path contains invalid characters or path traversal."
 msgstr ""
 
-#: odd/includes/apps/loader.php:303
-msgid "Manifest icon must be an SVG, PNG, or WebP file."
+#: odd/includes/apps/loader.php:360
+msgid "Manifest icon must be a safe relative path ending in .svg, .png, or .webp."
 msgstr ""
 
-#: odd/includes/apps/loader.php:298
-msgid "Manifest icon path contains invalid characters or path traversal."
-msgstr ""
-
-#: odd/includes/apps/loader.php:368
+#: odd/includes/apps/loader.php:428
 msgid "Manifest minimum dimensions may not exceed its initial window dimensions."
 msgstr ""
 
-#: odd/includes/apps/loader.php:417
+#: odd/includes/apps/loader.php:491
 msgid "Manifest native contains unsupported fields."
 msgstr ""
 
-#: odd/includes/apps/loader.php:407
+#: odd/includes/apps/loader.php:481
 msgid "Manifest native must be an object."
 msgstr ""
 
-#: odd/includes/apps/loader.php:430
+#: odd/includes/apps/loader.php:495
+msgid "Manifest native style must be a relative CSS path."
+msgstr ""
+
+#: odd/includes/apps/loader.php:508
 msgid "Manifest native template must be a lowercase slug."
 msgstr ""
 
-#: odd/includes/apps/loader.php:323
+#: odd/includes/apps/loader.php:383
 msgid "Manifest surface values must be boolean."
 msgstr ""
 
-#: odd/includes/apps/loader.php:318
+#: odd/includes/apps/loader.php:378
 msgid "Manifest surfaces may contain only desktop and taskbar."
 msgstr ""
 
-#: odd/includes/apps/loader.php:335
+#: odd/includes/apps/loader.php:395
 msgid "Manifest window contains unsupported fields."
 msgstr ""
 
-#: odd/includes/apps/loader.php:355
+#: odd/includes/apps/loader.php:415
 msgid "Manifest window dimensions are outside the supported range."
 msgstr ""
 
-#: odd/includes/apps/loader.php:329
+#: odd/includes/apps/loader.php:389
 msgid "Manifest window must be an object."
 msgstr ""
 
-#: odd/includes/apps/loader.php:376
+#: odd/includes/apps/loader.php:443
 msgid "Manifest window resizable value must be boolean."
 msgstr ""
 
-#: odd/includes/apps/loader.php:372
-msgid "Manifest window title must be text of at most 80 bytes."
+#: odd/includes/apps/loader.php:439
+msgid "Manifest window title must be text of at most 80 characters."
 msgstr ""
 
-#: odd/includes/apps/rest.php:719
-#: odd/includes/content/catalog.php:2005
+#: odd/includes/apps/rest.php:776
+#: odd/includes/content/catalog.php:2126
 msgid "Missing slug."
 msgstr ""
 
@@ -605,15 +751,15 @@ msgstr ""
 msgid "Move to Trash"
 msgstr ""
 
-#: odd/includes/apps/loader.php:456
+#: odd/includes/apps/loader.php:535
 msgid "Native app asset \"%s\" was not found."
 msgstr ""
 
-#: odd/includes/apps/loader.php:452
-msgid "Native app asset paths must be safe relative JS/CSS paths."
+#: odd/includes/apps/loader.php:529
+msgid "Native app assets must use safe relative paths ending in lowercase .js or .css."
 msgstr ""
 
-#: odd/includes/apps/loader.php:423
+#: odd/includes/apps/loader.php:501
 msgid "Native apps must declare native.script."
 msgstr ""
 
@@ -621,11 +767,11 @@ msgstr ""
 msgid "New note"
 msgstr ""
 
-#: odd/includes/content/bundle.php:193
+#: odd/includes/content/bundle.php:172
 msgid "No bundle with that slug is installed."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1333
+#: odd/includes/content/catalog.php:1409
 msgid "No catalog URL configured."
 msgstr ""
 
@@ -633,7 +779,7 @@ msgstr ""
 msgid "No file uploaded. Use multipart field \"file\"."
 msgstr ""
 
-#: odd/includes/content/catalog.php:586
+#: odd/includes/content/catalog.php:592
 msgid "No previous catalog snapshot is available."
 msgstr ""
 
@@ -661,15 +807,15 @@ msgstr ""
 msgid "ODD"
 msgstr ""
 
-#: odd/src/panel/index.js:405
+#: odd/src/panel/index.js:436
 msgid "ODD / APPS"
 msgstr ""
 
-#: odd/includes/content/catalog.php:753
+#: odd/includes/content/catalog.php:781
 msgid "ODD API"
 msgstr ""
 
-#: odd/includes/content/bundle.php:235
+#: odd/includes/content/bundle.php:214
 msgid "ODD Apps are disabled on this site."
 msgstr ""
 
@@ -681,7 +827,7 @@ msgstr ""
 msgid "ODD Notes is not installed or enabled."
 msgstr ""
 
-#: odd/includes/apps/loader.php:434
+#: odd/includes/apps/loader.php:512
 msgid "ODD Notes must use its registered native template."
 msgstr ""
 
@@ -698,7 +844,7 @@ msgstr ""
 msgid "ODD Shop requires the OpenStation public API."
 msgstr ""
 
-#: odd/includes/content/bundle.php:79
+#: odd/includes/content/bundle.php:83
 msgid "ODD does not know how to install bundles of type \"%s\"."
 msgstr ""
 
@@ -714,15 +860,15 @@ msgstr ""
 msgid "On desktop"
 msgstr ""
 
-#: odd/includes/content/archive.php:231
+#: odd/includes/content/archive.php:250
 msgid "Only app bundles are supported."
 msgstr ""
 
-#: odd/includes/apps/repair.php:160
+#: odd/includes/apps/repair.php:181
 msgid "Only catalog-owned apps can be repaired automatically."
 msgstr ""
 
-#: odd/includes/apps/loader.php:413
+#: odd/includes/apps/loader.php:487
 msgid "Only the bundled ODD Notes app may use the native app surface."
 msgstr ""
 
@@ -730,16 +876,20 @@ msgstr ""
 msgid "Only the note owner can change it."
 msgstr ""
 
-#: odd/src/panel/index.js:247
+#: odd/src/panel/index.js:259
 msgid "Open app"
 msgstr ""
 
-#: odd/includes/content/catalog.php:751
+#: odd/includes/content/catalog.php:779
 msgid "OpenStation"
 msgstr ""
 
 #: odd/src/panel/index.js:172
 msgid "OpenStation app"
+msgstr ""
+
+#: odd/src/panel/index.js:303
+msgid "OpenStation confirmation is unavailable."
 msgstr ""
 
 #: odd/includes/notes/class-notes-rest-controller.php:117
@@ -770,11 +920,11 @@ msgstr ""
 msgid "Opening…"
 msgstr ""
 
-#: odd/includes/content/catalog.php:1812
+#: odd/includes/content/catalog.php:1930
 msgid "Optional catalog bundle type filter."
 msgstr ""
 
-#: odd/includes/apps/loader.php:69
+#: odd/includes/apps/loader.php:97
 msgid "PHP ZipArchive extension is required to install apps."
 msgstr ""
 
@@ -786,7 +936,7 @@ msgstr ""
 msgid "Paper color"
 msgstr ""
 
-#: odd/includes/apps/rest.php:64
+#: odd/includes/apps/rest.php:104
 msgid "Path to a static app asset relative to the app root."
 msgstr ""
 
@@ -806,52 +956,64 @@ msgstr ""
 msgid "Private by default"
 msgstr ""
 
-#: odd/includes/apps/rest.php:1082
+#: odd/includes/apps/rest.php:1281
 msgid "Provide a value when writing to app storage."
 msgstr ""
 
-#: odd/includes/apps/rest.php:289
+#: odd/includes/apps/rest.php:332
 msgid "Provide enabled and/or surfaces when updating an app."
 msgstr ""
 
-#: odd/src/panel/index.js:306
+#: odd/src/panel/index.js:337
 msgid "Ready in OpenStation · v"
 msgstr ""
 
 #: odd/includes/notes/template.php:72
-#: odd/src/panel/index.js:379
+#: odd/src/panel/index.js:410
 msgid "Refresh"
 msgstr ""
 
-#: odd/src/panel/index.js:379
+#: odd/src/panel/index.js:410
 msgid "Refresh catalog"
 msgstr ""
 
-#: odd/src/panel/index.js:386
+#: odd/src/panel/index.js:417
 msgid "Refreshing…"
 msgstr ""
 
-#: odd/includes/content/catalog.php:1605
+#: odd/includes/content/catalog.php:1704
 msgid "Remote catalog returned zero bundles; keeping the current catalog."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1073
+#: odd/includes/content/catalog.php:1133
 msgid "Remote catalog returned zero bundles; keeping the last known good catalog."
 msgstr ""
 
-#: odd/src/panel/index.js:281
+#: odd/src/panel/index.js:297
 msgid "Remove"
 msgstr ""
 
-#: odd/src/panel/index.js:284
+#: odd/src/panel/index.js:306
 msgid "Remove "
 msgstr ""
 
-#: odd/src/panel/index.js:286
+#: odd/src/panel/index.js:306
+msgid "Remove this app?"
+msgstr ""
+
+#: odd/src/panel/index.js:317
 msgid "Removing…"
 msgstr ""
 
-#: odd/includes/content/catalog.php:779
+#: odd/includes/apps/registry.php:622
+msgid "Repair must use the exact installed app version."
+msgstr ""
+
+#: odd/includes/apps/repair.php:36
+msgid "Repair status is being updated by another request."
+msgstr ""
+
+#: odd/includes/content/catalog.php:807
 msgid "Requires %1$s %2$s or newer; detected %3$s."
 msgstr ""
 
@@ -867,7 +1029,7 @@ msgstr ""
 msgid "Revision not found."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1917
+#: odd/includes/content/catalog.php:2038
 msgid "Rollback snapshot index to restore."
 msgstr ""
 
@@ -887,8 +1049,8 @@ msgstr ""
 msgid "Search notes"
 msgstr ""
 
-#: odd/includes/apps/loader.php:131
-#: odd/includes/content/archive.php:155
+#: odd/includes/apps/loader.php:159
+#: odd/includes/content/archive.php:166
 msgid "Server-executable files are not allowed. Found: %s"
 msgstr ""
 
@@ -904,11 +1066,11 @@ msgstr ""
 msgid "Show it on your station"
 msgstr ""
 
-#: odd/includes/content/archive.php:224
+#: odd/includes/content/archive.php:243
 msgid "Slug must contain only lowercase letters, numbers, and hyphens."
 msgstr ""
 
-#: odd/src/panel/index.js:406
+#: odd/src/panel/index.js:437
 msgid "Small tools. Strange polish."
 msgstr ""
 
@@ -916,7 +1078,7 @@ msgstr ""
 msgid "Smart lists"
 msgstr ""
 
-#: odd/src/panel/index.js:348
+#: odd/src/panel/index.js:379
 msgid "Something went wrong."
 msgstr ""
 
@@ -924,8 +1086,8 @@ msgstr ""
 msgid "Start writing…"
 msgstr ""
 
-#: odd/includes/apps/loader.php:155
-#: odd/includes/content/archive.php:163
+#: odd/includes/apps/loader.php:183
+#: odd/includes/content/archive.php:174
 msgid "Suspicious compression ratio (%2$d:1) in %1$s."
 msgstr ""
 
@@ -933,11 +1095,11 @@ msgstr ""
 msgid "Tags"
 msgstr ""
 
-#: odd/includes/content/archive.php:105
+#: odd/includes/content/archive.php:116
 msgid "The PHP ZipArchive extension is required to install ODD bundles."
 msgstr ""
 
-#: odd/src/panel/index.js:438
+#: odd/src/panel/index.js:469
 msgid "The app catalog is temporarily unavailable. Refresh it in a moment."
 msgstr ""
 
@@ -949,40 +1111,105 @@ msgstr ""
 msgid "The app installer returned an incomplete result."
 msgstr ""
 
-#: odd/src/panel/index.js:292
+#: odd/includes/apps/registry.php:614
+msgid "The app must already be installed for this operation."
+msgstr ""
+
+#: odd/src/panel/index.js:323
 msgid "The app remover returned an incomplete result."
 msgstr ""
 
-#: odd/src/panel/index.js:273
+#: odd/includes/apps/loader.php:603
+msgid "The app staging path is invalid."
+msgstr ""
+
+#: odd/includes/apps/rest.php:1292
+msgid "The app storage value is invalid or too large."
+msgstr ""
+
+#: odd/includes/apps/registry.php:289
+msgid "The app transaction journal is invalid."
+msgstr ""
+
+#: odd/includes/apps/registry.php:692
+msgid "The app transaction was intentionally interrupted for a rollback check."
+msgstr ""
+
+#: odd/src/panel/index.js:288
 msgid "The app was installed but is missing from the installed-app registry."
 msgstr ""
 
-#: odd/src/panel/index.js:344
+#: odd/includes/content/bundle.php:114
+msgid "The bundle must already be installed for this operation."
+msgstr ""
+
+#: odd/includes/content/catalog.php:878
+msgid "The catalog lock is invalid."
+msgstr ""
+
+#: odd/src/panel/index.js:375
 msgid "The change was saved, but the desktop could not refresh."
 msgstr ""
 
-#: odd/includes/content/catalog.php:961
+#: odd/includes/content/catalog.php:1019
 msgid "The downloaded file is not a valid .wp archive."
+msgstr ""
+
+#: odd/includes/apps/loader.php:714
+msgid "The installed app disappeared before replacement began."
 msgstr ""
 
 #: odd/includes/notes/class-notes-service.php:284
 msgid "The note could not be moved to Trash."
 msgstr ""
 
+#: odd/includes/apps/loader.php:804
+msgid "The previous app backup is missing; manual recovery is required."
+msgstr ""
+
+#: odd/includes/apps/loader.php:748
+msgid "The promoted app directory is missing."
+msgstr ""
+
 #: odd/includes/notes/class-notes-service.php:346
 msgid "The revision could not be restored."
 msgstr ""
 
-#: odd/src/panel/index.js:437
+#: odd/src/panel/index.js:468
 msgid "The shelf is resting."
 msgstr ""
 
-#: odd/includes/apps/rest.php:365
+#: odd/includes/apps/loader.php:686
+msgid "The staged app directory is invalid."
+msgstr ""
+
+#: odd/includes/apps/loader.php:571
+#: odd/includes/apps/registry.php:181
+msgid "This app change no longer owns its transaction lease."
+msgstr ""
+
+#: odd/includes/apps/rest.php:1196
+msgid "This app has reached its storage bucket limit."
+msgstr ""
+
+#: odd/includes/apps/rest.php:1186
+msgid "This app has reached its storage segment limit."
+msgstr ""
+
+#: odd/includes/content/catalog.php:902
+msgid "This catalog operation no longer owns its lease."
+msgstr ""
+
+#: odd/includes/apps/rest.php:425
 msgid "This file type cannot be served."
 msgstr ""
 
 #: odd/includes/notes/class-notes-service.php:224
 msgid "This note changed in another window."
+msgstr ""
+
+#: odd/includes/apps/repair.php:83
+msgid "This request no longer owns the app repair lease."
 msgstr ""
 
 #: odd/includes/notes/template.php:25
@@ -993,7 +1220,7 @@ msgstr ""
 msgid "Title, words, or #tag"
 msgstr ""
 
-#: odd/includes/content/rate-limit.php:43
+#: odd/includes/content/rate-limit.php:45
 msgid "Too many requests. Please wait a minute and try again."
 msgstr ""
 
@@ -1002,19 +1229,31 @@ msgstr ""
 msgid "Untitled note"
 msgstr ""
 
-#: odd/src/panel/index.js:247
+#: odd/src/panel/index.js:203
+msgid "Update ODD or OpenStation to install this app."
+msgstr ""
+
+#: odd/src/panel/index.js:259
 msgid "Update app"
 msgstr ""
 
-#: odd/src/panel/index.js:235
+#: odd/src/panel/index.js:243
 msgid "Update available"
 msgstr ""
 
-#: odd/src/panel/index.js:425
+#: odd/src/panel/index.js:243
+msgid "Update required"
+msgstr ""
+
+#: odd/src/panel/index.js:456
 msgid "Using saved apps"
 msgstr ""
 
-#: odd/src/panel/index.js:307
+#: odd/includes/apps/registry.php:574
+msgid "Validated app manifest does not match the requested bundle."
+msgstr ""
+
+#: odd/src/panel/index.js:338
 msgid "Verified ODD catalog · v"
 msgstr ""
 
@@ -1022,11 +1261,11 @@ msgstr ""
 msgid "Version history"
 msgstr ""
 
-#: odd/includes/apps/rest.php:183
+#: odd/includes/apps/rest.php:213
 msgid "Whether the app should be enabled."
 msgstr ""
 
-#: odd/includes/content/catalog.php:1846
+#: odd/includes/content/catalog.php:1964
 msgid "Whether to reinstall when the catalog version is newer."
 msgstr ""
 
@@ -1046,6 +1285,10 @@ msgstr ""
 msgid "Write a note"
 msgstr ""
 
+#: odd/includes/apps/rest.php:85
+msgid "You cannot access this app storage."
+msgstr ""
+
 #: odd/includes/notes/class-notes-rest-controller.php:111
 msgid "You do not have permission to use ODD Notes."
 msgstr ""
@@ -1058,25 +1301,32 @@ msgstr ""
 msgid "Your drafts land here first, then tuck themselves safely into WordPress."
 msgstr ""
 
-#: odd/includes/apps/loader.php:189
-#: odd/includes/content/archive.php:219
+#: odd/includes/apps/rest.php:1201
+msgid "Your installed apps have reached the total storage limit."
+msgstr ""
+
+#: odd/includes/apps/loader.php:219
+#: odd/includes/content/archive.php:230
 msgid "manifest.json is missing required field: %s"
 msgstr ""
 
-#: odd/includes/apps/loader.php:183
-#: odd/includes/content/archive.php:199
+#: odd/includes/content/archive.php:210
 msgid "manifest.json is not valid JSON."
 msgstr ""
 
-#: odd/includes/content/archive.php:213
+#: odd/includes/content/archive.php:224
 msgid "manifest.json must be a JSON object."
 msgstr ""
 
-#: odd/includes/apps/loader.php:178
+#: odd/includes/apps/loader.php:212
+msgid "manifest.json must be a valid JSON object."
+msgstr ""
+
+#: odd/includes/apps/loader.php:206
 msgid "manifest.json was not found at the archive root."
 msgstr ""
 
-#: odd/includes/content/archive.php:195
+#: odd/includes/content/archive.php:206
 msgid "manifest.json was not found at the bundle root."
 msgstr ""
 
@@ -1084,7 +1334,7 @@ msgstr ""
 msgid "none"
 msgstr ""
 
-#: odd/includes/apps/rest.php:303
+#: odd/includes/apps/rest.php:346
 msgid "surfaces must be an object."
 msgstr ""
 

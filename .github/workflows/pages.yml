@@ -23,7 +23,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  quality-gates:
+    uses: ./.github/workflows/ci.yml
+
+  browser-e2e:
+    uses: ./.github/workflows/e2e.yml
+
   deploy:
+    needs: [quality-gates, browser-e2e]
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -106,7 +113,10 @@ jobs:
           expected_signature_sha = os.environ.get("EXPECTED_REGISTRY_SIGNATURE_SHA256", "")
           public_key = base64.b64decode(os.environ["ODD_CATALOG_PUBLIC_KEY"], validate=True)
           required_types = {"app"}
-          required_apps = {"odd-notes", "pantry", "workbench"}
+          with open("_tools/catalog-sources/catalog.json", encoding="utf-8") as source_file:
+              required_apps = set(json.load(source_file).get("apps", []))
+          if not required_apps:
+              raise SystemExit("source catalog does not select any apps")
 
           def fetch(url):
               last = None

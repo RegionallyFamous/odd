@@ -18,6 +18,26 @@ Before extraction, ODD rejects:
 - base tags, external entry assets, unsafe relative references, and missing
   referenced files.
 
-Extraction happens in a staging directory and is promoted atomically. Catalog
-installs additionally require an allowed first-party URL, a valid registry
-signature, and the exact declared archive size and SHA-256 digest.
+Install, update, and repair share one transaction. Extraction happens in a
+staging directory; the working directory is renamed to a backup before the
+staged copy is promoted. ODD restores that backup if promotion or registry
+verification fails, and deletes it only after the filesystem and WordPress
+records agree. Updates must be newer; repairs must exactly match the installed
+version. Existing enabled state, surface preferences, installation timestamp,
+and OpenStation placement are preserved.
+
+Catalog installs, updates, and repairs additionally require an allowed
+first-party URL, a valid registry signature, and the exact declared archive
+size and SHA-256 digest. Missing assets never trigger repair from a GET request:
+asset routes return 404. Repair is an explicit `manage_options` POST operation.
+
+## Browser app trust boundary
+
+Installed browser apps are administrator-approved, trusted same-origin code.
+Their iframe uses both `allow-scripts` and `allow-same-origin` because relative
+assets need the WordPress login cookie; that combination is deliberately not
+described as a security sandbox. Archive validation is the code-admission
+boundary. Fixed CSP, same-origin framing/resource headers, path confinement,
+and a narrow permissions policy provide defense in depth and prevent external
+assets, workers, nested frames, top navigation, camera, microphone, and
+geolocation. Catalog authors must not place untrusted tenant code in an app.

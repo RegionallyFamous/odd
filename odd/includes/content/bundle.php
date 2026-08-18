@@ -42,8 +42,12 @@ function oddout_bundle_type_modules() {
  * @return array|WP_Error { slug, type, manifest }
  */
 function oddout_bundle_install( $tmp_path, $filename, $args = array() ) {
-	$args             = is_array( $args ) ? $args : array();
-	$replace_existing = ! empty( $args['replace_existing'] );
+	$args      = is_array( $args ) ? $args : array();
+	$operation = isset( $args['operation'] ) ? sanitize_key( (string) $args['operation'] ) : ( ! empty( $args['replace_existing'] ) ? 'update' : 'install' );
+	if ( ! in_array( $operation, array( 'install', 'update', 'repair' ), true ) ) {
+		return new WP_Error( 'invalid_install_operation', __( 'Bundle operation must be install, update, or repair.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 400 ) );
+	}
+	$args['operation'] = $operation;
 
 	list( $zip, $open_err ) = oddout_content_archive_open( $tmp_path, $filename );
 	if ( $open_err ) {
@@ -88,7 +92,7 @@ function oddout_bundle_install( $tmp_path, $filename, $args = array() ) {
 
 	$existing_type = oddout_bundle_type_for_slug( $slug );
 	if ( '' !== $existing_type ) {
-		if ( ! $replace_existing ) {
+		if ( 'install' === $operation ) {
 			return new WP_Error(
 				'slug_exists',
 				sprintf( /* translators: %s slug */ __( 'A bundle named "%s" is already installed. Remove it before reinstalling.', 'odd-outlandish-desktop-decorator' ), $slug ),
@@ -106,48 +110,23 @@ function oddout_bundle_install( $tmp_path, $filename, $args = array() ) {
 				)
 			);
 		}
+	} elseif ( 'install' !== $operation ) {
+		return new WP_Error( 'not_installed', __( 'The bundle must already be installed for this operation.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 409 ) );
 	}
 
-	// Atomic install lock per slug — add_option returns false when
-	// the key already exists, so a concurrent install of the same
-	// slug fails fast. The timestamp value lets later requests detect
-	// and replace locks stranded by a fatal error.
-	$lock_key = 'oddout_bundle_install_lock_' . $slug;
-	if ( ! add_option( $lock_key, (string) time(), '', false ) ) {
-		$started = (int) get_option( $lock_key, 0 );
-		if ( $started <= 0 || ( time() - $started ) <= 10 * MINUTE_IN_SECONDS ) {
-			return new WP_Error(
-				'install_in_progress',
-				__( 'An installation of this bundle is already in progress.', 'odd-outlandish-desktop-decorator' ),
-				array(
-					'status'     => 409,
-					'started_at' => $started,
-				)
-			);
-		}
-		update_option( $lock_key, (string) time(), false );
-	}
-
-	if ( '' !== $existing_type ) {
-		$removed = oddout_bundle_uninstall( $slug );
-		if ( is_wp_error( $removed ) ) {
-			delete_option( $lock_key );
-			return $removed;
-		}
-	}
-
-	$installed = call_user_func( $modules[ $type ]['install'], $tmp_path, $normalised );
-	delete_option( $lock_key );
+	$installed = call_user_func( $modules[ $type ]['install'], $tmp_path, $normalised, $args );
 	if ( is_wp_error( $installed ) ) {
 		return $installed;
 	}
+	$committed_manifest = is_array( $installed ) ? $installed : $normalised;
 
-	do_action( 'oddout_bundle_installed', $slug, $type, $normalised );
+	do_action( 'oddout_bundle_installed', $slug, $type, $committed_manifest, $operation );
 
 	return array(
-		'slug'     => $slug,
-		'type'     => $type,
-		'manifest' => $normalised,
+		'slug'      => $slug,
+		'type'      => $type,
+		'operation' => $operation,
+		'manifest'  => $committed_manifest,
 	);
 }
 
@@ -168,7 +147,7 @@ function oddout_bundle_panel_row_for( array $manifest ) {
 		'version'     => isset( $manifest['version'] ) ? (string) $manifest['version'] : '',
 		'description' => isset( $manifest['description'] ) ? (string) $manifest['description'] : '',
 		'icon'        => isset( $manifest['icon'] ) ? (string) $manifest['icon'] : '',
-		'enabled'     => true,
+		'enabled'     => isset( $manifest['enabled'] ) ? (bool) $manifest['enabled'] : true,
 		'installed'   => true,
 		'surfaces'    => function_exists( 'oddout_apps_row_surfaces' )
 			? oddout_apps_row_surfaces( $manifest )
@@ -238,16 +217,15 @@ function oddout_bundle_app_validate( $tmp_path, $filename, ZipArchive $zip, arra
 	return is_wp_error( $result ) ? $result : $result;
 }
 
-function oddout_bundle_app_install( $tmp_path, array $manifest ) {
+function oddout_bundle_app_install( $tmp_path, array $manifest, $args = array() ) {
 	if ( ! function_exists( 'oddout_apps_install' ) ) {
 		return new WP_Error( 'apps_disabled', __( 'ODD Apps are disabled on this site.', 'odd-outlandish-desktop-decorator' ) );
 	}
-	// oddout_apps_install() re-validates + extracts. The double-
-	// validate is cheap (one ZIP open) and keeps the Apps installer
-	// usable as a standalone API.
-	$filename = isset( $manifest['slug'] ) ? $manifest['slug'] . '.wp' : 'bundle.wp';
-	$result   = oddout_apps_install( $tmp_path, $filename );
-	return is_wp_error( $result ) ? $result : true;
+	// The bundle validator already ran the complete app archive validator.
+	// Standalone callers should continue to use oddout_apps_install(), which
+	// validates before entering the same transaction.
+	$result = oddout_apps_install_validated_archive( $tmp_path, $manifest, $args );
+	return $result;
 }
 
 function oddout_bundle_app_uninstall( $slug ) {

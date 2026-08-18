@@ -5,7 +5,7 @@ Requires at least: 6.8
 Tested up to: 7.0
 Requires PHP: 8.1
 Requires Plugins: desktop-mode
-Stable tag: 1.1.10
+Stable tag: 1.1.11
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -105,6 +105,13 @@ To rebuild the distributed files:
 
 == Changelog ==
 
+= 1.1.11 =
+
+* Added the scoped ODD app browser API used by Pantry for authenticated WordPress requests and private per-user storage.
+* Hardened app installation, updates, recovery, catalog refreshes, and storage against interrupted requests and concurrent writes.
+* Aligned manifest, archive, and serving validation so an accepted app remains safe and usable after installation.
+* Improved Shop compatibility states and made release packages reproducible, immutable, and smoke-tested as the exact published artifact.
+
 = 1.1.10 =
 
 * Rebuilt ODD Shop as a compact responsive multi-column shelf that scales to a much larger app catalog.
@@ -147,6 +154,10 @@ To rebuild the distributed files:
 * Focused the product, catalog, and distributable package exclusively on apps.
 
 == Upgrade Notice ==
+
+= 1.1.11 =
+
+Adds the catalog API required by ODD Pantry and strengthens app installation, recovery, storage, and release safety.
 
 = 1.1.10 =
 

@@ -28,6 +28,8 @@ function oddout_bundle_rate_limit_check( $action ) {
 		'bundle_catalog_install' => 10,
 		'bundle_catalog_check'   => 12,
 		'bundle_catalog_refresh' => 6,
+		'bundle_app_repair'      => 6,
+		'app_store_mutation'     => 60,
 	);
 	$max      = (int) apply_filters( 'oddout_bundle_rate_limit_max', $defaults[ $action ] ?? 20, $action, $uid );
 	if ( $max < 1 ) {

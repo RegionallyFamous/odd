@@ -23,9 +23,19 @@ function openTool( name ) {
 }
 
 describe( 'ODD Workbench tools', () => {
+	let railMedia;
+
 	beforeEach( () => {
 		vi.useRealTimers();
 		localStorage.clear();
+		railMedia = {
+			matches: false,
+			listeners: new Set(),
+			addEventListener( _name, listener ) {
+				this.listeners.add( listener );
+			},
+		};
+		window.matchMedia = vi.fn( () => railMedia );
 		document.documentElement.innerHTML = html
 			.replace( /^.*?<html[^>]*>/s, '' )
 			.replace( /<\/html>.*$/s, '' );
@@ -40,10 +50,45 @@ describe( 'ODD Workbench tools', () => {
 
 	it( 'renders Markdown while keeping raw HTML inert', () => {
 		openTool( 'markdown' );
-		input( '#markdown-input', '# Hello **ODD**\n\n<script>alert(1)</script>' );
+		input(
+			'#markdown-input',
+			'# Hello **ODD**\n\n<script>alert(1)</script>\n<img src=x onerror=alert(2)>\n<svg><script>alert(3)</script></svg>\n[unsafe](javascript&#58;alert(4))',
+		);
 		expect( document.querySelector( '#markdown-preview h1' ).textContent ).toBe( 'Hello ODD' );
 		expect( document.querySelector( '#markdown-preview script' ) ).toBeNull();
+		expect( document.querySelector( '#markdown-preview img' ) ).toBeNull();
+		expect( document.querySelector( '#markdown-preview svg' ) ).toBeNull();
 		expect( document.querySelector( '#markdown-preview' ).textContent ).toContain( '<script>alert(1)</script>' );
+		expect( document.querySelector( '#markdown-preview a' ).getAttribute( 'href' ) ).toBe( '#' );
+	} );
+
+	it( 'gives icon-only tabs stable accessible names', () => {
+		const tabs = [ ...document.querySelectorAll( '[role="tab"]' ) ];
+		expect( tabs ).toHaveLength( 6 );
+		tabs.forEach( ( tab ) => {
+			expect( tab.getAttribute( 'aria-label' ) ).toBeTruthy();
+			expect( tab.getAttribute( 'title' ) ).toBe( tab.getAttribute( 'aria-label' ) );
+		} );
+	} );
+
+	it( 'uses axis-correct arrow keys as the rail changes orientation', () => {
+		const rail = document.querySelector( '.tool-rail' );
+		const clean = document.querySelector( '[data-tool="clean"]' );
+		expect( rail.getAttribute( 'aria-orientation' ) ).toBe( 'vertical' );
+
+		clean.dispatchEvent( new KeyboardEvent( 'keydown', { key: 'ArrowRight', bubbles: true } ) );
+		expect( document.querySelector( '[aria-selected="true"]' ).dataset.tool ).toBe( 'clean' );
+		clean.dispatchEvent( new KeyboardEvent( 'keydown', { key: 'ArrowDown', bubbles: true } ) );
+		expect( document.querySelector( '[aria-selected="true"]' ).dataset.tool ).toBe( 'markdown' );
+
+		railMedia.matches = true;
+		railMedia.listeners.forEach( ( listener ) => listener( railMedia ) );
+		expect( rail.getAttribute( 'aria-orientation' ) ).toBe( 'horizontal' );
+		const markdown = document.querySelector( '[data-tool="markdown"]' );
+		markdown.dispatchEvent( new KeyboardEvent( 'keydown', { key: 'ArrowDown', bubbles: true } ) );
+		expect( document.querySelector( '[aria-selected="true"]' ).dataset.tool ).toBe( 'markdown' );
+		markdown.dispatchEvent( new KeyboardEvent( 'keydown', { key: 'ArrowRight', bubbles: true } ) );
+		expect( document.querySelector( '[aria-selected="true"]' ).dataset.tool ).toBe( 'slug' );
 	} );
 
 	it( 'creates normalized slugs', () => {

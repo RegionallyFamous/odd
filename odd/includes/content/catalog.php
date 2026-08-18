@@ -27,7 +27,7 @@
  *         "download_url": "https://.../bundles/<name>.wp",
  *         "sha256":       "<64 hex chars>",
  *         "size":         12345,
- *         "requires":     {"odd":"1.0.0","openStation":"1.1.0","api":"2.4.0"}
+ *         "requires":     {"odd":"1.0.0","openStation":"1.1.0","api":"2.5.0"}
  *       }
  *     ]
  *   }
@@ -60,7 +60,7 @@ if ( ! defined( 'ODDOUT_CATALOG_PUBLIC_KEY' ) ) {
 	define( 'ODDOUT_CATALOG_PUBLIC_KEY', '2aIvGPQMF//a9ciDvQ8GST7Q8QhfVsM6h1HB3/Td5Gk=' );
 }
 if ( ! defined( 'ODDOUT_CATALOG_API_VERSION' ) ) {
-	define( 'ODDOUT_CATALOG_API_VERSION', '2.4.0' );
+	define( 'ODDOUT_CATALOG_API_VERSION', '2.5.0' );
 }
 if ( ! defined( 'ODDOUT_CATALOG_CACHE_TTL' ) ) {
 	// Twelve hours. The catalog changes infrequently (only when the
@@ -578,39 +578,67 @@ function oddout_catalog_stamp_accepted_registry( array $registry ) {
 }
 
 function oddout_catalog_restore_previous_snapshot( $index = 0 ) {
-	$snapshots = oddout_catalog_rollback_snapshots();
-	$index     = max( 0, (int) $index );
-	if ( empty( $snapshots[ $index ]['registry'] ) || ! is_array( $snapshots[ $index ]['registry'] ) ) {
-		return new WP_Error(
-			'catalog_no_rollback',
-			__( 'No previous catalog snapshot is available.', 'odd-outlandish-desktop-decorator' ),
-			array( 'status' => 404 )
+	$lock = oddout_catalog_lock_acquire( 'oddout_catalog_refresh_lock', 10 * MINUTE_IN_SECONDS );
+	if ( is_wp_error( $lock ) ) {
+		return $lock;
+	}
+
+	try {
+		$snapshots = oddout_catalog_rollback_snapshots();
+		$index     = max( 0, (int) $index );
+		if ( empty( $snapshots[ $index ]['registry'] ) || ! is_array( $snapshots[ $index ]['registry'] ) ) {
+			return new WP_Error(
+				'catalog_no_rollback',
+				__( 'No previous catalog snapshot is available.', 'odd-outlandish-desktop-decorator' ),
+				array( 'status' => 404 )
+			);
+		}
+		$registry = oddout_catalog_stamp_accepted_registry( $snapshots[ $index ]['registry'] );
+		$current  = get_option( ODDOUT_CATALOG_STALE_OPTION, array() );
+		if (
+			is_array( $current )
+			&& isset( $current['bundles'] )
+			&& is_array( $current['bundles'] )
+			&& oddout_catalog_registry_hash( $current ) !== oddout_catalog_registry_hash( $registry )
+		) {
+			$owned = oddout_catalog_lock_refresh( $lock );
+			if ( is_wp_error( $owned ) ) {
+				return $owned;
+			}
+			oddout_catalog_store_rollback_snapshot( $current );
+		}
+
+		$owned = oddout_catalog_lock_refresh( $lock );
+		if ( is_wp_error( $owned ) ) {
+			return $owned;
+		}
+		set_transient( ODDOUT_CATALOG_TRANSIENT, $registry, ODDOUT_CATALOG_CACHE_TTL );
+
+		$owned = oddout_catalog_lock_refresh( $lock );
+		if ( is_wp_error( $owned ) ) {
+			return $owned;
+		}
+		update_option( ODDOUT_CATALOG_STALE_OPTION, $registry, false );
+
+		$runtime = oddout_catalog_effective_registry( $registry );
+		$owned   = oddout_catalog_lock_refresh( $lock );
+		if ( is_wp_error( $owned ) ) {
+			return $owned;
+		}
+		oddout_catalog_record_source(
+			'rollback_option',
+			$registry,
+			array(
+				'raw_bundle_count'       => oddout_catalog_registry_bundle_count( $registry ),
+				'effective_bundle_count' => oddout_catalog_registry_bundle_count( $runtime ),
+				'last_error_code'        => '',
+				'last_error_message'     => '',
+			)
 		);
+		return $runtime;
+	} finally {
+		oddout_catalog_lock_release( $lock );
 	}
-	$registry = oddout_catalog_stamp_accepted_registry( $snapshots[ $index ]['registry'] );
-	$current  = get_option( ODDOUT_CATALOG_STALE_OPTION, array() );
-	if (
-		is_array( $current )
-		&& isset( $current['bundles'] )
-		&& is_array( $current['bundles'] )
-		&& oddout_catalog_registry_hash( $current ) !== oddout_catalog_registry_hash( $registry )
-	) {
-		oddout_catalog_store_rollback_snapshot( $current );
-	}
-	set_transient( ODDOUT_CATALOG_TRANSIENT, $registry, ODDOUT_CATALOG_CACHE_TTL );
-	update_option( ODDOUT_CATALOG_STALE_OPTION, $registry, false );
-	$runtime = oddout_catalog_effective_registry( $registry );
-	oddout_catalog_record_source(
-		'rollback_option',
-		$registry,
-		array(
-			'raw_bundle_count'       => oddout_catalog_registry_bundle_count( $registry ),
-			'effective_bundle_count' => oddout_catalog_registry_bundle_count( $runtime ),
-			'last_error_code'        => '',
-			'last_error_message'     => '',
-		)
-	);
-	return $runtime;
 }
 
 function oddout_catalog_record_source( $source, $registry, array $extra = array() ) {
@@ -847,19 +875,17 @@ function oddout_catalog_lock_acquire( $key, $ttl ) {
 	$key = sanitize_key( (string) $key );
 	$ttl = max( 1, (int) $ttl );
 	if ( '' === $key ) {
-		return true;
+		return new WP_Error( 'catalog_lock_invalid', __( 'The catalog lock is invalid.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 500 ) );
+	}
+	$owner = oddout_apps_atomic_lock_acquire( $key, $ttl, true );
+	if ( ! is_wp_error( $owner ) ) {
+		return array(
+			'key'   => $key,
+			'owner' => $owner,
+		);
 	}
 
-	if ( add_option( $key, (string) time(), '', false ) ) {
-		return true;
-	}
-
-	$started = (int) get_option( $key, 0 );
-	if ( $started > 0 && ( time() - $started ) > $ttl ) {
-		update_option( $key, (string) time(), false );
-		return true;
-	}
-
+	$started = oddout_apps_lock_started( get_option( $key, false ) );
 	return new WP_Error(
 		'catalog_operation_in_progress',
 		__( 'A catalog operation is already in progress. Please try again in a moment.', 'odd-outlandish-desktop-decorator' ),
@@ -870,11 +896,43 @@ function oddout_catalog_lock_acquire( $key, $ttl ) {
 	);
 }
 
-function oddout_catalog_lock_release( $key ) {
-	$key = sanitize_key( (string) $key );
-	if ( '' !== $key ) {
-		delete_option( $key );
+/** Assert and renew a catalog lease immediately before shared-state writes. */
+function oddout_catalog_lock_refresh( array &$lock ) {
+	if ( empty( $lock['key'] ) || empty( $lock['owner'] ) ) {
+		return new WP_Error( 'catalog_operation_lost', __( 'This catalog operation no longer owns its lease.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 409 ) );
 	}
+	$owner = oddout_apps_atomic_lock_refresh( $lock['key'], $lock['owner'] );
+	if ( is_wp_error( $owner ) ) {
+		return new WP_Error( 'catalog_operation_lost', __( 'This catalog operation no longer owns its lease.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 409 ) );
+	}
+	$lock['owner'] = $owner;
+	return true;
+}
+
+function oddout_catalog_lock_release( array $lock ) {
+	return ! empty( $lock['key'] ) && ! empty( $lock['owner'] )
+		? oddout_apps_atomic_lock_release( $lock['key'], $lock['owner'] )
+		: false;
+}
+
+/** Read the best local catalog without fetching or mutating shared state. */
+function oddout_catalog_read_local_fallback() {
+	$stale = get_option( ODDOUT_CATALOG_STALE_OPTION, array() );
+	if (
+		is_array( $stale ) &&
+		isset( $stale['bundles'] ) &&
+		is_array( $stale['bundles'] ) &&
+		( ! empty( $stale['bundles'] ) || oddout_catalog_should_accept_empty_remote( $stale, $stale ) )
+	) {
+		return oddout_catalog_effective_registry( $stale );
+	}
+	if ( function_exists( 'oddout_catalog_fallback_load' ) ) {
+		$fallback = oddout_catalog_fallback_load();
+		if ( is_array( $fallback ) && ! empty( $fallback['bundles'] ) ) {
+			return oddout_catalog_effective_registry( $fallback );
+		}
+	}
+	return oddout_catalog_empty_registry();
 }
 
 /**
@@ -1013,11 +1071,11 @@ function oddout_catalog_download_entry_file( array $entry, $context = 'install' 
  *      `{bundles:[]}` and we let the fallback
  *      runner retry later.
  *
- * @param bool $force If true, skip the fresh transient and fetch
- *                    remotely. Used by the "Refresh catalog" button.
+ * @param bool       $force If true, skip the fresh transient and fetch remotely.
+ * @param array|null $lease Optional owner-token lease guarding shared writes.
  * @return array      Normalised registry structure.
  */
-function oddout_catalog_load( $force = false ) {
+function oddout_catalog_load( $force = false, $lease = null ) {
 	static $runtime      = null;
 	static $runtime_hash = '';
 	if ( ! $force && null !== $runtime ) {
@@ -1035,139 +1093,157 @@ function oddout_catalog_load( $force = false ) {
 		if ( is_array( $fresh ) ) {
 			$runtime      = oddout_catalog_effective_registry( $fresh );
 			$runtime_hash = oddout_catalog_registry_hash( $fresh );
-			oddout_catalog_record_source(
-				'transient',
-				$fresh,
-				array(
-					'raw_bundle_count'       => oddout_catalog_registry_bundle_count( $fresh ),
-					'effective_bundle_count' => oddout_catalog_registry_bundle_count( $runtime ),
-				)
-			);
 			return $runtime;
 		}
 	}
+	$owns_lease = false;
+	if ( ! is_array( $lease ) ) {
+		$lease = oddout_catalog_lock_acquire( 'oddout_catalog_refresh_lock', 10 * MINUTE_IN_SECONDS );
+		if ( is_wp_error( $lease ) ) {
+			return oddout_catalog_read_local_fallback();
+		}
+		$owns_lease = true;
+	}
 
-	$url      = oddout_catalog_url();
-	$registry = oddout_catalog_fetch_remote( $url );
+	try {
+		$url      = oddout_catalog_url();
+		$registry = oddout_catalog_fetch_remote( $url );
 
-	if ( ! is_wp_error( $registry ) ) {
-		$normalised = oddout_catalog_normalise( $registry );
-		if ( ! oddout_catalog_should_accept_empty_remote( $normalised, $registry ) ) {
-			oddout_catalog_update_meta(
-				array(
-					'source'                 => 'empty',
-					'url_host'               => (string) wp_parse_url( $url, PHP_URL_HOST ),
-					'http_status'            => isset( $registry['_oddout_http_status'] ) ? (int) $registry['_oddout_http_status'] : 0,
-					'bundle_count'           => 0,
-					'raw_bundle_count'       => 0,
-					'effective_bundle_count' => 0,
-					'generated_at'           => isset( $normalised['generated_at'] ) ? (string) $normalised['generated_at'] : '',
-					'registry_sha256'        => isset( $registry['_oddout_registry_sha256'] ) ? (string) $registry['_oddout_registry_sha256'] : '',
-					'registry_bytes'         => isset( $registry['_oddout_registry_bytes'] ) ? (int) $registry['_oddout_registry_bytes'] : 0,
-					'catalog_base_url'       => oddout_catalog_base_url( $url ),
-					'signature_status'       => isset( $registry['_oddout_signature_status'] ) ? sanitize_key( (string) $registry['_oddout_signature_status'] ) : 'unknown',
-					'signature_key'          => isset( $registry['_oddout_signature_key'] ) ? sanitize_text_field( (string) $registry['_oddout_signature_key'] ) : '',
-					'signature_url'          => isset( $registry['_oddout_signature_url'] ) ? esc_url_raw( (string) $registry['_oddout_signature_url'] ) : oddout_catalog_signature_url( $url ),
-					'last_failure'           => time(),
-					'last_error_code'        => 'empty_remote',
-					'last_error_message'     => __( 'Remote catalog returned zero bundles; keeping the last known good catalog.', 'odd-outlandish-desktop-decorator' ),
-					'empty_remote'           => true,
-				)
-			);
+		if ( ! is_wp_error( $registry ) ) {
+			$normalised = oddout_catalog_normalise( $registry );
+			if ( ! oddout_catalog_should_accept_empty_remote( $normalised, $registry ) ) {
+				if ( ! is_array( $lease ) || ! is_wp_error( oddout_catalog_lock_refresh( $lease ) ) ) {
+					oddout_catalog_update_meta(
+						array(
+							'source'                 => 'empty',
+							'url_host'               => (string) wp_parse_url( $url, PHP_URL_HOST ),
+							'http_status'            => isset( $registry['_oddout_http_status'] ) ? (int) $registry['_oddout_http_status'] : 0,
+							'bundle_count'           => 0,
+							'raw_bundle_count'       => 0,
+							'effective_bundle_count' => 0,
+							'generated_at'           => isset( $normalised['generated_at'] ) ? (string) $normalised['generated_at'] : '',
+							'registry_sha256'        => isset( $registry['_oddout_registry_sha256'] ) ? (string) $registry['_oddout_registry_sha256'] : '',
+							'registry_bytes'         => isset( $registry['_oddout_registry_bytes'] ) ? (int) $registry['_oddout_registry_bytes'] : 0,
+							'catalog_base_url'       => oddout_catalog_base_url( $url ),
+							'signature_status'       => isset( $registry['_oddout_signature_status'] ) ? sanitize_key( (string) $registry['_oddout_signature_status'] ) : 'unknown',
+							'signature_key'          => isset( $registry['_oddout_signature_key'] ) ? sanitize_text_field( (string) $registry['_oddout_signature_key'] ) : '',
+							'signature_url'          => isset( $registry['_oddout_signature_url'] ) ? esc_url_raw( (string) $registry['_oddout_signature_url'] ) : oddout_catalog_signature_url( $url ),
+							'last_failure'           => time(),
+							'last_error_code'        => 'empty_remote',
+							'last_error_message'     => __( 'Remote catalog returned zero bundles; keeping the last known good catalog.', 'odd-outlandish-desktop-decorator' ),
+							'empty_remote'           => true,
+						)
+					);
+				}
+			} else {
+				$normalised   = oddout_catalog_stamp_accepted_registry( $normalised );
+				$runtime      = oddout_catalog_effective_registry( $normalised );
+				$runtime_hash = oddout_catalog_registry_hash( $normalised );
+				if ( ! is_array( $lease ) || ! is_wp_error( oddout_catalog_lock_refresh( $lease ) ) ) {
+					oddout_catalog_remember_previous_stale( $normalised );
+					set_transient( ODDOUT_CATALOG_TRANSIENT, $normalised, ODDOUT_CATALOG_CACHE_TTL );
+					update_option( ODDOUT_CATALOG_STALE_OPTION, $normalised, false );
+					oddout_catalog_record_source(
+						'remote',
+						$normalised,
+						array(
+							'url_host'               => (string) wp_parse_url( $url, PHP_URL_HOST ),
+							'http_status'            => isset( $registry['_oddout_http_status'] ) ? (int) $registry['_oddout_http_status'] : 0,
+							'raw_bundle_count'       => oddout_catalog_registry_bundle_count( $normalised ),
+							'effective_bundle_count' => oddout_catalog_registry_bundle_count( $runtime ),
+							'last_success'           => time(),
+							'last_error_code'        => '',
+							'last_error_message'     => '',
+							'empty_remote'           => false,
+						)
+					);
+				}
+				return $runtime;
+			}
 		} else {
-			oddout_catalog_remember_previous_stale( $normalised );
-			$normalised   = oddout_catalog_stamp_accepted_registry( $normalised );
-			$runtime      = oddout_catalog_effective_registry( $normalised );
-			$runtime_hash = oddout_catalog_registry_hash( $normalised );
-			set_transient( ODDOUT_CATALOG_TRANSIENT, $normalised, ODDOUT_CATALOG_CACHE_TTL );
-			update_option( ODDOUT_CATALOG_STALE_OPTION, $normalised, false );
-			oddout_catalog_record_source(
-				'remote',
-				$normalised,
-				array(
-					'url_host'               => (string) wp_parse_url( $url, PHP_URL_HOST ),
-					'http_status'            => isset( $registry['_oddout_http_status'] ) ? (int) $registry['_oddout_http_status'] : 0,
-					'raw_bundle_count'       => oddout_catalog_registry_bundle_count( $normalised ),
-					'effective_bundle_count' => oddout_catalog_registry_bundle_count( $runtime ),
-					'last_success'           => time(),
-					'last_error_code'        => '',
-					'last_error_message'     => '',
-					'empty_remote'           => false,
-				)
-			);
-			return $runtime;
+			if ( ! is_array( $lease ) || ! is_wp_error( oddout_catalog_lock_refresh( $lease ) ) ) {
+				oddout_catalog_record_failure( $registry, $url );
+			}
+			$failure_meta = oddout_catalog_meta();
 		}
-	} else {
-		oddout_catalog_record_failure( $registry, $url );
-		$failure_meta = oddout_catalog_meta();
-	}
 
-	// Remote failed. Fall back to the stale mirror so the Shop can
-	// still render what we knew last time.
-	$stale = get_option( ODDOUT_CATALOG_STALE_OPTION, array() );
-	if (
+		// Remote failed. Fall back to the stale mirror so the Shop can
+		// still render what we knew last time.
+		$stale = get_option( ODDOUT_CATALOG_STALE_OPTION, array() );
+		if (
 		is_array( $stale )
 		&& isset( $stale['bundles'] )
 		&& ( ! empty( $stale['bundles'] ) || oddout_catalog_should_accept_empty_remote( $stale, $stale ) )
-	) {
-		$runtime           = oddout_catalog_effective_registry( $stale );
-		$runtime_hash      = oddout_catalog_registry_hash( $stale );
-		$failure_signature = is_array( $failure_meta )
+		) {
+			$runtime           = oddout_catalog_effective_registry( $stale );
+			$runtime_hash      = oddout_catalog_registry_hash( $stale );
+			$failure_signature = is_array( $failure_meta )
 			? array(
 				'signature_status' => $failure_meta['signature_status'],
 				'signature_key'    => $failure_meta['signature_key'],
 				'signature_url'    => $failure_meta['signature_url'],
 			)
 			: array();
-		oddout_catalog_record_source(
-			'stale_option',
-			$stale,
-			array_merge(
-				array(
-					'raw_bundle_count'       => oddout_catalog_registry_bundle_count( $stale ),
-					'effective_bundle_count' => oddout_catalog_registry_bundle_count( $runtime ),
-				),
-				$failure_signature
-			)
-		);
-		return $runtime;
-	}
+			if ( ! is_array( $lease ) || ! is_wp_error( oddout_catalog_lock_refresh( $lease ) ) ) {
+				oddout_catalog_record_source(
+					'stale_option',
+					$stale,
+					array_merge(
+						array(
+							'raw_bundle_count'       => oddout_catalog_registry_bundle_count( $stale ),
+							'effective_bundle_count' => oddout_catalog_registry_bundle_count( $runtime ),
+						),
+						$failure_signature
+					)
+				);
+			}
+			return $runtime;
+		}
 
-	// No stale mirror: this is a fresh site whose very first catalog
-	// fetch failed (Playground without network, air-gapped WP, or a
-	// catalog host outage during activation). Fall through to the
+		// No stale mirror: this is a fresh site whose very first catalog
+		// fetch failed (Playground without network, air-gapped WP, or a
+		// catalog host outage during activation). Fall through to the
 		// frozen in-plugin fallback so the Shop still has something to render.
-	if ( function_exists( 'oddout_catalog_fallback_load' ) ) {
-		$fallback = oddout_catalog_fallback_load();
-		if ( ! empty( $fallback['bundles'] ) ) {
-			$runtime           = oddout_catalog_effective_registry( $fallback );
-			$runtime_hash      = oddout_catalog_registry_hash( $fallback );
-			$failure_signature = is_array( $failure_meta )
+		if ( function_exists( 'oddout_catalog_fallback_load' ) ) {
+			$fallback = oddout_catalog_fallback_load();
+			if ( ! empty( $fallback['bundles'] ) ) {
+				$runtime           = oddout_catalog_effective_registry( $fallback );
+				$runtime_hash      = oddout_catalog_registry_hash( $fallback );
+				$failure_signature = is_array( $failure_meta )
 				? array(
 					'signature_status' => $failure_meta['signature_status'],
 					'signature_key'    => $failure_meta['signature_key'],
 					'signature_url'    => $failure_meta['signature_url'],
 				)
 				: array();
-			oddout_catalog_record_source(
-				'fallback_file',
-				$fallback,
-				array_merge(
-					array(
-						'raw_bundle_count'       => oddout_catalog_registry_bundle_count( $fallback ),
-						'effective_bundle_count' => oddout_catalog_registry_bundle_count( $runtime ),
-					),
-					$failure_signature
-				)
-			);
-			return $runtime;
+				if ( ! is_array( $lease ) || ! is_wp_error( oddout_catalog_lock_refresh( $lease ) ) ) {
+					oddout_catalog_record_source(
+						'fallback_file',
+						$fallback,
+						array_merge(
+							array(
+								'raw_bundle_count'       => oddout_catalog_registry_bundle_count( $fallback ),
+								'effective_bundle_count' => oddout_catalog_registry_bundle_count( $runtime ),
+							),
+							$failure_signature
+						)
+					);
+				}
+				return $runtime;
+			}
+		}
+
+		$runtime      = oddout_catalog_empty_registry();
+		$runtime_hash = oddout_catalog_registry_hash( $runtime );
+		if ( ! is_array( $lease ) || ! is_wp_error( oddout_catalog_lock_refresh( $lease ) ) ) {
+			oddout_catalog_record_source( 'empty', $runtime );
+		}
+		return $runtime;
+	} finally {
+		if ( $owns_lease ) {
+			oddout_catalog_lock_release( $lease );
 		}
 	}
-
-	$runtime      = oddout_catalog_empty_registry();
-	$runtime_hash = oddout_catalog_registry_hash( $runtime );
-	oddout_catalog_record_source( 'empty', $runtime );
-	return $runtime;
 }
 
 /**
@@ -1526,21 +1602,17 @@ function oddout_catalog_normalise( $data ) {
  */
 function oddout_catalog_refresh() {
 	$lock_key = 'oddout_catalog_refresh_lock';
-	$lock     = oddout_catalog_lock_acquire( $lock_key, 60 );
+	$lock     = oddout_catalog_lock_acquire( $lock_key, 10 * MINUTE_IN_SECONDS );
 	if ( is_wp_error( $lock ) ) {
-		oddout_catalog_update_meta(
-			array(
-				'last_failure'       => time(),
-				'last_error_code'    => $lock->get_error_code(),
-				'last_error_message' => $lock->get_error_message(),
-			)
-		);
 		return oddout_catalog_load( false );
 	}
 
 	delete_transient( ODDOUT_CATALOG_TRANSIENT );
-	$registry = oddout_catalog_load( true );
-	oddout_catalog_lock_release( $lock_key );
+	$registry = oddout_catalog_load( true, $lock );
+	if ( is_wp_error( oddout_catalog_lock_refresh( $lock ) ) ) {
+		oddout_catalog_lock_release( $lock );
+		return $registry;
+	}
 	delete_transient( ODDOUT_CATALOG_UPDATE_CHECK_TRANSIENT );
 	$meta = oddout_catalog_meta();
 	if ( 'remote' === $meta['source'] ) {
@@ -1556,6 +1628,7 @@ function oddout_catalog_refresh() {
 			)
 		);
 	}
+	oddout_catalog_lock_release( $lock );
 	return $registry;
 }
 
@@ -1568,98 +1641,143 @@ function oddout_catalog_check_remote_updates( $force = false ) {
 		}
 	}
 
-	$checked_at = time();
-	$url        = oddout_catalog_url();
-	$local_hash = oddout_catalog_local_registry_hash();
-	$remote     = oddout_catalog_fetch_remote( $url );
-
-	if ( is_wp_error( $remote ) ) {
-		$current = oddout_catalog_meta();
-		$result  = array(
-			'checked'                => true,
-			'ok'                     => false,
-			'checked_at'             => $checked_at,
-			'update_available'       => (bool) $current['remote_update_available'],
-			'local_registry_sha256'  => $local_hash,
-			'remote_registry_sha256' => isset( $current['remote_registry_sha256'] ) ? (string) $current['remote_registry_sha256'] : '',
-			'remote_generated_at'    => isset( $current['remote_generated_at'] ) ? (string) $current['remote_generated_at'] : '',
-			'remote_bundle_count'    => isset( $current['remote_bundle_count'] ) ? (int) $current['remote_bundle_count'] : 0,
-			'error_code'             => $remote->get_error_code(),
-			'error_message'          => $remote->get_error_message(),
-		);
-		oddout_catalog_update_meta(
-			array(
-				'last_update_check'               => $checked_at,
-				'last_update_check_error_code'    => $remote->get_error_code(),
-				'last_update_check_error_message' => $remote->get_error_message(),
-			)
-		);
-		set_transient( ODDOUT_CATALOG_UPDATE_CHECK_TRANSIENT, $result, oddout_catalog_update_check_ttl() );
-		return $result;
+	$lock = oddout_catalog_lock_acquire( 'oddout_catalog_refresh_lock', 10 * MINUTE_IN_SECONDS );
+	if ( is_wp_error( $lock ) ) {
+		return $lock;
 	}
 
-	$normalised = oddout_catalog_normalise( $remote );
-	if ( ! oddout_catalog_should_accept_empty_remote( $normalised, $remote ) ) {
-		$error  = new WP_Error(
-			'empty_remote',
-			__( 'Remote catalog returned zero bundles; keeping the current catalog.', 'odd-outlandish-desktop-decorator' )
-		);
-		$result = array(
+	try {
+		if ( ! $force ) {
+			$cached = get_transient( ODDOUT_CATALOG_UPDATE_CHECK_TRANSIENT );
+			if ( is_array( $cached ) ) {
+				return $cached;
+			}
+		}
+
+		$checked_at = time();
+		$url        = oddout_catalog_url();
+		$local_hash = oddout_catalog_local_registry_hash();
+		$remote     = oddout_catalog_fetch_remote( $url );
+		$owned      = oddout_catalog_lock_refresh( $lock );
+		if ( is_wp_error( $owned ) ) {
+			return $owned;
+		}
+		$local_hash = oddout_catalog_local_registry_hash();
+
+		if ( is_wp_error( $remote ) ) {
+			$current = oddout_catalog_meta();
+			$result  = array(
+				'checked'                => true,
+				'ok'                     => false,
+				'checked_at'             => $checked_at,
+				'update_available'       => (bool) $current['remote_update_available'],
+				'local_registry_sha256'  => $local_hash,
+				'remote_registry_sha256' => isset( $current['remote_registry_sha256'] ) ? (string) $current['remote_registry_sha256'] : '',
+				'remote_generated_at'    => isset( $current['remote_generated_at'] ) ? (string) $current['remote_generated_at'] : '',
+				'remote_bundle_count'    => isset( $current['remote_bundle_count'] ) ? (int) $current['remote_bundle_count'] : 0,
+				'error_code'             => $remote->get_error_code(),
+				'error_message'          => $remote->get_error_message(),
+			);
+			$owned   = oddout_catalog_lock_refresh( $lock );
+			if ( is_wp_error( $owned ) ) {
+				return $owned;
+			}
+			oddout_catalog_update_meta(
+				array(
+					'last_update_check'               => $checked_at,
+					'last_update_check_error_code'    => $remote->get_error_code(),
+					'last_update_check_error_message' => $remote->get_error_message(),
+				)
+			);
+			$owned = oddout_catalog_lock_refresh( $lock );
+			if ( is_wp_error( $owned ) ) {
+				return $owned;
+			}
+			set_transient( ODDOUT_CATALOG_UPDATE_CHECK_TRANSIENT, $result, oddout_catalog_update_check_ttl() );
+			return $result;
+		}
+
+		$normalised = oddout_catalog_normalise( $remote );
+		if ( ! oddout_catalog_should_accept_empty_remote( $normalised, $remote ) ) {
+			$error  = new WP_Error(
+				'empty_remote',
+				__( 'Remote catalog returned zero bundles; keeping the current catalog.', 'odd-outlandish-desktop-decorator' )
+			);
+			$result = array(
+				'checked'                => true,
+				'ok'                     => false,
+				'checked_at'             => $checked_at,
+				'update_available'       => false,
+				'local_registry_sha256'  => $local_hash,
+				'remote_registry_sha256' => oddout_catalog_registry_hash( $normalised ),
+				'remote_generated_at'    => isset( $normalised['generated_at'] ) ? (string) $normalised['generated_at'] : '',
+				'remote_bundle_count'    => 0,
+				'error_code'             => $error->get_error_code(),
+				'error_message'          => $error->get_error_message(),
+			);
+			$owned  = oddout_catalog_lock_refresh( $lock );
+			if ( is_wp_error( $owned ) ) {
+				return $owned;
+			}
+			oddout_catalog_update_meta(
+				array(
+					'last_update_check'               => $checked_at,
+					'last_update_check_error_code'    => $error->get_error_code(),
+					'last_update_check_error_message' => $error->get_error_message(),
+					'remote_update_available'         => false,
+					'remote_registry_sha256'          => $result['remote_registry_sha256'],
+					'remote_generated_at'             => $result['remote_generated_at'],
+					'remote_bundle_count'             => 0,
+				)
+			);
+			$owned = oddout_catalog_lock_refresh( $lock );
+			if ( is_wp_error( $owned ) ) {
+				return $owned;
+			}
+			set_transient( ODDOUT_CATALOG_UPDATE_CHECK_TRANSIENT, $result, oddout_catalog_update_check_ttl() );
+			return $result;
+		}
+
+		$effective    = oddout_catalog_effective_registry( $normalised );
+		$remote_hash  = oddout_catalog_registry_hash( $normalised );
+		$remote_count = oddout_catalog_registry_bundle_count( $effective );
+		$changed      = '' !== $remote_hash && $remote_hash !== $local_hash;
+		$result       = array(
 			'checked'                => true,
-			'ok'                     => false,
+			'ok'                     => true,
 			'checked_at'             => $checked_at,
-			'update_available'       => false,
+			'update_available'       => $changed,
 			'local_registry_sha256'  => $local_hash,
-			'remote_registry_sha256' => oddout_catalog_registry_hash( $normalised ),
+			'remote_registry_sha256' => $remote_hash,
 			'remote_generated_at'    => isset( $normalised['generated_at'] ) ? (string) $normalised['generated_at'] : '',
-			'remote_bundle_count'    => 0,
-			'error_code'             => $error->get_error_code(),
-			'error_message'          => $error->get_error_message(),
+			'remote_bundle_count'    => $remote_count,
+			'error_code'             => '',
+			'error_message'          => '',
 		);
+		$owned        = oddout_catalog_lock_refresh( $lock );
+		if ( is_wp_error( $owned ) ) {
+			return $owned;
+		}
 		oddout_catalog_update_meta(
 			array(
 				'last_update_check'               => $checked_at,
-				'last_update_check_error_code'    => $error->get_error_code(),
-				'last_update_check_error_message' => $error->get_error_message(),
-				'remote_update_available'         => false,
-				'remote_registry_sha256'          => $result['remote_registry_sha256'],
+				'remote_update_available'         => $changed,
+				'remote_registry_sha256'          => $remote_hash,
 				'remote_generated_at'             => $result['remote_generated_at'],
-				'remote_bundle_count'             => 0,
+				'remote_bundle_count'             => $remote_count,
+				'last_update_check_error_code'    => '',
+				'last_update_check_error_message' => '',
 			)
 		);
+		$owned = oddout_catalog_lock_refresh( $lock );
+		if ( is_wp_error( $owned ) ) {
+			return $owned;
+		}
 		set_transient( ODDOUT_CATALOG_UPDATE_CHECK_TRANSIENT, $result, oddout_catalog_update_check_ttl() );
 		return $result;
+	} finally {
+		oddout_catalog_lock_release( $lock );
 	}
-
-	$effective    = oddout_catalog_effective_registry( $normalised );
-	$remote_hash  = oddout_catalog_registry_hash( $normalised );
-	$remote_count = oddout_catalog_registry_bundle_count( $effective );
-	$changed      = '' !== $remote_hash && $remote_hash !== $local_hash;
-	$result       = array(
-		'checked'                => true,
-		'ok'                     => true,
-		'checked_at'             => $checked_at,
-		'update_available'       => $changed,
-		'local_registry_sha256'  => $local_hash,
-		'remote_registry_sha256' => $remote_hash,
-		'remote_generated_at'    => isset( $normalised['generated_at'] ) ? (string) $normalised['generated_at'] : '',
-		'remote_bundle_count'    => $remote_count,
-		'error_code'             => '',
-		'error_message'          => '',
-	);
-	oddout_catalog_update_meta(
-		array(
-			'last_update_check'               => $checked_at,
-			'remote_update_available'         => $changed,
-			'remote_registry_sha256'          => $remote_hash,
-			'remote_generated_at'             => $result['remote_generated_at'],
-			'remote_bundle_count'             => $remote_count,
-			'last_update_check_error_code'    => '',
-			'last_update_check_error_message' => '',
-		)
-	);
-	set_transient( ODDOUT_CATALOG_UPDATE_CHECK_TRANSIENT, $result, oddout_catalog_update_check_ttl() );
-	return $result;
 }
 
 function oddout_catalog_cron_update_check() {
@@ -1898,7 +2016,10 @@ add_action(
 					if ( is_wp_error( $rl ) ) {
 						return $rl;
 					}
-					$result         = oddout_catalog_check_remote_updates( (bool) $request->get_param( 'force' ) );
+					$result = oddout_catalog_check_remote_updates( (bool) $request->get_param( 'force' ) );
+					if ( is_wp_error( $result ) ) {
+						return $result;
+					}
 					$result['meta'] = oddout_catalog_meta();
 					return rest_ensure_response( $result );
 				},
@@ -2054,7 +2175,7 @@ function oddout_bundle_rest_install_from_catalog( WP_REST_Request $req ) {
 	$install = oddout_catalog_install_entry(
 		$entry,
 		array(
-			'replace_existing' => $is_installed && $allow_update,
+			'operation' => $is_installed && $allow_update ? 'update' : 'install',
 		)
 	);
 	if ( is_wp_error( $install ) ) {
@@ -2067,6 +2188,7 @@ function oddout_bundle_rest_install_from_catalog( WP_REST_Request $req ) {
 
 	$out = array(
 		'installed' => true,
+		'operation' => isset( $install['operation'] ) ? $install['operation'] : ( $is_installed ? 'update' : 'install' ),
 		'slug'      => $install['slug'],
 		'type'      => $install['type'],
 		'manifest'  => $install['manifest'],
@@ -2088,16 +2210,19 @@ function oddout_bundle_rest_install_from_catalog( WP_REST_Request $req ) {
  * @return array|WP_Error On success: {slug, type, manifest}.
  */
 function oddout_catalog_install_entry( array $entry, $args = array() ) {
-	$args             = is_array( $args ) ? $args : array();
-	$replace_existing = ! empty( $args['replace_existing'] );
-	$slug             = isset( $entry['slug'] ) ? sanitize_key( (string) $entry['slug'] ) : '';
-	$lock_key         = 'oddout_catalog_install_lock_' . $slug;
-	$lock             = oddout_catalog_lock_acquire( $lock_key, 10 * MINUTE_IN_SECONDS );
+	$args      = is_array( $args ) ? $args : array();
+	$operation = isset( $args['operation'] ) ? sanitize_key( (string) $args['operation'] ) : ( ! empty( $args['replace_existing'] ) ? 'update' : 'install' );
+	$slug      = isset( $entry['slug'] ) ? sanitize_key( (string) $entry['slug'] ) : '';
+	if ( ! in_array( $operation, array( 'install', 'update', 'repair' ), true ) ) {
+		return new WP_Error( 'invalid_install_operation', __( 'Catalog operation must be install, update, or repair.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 400 ) );
+	}
+	$lock_key = 'oddout_catalog_install_lock_' . $slug;
+	$lock     = oddout_catalog_lock_acquire( $lock_key, 10 * MINUTE_IN_SECONDS );
 	if ( is_wp_error( $lock ) ) {
 		return $lock;
 	}
 	if ( ! empty( $entry['incompatible'] ) ) {
-		oddout_catalog_lock_release( $lock_key );
+		oddout_catalog_lock_release( $lock );
 		return new WP_Error(
 			'catalog_incompatible',
 			isset( $entry['incompatibility_reason'] ) && '' !== $entry['incompatibility_reason']
@@ -2113,7 +2238,7 @@ function oddout_catalog_install_entry( array $entry, $args = array() ) {
 
 	$tmp = oddout_catalog_download_entry_file( $entry, 'install' );
 	if ( is_wp_error( $tmp ) ) {
-		oddout_catalog_lock_release( $lock_key );
+		oddout_catalog_lock_release( $lock );
 		return $tmp;
 	}
 
@@ -2123,18 +2248,27 @@ function oddout_catalog_install_entry( array $entry, $args = array() ) {
 	$matches      = oddout_catalog_download_matches_entry( $tmp, $filename, $entry );
 	if ( is_wp_error( $matches ) ) {
 		wp_delete_file( $tmp );
-		oddout_catalog_lock_release( $lock_key );
+		oddout_catalog_lock_release( $lock );
 		return $matches;
+	}
+	$lease = oddout_catalog_lock_refresh( $lock );
+	if ( is_wp_error( $lease ) ) {
+		wp_delete_file( $tmp );
+		oddout_catalog_lock_release( $lock );
+		return $lease;
 	}
 	$result = oddout_bundle_install(
 		$tmp,
 		$filename,
 		array(
-			'replace_existing' => $replace_existing,
+			'operation'        => $operation,
+			'expected_slug'    => $slug,
+			'expected_type'    => isset( $entry['type'] ) ? (string) $entry['type'] : '',
+			'expected_version' => isset( $entry['version'] ) ? (string) $entry['version'] : '',
 		)
 	);
 	wp_delete_file( $tmp );
-	oddout_catalog_lock_release( $lock_key );
+	oddout_catalog_lock_release( $lock );
 	if ( is_wp_error( $result ) ) {
 		$data           = $result->get_error_data();
 		$data           = is_array( $data ) ? $data : array();

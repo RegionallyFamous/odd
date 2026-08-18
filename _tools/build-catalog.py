@@ -16,6 +16,7 @@ import zipfile
 from pathlib import Path
 
 from PIL import Image
+from manifest_validation import validate_manifest as validate_manifest_schema
 
 
 HERE = Path(__file__).resolve().parent
@@ -199,7 +200,8 @@ def safe_bundle_files(source: Path, label: str) -> dict[str, bytes]:
             fail(f"{label}: hidden files are forbidden ({rel})")
         if not ASSET_PATH_RE.fullmatch(rel) or ".." in Path(rel).parts:
             fail(f"{label}: unsafe bundle path {rel!r}")
-        if path.suffix.lower().lstrip(".") in FORBIDDEN_EXTENSIONS:
+        extension = path.suffix.lower().lstrip(".")
+        if extension in FORBIDDEN_EXTENSIONS or re.fullmatch(r"php[0-9]+", extension):
             fail(f"{label}: server-executable file is forbidden ({rel})")
         data = path.read_bytes()
         if path.suffix.lower() in {".js", ".mjs"}:
@@ -343,6 +345,9 @@ def validate_icon(data: bytes, name: str, label: str) -> None:
 
 def validate_manifest(manifest: dict, meta: dict, slug: str, files: dict[str, bytes]) -> None:
     label = f"app {slug}"
+    schema_problems = validate_manifest_schema(manifest)
+    if schema_problems:
+        fail(f"{label}: manifest schema validation failed: {'; '.join(schema_problems)}")
     unknown = set(manifest).difference(MANIFEST_KEYS)
     if unknown:
         fail(f"{label}: manifest contains unsupported keys: {sorted(unknown)}")
@@ -361,6 +366,19 @@ def validate_manifest(manifest: dict, meta: dict, slug: str, files: dict[str, by
         value = manifest[key]
         if not isinstance(value, str) or not ASSET_PATH_RE.fullmatch(value) or value not in files:
             fail(f"{label}: manifest {key} must name a bundled relative file")
+    native = manifest.get("native")
+    if isinstance(native, dict):
+        for key, suffix in (("script", ".js"), ("style", ".css")):
+            value = native.get(key)
+            if key == "style" and value is None:
+                continue
+            if (
+                not isinstance(value, str)
+                or not ASSET_PATH_RE.fullmatch(value)
+                or not value.lower().endswith(suffix)
+                or value not in files
+            ):
+                fail(f"{label}: manifest native.{key} must name a bundled {suffix} file")
     validate_icon(files[manifest["icon"]], manifest["icon"], f"{label} manifest icon")
     if Path(manifest["entry"]).suffix.lower() in {".html", ".htm"}:
         html = files[manifest["entry"]].decode("utf-8", errors="replace")

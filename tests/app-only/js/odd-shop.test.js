@@ -30,6 +30,7 @@ describe( 'Apps-only ODD Shop', () => {
 					catalogApps: registry.bundles,
 				} ) ),
 				fetch: vi.fn(),
+				confirm: vi.fn( () => Promise.resolve( true ) ),
 				openWindow: vi.fn(),
 				refreshMenu: vi.fn( () => Promise.resolve() ),
 				getOsSettings: vi.fn( () => ( {
@@ -101,6 +102,79 @@ describe( 'Apps-only ODD Shop', () => {
 		expect( panelStyles ).toContain( '@container odd-shop (max-width: 840px)' );
 	} );
 
+	it( 'blocks incompatible apps with the server compatibility reason while leaving compatible apps installable', () => {
+		const reason = 'Requires OpenStation 2.5.0 or newer; detected 2.4.0.';
+		const pantry = {
+			...catalogRow( 'pantry' ),
+			incompatible: true,
+			state: 'incompatible',
+			incompatibility_reason: reason,
+			incompatibility_current: { odd: '1.1.10', openStation: '2.4.0', api: '1.0.0' },
+		};
+		const notes = catalogRow( 'odd-notes' );
+		window.wp.os.getWindowConfig.mockReturnValue( {
+			...window.wp.os.getWindowConfig(),
+			catalogApps: [ pantry, notes ],
+		} );
+
+		const shop = mountShop();
+		const pantryCard = shop.querySelector( '.odd-app-card[data-slug="pantry"]' );
+		const pantryAction = pantryCard.querySelector( '.odd-app-card__button--primary' );
+		const notesCard = shop.querySelector( '.odd-app-card[data-slug="odd-notes"]' );
+		const notesAction = notesCard.querySelector( '.odd-app-card__button--primary' );
+
+		expect( pantryCard.dataset.state ).toBe( 'incompatible' );
+		expect( pantryCard.querySelector( '.odd-app-card__state' ).textContent ).toContain( 'Update required' );
+		expect( pantryCard.querySelector( '.odd-app-card__compatibility' ).textContent ).toBe( reason );
+		expect( pantryAction.disabled ).toBe( true );
+		expect( pantryAction.textContent ).toContain( 'Update required' );
+		expect( pantryAction.textContent ).not.toContain( 'Install app' );
+		expect( pantryAction.title ).toBe( reason );
+
+		pantryAction.dispatchEvent( new MouseEvent( 'click', { bubbles: true } ) );
+		expect( window.wp.os.fetch ).not.toHaveBeenCalled();
+
+		expect( notesCard.dataset.state ).toBe( 'available' );
+		expect( notesAction.disabled ).toBe( false );
+		expect( notesAction.textContent ).toContain( 'Install app' );
+	} );
+
+	it( 'opens rather than updating an installed app when its newer catalog row is incompatible', async () => {
+		const pantryCatalog = {
+			...catalogRow( 'pantry' ),
+			incompatible: true,
+			state: 'incompatible',
+			incompatibility_reason: 'Requires OpenStation 2.5.0 or newer; detected 2.4.0.',
+			version: '2.0.0',
+		};
+		const pantryInstalled = {
+			...catalogRow( 'pantry' ),
+			version: '1.0.0',
+			enabled: true,
+		};
+		window.wp.os.getWindowConfig.mockReturnValue( {
+			...window.wp.os.getWindowConfig(),
+			installedApps: [ pantryInstalled ],
+			catalogApps: [ pantryCatalog ],
+		} );
+		window.wp.os.openWindow.mockReturnValue( true );
+
+		const shop = mountShop();
+		const card = shop.querySelector( '.odd-app-card[data-slug="pantry"]' );
+		const primary = card.querySelector( '.odd-app-card__button--primary' );
+
+		expect( card.dataset.state ).toBe( 'installed' );
+		expect( primary.textContent ).toContain( 'Open app' );
+		expect( primary.textContent ).not.toContain( 'Update app' );
+		expect( primary.disabled ).toBe( false );
+		expect( card.querySelector( '.odd-app-card__button--remove' ) ).not.toBeNull();
+		expect( card.querySelector( '.odd-app-card__compatibility' ) ).toBeNull();
+
+		primary.click();
+		await vi.waitFor( () => expect( window.wp.os.openWindow ).toHaveBeenCalledOnce() );
+		expect( window.wp.os.fetch ).not.toHaveBeenCalled();
+	} );
+
 	it( 'contains no retired wp.desktop integration calls', () => {
 		expect( panelSource ).not.toContain( 'wp.desktop' );
 		expect( panelSource ).not.toContain( 'desktopModeNativeWindows' );
@@ -168,6 +242,29 @@ describe( 'Apps-only ODD Shop', () => {
 		} );
 		expect( window.wp.os.updateOsSettings ).not.toHaveBeenCalled();
 		expect( osSettings.itemVisibility[ 'odd-app-workbench' ] ).toBe( 'hidden' );
+	} );
+
+	it( 'uses OpenStation confirmation and leaves an app installed when removal is cancelled', async () => {
+		const workbench = { ...catalogRow( 'workbench' ), enabled: true, installed: true };
+		window.wp.os.getWindowConfig.mockReturnValue( {
+			...window.wp.os.getWindowConfig(),
+			installedApps: [ workbench ],
+			catalogApps: [ workbench ],
+		} );
+		window.wp.os.confirm.mockResolvedValueOnce( false );
+
+		const shop = mountShop();
+		shop.querySelector( '.odd-app-card[data-slug="workbench"] .odd-app-card__button--remove' ).click();
+		await vi.waitFor( () => expect( window.wp.os.confirm ).toHaveBeenCalledOnce() );
+
+		expect( window.wp.os.confirm ).toHaveBeenCalledWith( expect.objectContaining( {
+			title: 'Remove this app?',
+			confirmLabel: 'Remove',
+			cancelLabel: 'Keep it',
+			danger: true,
+		} ) );
+		expect( window.wp.os.fetch ).not.toHaveBeenCalled();
+		expect( panelSource ).not.toContain( 'window.confirm' );
 	} );
 
 	it( 'retries a missing Workbench registration before reporting launch success', async () => {

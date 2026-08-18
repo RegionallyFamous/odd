@@ -14,7 +14,7 @@
  *   5. Total uncompressed cap        ODDOUT_APPS_MAX_UNCOMPRESSED
  *   6. manifest.json at root
  *   7. Required fields               type, name, slug, version, entry, icon
- *   8. Slug format                   ^[a-z0-9-]+$
+ *   8. Slug format                   ^[a-z0-9][a-z0-9-]*$, 64 chars max
  *   9. Slug uniqueness               registry lookup
  *  10. Entry path validation         ^[a-zA-Z0-9._-]+(/[a-zA-Z0-9._-]+)*$
  *  11. Entry file present in archive
@@ -24,7 +24,7 @@
  * against non-Unix zip tools that bypass the `external_attr` check.
  *
  * Server-executable extensions that are rejected in validation:
- * php, phtml, phar, php3-7, phps, cgi, pl, py, rb, sh, bash.
+ * php, phtml, phar, versioned php suffixes, phps, cgi, pl, py, rb, sh, bash.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -49,6 +49,34 @@ function oddout_apps_forbidden_extensions() {
 		'sh',
 		'bash',
 	);
+}
+
+/** Reject executable suffixes, including current and future versioned PHP forms. */
+function oddout_apps_extension_is_forbidden( $extension ) {
+	$extension = strtolower( ltrim( (string) $extension, '.' ) );
+	return in_array( $extension, oddout_apps_forbidden_extensions(), true ) || (bool) preg_match( '/^php[0-9]+$/', $extension );
+}
+
+/** Reject traversal components without banning safe same-segment double dots. */
+function oddout_apps_path_has_parent_component( $path ) {
+	return in_array( '..', explode( '/', (string) $path ), true );
+}
+
+/**
+ * Count Unicode characters using the same unit as JSON Schema maxLength.
+ *
+ * json_decode() has already rejected malformed UTF-8 before this helper is
+ * called. The PCRE fallback keeps schema parity on hosts without mbstring.
+ *
+ * @param string $value Manifest string value.
+ * @return int|false Character count, or false for invalid UTF-8.
+ */
+function oddout_apps_manifest_string_length( $value ) {
+	if ( function_exists( 'mb_strlen' ) ) {
+		return mb_strlen( $value, 'UTF-8' );
+	}
+
+	return preg_match_all( '/./us', $value );
 }
 
 /**
@@ -96,7 +124,7 @@ function oddout_apps_validate_archive( $tmp_path, $filename ) {
 			'' === $name ||
 			false !== strpos( $name, "\0" ) ||
 			false !== strpos( $name, '\\' ) ||
-			false !== strpos( $name, '..' ) ||
+			oddout_apps_path_has_parent_component( $name ) ||
 			'/' === $name[0]
 		) {
 			$zip->close();
@@ -126,7 +154,7 @@ function oddout_apps_validate_archive( $tmp_path, $filename ) {
 		}
 
 		$file_ext = strtolower( pathinfo( $name, PATHINFO_EXTENSION ) );
-		if ( in_array( $file_ext, $forbidden, true ) ) {
+		if ( in_array( $file_ext, $forbidden, true ) || oddout_apps_extension_is_forbidden( $file_ext ) ) {
 			$zip->close();
 			return new WP_Error( 'forbidden_file_type', sprintf( /* translators: %s entry name */ __( 'Server-executable files are not allowed. Found: %s', 'odd-outlandish-desktop-decorator' ), $name ) );
 		}
@@ -177,22 +205,52 @@ function oddout_apps_validate_archive( $tmp_path, $filename ) {
 		$zip->close();
 		return new WP_Error( 'missing_manifest', __( 'manifest.json was not found at the archive root.', 'odd-outlandish-desktop-decorator' ) );
 	}
-	$manifest = json_decode( $raw, true );
-	if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $manifest ) ) {
+	$manifest        = json_decode( $raw, true );
+	$manifest_object = json_decode( $raw );
+	if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $manifest ) || ! is_object( $manifest_object ) ) {
 		$zip->close();
-		return new WP_Error( 'invalid_manifest', __( 'manifest.json is not valid JSON.', 'odd-outlandish-desktop-decorator' ) );
+		return new WP_Error( 'invalid_manifest', __( 'manifest.json must be a valid JSON object.', 'odd-outlandish-desktop-decorator' ) );
 	}
+	$manifest_shapes = get_object_vars( $manifest_object );
 
 	foreach ( array( 'type', 'name', 'slug', 'version', 'entry', 'icon' ) as $field ) {
-		if ( empty( $manifest[ $field ] ) || ! is_string( $manifest[ $field ] ) ) {
+		if ( ! array_key_exists( $field, $manifest ) || ! is_string( $manifest[ $field ] ) || '' === $manifest[ $field ] ) {
 			$zip->close();
 			return new WP_Error( 'missing_manifest_field', sprintf( /* translators: %s manifest field */ __( 'manifest.json is missing required field: %s', 'odd-outlandish-desktop-decorator' ), $field ) );
 		}
 	}
 
-	if ( 'app' !== strtolower( (string) $manifest['type'] ) ) {
+	if ( 'app' !== $manifest['type'] ) {
 		$zip->close();
 		return new WP_Error( 'invalid_type', __( 'App archives must declare manifest type "app".', 'odd-outlandish-desktop-decorator' ) );
+	}
+
+	$manifest_string_limits = array(
+		'name'        => 80,
+		'author'      => 120,
+		'description' => 500,
+	);
+	foreach ( $manifest_string_limits as $field => $limit ) {
+		if ( ! array_key_exists( $field, $manifest ) ) {
+			continue;
+		}
+		$length = is_string( $manifest[ $field ] ) ? oddout_apps_manifest_string_length( $manifest[ $field ] ) : false;
+		if ( false === $length || $length > $limit ) {
+			$zip->close();
+			return new WP_Error(
+				'invalid_' . $field,
+				sprintf(
+					/* translators: 1 manifest field name, 2 maximum character count. */
+					__( 'Manifest %1$s must be text of at most %2$d characters.', 'odd-outlandish-desktop-decorator' ),
+					$field,
+					$limit
+				)
+			);
+		}
+	}
+	if ( array_key_exists( '$schema', $manifest ) && ! is_string( $manifest['$schema'] ) ) {
+		$zip->close();
+		return new WP_Error( 'invalid_schema', __( 'Manifest $schema must be text.', 'odd-outlandish-desktop-decorator' ) );
 	}
 
 	$allowed_manifest_fields = array(
@@ -224,9 +282,9 @@ function oddout_apps_validate_archive( $tmp_path, $filename ) {
 		);
 	}
 
-	if ( ! preg_match( '/^[a-z0-9-]+$/', $manifest['slug'] ) ) {
+	if ( strlen( $manifest['slug'] ) > 64 || ! preg_match( '/^[a-z0-9][a-z0-9-]*$/D', $manifest['slug'] ) ) {
 		$zip->close();
-		return new WP_Error( 'invalid_slug', __( 'App slug must contain only lowercase letters, numbers, and hyphens.', 'odd-outlandish-desktop-decorator' ) );
+		return new WP_Error( 'invalid_slug', __( 'App slug must start with a lowercase letter or number, contain only lowercase letters, numbers, and hyphens, and be at most 64 characters.', 'odd-outlandish-desktop-decorator' ) );
 	}
 	if ( ! preg_match( '/^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/', $manifest['version'] ) ) {
 		$zip->close();
@@ -235,7 +293,7 @@ function oddout_apps_validate_archive( $tmp_path, $filename ) {
 
 	$entry = isset( $manifest['entry'] ) ? (string) $manifest['entry'] : 'index.html';
 	if (
-		false !== strpos( $entry, '..' ) ||
+		oddout_apps_path_has_parent_component( $entry ) ||
 		( strlen( $entry ) > 0 && '/' === $entry[0] ) ||
 		! preg_match( '#^[a-zA-Z0-9._-]+(/[a-zA-Z0-9._-]+)*$#', $entry )
 	) {
@@ -266,7 +324,11 @@ function oddout_apps_validate_archive( $tmp_path, $filename ) {
 				$zip->close();
 				return new WP_Error( 'external_asset_forbidden', sprintf( /* translators: %s asset URL */ __( 'App entry contains a non-local asset reference: %s', 'odd-outlandish-desktop-decorator' ), $reference ) );
 			}
-			$asset_path  = rawurldecode( preg_split( '/[?#]/', $reference, 2 )[0] );
+			$asset_path = preg_split( '/[?#]/', $reference, 2 )[0];
+			if ( false !== strpos( $asset_path, '%' ) ) {
+				$zip->close();
+				return new WP_Error( 'unsafe_asset_path', sprintf( /* translators: %s asset path */ __( 'App entry contains an unsafe asset path: %s', 'odd-outlandish-desktop-decorator' ), $reference ) );
+			}
 			$asset_parts = array();
 			$base_parts  = '.' === $entry_dir ? array() : explode( '/', $entry_dir );
 			foreach ( array_merge( $base_parts, explode( '/', $asset_path ) ) as $part ) {
@@ -289,18 +351,13 @@ function oddout_apps_validate_archive( $tmp_path, $filename ) {
 
 	$icon = (string) $manifest['icon'];
 	if (
-		false !== strpos( $icon, '..' ) ||
+		oddout_apps_path_has_parent_component( $icon ) ||
 		( strlen( $icon ) > 0 && '/' === $icon[0] ) ||
 		false !== strpos( $icon, "\0" ) ||
-		! preg_match( '#^[a-zA-Z0-9._/-]+$#', $icon )
+		! preg_match( '#^[a-zA-Z0-9._-]+(?:/[a-zA-Z0-9._-]+)*\.(?:svg|png|webp)$#', $icon )
 	) {
 		$zip->close();
-		return new WP_Error( 'invalid_icon', __( 'Manifest icon path contains invalid characters or path traversal.', 'odd-outlandish-desktop-decorator' ) );
-	}
-	$icon_ext = strtolower( pathinfo( $icon, PATHINFO_EXTENSION ) );
-	if ( ! in_array( $icon_ext, array( 'svg', 'png', 'webp' ), true ) ) {
-		$zip->close();
-		return new WP_Error( 'invalid_icon', __( 'Manifest icon must be an SVG, PNG, or WebP file.', 'odd-outlandish-desktop-decorator' ) );
+		return new WP_Error( 'invalid_icon', __( 'Manifest icon must be a safe relative path ending in .svg, .png, or .webp.', 'odd-outlandish-desktop-decorator' ) );
 	}
 	if ( false === $zip->getFromName( $icon ) ) {
 		$zip->close();
@@ -308,12 +365,15 @@ function oddout_apps_validate_archive( $tmp_path, $filename ) {
 	}
 	$manifest['icon'] = $icon;
 
-	if ( isset( $manifest['capability'] ) && ! preg_match( '/^[a-z0-9_]+$/', (string) $manifest['capability'] ) ) {
+	if (
+		array_key_exists( 'capability', $manifest ) &&
+		( ! is_string( $manifest['capability'] ) || ! preg_match( '/^[a-z0-9_]+$/', $manifest['capability'] ) )
+	) {
 		$zip->close();
 		return new WP_Error( 'invalid_capability', __( 'Manifest capability is invalid.', 'odd-outlandish-desktop-decorator' ) );
 	}
-	if ( isset( $manifest['surfaces'] ) ) {
-		if ( ! is_array( $manifest['surfaces'] ) || array_diff( array_keys( $manifest['surfaces'] ), array( 'desktop', 'taskbar' ) ) ) {
+	if ( array_key_exists( 'surfaces', $manifest ) ) {
+		if ( ! is_object( $manifest_shapes['surfaces'] ) || ! is_array( $manifest['surfaces'] ) || array_diff( array_keys( $manifest['surfaces'] ), array( 'desktop', 'taskbar' ) ) ) {
 			$zip->close();
 			return new WP_Error( 'invalid_surfaces', __( 'Manifest surfaces may contain only desktop and taskbar.', 'odd-outlandish-desktop-decorator' ) );
 		}
@@ -324,11 +384,11 @@ function oddout_apps_validate_archive( $tmp_path, $filename ) {
 			}
 		}
 	}
-	if ( isset( $manifest['window'] ) && ! is_array( $manifest['window'] ) ) {
+	if ( array_key_exists( 'window', $manifest ) && ( ! is_object( $manifest_shapes['window'] ) || ! is_array( $manifest['window'] ) ) ) {
 		$zip->close();
 		return new WP_Error( 'invalid_window', __( 'Manifest window must be an object.', 'odd-outlandish-desktop-decorator' ) );
 	}
-	if ( isset( $manifest['window'] ) ) {
+	if ( array_key_exists( 'window', $manifest ) ) {
 		$window_fields = array( 'title', 'width', 'height', 'minWidth', 'minHeight', 'min_width', 'min_height', 'resizable' );
 		if ( array_diff( array_keys( $manifest['window'] ), $window_fields ) ) {
 			$zip->close();
@@ -344,7 +404,7 @@ function oddout_apps_validate_archive( $tmp_path, $filename ) {
 		);
 		foreach ( $window_bounds as $field => $bounds ) {
 			if (
-				isset( $manifest['window'][ $field ] ) &&
+				array_key_exists( $field, $manifest['window'] ) &&
 				(
 					! is_int( $manifest['window'][ $field ] ) ||
 					$manifest['window'][ $field ] < $bounds[0] ||
@@ -367,30 +427,44 @@ function oddout_apps_validate_archive( $tmp_path, $filename ) {
 			$zip->close();
 			return new WP_Error( 'invalid_window', __( 'Manifest minimum dimensions may not exceed its initial window dimensions.', 'odd-outlandish-desktop-decorator' ) );
 		}
-		if ( isset( $manifest['window']['title'] ) && ( ! is_string( $manifest['window']['title'] ) || strlen( $manifest['window']['title'] ) > 80 ) ) {
+		if (
+			array_key_exists( 'title', $manifest['window'] ) &&
+			(
+				! is_string( $manifest['window']['title'] ) ||
+				false === oddout_apps_manifest_string_length( $manifest['window']['title'] ) ||
+				oddout_apps_manifest_string_length( $manifest['window']['title'] ) > 80
+			)
+		) {
 			$zip->close();
-			return new WP_Error( 'invalid_window', __( 'Manifest window title must be text of at most 80 bytes.', 'odd-outlandish-desktop-decorator' ) );
+			return new WP_Error( 'invalid_window', __( 'Manifest window title must be text of at most 80 characters.', 'odd-outlandish-desktop-decorator' ) );
 		}
-		if ( isset( $manifest['window']['resizable'] ) && ! is_bool( $manifest['window']['resizable'] ) ) {
+		if ( array_key_exists( 'resizable', $manifest['window'] ) && ! is_bool( $manifest['window']['resizable'] ) ) {
 			$zip->close();
 			return new WP_Error( 'invalid_window', __( 'Manifest window resizable value must be boolean.', 'odd-outlandish-desktop-decorator' ) );
 		}
 	}
-	if ( isset( $manifest['desktopIcon'] ) && ! is_array( $manifest['desktopIcon'] ) ) {
+	if ( array_key_exists( 'desktopIcon', $manifest ) && ( ! is_object( $manifest_shapes['desktopIcon'] ) || ! is_array( $manifest['desktopIcon'] ) ) ) {
 		$zip->close();
 		return new WP_Error( 'invalid_desktop_icon', __( 'Manifest desktopIcon must be an object.', 'odd-outlandish-desktop-decorator' ) );
 	}
-	if ( isset( $manifest['desktopIcon'] ) ) {
+	if ( array_key_exists( 'desktopIcon', $manifest ) ) {
 		if ( array_diff( array_keys( $manifest['desktopIcon'] ), array( 'title', 'position' ) ) ) {
 			$zip->close();
 			return new WP_Error( 'invalid_desktop_icon', __( 'Manifest desktopIcon contains unsupported fields.', 'odd-outlandish-desktop-decorator' ) );
 		}
-		if ( isset( $manifest['desktopIcon']['title'] ) && ( ! is_string( $manifest['desktopIcon']['title'] ) || strlen( $manifest['desktopIcon']['title'] ) > 80 ) ) {
+		if (
+			array_key_exists( 'title', $manifest['desktopIcon'] ) &&
+			(
+				! is_string( $manifest['desktopIcon']['title'] ) ||
+				false === oddout_apps_manifest_string_length( $manifest['desktopIcon']['title'] ) ||
+				oddout_apps_manifest_string_length( $manifest['desktopIcon']['title'] ) > 80
+			)
+		) {
 			$zip->close();
-			return new WP_Error( 'invalid_desktop_icon', __( 'Manifest desktopIcon title must be text of at most 80 bytes.', 'odd-outlandish-desktop-decorator' ) );
+			return new WP_Error( 'invalid_desktop_icon', __( 'Manifest desktopIcon title must be text of at most 80 characters.', 'odd-outlandish-desktop-decorator' ) );
 		}
 		if (
-			isset( $manifest['desktopIcon']['position'] ) &&
+			array_key_exists( 'position', $manifest['desktopIcon'] ) &&
 			(
 				! is_int( $manifest['desktopIcon']['position'] ) ||
 				$manifest['desktopIcon']['position'] < 0 ||
@@ -401,8 +475,8 @@ function oddout_apps_validate_archive( $tmp_path, $filename ) {
 			return new WP_Error( 'invalid_desktop_icon', __( 'Manifest desktopIcon position must be an integer from 0 through 10000.', 'odd-outlandish-desktop-decorator' ) );
 		}
 	}
-	if ( isset( $manifest['native'] ) ) {
-		if ( ! is_array( $manifest['native'] ) ) {
+	if ( array_key_exists( 'native', $manifest ) ) {
+		if ( ! is_object( $manifest_shapes['native'] ) || ! is_array( $manifest['native'] ) ) {
 			$zip->close();
 			return new WP_Error( 'invalid_native_app', __( 'Manifest native must be an object.', 'odd-outlandish-desktop-decorator' ) );
 		}
@@ -416,52 +490,59 @@ function oddout_apps_validate_archive( $tmp_path, $filename ) {
 			$zip->close();
 			return new WP_Error( 'invalid_native_app', __( 'Manifest native contains unsupported fields.', 'odd-outlandish-desktop-decorator' ) );
 		}
-		$script = isset( $native['script'] ) ? (string) $native['script'] : '';
-		$style  = isset( $native['style'] ) ? (string) $native['style'] : '';
+		if ( array_key_exists( 'style', $native ) && ! is_string( $native['style'] ) ) {
+			$zip->close();
+			return new WP_Error( 'invalid_native_asset', __( 'Manifest native style must be a relative CSS path.', 'odd-outlandish-desktop-decorator' ) );
+		}
+		$script = array_key_exists( 'script', $native ) && is_string( $native['script'] ) ? $native['script'] : '';
+		$style  = array_key_exists( 'style', $native ) ? $native['style'] : '';
 		if ( '' === $script ) {
 			$zip->close();
 			return new WP_Error( 'missing_native_script', __( 'Native apps must declare native.script.', 'odd-outlandish-desktop-decorator' ) );
 		}
 		if (
-			isset( $native['template'] ) &&
+			array_key_exists( 'template', $native ) &&
 			( ! is_string( $native['template'] ) || ! preg_match( '/^[a-z0-9][a-z0-9-]*$/', $native['template'] ) )
 		) {
 			$zip->close();
 			return new WP_Error( 'invalid_native_app', __( 'Manifest native template must be a lowercase slug.', 'odd-outlandish-desktop-decorator' ) );
 		}
-		if ( isset( $native['template'] ) && 'odd-notes' !== $native['template'] ) {
+		if ( array_key_exists( 'template', $native ) && 'odd-notes' !== $native['template'] ) {
 			$zip->close();
 			return new WP_Error( 'invalid_native_app', __( 'ODD Notes must use its registered native template.', 'odd-outlandish-desktop-decorator' ) );
 		}
 
-		foreach ( array(
-			'script' => $script,
-			'style'  => $style,
-		) as $kind => $asset ) {
-			if ( '' === $asset && 'style' === $kind ) {
-				continue;
-			}
-			$expected_ext = 'script' === $kind ? 'js' : 'css';
+		$native_assets = array( 'script' => $script );
+		if ( array_key_exists( 'style', $native ) ) {
+			$native_assets['style'] = $style;
+		}
+		foreach ( $native_assets as $kind => $asset ) {
+			$pattern = 'script' === $kind
+				? '#^[a-zA-Z0-9._-]+(?:/[a-zA-Z0-9._-]+)*\.js$#'
+				: '#^[a-zA-Z0-9._-]+(?:/[a-zA-Z0-9._-]+)*\.css$#';
 			if (
-				false !== strpos( $asset, '..' ) ||
+				oddout_apps_path_has_parent_component( $asset ) ||
 				( strlen( $asset ) > 0 && '/' === $asset[0] ) ||
-				! preg_match( '#^[a-zA-Z0-9._-]+(/[a-zA-Z0-9._-]+)*$#', $asset ) ||
-				$expected_ext !== strtolower( pathinfo( $asset, PATHINFO_EXTENSION ) )
+				! preg_match( $pattern, $asset )
 			) {
 				$zip->close();
-				return new WP_Error( 'invalid_native_asset', __( 'Native app asset paths must be safe relative JS/CSS paths.', 'odd-outlandish-desktop-decorator' ) );
+				return new WP_Error( 'invalid_native_asset', __( 'Native app assets must use safe relative paths ending in lowercase .js or .css.', 'odd-outlandish-desktop-decorator' ) );
 			}
+		}
+		foreach ( $native_assets as $asset ) {
 			if ( false === $zip->getFromName( $asset ) ) {
 				$zip->close();
 				return new WP_Error( 'missing_native_asset', sprintf( /* translators: %s asset path. */ __( 'Native app asset "%s" was not found.', 'odd-outlandish-desktop-decorator' ), $asset ) );
 			}
 		}
 
-		$manifest['native'] = array(
-			'script'   => $script,
-			'style'    => $style,
-			'template' => isset( $native['template'] ) ? $native['template'] : '',
-		);
+		$manifest['native'] = array( 'script' => $script );
+		if ( array_key_exists( 'style', $native ) ) {
+			$manifest['native']['style'] = $style;
+		}
+		if ( array_key_exists( 'template', $native ) ) {
+			$manifest['native']['template'] = $native['template'];
+		}
 	}
 
 	$zip->close();
@@ -474,12 +555,53 @@ function oddout_apps_validate_archive( $tmp_path, $filename ) {
  * directory and then moves into place so a half-extracted app is
  * never visible to the REST server.
  */
-function oddout_apps_extract_archive( $tmp_path, $slug ) {
+function oddout_apps_new_staging_path( $slug ) {
+	$slug = sanitize_key( (string) $slug );
+	return '' === $slug ? '' : rtrim( ODDOUT_APPS_DIR, '/\\' ) . '/.tmp-' . $slug . '-' . wp_generate_password( 8, false );
+}
+
+/** Run an optional transaction lease assertion before a filesystem mutation. */
+function oddout_apps_check_transaction_lease( $lease_check ) {
+	if ( ! is_callable( $lease_check ) ) {
+		return true;
+	}
+	$result = $lease_check();
+	return true === $result || is_wp_error( $result )
+		? $result
+		: new WP_Error( 'transaction_lease_lost', __( 'This app change no longer owns its transaction lease.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 409 ) );
+}
+
+/** Remove staging and prove it is gone before its recovery journal is deleted. */
+function oddout_apps_cleanup_staging( $staging, $lease_check = null ) {
+	$lease = oddout_apps_check_transaction_lease( $lease_check );
+	if ( is_wp_error( $lease ) ) {
+		return $lease;
+	}
+	if ( (bool) apply_filters( 'oddout_apps_staging_cleanup_should_fail', false, $staging ) ) {
+		return new WP_Error( 'transaction_staging_cleanup_failed', __( 'Could not clean an interrupted app transaction.', 'odd-outlandish-desktop-decorator' ) );
+	}
+	if ( file_exists( $staging ) || is_link( $staging ) ) {
+		oddout_apps_rrmdir( $staging );
+	}
+	return file_exists( $staging ) || is_link( $staging )
+		? new WP_Error( 'transaction_staging_cleanup_failed', __( 'Could not clean an interrupted app transaction.', 'odd-outlandish-desktop-decorator' ) )
+		: true;
+}
+
+function oddout_apps_stage_archive( $tmp_path, $slug, $staging = '', $lease_check = null ) {
 	$slug = sanitize_key( (string) $slug );
 	if ( '' === $slug ) {
 		return new WP_Error( 'invalid_slug', __( 'Invalid slug.', 'odd-outlandish-desktop-decorator' ) );
 	}
 	oddout_apps_ensure_storage();
+	$staging = rtrim( (string) $staging, '/\\' );
+	if ( '' === $staging ) {
+		$staging = oddout_apps_new_staging_path( $slug );
+	}
+	$expected_prefix = rtrim( ODDOUT_APPS_DIR, '/\\' ) . '/.tmp-' . $slug . '-';
+	if ( 0 !== strpos( $staging, $expected_prefix ) || false !== strpos( substr( $staging, strlen( $expected_prefix ) ), '/' ) ) {
+		return new WP_Error( 'invalid_staging', __( 'The app staging path is invalid.', 'odd-outlandish-desktop-decorator' ) );
+	}
 
 	if ( ! function_exists( 'unzip_file' ) ) {
 		require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -495,34 +617,229 @@ function oddout_apps_extract_archive( $tmp_path, $slug ) {
 		WP_Filesystem();
 	}
 
-	$staging = ODDOUT_APPS_DIR . '.tmp-' . $slug . '-' . wp_generate_password( 8, false ) . '/';
-	$final   = oddout_apps_dir_for( $slug );
-
+	$lease = oddout_apps_check_transaction_lease( $lease_check );
+	if ( is_wp_error( $lease ) ) {
+		return $lease;
+	}
 	if ( ! wp_mkdir_p( $staging ) ) {
 		return new WP_Error( 'extract_mkdir_failed', __( 'Could not create staging directory.', 'odd-outlandish-desktop-decorator' ) );
 	}
 
 	$result = unzip_file( $tmp_path, $staging );
+	$lease  = oddout_apps_check_transaction_lease( $lease_check );
+	if ( is_wp_error( $lease ) ) {
+		return $lease;
+	}
 	if ( is_wp_error( $result ) ) {
-		oddout_apps_rrmdir( $staging );
-		return $result;
+		$cleaned = oddout_apps_cleanup_staging( $staging, $lease_check );
+		return is_wp_error( $cleaned ) ? $cleaned : $result;
 	}
 
-	oddout_apps_strip_symlinks( rtrim( $staging, '/' ) );
-
-	if ( is_dir( $final ) ) {
-		oddout_apps_rrmdir( $final );
+	$lease = oddout_apps_check_transaction_lease( $lease_check );
+	if ( is_wp_error( $lease ) ) {
+		return $lease;
 	}
+	oddout_apps_strip_symlinks( $staging );
+	return $staging;
+}
+
+/** Deterministically fingerprint an installed tree for idempotent rollback. */
+function oddout_apps_tree_fingerprint( $directory ) {
+	$directory = rtrim( (string) $directory, '/\\' );
+	if ( ! is_dir( $directory ) ) {
+		return '';
+	}
+	$files    = array();
+	$iterator = new RecursiveIteratorIterator(
+		new RecursiveDirectoryIterator( $directory, FilesystemIterator::SKIP_DOTS )
+	);
+	foreach ( $iterator as $file ) {
+		if ( $file->isFile() && ! $file->isLink() ) {
+			$files[] = str_replace( '\\', '/', substr( $file->getPathname(), strlen( $directory ) + 1 ) );
+		}
+	}
+	sort( $files, SORT_STRING );
+	$hash = hash_init( 'sha256' );
+	foreach ( $files as $relative ) {
+		$path = $directory . '/' . $relative;
+		hash_update( $hash, $relative . "\0" . hash_file( 'sha256', $path ) . "\0" );
+	}
+	return hash_final( $hash );
+}
+
+/**
+ * Promote a staged app without destroying the currently working copy.
+ *
+ * The old directory is renamed to a private backup first. If promotion fails,
+ * it is restored before returning. Callers must commit or roll back the token
+ * after their registry writes complete.
+ *
+ * @param string $staging Absolute staged directory.
+ * @param string $slug    App slug.
+ * @return array|WP_Error Promotion token.
+ */
+function oddout_apps_prepare_promotion( $staging, $slug ) {
+	$slug    = sanitize_key( (string) $slug );
+	$staging = rtrim( (string) $staging, '/\\' );
+	$final   = rtrim( oddout_apps_dir_for( $slug ), '/\\' );
+	if ( '' === $slug || '' === $staging || ! is_dir( $staging ) || '' === $final ) {
+		return new WP_Error( 'invalid_staging', __( 'The staged app directory is invalid.', 'odd-outlandish-desktop-decorator' ) );
+	}
+	$had_final = is_dir( $final );
+	return array(
+		'staging'         => $staging,
+		'final'           => $final,
+		'backup'          => $had_final ? rtrim( ODDOUT_APPS_DIR, '/\\' ) . '/.backup-' . $slug . '-' . wp_generate_password( 8, false ) : '',
+		'had_final'       => $had_final,
+		'old_fingerprint' => $had_final ? oddout_apps_tree_fingerprint( $final ) : '',
+	);
+}
+
+function oddout_apps_promote_staged_archive( $staging, $slug, $transaction_key = '', $prepared = array(), $journal_owner = '', $lease_check = null ) {
+	$token = is_array( $prepared ) && ! empty( $prepared ) ? $prepared : oddout_apps_prepare_promotion( $staging, $slug );
+	if ( is_wp_error( $token ) ) {
+		return $token;
+	}
+	$staging = (string) $token['staging'];
+	$final   = (string) $token['final'];
+	$backup  = (string) $token['backup'];
+	$slug    = sanitize_key( (string) $slug );
+
+	if ( ! empty( $token['had_final'] ) ) {
+		$lease = oddout_apps_check_transaction_lease( $lease_check );
+		if ( is_wp_error( $lease ) ) {
+			return $lease;
+		}
+		if ( ! is_dir( $final ) ) {
+			return new WP_Error( 'installed_app_missing', __( 'The installed app disappeared before replacement began.', 'odd-outlandish-desktop-decorator' ) );
+		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename
+		if ( ! @rename( $final, $backup ) ) {
+			return new WP_Error( 'backup_rename_failed', __( 'Could not preserve the currently installed app.', 'odd-outlandish-desktop-decorator' ) );
+		}
+		if ( '' !== $transaction_key && function_exists( 'oddout_apps_journal_phase' ) && ! oddout_apps_journal_phase( $transaction_key, 'backup_created', $journal_owner ) ) {
+			return new WP_Error( 'transaction_journal_failed', __( 'Could not record the app replacement transaction.', 'odd-outlandish-desktop-decorator' ) );
+		}
+	}
+
 	// rename() is used here intentionally: it's the only cross-
 	// filesystem-atomic way to promote the staging tree to the final
 	// location. WP_Filesystem::move() is a non-atomic copy-then-delete
 	// that would expose a half-extracted app to the serve endpoint.
+	$lease = oddout_apps_check_transaction_lease( $lease_check );
+	if ( is_wp_error( $lease ) ) {
+		return $lease;
+	}
 	// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename
-	if ( ! @rename( $staging, rtrim( $final, '/' ) ) ) {
-		oddout_apps_rrmdir( $staging );
+	if ( ! @rename( $staging, $final ) ) {
 		return new WP_Error( 'extract_rename_failed', __( 'Could not finalize app installation.', 'odd-outlandish-desktop-decorator' ) );
 	}
+	if ( '' !== $transaction_key && function_exists( 'oddout_apps_journal_phase' ) && ! oddout_apps_journal_phase( $transaction_key, 'promoted', $journal_owner ) ) {
+		return new WP_Error( 'transaction_journal_failed', __( 'Could not record the promoted app transaction.', 'odd-outlandish-desktop-decorator' ) );
+	}
+
+	return $token;
+}
+
+function oddout_apps_commit_promoted_archive( array $token, $lease_check = null ) {
+	$final   = isset( $token['final'] ) ? (string) $token['final'] : '';
+	$staging = isset( $token['staging'] ) ? (string) $token['staging'] : '';
+	if ( '' === $final || ! is_dir( $final ) ) {
+		return new WP_Error( 'commit_final_missing', __( 'The promoted app directory is missing.', 'odd-outlandish-desktop-decorator' ) );
+	}
+	if ( ! empty( $token['backup'] ) && is_dir( $token['backup'] ) ) {
+		$lease = oddout_apps_check_transaction_lease( $lease_check );
+		if ( is_wp_error( $lease ) ) {
+			return $lease;
+		}
+		oddout_apps_rrmdir( $token['backup'] );
+		if ( is_dir( $token['backup'] ) ) {
+			return new WP_Error( 'commit_backup_cleanup_failed', __( 'Could not remove the app transaction backup.', 'odd-outlandish-desktop-decorator' ) );
+		}
+	}
+	if ( '' !== $staging && ( file_exists( $staging ) || is_link( $staging ) ) ) {
+		$cleaned = oddout_apps_cleanup_staging( $staging, $lease_check );
+		if ( is_wp_error( $cleaned ) ) {
+			return $cleaned;
+		}
+	}
 	return true;
+}
+
+function oddout_apps_rollback_promoted_archive( array $token, $lease_check = null ) {
+	$final     = isset( $token['final'] ) ? (string) $token['final'] : '';
+	$backup    = isset( $token['backup'] ) ? (string) $token['backup'] : '';
+	$staging   = isset( $token['staging'] ) ? (string) $token['staging'] : '';
+	$had_final = ! empty( $token['had_final'] );
+	if ( '' === $final ) {
+		return new WP_Error( 'rollback_target_missing', __( 'App rollback target is missing.', 'odd-outlandish-desktop-decorator' ) );
+	}
+	if ( '' !== $backup && is_dir( $backup ) ) {
+		if ( is_dir( $final ) ) {
+			$lease = oddout_apps_check_transaction_lease( $lease_check );
+			if ( is_wp_error( $lease ) ) {
+				return $lease;
+			}
+			oddout_apps_rrmdir( $final );
+			if ( is_dir( $final ) ) {
+				return new WP_Error( 'rollback_candidate_cleanup_failed', __( 'Could not remove the failed app candidate.', 'odd-outlandish-desktop-decorator' ) );
+			}
+		}
+		$lease = oddout_apps_check_transaction_lease( $lease_check );
+		if ( is_wp_error( $lease ) ) {
+			return $lease;
+		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename
+		if ( ! @rename( $backup, $final ) || ! is_dir( $final ) ) {
+			return new WP_Error( 'rollback_restore_failed', __( 'Could not restore the previous app directory.', 'odd-outlandish-desktop-decorator' ) );
+		}
+	} elseif ( $had_final ) {
+		// A retry after rollback may find the backup and staging already gone.
+		// The pre-promotion fingerprint proves the restored tree is complete and
+		// makes this cleanup idempotent across another fatal interruption.
+		$old_fingerprint = isset( $token['old_fingerprint'] ) ? (string) $token['old_fingerprint'] : '';
+		$restored        = '' !== $old_fingerprint && is_dir( $final ) && hash_equals( $old_fingerprint, oddout_apps_tree_fingerprint( $final ) );
+		$never_started   = is_dir( $final ) && '' !== $staging && is_dir( $staging );
+		if ( ! $restored && ! $never_started ) {
+			return new WP_Error( 'rollback_backup_missing', __( 'The previous app backup is missing; manual recovery is required.', 'odd-outlandish-desktop-decorator' ) );
+		}
+	} elseif ( is_dir( $final ) ) {
+		$lease = oddout_apps_check_transaction_lease( $lease_check );
+		if ( is_wp_error( $lease ) ) {
+			return $lease;
+		}
+		oddout_apps_rrmdir( $final );
+		if ( is_dir( $final ) ) {
+			return new WP_Error( 'rollback_new_install_cleanup_failed', __( 'Could not remove the failed app installation.', 'odd-outlandish-desktop-decorator' ) );
+		}
+	}
+	if ( '' !== $staging && ( file_exists( $staging ) || is_link( $staging ) ) ) {
+		$cleaned = oddout_apps_cleanup_staging( $staging, $lease_check );
+		if ( is_wp_error( $cleaned ) ) {
+			return $cleaned;
+		}
+	}
+	return true;
+}
+
+/**
+ * Compatibility wrapper for callers that do not need registry rollback.
+ */
+function oddout_apps_extract_archive( $tmp_path, $slug ) {
+	$staging = oddout_apps_stage_archive( $tmp_path, $slug );
+	if ( is_wp_error( $staging ) ) {
+		return $staging;
+	}
+	$prepared = oddout_apps_prepare_promotion( $staging, $slug );
+	if ( is_wp_error( $prepared ) ) {
+		return $prepared;
+	}
+	$token = oddout_apps_promote_staged_archive( $staging, $slug, '', $prepared );
+	if ( is_wp_error( $token ) ) {
+		oddout_apps_rollback_promoted_archive( $prepared );
+		return $token;
+	}
+	return oddout_apps_commit_promoted_archive( $token );
 }
 
 /**

@@ -5,6 +5,18 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_call:
+    inputs:
+      artifact-name:
+        description: "Existing release artifact containing odd.zip and odd.zip.sha256."
+        required: false
+        default: ""
+        type: string
+      zip-path:
+        description: "Path to odd.zip after the artifact is downloaded."
+        required: false
+        default: "dist/odd.zip"
+        type: string
 
 jobs:
   e2e:
@@ -28,12 +40,22 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Download exact release package
+        if: ${{ inputs['artifact-name'] != '' }}
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ inputs['artifact-name'] }}
+          path: dist
+
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
           extensions: mysqli, zip, dom, gd
           coverage: none
-          tools: wp-cli
+          tools: wp-cli:2.12.0
+
+      - name: Require verified WP-CLI 2.12.0
+        run: odd/bin/ensure-wp-cli
 
       - uses: actions/setup-node@v6
         with:
@@ -51,6 +73,21 @@ jobs:
           npm ci --no-audit --no-fund
           python -m pip install --quiet -r requirements-catalog.txt
           python3 _tools/build-catalog.py
+
+      - name: Verify exact ODD package
+        run: |
+          set -euo pipefail
+          zip_path="${{ inputs['zip-path'] || 'dist/odd.zip' }}"
+          if [ -z "${{ inputs['artifact-name'] }}" ]; then
+            odd/bin/build-zip
+          fi
+          test -f "$zip_path"
+          test -f "${zip_path}.sha256"
+          (
+            cd "$(dirname "$zip_path")"
+            sha256sum --check "$(basename "$zip_path").sha256"
+          )
+          odd/bin/check-zip-contents "$zip_path"
 
       - name: Install Playwright Chromium
         run: |
@@ -85,11 +122,12 @@ jobs:
           cp "$GITHUB_WORKSPACE/ci/smoke/odd-smoke-fixture.php" wp-content/mu-plugins/
 
       - name: Install OpenStation 1.1.0 and ODD
+        env:
+          ODD_ZIP: ${{ github.workspace }}/${{ inputs['zip-path'] || 'dist/odd.zip' }}
         working-directory: /tmp/wp
         run: |
           wp plugin install https://downloads.wordpress.org/plugin/desktop-mode.1.1.0.zip --activate
-          ln -s "${{ github.workspace }}/odd" wp-content/plugins/odd
-          wp plugin activate odd
+          wp plugin install "$ODD_ZIP" --activate
           wp user meta update 1 desktop_mode_mode 1
           wp option update permalink_structure '/%postname%/'
           wp rewrite flush --hard

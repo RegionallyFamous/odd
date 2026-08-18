@@ -101,6 +101,21 @@
 
 	const statusElement = $( '#app-status' );
 	const statusReadout = $( '.topbar__readout' );
+	const toolRail = $( '.tool-rail' );
+	const horizontalRailQuery = typeof window.matchMedia === 'function'
+		? window.matchMedia( '(max-width: 560px)' )
+		: { matches: false };
+
+	function syncToolRailOrientation() {
+		toolRail.setAttribute( 'aria-orientation', horizontalRailQuery.matches ? 'horizontal' : 'vertical' );
+	}
+
+	syncToolRailOrientation();
+	if ( typeof horizontalRailQuery.addEventListener === 'function' ) {
+		horizontalRailQuery.addEventListener( 'change', syncToolRailOrientation );
+	} else if ( typeof horizontalRailQuery.addListener === 'function' ) {
+		horizontalRailQuery.addListener( syncToolRailOrientation );
+	}
 
 	function showStatus( message, tone = 'ok', sticky = false ) {
 		statusElement.textContent = message;
@@ -156,9 +171,10 @@
 		button.addEventListener( 'click', () => activateTool( button.dataset.tool ) );
 		button.addEventListener( 'keydown', ( event ) => {
 			let next = index;
-			if ( event.key === 'ArrowDown' || event.key === 'ArrowRight' ) {
+			const horizontal = toolRail.getAttribute( 'aria-orientation' ) === 'horizontal';
+			if ( ( horizontal && event.key === 'ArrowRight' ) || ( ! horizontal && event.key === 'ArrowDown' ) ) {
 				next = ( index + 1 ) % TOOL_ORDER.length;
-			} else if ( event.key === 'ArrowUp' || event.key === 'ArrowLeft' ) {
+			} else if ( ( horizontal && event.key === 'ArrowLeft' ) || ( ! horizontal && event.key === 'ArrowUp' ) ) {
 				next = ( index - 1 + TOOL_ORDER.length ) % TOOL_ORDER.length;
 			} else if ( event.key === 'Home' ) {
 				next = 0;

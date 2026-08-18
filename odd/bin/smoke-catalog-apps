@@ -28,7 +28,10 @@ const { spawnSync } = require( 'node:child_process' );
 
 const REPO_ROOT = path.resolve( __dirname, '..', '..' );
 const APPS_DIR = path.join( REPO_ROOT, '_tools', 'catalog-sources', 'apps' );
-const CATALOG_BUNDLES_DIR = path.join( REPO_ROOT, 'site', 'catalog', 'v1', 'bundles' );
+const configuredBundlesDir = String( process.env.ODD_CATALOG_BUNDLES_DIR || '' ).trim();
+const CATALOG_BUNDLES_DIR = configuredBundlesDir
+	? path.resolve( REPO_ROOT, configuredBundlesDir )
+	: path.join( REPO_ROOT, 'site', 'catalog', 'v1', 'bundles' );
 const VALIDATE_MANIFEST = path.join( REPO_ROOT, 'odd', 'bin', 'validate-manifest' );
 const DEFAULT_SCREENSHOTS_DIR = path.join( REPO_ROOT, 'test-results', 'catalog-app-smoke' );
 const VIEWPORTS = [
@@ -56,10 +59,12 @@ function parseArgs() {
 		} else if ( arg === '--no-screenshots' ) {
 			screenshots = false;
 		} else if ( arg === '--screenshots-dir' ) {
-			screenshotsDir = path.resolve( args[ ++i ] || '' );
-			if ( ! screenshotsDir ) {
+			const value = args[ i + 1 ];
+			if ( ! value || value.startsWith( '-' ) ) {
 				throw new Error( '--screenshots-dir requires a directory' );
 			}
+			i++;
+			screenshotsDir = path.resolve( value );
 		} else if ( arg === '--only' ) {
 			const value = args[ ++i ] || '';
 			value.split( ',' ).map( ( s ) => s.trim() ).filter( Boolean ).forEach( ( slug ) => slugs.push( slug ) );
@@ -391,7 +396,73 @@ function extractBundle( slug, tempRoot ) {
 	return { slug, bundlePath, extractDir, manifest, entry };
 }
 
-async function exercisePage( page ) {
+async function exercisePantry( page, viewport ) {
+	await page.locator( '#pattern-grid .pattern-card:not(.pattern-card--skeleton)' ).first().waitFor();
+	await page.locator( '#pattern-grid .pattern-card:not(.pattern-card--skeleton)' ).first().click();
+	const preview = page.locator( '#pattern-preview iframe' );
+	await preview.waitFor();
+	if ( await preview.getAttribute( 'sandbox' ) !== '' ) {
+		throw new Error( 'pantry preview iframe is missing its empty sandbox policy' );
+	}
+	if ( await preview.getAttribute( 'referrerpolicy' ) !== 'no-referrer' ) {
+		throw new Error( 'pantry preview iframe is missing its no-referrer policy' );
+	}
+	const srcdoc = await preview.getAttribute( 'srcdoc' ) || '';
+	if ( ! srcdoc.includes( "default-src 'none'" ) ) {
+		throw new Error( 'pantry preview iframe is missing its restrictive CSP' );
+	}
+
+	await page.locator( '#favorite-pattern' ).click();
+	if ( viewport.name !== 'desktop' ) {
+		await page.locator( '#close-inspector' ).click();
+	}
+	await page.locator( '#pattern-search' ).fill( 'announcement' );
+	await page.locator( '#pattern-grid .pattern-card' ).first().waitFor();
+	await page.locator( '#pattern-search' ).fill( '' );
+
+	if ( viewport.name !== 'desktop' ) {
+		return;
+	}
+
+	await page.locator( '#new-pattern' ).click();
+	await page.locator( '#new-pattern-title' ).fill( 'Smoke shelf pattern' );
+	await page.locator( '#create-submit' ).click();
+	await page.getByText( 'Smoke shelf pattern', { exact: true } ).first().waitFor();
+	await page.locator( '#rename-pattern' ).click();
+	await page.locator( '#rename-input' ).fill( 'Smoke shelf pattern renamed' );
+	await page.locator( '#title-editor [type="submit"]' ).click();
+	await page.getByText( 'Smoke shelf pattern renamed', { exact: true } ).first().waitFor();
+	await page.locator( '#duplicate-pattern' ).click();
+	await page.getByText( 'Smoke shelf pattern renamed copy', { exact: true } ).first().waitFor();
+	await page.locator( '#trash-pattern' ).click();
+	await page.locator( '#trash-form [value="trash"]' ).click();
+	await page.locator( '#pattern-grid .pattern-card h2', { hasText: 'Smoke shelf pattern renamed copy' } ).waitFor( { state: 'detached' } );
+}
+
+async function exerciseWorkbench( page, viewport ) {
+	const rail = page.locator( '.tool-rail' );
+	const expectedOrientation = viewport.width <= 560 ? 'horizontal' : 'vertical';
+	if ( await rail.getAttribute( 'aria-orientation' ) !== expectedOrientation ) {
+		throw new Error( `workbench tab orientation does not match ${ viewport.name } layout` );
+	}
+	const tabs = page.locator( '[role="tab"]' );
+	for ( let index = 0; index < await tabs.count(); index++ ) {
+		if ( ! await tabs.nth( index ).getAttribute( 'aria-label' ) ) {
+			throw new Error( `workbench tab ${ index + 1 } has no accessible name` );
+		}
+	}
+	await page.locator( '[data-tool="clean"]' ).focus();
+	await page.keyboard.press( expectedOrientation === 'horizontal' ? 'ArrowRight' : 'ArrowDown' );
+	if ( await page.locator( '[data-tool="markdown"]' ).getAttribute( 'aria-selected' ) !== 'true' ) {
+		throw new Error( 'workbench did not move to the next tab on the layout axis' );
+	}
+	await page.locator( '#markdown-input' ).fill( '<img src=x onerror=alert(1)>\n[unsafe](javascript:alert(2))' );
+	if ( await page.locator( '#markdown-preview img, #markdown-preview script, #markdown-preview svg' ).count() ) {
+		throw new Error( 'workbench rendered hostile Markdown as active DOM' );
+	}
+}
+
+async function exercisePage( page, app, viewport ) {
 	await page.keyboard.press( 'Space' );
 	await page.keyboard.press( 'ArrowLeft' );
 	await page.keyboard.press( 'ArrowRight' );
@@ -412,6 +483,12 @@ async function exercisePage( page ) {
 		}
 	}
 	await page.waitForTimeout( 250 );
+
+	if ( app.slug === 'pantry' ) {
+		await exercisePantry( page, viewport );
+	} else if ( app.slug === 'workbench' ) {
+		await exerciseWorkbench( page, viewport );
+	}
 }
 
 async function inspectPage( page ) {
@@ -523,10 +600,56 @@ async function smokeOneViewport( browser, server, app, viewport, screenshots, sc
 	} );
 
 	try {
+		if ( app.slug === 'pantry' ) {
+			await page.addInitScript( () => {
+				const preferences = new Map();
+				window.oddApp = {
+					apiVersion: 1,
+					slug: 'pantry',
+					adminUrl: `${ window.location.origin }/wp-admin/`,
+					request: async ( path, init = {} ) => {
+						const url = new URL( String( path ).replace( /^\/+/, '' ), `${ window.location.origin }/wp-json/` );
+						const headers = new Headers( init.headers || {} );
+						headers.set( 'Accept', 'application/json' );
+						let body = init.body;
+						if ( body !== undefined && typeof body !== 'string' && ! ( body instanceof FormData ) ) {
+							headers.set( 'Content-Type', 'application/json' );
+							body = JSON.stringify( body );
+						}
+						const response = await fetch( url, { ...init, body, headers, credentials: 'same-origin' } );
+						const value = response.status === 204 ? null : await response.json();
+						if ( ! response.ok ) {
+							const error = new Error( value?.message || `${ response.status } ${ response.statusText }` );
+							error.status = response.status;
+							error.code = value?.code || '';
+							throw error;
+						}
+						if ( url.searchParams.get( '_envelope' ) === '1' ) {
+							return {
+								body: value,
+								headers: Object.fromEntries( response.headers.entries() ),
+								status: response.status,
+							};
+						}
+						return value;
+					},
+					storage: {
+						list: async () => [ ...preferences.keys() ].sort(),
+						get: async ( segment ) => preferences.has( segment ) ? preferences.get( segment ) : null,
+						set: async ( segment, value ) => {
+							preferences.set( segment, value );
+							return value;
+						},
+						remove: async ( segment ) => preferences.delete( segment ),
+						clear: async () => preferences.clear(),
+					},
+				};
+			} );
+		}
 		const entryUrl = `${ server.baseUrl }/${ app.slug }/${ app.entry }`;
 		await page.goto( entryUrl, { waitUntil: 'load' } );
 		await page.waitForTimeout( 350 );
-		await exercisePage( page );
+		await exercisePage( page, app, viewport );
 		const metrics = await inspectPage( page );
 		assertPageMetrics( app, viewport, metrics, events );
 		if ( screenshots ) {

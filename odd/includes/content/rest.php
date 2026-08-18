@@ -76,7 +76,7 @@ function oddout_bundle_rest_upload( WP_REST_Request $req ) {
 		$tmp,
 		$name,
 		array(
-			'replace_existing' => (bool) $req->get_param( 'allow_update' ),
+			'operation' => (bool) $req->get_param( 'allow_update' ) ? 'update' : 'install',
 		)
 	);
 	if ( is_wp_error( $result ) ) {
@@ -89,6 +89,7 @@ function oddout_bundle_rest_upload( WP_REST_Request $req ) {
 
 	$out = array(
 		'installed' => true,
+		'operation' => isset( $result['operation'] ) ? $result['operation'] : 'install',
 		'slug'      => $result['slug'],
 		'type'      => $result['type'],
 		'manifest'  => $result['manifest'],

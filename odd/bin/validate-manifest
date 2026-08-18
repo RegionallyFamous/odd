@@ -16,84 +16,35 @@ and executable-file restrictions.
 
 Dependencies:
   - Python 3.9+
-  - `jsonschema` (installed via `pip install jsonschema` or inside a
-    venv). The script degrades gracefully to a structural check if
-    jsonschema is missing, so local-dev doesn't mandate the install,
-    but CI exports ODD_REQUIRE_JSONSCHEMA=1 to force it.
+  - `jsonschema` from `requirements-catalog.txt`. Validation never
+    silently downgrades to a partial structural check.
 """
 from __future__ import annotations
 
 import json
-import os
 import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent.parent
-SCHEMA_PATH = REPO_ROOT / "docs" / "schemas" / "manifest.schema.json"
+sys.path.insert(0, str(REPO_ROOT / "_tools"))
 
-
-def structural_fallback(manifest: dict) -> list[str]:
-    """Minimal structural checks when jsonschema isn't installed. These
-    are the subset of the JSON Schema that have the highest blast
-    radius when broken — missing type/slug/name/version, or a slug that
-    would break URLs and user-meta keys."""
-    problems: list[str] = []
-    for field in ("type", "name", "slug", "version", "entry", "icon"):
-        if field not in manifest or not isinstance(manifest[field], str) or not manifest[field]:
-            problems.append(f"missing or empty required field: {field}")
-    slug = manifest.get("slug", "")
-    if isinstance(slug, str) and slug:
-        import re
-        if not re.match(r"^[a-z0-9-]+$", slug):
-            problems.append(
-                f"slug '{slug}' must match ^[a-z0-9-]+$ "
-                f"(lowercase letters, digits, hyphens)"
-            )
-    bundle_type = manifest.get("type", "")
-    if bundle_type != "app":
-        problems.append(f"type '{bundle_type}' must be app")
-    allowed = {
-        "$schema", "author", "capability", "description", "desktopIcon", "entry",
-        "icon", "name", "native", "slug", "surfaces", "type", "version", "window",
-    }
-    for field in sorted(set(manifest).difference(allowed)):
-        problems.append(f"unsupported manifest field: {field}")
-    return problems
+try:
+    from manifest_validation import validate_manifest
+except ImportError as exc:
+    print(
+        "Manifest validation dependencies are unavailable. Install the pinned "
+        "catalog dependencies with `python -m pip install -r "
+        f"requirements-catalog.txt` ({exc}).",
+        file=sys.stderr,
+    )
+    sys.exit(2)
 
 
 def main() -> int:
     if len(sys.argv) < 2:
         print("usage: validate-manifest path/to/manifest.json [...]", file=sys.stderr)
         return 2
-
-    if not SCHEMA_PATH.exists():
-        print(f"schema not found: {SCHEMA_PATH}", file=sys.stderr)
-        return 2
-
-    schema = json.loads(SCHEMA_PATH.read_text())
-
-    try:
-        from jsonschema import Draft202012Validator
-        validator = Draft202012Validator(schema)
-        have_jsonschema = True
-    except ImportError:
-        if os.environ.get("ODD_REQUIRE_JSONSCHEMA") == "1":
-            print(
-                "jsonschema is required (set ODD_REQUIRE_JSONSCHEMA=0 to "
-                "downgrade to structural checks only). Install with "
-                "`pip install jsonschema`.",
-                file=sys.stderr,
-            )
-            return 2
-        validator = None
-        have_jsonschema = False
-        print(
-            "[validate-manifest] warning: jsonschema not installed — "
-            "running structural fallback only. `pip install jsonschema` "
-            "for full coverage.",
-            file=sys.stderr,
-        )
 
     any_failed = False
     for path_str in sys.argv[1:]:
@@ -109,12 +60,7 @@ def main() -> int:
             any_failed = True
             continue
 
-        problems: list[str] = []
-        if have_jsonschema and validator is not None:
-            for err in sorted(validator.iter_errors(manifest), key=lambda e: e.path):
-                location = "/".join(str(p) for p in err.absolute_path) or "(root)"
-                problems.append(f"{location}: {err.message}")
-        problems.extend(structural_fallback(manifest))
+        problems = validate_manifest(manifest)
 
         if problems:
             any_failed = True

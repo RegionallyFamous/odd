@@ -5,7 +5,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 LICENSES = ROOT / "LICENSES.md"
-EXPECTED_PLUGIN_ASSETS = {"odd-eye.svg"}
+EXPECTED_PLUGIN_ASSETS = {"odd-browser-api.js", "odd-eye.svg"}
 NOTES_SNAPSHOT = (
     ROOT
     / "_tools/catalog-sources/apps/odd-notes/component-snapshot"

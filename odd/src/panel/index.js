@@ -193,11 +193,19 @@
 
 	function renderCard( state, row ) {
 		var installed = state.installed.find( function ( app ) { return app.slug === row.slug; } );
-		var update = installed && versionNewer( row.version, installed.version );
+		var rowIncompatible = row.incompatible === true || row.state === 'incompatible';
+		var update = installed && ! rowIncompatible && versionNewer( row.version, installed.version );
+		var incompatible = ! installed && rowIncompatible;
+		var incompatibilityReason = incompatible && typeof row.incompatibility_reason === 'string'
+			? row.incompatibility_reason.trim()
+			: '';
+		if ( incompatible && ! incompatibilityReason ) {
+			incompatibilityReason = __( 'Update ODD or OpenStation to install this app.' );
+		}
 		var titleText = displayName( row );
 		var card = el( 'article', 'odd-app-card' );
 		card.dataset.slug = row.slug || '';
-		card.dataset.state = update ? 'update' : ( installed ? 'installed' : 'available' );
+		card.dataset.state = update ? 'update' : ( installed ? 'installed' : ( incompatible ? 'incompatible' : 'available' ) );
 
 		var art = el( 'div', 'odd-app-card__art' );
 		var preview = row.preview_url || row.previewUrl || row.card_url || row.cardUrl || '';
@@ -232,56 +240,79 @@
 		var stateBadge = el(
 			'span',
 			'odd-app-card__state',
-			update ? __( 'Update available' ) : ( installed ? __( 'Installed' ) : __( 'Available' ) )
+			update ? __( 'Update available' ) : ( installed ? __( 'Installed' ) : ( incompatible ? __( 'Update required' ) : __( 'Available' ) ) )
 		);
 		stateBadge.insertBefore( el( 'span', 'odd-app-card__state-dot' ), stateBadge.firstChild );
 		body.appendChild( stateBadge );
 
-		body.appendChild( el( 'p', 'odd-app-card__description', row.description || __( 'A focused notes app stored in WordPress.' ) ) );
+		body.appendChild( el(
+			'p',
+			incompatible ? 'odd-app-card__description odd-app-card__compatibility' : 'odd-app-card__description',
+			incompatible ? incompatibilityReason : ( row.description || __( 'A focused notes app stored in WordPress.' ) )
+		) );
 		appendHighlights( body, row );
 
 		var footer = el( 'div', 'odd-app-card__footer' );
 		var actions = el( 'div', 'odd-app-card__actions' );
 		var primary = el( 'button', 'odd-app-card__button odd-app-card__button--primary' );
 		primary.type = 'button';
-		var primaryLabel = el( 'span', '', installed ? ( update ? __( 'Update app' ) : __( 'Open app' ) ) : __( 'Install app' ) );
+		var primaryLabel = el( 'span', '', installed ? ( update ? __( 'Update app' ) : __( 'Open app' ) ) : ( incompatible ? __( 'Update required' ) : __( 'Install app' ) ) );
 		primaryLabel.dataset.oddButtonLabel = '1';
 		primary.appendChild( primaryLabel );
 		primary.appendChild( el( 'span', 'odd-app-card__button-arrow', '↗' ) );
-		primary.disabled = ! installed && ! state.cfg.canInstall;
-		if ( primary.disabled ) {
+		primary.disabled = incompatible || ( ! installed && ! state.cfg.canInstall );
+		if ( incompatible ) {
+			primary.title = incompatibilityReason;
+		} else if ( primary.disabled ) {
 			primary.title = __( 'An administrator must install this app.' );
 		}
-		primary.addEventListener( 'click', function () {
-			if ( installed && ! update ) {
-				openInstalledApp( state, row, primary );
-				return;
-			}
-			mutate( state, primary, __( update ? 'Updating…' : 'Installing…' ), function () {
-				return request( state.cfg, state.cfg.rest.install, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify( { slug: row.slug, allow_update: !! update } )
-				} );
-			}, {
-				partialFailure: displayName( row ) + __( ' was installed, but OpenStation could not refresh its launcher. Try Open app again; if it still fails, reload once.' ),
-				afterCommit: async function ( payload ) {
-					var installedRow = validateInstallResult( payload, row.slug );
-					if ( ! installed ) { seedLivePlacement( installedRow ); }
-					await refreshOpenStation();
-					if ( ! state.installed.some( function ( app ) { return app.slug === row.slug; } ) ) {
-						throw new Error( __( 'The app was installed but is missing from the installed-app registry.' ) );
-					}
+		if ( ! incompatible ) {
+			primary.addEventListener( 'click', function () {
+				if ( installed && ! update ) {
+					openInstalledApp( state, row, primary );
+					return;
 				}
+				mutate( state, primary, __( update ? 'Updating…' : 'Installing…' ), function () {
+					return request( state.cfg, state.cfg.rest.install, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify( { slug: row.slug, allow_update: !! update } )
+					} );
+				}, {
+					partialFailure: displayName( row ) + __( ' was installed, but OpenStation could not refresh its launcher. Try Open app again; if it still fails, reload once.' ),
+					afterCommit: async function ( payload ) {
+						var installedRow = validateInstallResult( payload, row.slug );
+						if ( ! installed ) { seedLivePlacement( installedRow ); }
+						await refreshOpenStation();
+						if ( ! state.installed.some( function ( app ) { return app.slug === row.slug; } ) ) {
+							throw new Error( __( 'The app was installed but is missing from the installed-app registry.' ) );
+						}
+					}
+				} );
 			} );
-		} );
+		}
 		actions.appendChild( primary );
 
 		if ( installed && state.cfg.canInstall ) {
 			var remove = el( 'button', 'odd-app-card__button odd-app-card__button--remove', __( 'Remove' ) );
 			remove.type = 'button';
-			remove.addEventListener( 'click', function () {
-				var confirmed = window.confirm( __( 'Remove ' ) + titleText + __( ' from this site?' ) );
+			remove.addEventListener( 'click', async function () {
+				var confirmed;
+				try {
+					if ( typeof api().confirm !== 'function' ) {
+						throw new Error( __( 'OpenStation confirmation is unavailable.' ) );
+					}
+					confirmed = await api().confirm( {
+						title: __( 'Remove this app?' ),
+						message: __( 'Remove ' ) + titleText + __( ' from this site?' ),
+						confirmLabel: __( 'Remove' ),
+						cancelLabel: __( 'Keep it' ),
+						danger: true
+					} );
+				} catch ( error ) {
+					setStatus( state, error && error.message ? error.message : __( 'Could not open the confirmation dialog.' ), 'error' );
+					return;
+				}
 				if ( ! confirmed ) { return; }
 				mutate( state, remove, __( 'Removing…' ), function () {
 					return request( state.cfg, state.cfg.rest.bundles + encodeURIComponent( row.slug ), { method: 'DELETE' } );

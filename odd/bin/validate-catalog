@@ -21,6 +21,9 @@ from PIL import Image
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
+sys.path.insert(0, str(REPO / "_tools"))
+
+from manifest_validation import validate_manifest as validate_manifest_schema
 
 
 def repo_path_from_env(name: str, default: Path) -> Path:
@@ -121,8 +124,7 @@ def validate_schema(data: dict, problems: list[str]) -> None:
     try:
         from jsonschema import Draft7Validator
     except ImportError:
-        if os.environ.get("ODD_REQUIRE_JSONSCHEMA") == "1":
-            problems.append("jsonschema is required for catalog validation")
+        problems.append("jsonschema is required for catalog validation")
         return
     for error in sorted(Draft7Validator(schema).iter_errors(data), key=lambda item: list(item.path)):
         location = "/".join(str(part) for part in error.absolute_path) or "(root)"
@@ -202,7 +204,8 @@ def validate_bundle(path: Path, row: dict, label: str, problems: list[str]) -> N
                 total += info.file_size
                 if not PATH_RE.fullmatch(name) or ".." in Path(name).parts:
                     problems.append(f"{label}: unsafe archive path {name!r}")
-                if Path(name).suffix.lower().lstrip(".") in FORBIDDEN_EXTENSIONS:
+                extension = Path(name).suffix.lower().lstrip(".")
+                if extension in FORBIDDEN_EXTENSIONS or re.fullmatch(r"php[0-9]+", extension):
                     problems.append(f"{label}: server-executable archive entry {name!r}")
                 mode = (info.external_attr >> 16) & 0o170000
                 if mode == 0o120000:
@@ -232,6 +235,8 @@ def validate_bundle(path: Path, row: dict, label: str, problems: list[str]) -> N
             if not isinstance(manifest, dict):
                 problems.append(f"{label}: manifest.json must be an object")
                 return
+            for problem in validate_manifest_schema(manifest):
+                problems.append(f"{label}: manifest schema {problem}")
             unknown = set(manifest).difference(MANIFEST_KEYS)
             if unknown:
                 problems.append(f"{label}: manifest has unsupported keys {sorted(unknown)}")
@@ -245,6 +250,19 @@ def validate_bundle(path: Path, row: dict, label: str, problems: list[str]) -> N
                 value = manifest.get(field)
                 if not isinstance(value, str) or value not in names or not PATH_RE.fullmatch(value):
                     problems.append(f"{label}: manifest {field} is missing or unsafe")
+            native = manifest.get("native")
+            if isinstance(native, dict):
+                for field, suffix in (("script", ".js"), ("style", ".css")):
+                    value = native.get(field)
+                    if field == "style" and value is None:
+                        continue
+                    if (
+                        not isinstance(value, str)
+                        or value not in names
+                        or not PATH_RE.fullmatch(value)
+                        or not value.lower().endswith(suffix)
+                    ):
+                        problems.append(f"{label}: manifest native.{field} is missing or unsafe")
             icon = manifest.get("icon")
             if isinstance(icon, str) and icon in names:
                 temp_icon = CATALOG / ".validate-icon" / Path(icon).name

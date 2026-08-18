@@ -26,7 +26,7 @@
 
       <label class="search-box" for="pattern-search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg>
-        <input id="pattern-search" type="search" autocomplete="off" placeholder="Search patterns and blocks…">
+        <input id="pattern-search" type="search" autocomplete="off" placeholder="Search patterns and blocks…" aria-label="Search synced patterns">
         <kbd aria-hidden="true">/</kbd>
       </label>
 
@@ -34,7 +34,7 @@
         <button class="icon-button" id="refresh-patterns" type="button" title="Refresh patterns" aria-label="Refresh patterns">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 5v6h-6"></path></svg>
         </button>
-        <button class="primary-button" id="new-pattern" type="button">
+        <button class="primary-button" id="new-pattern" type="button" aria-label="New pattern" title="New pattern">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
           <span>New pattern</span>
         </button>
@@ -91,7 +91,7 @@
           <span class="result-count" id="result-count" aria-live="polite">Loading the shelf…</span>
         </header>
 
-        <div class="pattern-grid" id="pattern-grid" role="list" aria-busy="true">
+        <div class="pattern-grid" id="pattern-grid" role="list" aria-busy="true" tabindex="-1">
           <article class="pattern-card pattern-card--skeleton" aria-hidden="true"><span></span><span></span><span></span></article>
           <article class="pattern-card pattern-card--skeleton" aria-hidden="true"><span></span><span></span><span></span></article>
           <article class="pattern-card pattern-card--skeleton" aria-hidden="true"><span></span><span></span><span></span></article>
@@ -115,7 +115,7 @@
         </section>
       </section>
 
-      <aside class="inspector" id="pattern-inspector" aria-label="Selected pattern" aria-hidden="true">
+      <aside class="inspector" id="pattern-inspector" aria-labelledby="pattern-title" aria-hidden="true">
         <header class="inspector__top">
           <span class="inspector__label">On the counter</span>
           <div class="inspector__top-actions">
@@ -130,7 +130,7 @@
 
         <section class="title-view" id="title-view">
           <div>
-            <h2 id="pattern-title">Pattern name</h2>
+            <h2 id="pattern-title" tabindex="-1">Pattern name</h2>
             <p id="pattern-updated">Updated recently</p>
           </div>
           <button class="text-button" id="rename-pattern" type="button">Rename</button>

@@ -190,21 +190,32 @@ function oddout_apps_asset_url( $slug, $path ) {
 }
 
 /**
- * Fallback template for sandboxed iframe apps.
+ * Fallback template for trusted same-origin browser apps.
+ *
+ * `allow-same-origin` is required for cookie-authenticated relative assets.
+ * Combined with `allow-scripts`, this is not a security sandbox. Installation
+ * validation and administrator authorization are the code-trust boundary; the
+ * iframe flags only limit navigation and optional browser features.
  *
  * @param string $slug App slug.
  * @param array  $manifest App manifest.
  */
+function oddout_apps_iframe_sandbox_tokens() {
+	// Catalog apps are reviewed, trusted same-origin code. Keep this fixed: adding
+	// tokens through manifest data would silently broaden the platform boundary.
+	return 'allow-scripts allow-forms allow-popups allow-same-origin allow-downloads';
+}
+
 function oddout_apps_render_window_template( $slug, $manifest ) {
 	$serve_url = add_query_arg( '_wpnonce', wp_create_nonce( 'wp_rest' ), oddout_apps_cookieauth_url_for( $slug ) );
 	$name      = isset( $manifest['name'] ) ? (string) $manifest['name'] : $slug;
 	?>
-	<div class="odd-app-host" data-odd-app data-odd-app-slug="<?php echo esc_attr( $slug ); ?>" data-odd-app-src="<?php echo esc_url( $serve_url ); ?>" style="position:relative;width:100%;height:100%;min-height:0;background:#101014;">
+	<div class="odd-app-host" data-odd-app data-odd-app-trust="verified-same-origin" data-odd-app-slug="<?php echo esc_attr( $slug ); ?>" data-odd-app-src="<?php echo esc_url( $serve_url ); ?>" style="position:relative;width:100%;height:100%;min-height:0;background:#101014;">
 		<iframe
 			class="odd-app-frame"
 			title="<?php echo esc_attr( $name ); ?>"
 			src="<?php echo esc_url( $serve_url ); ?>"
-			sandbox="allow-scripts allow-forms allow-popups allow-same-origin allow-downloads"
+			sandbox="<?php echo esc_attr( oddout_apps_iframe_sandbox_tokens() ); ?>"
 			loading="eager"
 			referrerpolicy="no-referrer"
 			allow="clipboard-read; clipboard-write"

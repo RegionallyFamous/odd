@@ -140,12 +140,13 @@ function oddout_apps_relative_path_is_safe( $path ) {
 	$path = (string) $path;
 	if (
 		'' === $path ||
-		strlen( $path ) > 512 ||
 		'/' === $path[0] ||
-		false !== strpos( $path, '..' ) ||
 		false !== strpos( $path, '\\' ) ||
 		false !== strpos( $path, "\0" )
 	) {
+		return false;
+	}
+	if ( in_array( '..', explode( '/', $path ), true ) ) {
 		return false;
 	}
 

@@ -1,0 +1,285 @@
+{
+  "invalid": [
+    {
+      "label": "required name cannot be omitted",
+      "field": "name",
+      "omit": true,
+      "phpError": "missing_manifest_field"
+    },
+    {
+      "label": "required type must be a string",
+      "field": "type",
+      "value": 0,
+      "phpError": "missing_manifest_field"
+    },
+    {
+      "label": "required name must be a string",
+      "field": "name",
+      "value": 0,
+      "phpError": "missing_manifest_field"
+    },
+    {
+      "label": "required slug must be a string",
+      "field": "slug",
+      "value": 0,
+      "phpError": "missing_manifest_field"
+    },
+    {
+      "label": "required version must be a string",
+      "field": "version",
+      "value": 0,
+      "phpError": "missing_manifest_field"
+    },
+    {
+      "label": "type is case-sensitive",
+      "field": "type",
+      "value": "APP",
+      "phpError": "invalid_type"
+    },
+    {
+      "label": "slug cannot start with a hyphen",
+      "field": "slug",
+      "value": "-leading-hyphen",
+      "phpError": "invalid_slug"
+    },
+    {
+      "label": "slug cannot exceed 64 characters",
+      "field": "slug",
+      "repeat": "a",
+      "count": 65,
+      "phpError": "invalid_slug"
+    },
+    {
+      "label": "name cannot exceed 80 characters",
+      "field": "name",
+      "repeat": "n",
+      "count": 81,
+      "phpError": "invalid_name"
+    },
+    {
+      "label": "multibyte name cannot exceed 80 characters",
+      "field": "name",
+      "repeat": "é",
+      "count": 81,
+      "phpError": "invalid_name"
+    },
+    {
+      "label": "author cannot exceed 120 characters",
+      "field": "author",
+      "repeat": "a",
+      "count": 121,
+      "phpError": "invalid_author"
+    },
+    {
+      "label": "description cannot exceed 500 characters",
+      "field": "description",
+      "repeat": "d",
+      "count": 501,
+      "phpError": "invalid_description"
+    },
+    {
+      "label": "author must be a string",
+      "field": "author",
+      "value": 42,
+      "phpError": "invalid_author"
+    },
+    {
+      "label": "description must be a string",
+      "field": "description",
+      "value": ["not", "text"],
+      "phpError": "invalid_description"
+    },
+    {
+      "label": "$schema must be a string when present",
+      "field": "$schema",
+      "value": null,
+      "phpError": "invalid_schema"
+    },
+    {
+      "label": "capability must be a string",
+      "field": "capability",
+      "value": 42,
+      "phpError": "invalid_capability"
+    },
+    {
+      "label": "surfaces cannot be null",
+      "field": "surfaces",
+      "value": null,
+      "phpError": "invalid_surfaces"
+    },
+    {
+      "label": "surfaces must be an object rather than an array",
+      "field": "surfaces",
+      "value": [],
+      "phpError": "invalid_surfaces"
+    },
+    {
+      "label": "window cannot be null",
+      "field": "window",
+      "value": null,
+      "phpError": "invalid_window"
+    },
+    {
+      "label": "window width cannot be null",
+      "field": "window",
+      "value": {"width": null},
+      "phpError": "invalid_window"
+    },
+    {
+      "label": "window title cannot exceed 80 characters",
+      "field": "window",
+      "nestedField": "title",
+      "repeat": "é",
+      "count": 81,
+      "phpError": "invalid_window"
+    },
+    {
+      "label": "desktopIcon cannot be null",
+      "field": "desktopIcon",
+      "value": null,
+      "phpError": "invalid_desktop_icon"
+    },
+    {
+      "label": "desktopIcon position cannot be null",
+      "field": "desktopIcon",
+      "value": {"position": null},
+      "phpError": "invalid_desktop_icon"
+    },
+    {
+      "label": "icon extension is case-sensitive",
+      "field": "icon",
+      "value": "icon.SVG",
+      "phpError": "invalid_icon"
+    },
+    {
+      "label": "icon path cannot contain consecutive slashes",
+      "field": "icon",
+      "value": "assets//icon.svg",
+      "phpError": "invalid_icon"
+    },
+    {
+      "label": "entry path cannot contain a parent-directory component",
+      "field": "entry",
+      "value": "../index.html",
+      "phpError": "invalid_entry"
+    },
+    {
+      "label": "icon path cannot contain a parent-directory component",
+      "field": "icon",
+      "value": "assets/../icon.svg",
+      "phpError": "invalid_icon"
+    },
+    {
+      "label": "native cannot be null",
+      "field": "native",
+      "value": null,
+      "phpError": "invalid_native_app"
+    },
+    {
+      "label": "only odd-notes may declare a native surface",
+      "field": "native",
+      "value": {"script": "assets/native.js"},
+      "phpError": "invalid_native_app"
+    },
+    {
+      "label": "native script extension is case-sensitive",
+      "field": "native",
+      "value": {"script": "assets/native.JS"},
+      "overrides": {"slug": "odd-notes"},
+      "phpError": "invalid_native_asset"
+    },
+    {
+      "label": "native style extension is case-sensitive",
+      "field": "native",
+      "value": {"script": "assets/native.js", "style": "assets/native.CSS"},
+      "overrides": {"slug": "odd-notes"},
+      "phpError": "invalid_native_asset"
+    },
+    {
+      "label": "native asset path cannot contain consecutive slashes",
+      "field": "native",
+      "value": {"script": "assets//native.js"},
+      "overrides": {"slug": "odd-notes"},
+      "phpError": "invalid_native_asset"
+    },
+    {
+      "label": "native asset path cannot contain a parent-directory component",
+      "field": "native",
+      "value": {"script": "assets/../native.js"},
+      "overrides": {"slug": "odd-notes"},
+      "phpError": "invalid_native_asset"
+    },
+    {
+      "label": "explicit native style cannot be empty",
+      "field": "native",
+      "value": {"script": "assets/native.js", "style": ""},
+      "overrides": {"slug": "odd-notes"},
+      "phpError": "invalid_native_asset"
+    }
+  ],
+  "valid": [
+    {
+      "label": "string zero is a non-empty name",
+      "field": "name",
+      "value": "0"
+    },
+    {
+      "label": "string zero is a valid slug",
+      "field": "slug",
+      "value": "0"
+    },
+    {
+      "label": "slug may contain exactly 64 characters",
+      "field": "slug",
+      "repeat": "a",
+      "count": 64
+    },
+    {
+      "label": "multibyte name may contain exactly 80 characters",
+      "field": "name",
+      "repeat": "é",
+      "count": 80
+    },
+    {
+      "label": "multibyte author may contain exactly 120 characters",
+      "field": "author",
+      "repeat": "著",
+      "count": 120
+    },
+    {
+      "label": "multibyte description may contain exactly 500 characters",
+      "field": "description",
+      "repeat": "文",
+      "count": 500
+    },
+    {
+      "label": "multibyte window title may contain exactly 80 characters",
+      "field": "window",
+      "nestedField": "title",
+      "repeat": "é",
+      "count": 80
+    },
+    {
+      "label": "empty surfaces object is valid",
+      "field": "surfaces",
+      "emptyObject": true
+    },
+    {
+      "label": "empty desktopIcon object is valid",
+      "field": "desktopIcon",
+      "emptyObject": true
+    },
+    {
+      "label": "same-segment double dots are valid in entry, icon, and native paths",
+      "field": "native",
+      "value": {"script": "assets/foo..bar.js"},
+      "overrides": {"slug": "odd-notes", "entry": "foo..bar.html", "icon": "icon..alt.svg"},
+      "archiveFiles": {
+        "foo..bar.html": "<!doctype html><html><body>safe double dots</body></html>",
+        "icon..alt.svg": "<svg xmlns=\"http://www.w3.org/2000/svg\"></svg>",
+        "assets/foo..bar.js": "window.oddNativeFixture = true;"
+      },
+      "assertNativeOptionalKeysOmitted": true
+    }
+  ]
+}

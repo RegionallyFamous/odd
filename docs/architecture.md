@@ -27,7 +27,22 @@ OpenStation's public `openstation_*` APIs. Browser coordination goes through
 
 App files are denied direct web access and served through ODD's authenticated
 cookie route or REST asset route. Icons are the only intentionally public app
-asset. Archive extraction is staged and promoted atomically.
+asset. Browser apps are administrator-approved, trusted same-origin code; the
+iframe/CSP policy is defense in depth, not an untrusted-code sandbox.
+
+Install, update, and repair use one operation-aware transaction. The new app is
+fully validated and staged before the current directory is renamed to a backup;
+filesystem and registry changes are rolled back together on failure. No update
+or repair uninstalls first. Updates require a newer version, repairs require the
+exact installed version, and existing enablement, surfaces, and OpenStation
+placement survive replacement. GET asset paths are read-only.
+
+Before a browser entry script runs, ODD injects the frozen version-1
+`window.oddApp` adapter. It confines requests to the server-generated REST
+root, owns nonce/cookie transport, scopes storage to the installed app, and
+delegates confirmations to public `wp.os` APIs. Both cookie-auth and REST HTML
+serve paths use the same idempotent injection. The adapter exposes no raw host
+object or unrestricted parent helper.
 
 ## Catalog
 

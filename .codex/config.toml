@@ -1,0 +1,4 @@
+[agents]
+# Supported compatibility alias for max_concurrent_threads_per_session.
+max_threads = 3
+interrupt_message = true

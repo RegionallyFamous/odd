@@ -2,8 +2,20 @@
 	'use strict';
 
 	const APP_SLUG = 'pantry';
-	const WINDOW_ID = 'odd-app-pantry';
-	const LOCAL_PREFS_KEY = 'odd.pantry.preferences';
+	const RUNTIME_API_VERSION = 1;
+	const MAX_PREVIEW_CHARS = 200000;
+	const PREVIEW_TAGS = new Set( [
+		'article', 'aside', 'blockquote', 'br', 'caption', 'cite', 'code', 'col',
+		'colgroup', 'dd', 'del', 'div', 'dl', 'dt', 'em', 'figcaption', 'figure',
+		'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'img', 'li', 'main', 'mark',
+		'ol', 'p', 'pre', 'q', 's', 'section', 'small', 'span', 'strong', 'sub',
+		'sup', 'table', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'ul',
+	] );
+	const PREVIEW_BLOCKED_TAGS = new Set( [
+		'audio', 'base', 'button', 'canvas', 'embed', 'form', 'iframe', 'input',
+		'link', 'math', 'meta', 'noscript', 'object', 'script', 'select', 'source',
+		'style', 'svg', 'template', 'textarea', 'video',
+	] );
 	const LAYOUT_BLOCKS = new Set( [
 		'core/buttons',
 		'core/columns',
@@ -97,6 +109,14 @@
 	const dom = {};
 	let runtime;
 	let toastTimer = 0;
+	let inspectorReturnTarget = null;
+	let inspectorModalActive = false;
+	let patternOperationQueue = Promise.resolve();
+	let refreshQueued = false;
+	let preferenceWriteQueue = Promise.resolve();
+	let preferencesLoaded = false;
+	let pendingPreferenceSave = false;
+	const favoriteIntents = new Map();
 
 	class PantryApiError extends Error {
 		constructor( message, status, code = '' ) {
@@ -123,91 +143,128 @@
 			dom[ id ] = document.getElementById( id );
 		} );
 		dom.appMain = document.querySelector( '.app-main' );
+		dom.topbar = document.querySelector( '.topbar' );
+		dom.sidePanel = document.querySelector( '.side-panel' );
+		dom.library = document.querySelector( '.library' );
 		dom.filterButtons = [ ...document.querySelectorAll( '.filter-button' ) ];
 	}
 
-	function getHostApi() {
-		try {
-			if ( window.parent && window.parent !== window ) {
-				return window.parent.wp?.os || null;
-			}
-		} catch ( _error ) {
-			// Same-origin access is expected, but the URL fallback still works.
+	function cardFocusTarget( element = document.activeElement ) {
+		const card = element?.closest?.( '.pattern-card[data-pattern-id]' );
+		if ( ! card ) {
+			return null;
 		}
-		return null;
-	}
-
-	function detectRuntime() {
-		const host = getHostApi();
-		const nonce = new URLSearchParams( window.location.search ).get( '_wpnonce' ) ||
-			host?.config?.restNonce || '';
-		let adminBase;
-		let restBase;
-
-		if ( host?.config?.adminUrl ) {
-			adminBase = new URL( host.config.adminUrl, window.location.origin );
-			restBase = new URL( '../wp-json/', adminBase );
-		} else {
-			const marker = '/odd-app/';
-			const markerIndex = window.location.pathname.indexOf( marker );
-			const sitePath = markerIndex >= 0 ? window.location.pathname.slice( 0, markerIndex ) : '';
-			const normalizedPath = sitePath.endsWith( '/' ) ? sitePath : `${ sitePath }/`;
-			adminBase = new URL( `${ normalizedPath }wp-admin/`, window.location.origin );
-			restBase = new URL( `${ normalizedPath }wp-json/`, window.location.origin );
+		const patternId = Number( card.dataset.patternId );
+		if ( ! Number.isFinite( patternId ) ) {
+			return null;
 		}
-
-		return { host, nonce, adminBase, restBase };
-	}
-
-	async function apiRequest( path, options = {} ) {
-		const url = new URL( path.replace( /^\//, '' ), runtime.restBase );
-		const headers = new Headers( options.headers || {} );
-		headers.set( 'Accept', 'application/json' );
-		if ( runtime.nonce ) {
-			headers.set( 'X-WP-Nonce', runtime.nonce );
-		}
-		let body = options.body;
-		if ( body !== undefined && typeof body !== 'string' && ! ( body instanceof FormData ) ) {
-			headers.set( 'Content-Type', 'application/json' );
-			body = JSON.stringify( body );
-		}
-
-		const requestOptions = {
-			...options,
-			body,
-			headers,
-			credentials: 'same-origin',
+		return {
+			patternId,
+			control: element.closest( '.card-favorite' ) ? 'favorite' : 'open',
 		};
-		const response = typeof runtime.host?.fetch === 'function'
-			? await runtime.host.fetch( url, requestOptions, {
-				windowId: WINDOW_ID,
-				source: 'odd-app/pantry',
-				silent: true,
-			} )
-			: await fetch( url, requestOptions );
+	}
 
-		if ( ! response.ok ) {
-			let message = `${ response.status } ${ response.statusText || 'Request failed' }`;
-			let code = '';
-			try {
-				const error = await response.json();
-				message = error.message || message;
-				code = error.code || '';
-			} catch ( _error ) {
-				// Keep the HTTP fallback message.
-			}
-			throw new PantryApiError( message, response.status, code );
+	function focusWithoutScroll( element ) {
+		if ( ! element ) {
+			return false;
 		}
+		try {
+			element.focus( { preventScroll: true } );
+		} catch ( _error ) {
+			element.focus();
+		}
+		return document.activeElement === element;
+	}
 
-		return response;
+	function restoreCardFocus( target, fallbackToGrid = false ) {
+		if ( ! target ) {
+			return false;
+		}
+		const card = [ ...dom[ 'pattern-grid' ].querySelectorAll( '.pattern-card[data-pattern-id]' ) ]
+			.find( ( item ) => Number( item.dataset.patternId ) === target.patternId );
+		const control = target.control === 'favorite'
+			? card?.querySelector( '.card-favorite' )
+			: card?.querySelector( '.pattern-card__open' );
+		if ( focusWithoutScroll( control ) ) {
+			return true;
+		}
+		return fallbackToGrid ? focusWithoutScroll( dom[ 'pattern-grid' ] ) : false;
+	}
+
+	function mobileInspectorIsOverlay() {
+		return window.matchMedia( '(max-width: 920px)' ).matches;
+	}
+
+	function syncInspectorModality( open = Boolean( selectedPattern() ) ) {
+		const modal = open && mobileInspectorIsOverlay();
+		const leavingModal = inspectorModalActive && ! modal && open;
+		[ dom.topbar, dom.sidePanel, dom.library ].forEach( ( element ) => {
+			element?.toggleAttribute( 'inert', modal );
+		} );
+		if ( modal ) {
+			dom[ 'pattern-inspector' ].setAttribute( 'role', 'dialog' );
+			dom[ 'pattern-inspector' ].setAttribute( 'aria-modal', 'true' );
+			if ( ! inspectorModalActive ) {
+				inspectorReturnTarget = inspectorReturnTarget || cardFocusTarget() || {
+					patternId: state.selectedId,
+					control: 'card',
+				};
+				dom[ 'pattern-inspector' ].scrollTop = 0;
+				focusWithoutScroll( dom[ 'close-inspector' ] ) || focusWithoutScroll( dom[ 'pattern-title' ] );
+			}
+		} else {
+			dom[ 'pattern-inspector' ].removeAttribute( 'role' );
+			dom[ 'pattern-inspector' ].removeAttribute( 'aria-modal' );
+		}
+		if ( leavingModal ) {
+			focusWithoutScroll( dom[ 'pattern-title' ] ) || focusWithoutScroll( dom[ 'favorite-pattern' ] );
+		}
+		inspectorModalActive = modal;
+	}
+
+	function requireRuntime() {
+		const candidate = window.oddApp;
+		const storage = candidate?.storage;
+		let adminBase;
+		try {
+			adminBase = new URL( candidate?.adminUrl || '' );
+		} catch ( _error ) {
+			adminBase = null;
+		}
+		if (
+			! candidate || candidate.apiVersion !== RUNTIME_API_VERSION || candidate.slug !== APP_SLUG ||
+			typeof candidate.request !== 'function' || ! storage ||
+			typeof storage.get !== 'function' || typeof storage.set !== 'function' ||
+			! adminBase || adminBase.origin !== window.location.origin
+		) {
+			throw new PantryApiError(
+				'ODD Pantry needs the ODD app runtime v1. Close this window, update ODD, and reopen Pantry.',
+				500,
+				'odd_app_runtime_unavailable'
+			);
+		}
+		return candidate;
+	}
+
+	function enqueuePatternOperation( operation ) {
+		const run = patternOperationQueue.then( operation, operation );
+		patternOperationQueue = run.catch( () => undefined );
+		return run;
 	}
 
 	async function apiJson( path, options = {} ) {
-		const response = await apiRequest( path, options );
-		if ( response.status === 204 ) {
-			return null;
+		try {
+			return await runtime.request( path, options );
+		} catch ( error ) {
+			if ( error instanceof PantryApiError ) {
+				throw error;
+			}
+			throw new PantryApiError(
+				error?.message || 'WordPress request failed.',
+				Number( error?.status ) || 500,
+				error?.code || error?.payload?.code || ''
+			);
 		}
-		return response.json();
 	}
 
 	async function loadAllPatterns() {
@@ -221,15 +278,17 @@
 				page: String( page ),
 				orderby: 'modified',
 				order: 'desc',
+				_envelope: '1',
 			} );
 			[ 'publish', 'draft', 'private' ].forEach( ( status ) => query.append( 'status[]', status ) );
-			const response = await apiRequest( `wp/v2/blocks?${ query }` );
-			const batch = await response.json();
+			const response = await apiJson( `wp/v2/blocks?${ query }` );
+			const batch = response?.body;
 			if ( ! Array.isArray( batch ) ) {
 				throw new PantryApiError( 'WordPress returned an unexpected patterns response.', 500 );
 			}
 			patterns.push( ...batch );
-			totalPages = Math.min( 20, Math.max( 1, Number( response.headers.get( 'X-WP-TotalPages' ) ) || 1 ) );
+			const headers = response.headers || {};
+			totalPages = Math.min( 20, Math.max( 1, Number( headers[ 'X-WP-TotalPages' ] || headers[ 'x-wp-totalpages' ] ) || 1 ) );
 			page++;
 		} while ( page <= totalPages );
 		return patterns.map( normalizePattern );
@@ -384,10 +443,15 @@
 		const card = document.createElement( 'article' );
 		card.className = `pattern-card${ pattern.id === state.selectedId ? ' is-selected' : '' }`;
 		card.role = 'listitem';
-		card.tabIndex = 0;
 		card.dataset.patternId = String( pattern.id );
 		card.style.setProperty( '--card-accent', ACCENTS[ index % ACCENTS.length ] );
-		card.setAttribute( 'aria-label', `Open ${ pattern.pantryTitle }` );
+
+		const open = document.createElement( 'button' );
+		open.type = 'button';
+		open.className = 'pattern-card__open';
+		open.setAttribute( 'aria-label', `Open details for ${ pattern.pantryTitle }` );
+		open.title = `Open details for ${ pattern.pantryTitle }`;
+		open.addEventListener( 'click', () => selectPattern( pattern.id ) );
 
 		const top = document.createElement( 'div' );
 		top.className = 'pattern-card__top';
@@ -400,11 +464,10 @@
 		favorite.innerHTML = starSvg();
 		favorite.title = state.favorites.has( pattern.id ) ? 'Remove from favorites' : 'Add to favorites';
 		favorite.setAttribute( 'aria-label', favorite.title );
-		favorite.addEventListener( 'click', ( event ) => {
-			event.stopPropagation();
+		favorite.addEventListener( 'click', () => {
 			toggleFavorite( pattern.id );
 		} );
-		top.append( glyph, favorite );
+		top.append( glyph );
 
 		const body = document.createElement( 'div' );
 		body.className = 'pattern-card__body';
@@ -439,22 +502,20 @@
 		blockCount.textContent = `${ pattern.pantryTypes.length } ${ pattern.pantryTypes.length === 1 ? 'block' : 'blocks' }`;
 		footer.append( kind, blockCount );
 
-		const open = () => selectPattern( pattern.id );
-		card.addEventListener( 'click', open );
-		card.addEventListener( 'keydown', ( event ) => {
-			if ( event.key === 'Enter' || event.key === ' ' ) {
-				event.preventDefault();
-				open();
-			}
-		} );
-		card.append( top, body, miniBlocks, footer );
+		card.append( open, top, body, miniBlocks, footer, favorite );
 		return card;
 	}
 
 	function renderLibrary() {
+		const focusTarget = cardFocusTarget();
 		const visible = visiblePatterns();
 		dom[ 'pattern-grid' ].replaceChildren( ...visible.map( createPatternCard ) );
 		dom[ 'pattern-grid' ].setAttribute( 'aria-busy', 'false' );
+		if ( ! dom[ 'error-state' ].hidden ) {
+			dom[ 'empty-state' ].hidden = true;
+			dom[ 'result-count' ].textContent = 'Shelf unavailable';
+			return;
+		}
 		dom[ 'result-count' ].textContent = state.loading
 			? 'Loading the shelf…'
 			: `${ visible.length } ${ visible.length === 1 ? 'pattern' : 'patterns' } shown`;
@@ -473,6 +534,9 @@
 				dom[ 'empty-create' ].hidden = false;
 			}
 		}
+		if ( focusTarget ) {
+			restoreCardFocus( focusTarget, true );
+		}
 	}
 
 	function updateCounts() {
@@ -486,30 +550,104 @@
 		dom[ 'count-layout' ].textContent = String( layoutCount );
 	}
 
+	function safePreviewImage( value ) {
+		const source = String( value || '' ).trim();
+		if ( /^data:image\/(?:avif|gif|jpe?g|png|webp);base64,[a-z0-9+/=\s]+$/i.test( source ) ) {
+			return source;
+		}
+		try {
+			const url = new URL( source, window.location.href );
+			if ( [ 'http:', 'https:' ].includes( url.protocol ) && url.origin === window.location.origin ) {
+				return url.href;
+			}
+		} catch ( _error ) {
+			// Malformed and cross-origin image sources are omitted from the preview.
+		}
+		return '';
+	}
+
 	function sanitizePreview( html ) {
-		const doc = new DOMParser().parseFromString( String( html ), 'text/html' );
-		doc.querySelectorAll( 'script, style, link, meta, iframe, object, embed, form, input, textarea, select, button, video, audio, source, canvas' )
-			.forEach( ( node ) => node.remove() );
-		doc.querySelectorAll( '*' ).forEach( ( node ) => {
-			[ ...node.attributes ].forEach( ( attribute ) => {
-				const name = attribute.name.toLowerCase();
-				const value = attribute.value.trim();
-				if ( name.startsWith( 'on' ) || [ 'style', 'srcdoc', 'srcset', 'formaction' ].includes( name ) ) {
-					node.removeAttribute( attribute.name );
+		const source = new DOMParser().parseFromString( String( html ).slice( 0, MAX_PREVIEW_CHARS ), 'text/html' );
+		const output = document.implementation.createHTMLDocument( '' );
+		const container = output.createElement( 'div' );
+
+		const copyChildren = ( inputParent, outputParent ) => {
+			[ ...inputParent.childNodes ].forEach( ( input ) => {
+				if ( input.nodeType === Node.TEXT_NODE ) {
+					outputParent.appendChild( output.createTextNode( input.textContent || '' ) );
 					return;
 				}
-				if ( [ 'href', 'src', 'poster', 'action' ].includes( name ) ) {
-					if ( /^(?:javascript|vbscript|data:(?!image\/))/i.test( value ) ) {
-						node.removeAttribute( attribute.name );
-					}
+				if ( input.nodeType !== Node.ELEMENT_NODE ) {
+					return;
 				}
+				const tag = input.localName.toLowerCase();
+				if ( PREVIEW_BLOCKED_TAGS.has( tag ) ) {
+					return;
+				}
+				if ( ! PREVIEW_TAGS.has( tag ) ) {
+					copyChildren( input, outputParent );
+					return;
+				}
+				const clean = output.createElement( tag );
+				const className = String( input.getAttribute( 'class' ) || '' ).trim();
+				if ( className && /^[a-z0-9 _-]{1,500}$/i.test( className ) ) {
+					clean.setAttribute( 'class', className );
+				}
+				if ( tag === 'img' ) {
+					const src = safePreviewImage( input.getAttribute( 'src' ) );
+					if ( ! src ) {
+						return;
+					}
+					clean.setAttribute( 'src', src );
+					clean.setAttribute( 'alt', String( input.getAttribute( 'alt' ) || '' ).slice( 0, 300 ) );
+					clean.setAttribute( 'loading', 'lazy' );
+					[ 'width', 'height' ].forEach( ( name ) => {
+						const size = Number.parseInt( input.getAttribute( name ) || '', 10 );
+						if ( Number.isInteger( size ) && size > 0 && size <= 4096 ) {
+							clean.setAttribute( name, String( size ) );
+						}
+					} );
+				}
+				if ( tag === 'td' || tag === 'th' ) {
+					[ 'colspan', 'rowspan' ].forEach( ( name ) => {
+						const span = Number.parseInt( input.getAttribute( name ) || '', 10 );
+						if ( Number.isInteger( span ) && span > 0 && span <= 100 ) {
+							clean.setAttribute( name, String( span ) );
+						}
+					} );
+				}
+				copyChildren( input, clean );
+				outputParent.appendChild( clean );
 			} );
-			if ( node.tagName === 'A' ) {
-				node.setAttribute( 'target', '_blank' );
-				node.setAttribute( 'rel', 'noopener noreferrer nofollow' );
-			}
-		} );
-		return doc.body.innerHTML;
+		};
+
+		copyChildren( source.body, container );
+		return container.innerHTML;
+	}
+
+	function previewDocument( html ) {
+		const origin = window.location.origin;
+		return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data: ${ origin }; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-src 'none'"><style>html{color-scheme:light}body{margin:0;padding:19px;background:#fff;color:#17202a;font:12px/1.55 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body>:first-child{margin-top:0!important}body>:last-child{margin-bottom:0!important}h1,h2,h3,h4{color:#101820;line-height:1.2}h1{font-size:24px}h2{font-size:20px}h3{font-size:17px}p{margin:.8em 0}img{max-width:100%;height:auto;border-radius:6px}blockquote{margin:1em 0;padding-left:1em;border-left:3px solid #1bb9a8;color:#48515c}.wp-block-columns{display:flex;gap:12px}.wp-block-column{min-width:0;flex:1}.wp-block-group{padding:12px;border-radius:8px;background:#f4f6f7}table{max-width:100%;border-collapse:collapse}td,th{padding:4px;border:1px solid #dce1e6;text-align:left}</style></head><body>${ html }</body></html>`;
+	}
+
+	function renderPreview( pattern ) {
+		const container = dom[ 'pattern-preview' ];
+		const preview = sanitizePreview( pattern.pantryRendered || pattern.pantryRaw );
+		container.replaceChildren();
+		if ( ! preview.replace( /<[^>]+>/g, '' ).trim() && ! /<img\b/i.test( preview ) ) {
+			const placeholder = document.createElement( 'div' );
+			placeholder.className = 'preview-placeholder';
+			placeholder.textContent = 'This pattern has no visible preview yet.';
+			container.appendChild( placeholder );
+			return;
+		}
+		const frame = document.createElement( 'iframe' );
+		frame.className = 'pattern-preview__frame';
+		frame.title = `Preview of ${ pattern.pantryTitle }`;
+		frame.setAttribute( 'sandbox', '' );
+		frame.setAttribute( 'referrerpolicy', 'no-referrer' );
+		frame.srcdoc = previewDocument( preview );
+		container.appendChild( frame );
 	}
 
 	function renderInspector() {
@@ -517,6 +655,7 @@
 		const open = Boolean( pattern );
 		dom[ 'pattern-inspector' ].setAttribute( 'aria-hidden', open ? 'false' : 'true' );
 		dom.appMain.classList.toggle( 'inspector-is-closed', ! open );
+		syncInspectorModality( open );
 		if ( ! pattern ) {
 			return;
 		}
@@ -524,8 +663,7 @@
 		dom[ 'pattern-title' ].textContent = pattern.pantryTitle;
 		dom[ 'pattern-updated' ].textContent = formatRelativeDate( pattern.modified || pattern.date );
 		dom[ 'preview-kind' ].textContent = kindLabel( pattern.pantryKind );
-		const preview = sanitizePreview( pattern.pantryRendered || pattern.pantryRaw );
-		dom[ 'pattern-preview' ].innerHTML = preview || '<div class="preview-placeholder">This pattern has no visible preview yet.</div>';
+		renderPreview( pattern );
 
 		const count = pattern.pantryTypes.length;
 		dom[ 'block-total' ].textContent = `${ count } ${ count === 1 ? 'block' : 'blocks' }`;
@@ -565,69 +703,92 @@
 	}
 
 	function selectPattern( id ) {
+		const mobile = mobileInspectorIsOverlay();
+		if ( mobile ) {
+			inspectorReturnTarget = cardFocusTarget() || {
+				patternId: Number( id ),
+				control: 'card',
+			};
+		}
 		state.selectedId = Number( id );
 		render();
-		if ( window.matchMedia( '(max-width: 920px)' ).matches ) {
-			dom[ 'pattern-inspector' ].scrollTop = 0;
-		}
 	}
 
 	function closeInspector() {
+		const mobile = mobileInspectorIsOverlay();
+		const returnTarget = inspectorReturnTarget || {
+			patternId: state.selectedId,
+			control: 'card',
+		};
 		state.selectedId = null;
 		render();
-	}
-
-	function readLocalPreferences() {
-		try {
-			const value = JSON.parse( window.localStorage.getItem( LOCAL_PREFS_KEY ) || '{}' );
-			return value && Array.isArray( value.favorites ) ? value : { favorites: [] };
-		} catch ( _error ) {
-			return { favorites: [] };
+		if ( mobile ) {
+			restoreCardFocus( returnTarget, true );
 		}
-	}
-
-	function writeLocalPreferences( value ) {
-		try {
-			window.localStorage.setItem( LOCAL_PREFS_KEY, JSON.stringify( value ) );
-		} catch ( _error ) {
-			// Preferences can remain memory-only when storage is blocked.
-		}
+		inspectorReturnTarget = null;
 	}
 
 	async function loadPreferences() {
-		let preferences = readLocalPreferences();
+		let preferences = { favorites: [] };
 		try {
-			const response = await apiJson( `odd/v1/apps/store/${ APP_SLUG }/preferences` );
-			if ( response?.value && Array.isArray( response.value.favorites ) ) {
-				preferences = response.value;
-				writeLocalPreferences( preferences );
+			const stored = await runtime.storage.get( 'preferences' );
+			if ( stored && Array.isArray( stored.favorites ) ) {
+				preferences = stored;
 			}
 		} catch ( _error ) {
-			// The local copy keeps favorites useful if the user is offline.
+			showToast( 'Favorites are available for this session, but ODD could not load saved favorites.', true );
 		}
-		state.favorites = new Set( preferences.favorites.map( Number ).filter( Number.isFinite ) );
+		const merged = new Set( preferences.favorites.map( Number ).filter( Number.isFinite ) );
+		favoriteIntents.forEach( ( favorite, id ) => {
+			if ( favorite ) {
+				merged.add( id );
+			} else {
+				merged.delete( id );
+			}
+		} );
+		state.favorites = merged;
+		favoriteIntents.clear();
+		preferencesLoaded = true;
+		if ( ! state.loading ) {
+			render();
+		}
+		if ( pendingPreferenceSave ) {
+			pendingPreferenceSave = false;
+			void savePreferences();
+		}
 	}
 
-	async function savePreferences() {
-		const preferences = { favorites: [ ...state.favorites ] };
-		writeLocalPreferences( preferences );
+	async function persistPreferences( preferences ) {
 		try {
-			await apiJson( `odd/v1/apps/store/${ APP_SLUG }/preferences`, {
-				method: 'POST',
-				body: { value: preferences },
-			} );
+			await runtime.storage.set( 'preferences', preferences );
 		} catch ( _error ) {
-			// Local persistence already succeeded; sync can retry next session.
+			showToast( 'Favorite changed for this session, but ODD could not save it.', true );
 		}
+	}
+
+	function savePreferences() {
+		if ( ! preferencesLoaded ) {
+			pendingPreferenceSave = true;
+			return preferenceWriteQueue;
+		}
+		const preferences = { favorites: [ ...state.favorites ] };
+		preferenceWriteQueue = preferenceWriteQueue.then( () => persistPreferences( preferences ) );
+		return preferenceWriteQueue;
 	}
 
 	function toggleFavorite( id ) {
 		id = Number( id );
 		if ( state.favorites.has( id ) ) {
 			state.favorites.delete( id );
+			if ( ! preferencesLoaded ) {
+				favoriteIntents.set( id, false );
+			}
 			showToast( 'Removed from favorites.' );
 		} else {
 			state.favorites.add( id );
+			if ( ! preferencesLoaded ) {
+				favoriteIntents.set( id, true );
+			}
 			showToast( 'Saved to favorites.' );
 		}
 		render();
@@ -645,12 +806,25 @@
 		return normalized;
 	}
 
-	async function loadPatterns( { preserveSelection = true } = {} ) {
-		if ( state.loading ) {
-			return;
+	function loadPatterns( options = {} ) {
+		if ( refreshQueued ) {
+			return patternOperationQueue;
 		}
+		refreshQueued = true;
+		return enqueuePatternOperation( async () => {
+			try {
+				return await loadPatternsNow( options );
+			} finally {
+				refreshQueued = false;
+			}
+		} );
+	}
+
+	async function loadPatternsNow( { preserveSelection = true } = {} ) {
+		const recoveringFromError = ! dom[ 'error-state' ].hidden;
 		state.loading = true;
 		dom[ 'error-state' ].hidden = true;
+		dom[ 'error-retry' ].hidden = false;
 		dom[ 'empty-state' ].hidden = true;
 		dom[ 'pattern-grid' ].setAttribute( 'aria-busy', 'true' );
 		dom[ 'result-count' ].textContent = 'Loading the shelf…';
@@ -665,6 +839,10 @@
 			}
 			state.loading = false;
 			render();
+			if ( recoveringFromError ) {
+				focusWithoutScroll( dom[ 'pattern-grid' ].querySelector( '.pattern-card__open' ) ) ||
+					focusWithoutScroll( dom[ 'pattern-grid' ] );
+			}
 		} catch ( error ) {
 			state.loading = false;
 			state.patterns = [];
@@ -673,6 +851,7 @@
 			dom[ 'pattern-grid' ].setAttribute( 'aria-busy', 'false' );
 			dom[ 'empty-state' ].hidden = true;
 			dom[ 'error-state' ].hidden = false;
+			dom[ 'error-retry' ].hidden = false;
 			dom[ 'error-copy' ].textContent = friendlyError( error );
 			dom[ 'result-count' ].textContent = 'Shelf unavailable';
 			updateCounts();
@@ -681,6 +860,12 @@
 			state.loading = false;
 			dom[ 'refresh-patterns' ].classList.remove( 'is-busy' );
 		}
+	}
+
+	function revealLibraryAfterMutation() {
+		dom[ 'error-state' ].hidden = true;
+		dom[ 'error-retry' ].hidden = false;
+		dom[ 'empty-state' ].hidden = true;
 	}
 
 	function friendlyError( error ) {
@@ -696,99 +881,114 @@
 		return error?.message || 'Reload the shelf to try again.';
 	}
 
-	async function createPattern( title, recipe ) {
+	function createPattern( title, recipe ) {
 		setBusy( dom[ 'create-submit' ], true, 'Creating…' );
-		try {
-			const created = await apiJson( 'wp/v2/blocks', {
-				method: 'POST',
-				body: {
-					title,
-					content: RECIPES[ recipe ] || RECIPES.blank,
-					status: 'publish',
-				},
-			} );
-			const pattern = replacePattern( created );
-			state.selectedId = pattern.id;
-			dom[ 'create-dialog' ].close();
-			dom[ 'create-form' ].reset();
-			render();
-			showToast( `${ pattern.pantryTitle } is stocked and ready.` );
-		} catch ( error ) {
-			showToast( friendlyError( error ), true );
-		} finally {
-			setBusy( dom[ 'create-submit' ], false, 'Create pattern' );
-		}
+		return enqueuePatternOperation( async () => {
+			try {
+				const created = await apiJson( 'wp/v2/blocks', {
+					method: 'POST',
+					body: {
+						title,
+						content: RECIPES[ recipe ] || RECIPES.blank,
+						status: 'publish',
+					},
+				} );
+				const pattern = replacePattern( created );
+				state.selectedId = pattern.id;
+				dom[ 'create-dialog' ].close();
+				dom[ 'create-form' ].reset();
+				revealLibraryAfterMutation();
+				render();
+				showToast( `${ pattern.pantryTitle } is stocked and ready.` );
+			} catch ( error ) {
+				showToast( friendlyError( error ), true );
+			} finally {
+				setBusy( dom[ 'create-submit' ], false, 'Create pattern' );
+			}
+		} );
 	}
 
-	async function renameSelected( title ) {
+	function renameSelected( title ) {
 		const pattern = selectedPattern();
 		if ( ! pattern ) {
-			return;
+			return Promise.resolve();
 		}
 		const submit = dom[ 'title-editor' ].querySelector( '[type="submit"]' );
 		setBusy( submit, true, 'Saving…' );
-		try {
-			const updated = await apiJson( `wp/v2/blocks/${ pattern.id }`, {
-				method: 'POST',
-				body: { title },
-			} );
-			replacePattern( updated );
-			render();
-			showToast( 'Pattern renamed.' );
-		} catch ( error ) {
-			showToast( friendlyError( error ), true );
-		} finally {
-			setBusy( submit, false, 'Save' );
-		}
+		return enqueuePatternOperation( async () => {
+			try {
+				const updated = await apiJson( `wp/v2/blocks/${ pattern.id }`, {
+					method: 'POST',
+					body: { title },
+				} );
+				replacePattern( updated );
+				revealLibraryAfterMutation();
+				render();
+				showToast( 'Pattern renamed.' );
+			} catch ( error ) {
+				showToast( friendlyError( error ), true );
+			} finally {
+				setBusy( submit, false, 'Save' );
+			}
+		} );
 	}
 
-	async function duplicateSelected() {
+	function duplicateSelected() {
 		const pattern = selectedPattern();
 		if ( ! pattern ) {
-			return;
+			return Promise.resolve();
 		}
 		setBusy( dom[ 'duplicate-pattern' ], true );
-		try {
-			const created = await apiJson( 'wp/v2/blocks', {
-				method: 'POST',
-				body: {
-					title: `${ pattern.pantryTitle } copy`,
-					content: pattern.pantryRaw,
-					status: pattern.status === 'draft' || pattern.status === 'private' ? pattern.status : 'publish',
-				},
-			} );
-			const duplicate = replacePattern( created );
-			state.selectedId = duplicate.id;
-			render();
-			showToast( 'Fresh copy added to the shelf.' );
-		} catch ( error ) {
-			showToast( friendlyError( error ), true );
-		} finally {
-			setBusy( dom[ 'duplicate-pattern' ], false );
-		}
+		return enqueuePatternOperation( async () => {
+			try {
+				const created = await apiJson( 'wp/v2/blocks', {
+					method: 'POST',
+					body: {
+						title: `${ pattern.pantryTitle } copy`,
+						content: pattern.pantryRaw,
+						status: pattern.status === 'draft' || pattern.status === 'private' ? pattern.status : 'publish',
+					},
+				} );
+				const duplicate = replacePattern( created );
+				state.selectedId = duplicate.id;
+				revealLibraryAfterMutation();
+				render();
+				showToast( 'Fresh copy added to the shelf.' );
+			} catch ( error ) {
+				showToast( friendlyError( error ), true );
+			} finally {
+				setBusy( dom[ 'duplicate-pattern' ], false );
+			}
+		} );
 	}
 
-	async function trashSelected() {
+	function trashSelected() {
 		const pattern = selectedPattern();
 		if ( ! pattern ) {
-			return;
+			return Promise.resolve();
 		}
 		const submit = dom[ 'trash-form' ].querySelector( '[value="trash"]' );
 		setBusy( submit, true, 'Moving…' );
-		try {
-			await apiJson( `wp/v2/blocks/${ pattern.id }?force=false`, { method: 'DELETE' } );
-			state.patterns = state.patterns.filter( ( item ) => item.id !== pattern.id );
-			state.favorites.delete( pattern.id );
-			state.selectedId = state.patterns.length && window.matchMedia( '(min-width: 921px)' ).matches ? state.patterns[ 0 ].id : null;
-			dom[ 'trash-dialog' ].close();
-			render();
-			void savePreferences();
-			showToast( `${ pattern.pantryTitle } moved to trash.` );
-		} catch ( error ) {
-			showToast( friendlyError( error ), true );
-		} finally {
-			setBusy( submit, false, 'Move to trash' );
-		}
+		return enqueuePatternOperation( async () => {
+			try {
+				await apiJson( `wp/v2/blocks/${ pattern.id }?force=false`, { method: 'DELETE' } );
+				state.patterns = state.patterns.filter( ( item ) => item.id !== pattern.id );
+				state.favorites.delete( pattern.id );
+				if ( ! preferencesLoaded ) {
+					favoriteIntents.set( pattern.id, false );
+				}
+				state.selectedId = state.patterns.length && window.matchMedia( '(min-width: 921px)' ).matches ? state.patterns[ 0 ].id : null;
+				dom[ 'trash-dialog' ].close();
+				revealLibraryAfterMutation();
+				render();
+				void savePreferences();
+				showToast( `${ pattern.pantryTitle } moved to trash.` );
+			} catch ( error ) {
+				showToast( friendlyError( error ), true );
+			} finally {
+				setBusy( submit, false, 'Move to trash' );
+			}
+		} );
 	}
 
 	async function copySelected() {
@@ -820,7 +1020,7 @@
 		if ( ! pattern ) {
 			return;
 		}
-		const url = new URL( 'post.php', runtime.adminBase );
+		const url = new URL( 'post.php', runtime.adminUrl );
 		url.searchParams.set( 'post', String( pattern.id ) );
 		url.searchParams.set( 'action', 'edit' );
 		const popup = window.open( url.toString(), '_blank', 'noopener,noreferrer' );
@@ -855,6 +1055,7 @@
 	}
 
 	function bindEvents() {
+		window.addEventListener( 'resize', () => syncInspectorModality() );
 		dom[ 'pattern-search' ].addEventListener( 'input', ( event ) => {
 			state.query = event.target.value;
 			renderLibrary();
@@ -948,7 +1149,10 @@
 				event.preventDefault();
 				dom[ 'pattern-search' ].focus();
 			}
-			if ( event.key === 'Escape' && window.matchMedia( '(max-width: 920px)' ).matches && state.selectedId ) {
+			if (
+				event.key === 'Escape' && window.matchMedia( '(max-width: 920px)' ).matches && state.selectedId &&
+				! dom[ 'create-dialog' ].open && ! dom[ 'trash-dialog' ].open
+			) {
 				closeInspector();
 			}
 		} );
@@ -956,7 +1160,18 @@
 
 	async function boot() {
 		cacheDom();
-		runtime = detectRuntime();
+		try {
+			runtime = requireRuntime();
+		} catch ( error ) {
+			dom[ 'pattern-grid' ].replaceChildren();
+			dom[ 'pattern-grid' ].setAttribute( 'aria-busy', 'false' );
+			dom[ 'empty-state' ].hidden = true;
+			dom[ 'error-state' ].hidden = false;
+			dom[ 'error-retry' ].hidden = true;
+			dom[ 'error-copy' ].textContent = friendlyError( error );
+			dom[ 'result-count' ].textContent = 'ODD update required';
+			return;
+		}
 		bindEvents();
 		dom.appMain.classList.add( 'inspector-is-closed' );
 		await Promise.all( [ loadPreferences(), loadPatterns( { preserveSelection: false } ) ] );

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Assert Version header + ODDOUT_VERSION constant agree, and blueprint refs.
+"""Assert all plugin/package version metadata agrees with blueprint refs.
 
-With --expect <x.y.z>, assert the plugin header and constant match that value.
+With --expect <x.y.z>, assert every declared package version matches that value.
 When public stable blueprints install ODD via a semver git **tag** or a
 versioned WordPress.org zip, that version normally matches `odd.php`. Public
 stable blueprints may intentionally lag while preparing a release, because the
@@ -25,7 +25,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 PLUGIN_DIR = HERE.parent
 PLUGIN = PLUGIN_DIR / "odd.php"
+README = PLUGIN_DIR / "readme.txt"
 REPO_ROOT = PLUGIN_DIR.parent
+PACKAGE_JSON = REPO_ROOT / "package.json"
+PACKAGE_LOCK = REPO_ROOT / "package-lock.json"
 BLUEPRINT = REPO_ROOT / "blueprint.json"
 SITE_BLUEPRINT = REPO_ROOT / "site" / "playground" / "blueprint.json"
 
@@ -92,9 +95,10 @@ def main() -> int:
     parser.add_argument("--expect", help="also assert all match this value", default=None)
     args = parser.parse_args()
 
-    if not PLUGIN.exists():
-        print(f"error: missing {PLUGIN}", file=sys.stderr)
-        return 1
+    for required in (PLUGIN, README, PACKAGE_JSON, PACKAGE_LOCK):
+        if not required.exists():
+            print(f"error: missing {required}", file=sys.stderr)
+            return 1
 
     text = PLUGIN.read_text()
 
@@ -103,10 +107,32 @@ def main() -> int:
         r"define\(\s*['\"]ODDOUT_VERSION['\"]\s*,\s*['\"]([0-9]+\.[0-9]+\.[0-9]+)['\"]\s*\)",
         text,
     )
+    stable_tag = re.search(
+        r"^Stable tag:\s*([0-9]+\.[0-9]+\.[0-9]+)\s*$",
+        README.read_text(),
+        re.MULTILINE,
+    )
+
+    try:
+        package = json.loads(PACKAGE_JSON.read_text())
+        package_lock = json.loads(PACKAGE_LOCK.read_text())
+    except json.JSONDecodeError as exc:
+        print(f"error: invalid package metadata JSON: {exc}", file=sys.stderr)
+        return 1
+
+    if not isinstance(package, dict) or not isinstance(package_lock, dict):
+        print("error: package metadata roots must be JSON objects", file=sys.stderr)
+        return 1
+    lock_packages = package_lock.get("packages")
+    lock_root = lock_packages.get("", {}) if isinstance(lock_packages, dict) else {}
 
     found: dict[str, str | None] = {
         "Version: header": header.group(1) if header else None,
         "ODDOUT_VERSION": constant.group(1) if constant else None,
+        "readme.txt Stable tag": stable_tag.group(1) if stable_tag else None,
+        "package.json version": package.get("version"),
+        "package-lock.json version": package_lock.get("version"),
+        "package-lock.json root version": lock_root.get("version"),
     }
 
     missing = [k for k, v in found.items() if v is None]

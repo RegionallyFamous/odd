@@ -58,11 +58,11 @@
 	</rule>
 
 	<!-- Every string passed through the i18n functions must use the
-	     `odd` text domain. -->
+	     plugin's declared text domain. -->
 	<rule ref="WordPress.WP.I18n">
 		<properties>
 			<property name="text_domain" type="array">
-				<element value="odd"/>
+				<element value="odd-outlandish-desktop-decorator"/>
 			</property>
 		</properties>
 	</rule>
@@ -81,9 +81,9 @@
 	</rule>
 
 	<!-- PHP version floor matches the Requires PHP header in odd.php. -->
-	<config name="testVersion" value="7.4-"/>
+	<config name="testVersion" value="8.1-"/>
 	<rule ref="PHPCompatibilityWP"/>
 
 	<!-- Minimum WordPress version targeted. -->
-	<config name="minimum_supported_wp_version" value="6.0"/>
+	<config name="minimum_supported_wp_version" value="6.8"/>
 </ruleset>
