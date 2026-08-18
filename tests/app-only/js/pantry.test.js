@@ -238,6 +238,48 @@ describe( 'ODD Pantry runtime and pattern safety', () => {
 		expect( request ).toHaveBeenCalledWith( expect.stringMatching( /^wp\/v2\/blocks\/\d+\?force=false$/ ), { method: 'DELETE' } );
 	} );
 
+	it( 'lets both Create dialog cancel controls bypass an empty required title', async () => {
+		await boot();
+		const dialog = document.querySelector( '#create-dialog' );
+		const form = document.querySelector( '#create-form' );
+		const title = document.querySelector( '#new-pattern-title' );
+		const close = form.querySelector( '.dialog-close' );
+		const cancel = form.querySelector( '.dialog-footer [value="cancel"]' );
+		const create = document.querySelector( '#create-submit' );
+		const createRequests = () => request.mock.calls.filter( ( [ path, options = {} ] ) =>
+			path === 'wp/v2/blocks' && options.method === 'POST'
+		);
+
+		expect( title.required ).toBe( true );
+		expect( title.checkValidity() ).toBe( false );
+		for ( const dismiss of [ close, cancel ] ) {
+			expect( dismiss.type ).toBe( 'submit' );
+			expect( dismiss.value ).toBe( 'cancel' );
+			expect( dismiss.formNoValidate ).toBe( true );
+			document.querySelector( '#new-pattern' ).click();
+			expect( dialog.open ).toBe( true );
+			submit( form, dismiss );
+			expect( dialog.open ).toBe( false );
+			expect( createRequests() ).toHaveLength( 0 );
+		}
+
+		document.querySelector( '#new-pattern' ).click();
+		create.click();
+		expect( dialog.open ).toBe( true );
+		expect( title.checkValidity() ).toBe( false );
+		expect( createRequests() ).toHaveLength( 0 );
+
+		title.value = 'Validation-safe pattern';
+		create.click();
+		await vi.waitFor( () => {
+			expect( createRequests() ).toHaveLength( 1 );
+			expect( dialog.open ).toBe( false );
+		} );
+		document.querySelector( '#new-pattern' ).click();
+		expect( dialog.open ).toBe( true );
+		expect( title.value ).toBe( '' );
+	} );
+
 	it( 'keeps a created pattern when an earlier refresh response arrives late', async () => {
 		await boot();
 		let resolveRefresh;

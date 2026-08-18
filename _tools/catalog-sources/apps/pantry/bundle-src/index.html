@@ -176,7 +176,7 @@
     <form method="dialog" id="create-form">
       <header class="dialog-header">
         <div><span class="eyebrow">Stock the shelf</span><h2>Create a synced pattern</h2></div>
-        <button class="icon-button dialog-close" value="cancel" aria-label="Close" type="submit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg></button>
+        <button class="icon-button dialog-close" value="cancel" aria-label="Close" type="submit" formnovalidate><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"></path></svg></button>
       </header>
       <label class="dialog-field" for="new-pattern-title"><span>Name</span><input id="new-pattern-title" name="title" type="text" maxlength="160" placeholder="Newsletter signup" required></label>
       <fieldset class="recipe-picker">
@@ -186,7 +186,7 @@
         <label><input type="radio" name="recipe" value="quote"><span class="recipe-card recipe-card--quote"><i>“</i><i></i><i></i></span><strong>Pull quote</strong><small>Quote and citation</small></label>
         <label><input type="radio" name="recipe" value="columns"><span class="recipe-card recipe-card--columns"><i></i><i></i></span><strong>Two columns</strong><small>A simple layout</small></label>
       </fieldset>
-      <footer class="dialog-footer"><button class="text-button" value="cancel" type="submit">Cancel</button><button class="primary-button" id="create-submit" value="create" type="submit">Create pattern</button></footer>
+      <footer class="dialog-footer"><button class="text-button" value="cancel" type="submit" formnovalidate>Cancel</button><button class="primary-button" id="create-submit" value="create" type="submit">Create pattern</button></footer>
     </form>
   </dialog>
 

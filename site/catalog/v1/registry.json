@@ -69,7 +69,7 @@
       "type": "app",
       "slug": "pantry",
       "name": "ODD Pantry",
-      "version": "1.0.5",
+      "version": "1.0.6",
       "author": "Regionally Famous",
       "description": "Keep WordPress synced patterns tidy. Browse, preview, search, copy, duplicate, rename, and retire reusable blocks from one focused shelf.",
       "tags": [
@@ -83,8 +83,8 @@
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-pantry.webp",
       "card_bytes": 39166,
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/pantry.wp",
-      "sha256": "63155a9a5915be5c5dbe0add580f838fb308070e5377193966c3a547c563e48b",
-      "size": 24205,
+      "sha256": "d578f511f01bf520efcd746b3322dbe07803fe8726f382cc387562fc0b789dc4",
+      "size": 24217,
       "requires": {
         "odd": "1.1.8",
         "openStation": "1.1.0",
