@@ -30,6 +30,11 @@ That command performs strict manifest validation, a clean isolated catalog
 rebuild and generated-output comparison, desktop/mobile packaged-app smoke
 tests with screenshots, and whitespace checks without overwriting generated
 work. Inspect the screenshots before considering visible behavior complete.
+The source `meta.json` must declare the exact `requires` keys `odd`,
+`openStation`, and `api`, each as a semantic version. When the deterministic
+`.wp` bytes change for an existing slug, its manifest and metadata version must
+have greater SemVer precedence than the published version; build metadata alone
+is not a version bump. New slugs do not require an ODD plugin release.
 
 ODD injects one frozen, versioned API before the entry document's own scripts:
 

@@ -100,6 +100,9 @@ That means preview catalogs still prove:
   match the registry row.
 - Card images decode at the expected dimensions.
 - The preview build is deterministic.
+- Existing stable and preview app rows use a higher SemVer version whenever
+  their packaged bundle bytes change; byte-identical and brand-new rows remain
+  valid without a bump.
 
 The only production check intentionally skipped is the bundled fallback
 registry comparison, because preview builds must not update
@@ -137,8 +140,9 @@ Previewing does not promote anything. To publish catalog content:
 1. Commit the source changes under `_tools/catalog-sources/`.
 2. Run the preview Playground or the local smoke fixture against the
    candidate.
-3. Commit the normal generated production artifacts under
-   `site/catalog/v1/` and `odd/data/fallback-registry.json`.
+3. Commit the normal generated production artifacts under `site/catalog/v1/`.
+   Leave `odd/data/fallback-registry.json` frozen unless preparing an explicit
+   ODD plugin release.
 4. Merge/push to `main`.
 5. Let `pages.yml` rebuild, sign, validate, deploy, and smoke-test the
    live catalog.

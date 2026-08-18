@@ -78,8 +78,8 @@ function oddout_apps_rest_store_permission( WP_REST_Request $request ) {
 	if ( '' === $slug || ! isset( $index[ $slug ] ) || ! is_array( $index[ $slug ] ) || empty( $index[ $slug ]['enabled'] ) ) {
 		return new WP_Error( 'app_store_unavailable', __( 'App storage is unavailable.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 404 ) );
 	}
-	$capability = function_exists( 'oddout_apps_normalize_capability' )
-		? oddout_apps_normalize_capability( isset( $index[ $slug ]['capability'] ) ? (string) $index[ $slug ]['capability'] : '', $slug )
+	$capability = function_exists( 'oddout_apps_resolve_capability' )
+		? oddout_apps_resolve_capability( $index[ $slug ] )
 		: 'manage_options';
 	if ( ! current_user_can( $capability ) ) {
 		return new WP_Error( 'app_store_forbidden', __( 'You cannot access this app storage.', 'odd-outlandish-desktop-decorator' ), array( 'status' => rest_authorization_required_code() ) );
@@ -402,8 +402,8 @@ function oddout_apps_rest_serve_permission( WP_REST_Request $req ) {
 	if ( empty( $index[ $slug ]['enabled'] ) ) {
 		return false;
 	}
-	$cap = function_exists( 'oddout_apps_normalize_capability' )
-		? oddout_apps_normalize_capability( isset( $index[ $slug ]['capability'] ) ? $index[ $slug ]['capability'] : '', $slug )
+	$cap = function_exists( 'oddout_apps_resolve_capability' )
+		? oddout_apps_resolve_capability( $index[ $slug ] )
 		: 'manage_options';
 	return current_user_can( $cap );
 }
@@ -848,8 +848,8 @@ function oddout_apps_rest_diag( WP_REST_Request $req ) {
 	$row       = isset( $index[ $slug ] ) ? $index[ $slug ] : null;
 	$installed = null !== $row;
 	$enabled   = $installed && ! empty( $row['enabled'] );
-	$cap       = $installed && function_exists( 'oddout_apps_normalize_capability' )
-		? oddout_apps_normalize_capability( isset( $row['capability'] ) ? $row['capability'] : '', $slug )
+	$cap       = $installed && function_exists( 'oddout_apps_resolve_capability' )
+		? oddout_apps_resolve_capability( $row )
 		: 'manage_options';
 	$cap_ok    = current_user_can( $cap );
 

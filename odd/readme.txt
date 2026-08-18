@@ -5,7 +5,7 @@ Requires at least: 6.8
 Tested up to: 7.0
 Requires PHP: 8.1
 Requires Plugins: desktop-mode
-Stable tag: 1.1.11
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -105,6 +105,14 @@ To rebuild the distributed files:
 
 == Changelog ==
 
+= 1.2.0 =
+
+* Made catalog apps independently releasable with strict runtime requirements and changed-bundle version enforcement.
+* Restricted subscriber-readable app surfaces to trusted first-party installs while keeping uploaded and private-mirror apps administrator-only.
+* Made catalog compatibility and update decisions authoritative on the server, including prerelease and build-metadata precedence.
+* Kept ODD app windows inside the visible OpenStation workspace and made new app launchers appear without a refresh.
+* Expanded deterministic catalog, package, permission, migration, arbitrary-app, and all-app browser guardrails.
+
 = 1.1.11 =
 
 * Added the scoped ODD app browser API used by Pantry for authenticated WordPress requests and private per-user storage.
@@ -154,6 +162,10 @@ To rebuild the distributed files:
 * Focused the product, catalog, and distributable package exclusively on apps.
 
 == Upgrade Notice ==
+
+= 1.2.0 =
+
+Strengthens independent app delivery, trusted permissions, update compatibility, launcher refreshes, and dock-safe windows. The frozen shelf includes ODD Notes, ODD Pantry, and ODD Workbench.
 
 = 1.1.11 =
 

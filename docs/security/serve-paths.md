@@ -31,6 +31,13 @@ first-party URL, a valid registry signature, and the exact declared archive
 size and SHA-256 digest. Missing assets never trigger repair from a GET request:
 asset routes return 404. Repair is an explicit `manage_options` POST operation.
 
+Executable and storage access normally require `manage_options`. The lower
+`read` capability requires both an explicit manifest request and internal
+install provenance from the verified first-party signed catalog or the
+plugin-shipped frozen fallback. Direct uploads, unsigned test catalogs, and
+private mirrors cannot grant `read`, and replacement installs do not inherit a
+previous app's provenance.
+
 ## Browser app trust boundary
 
 Installed browser apps are administrator-approved, trusted same-origin code.

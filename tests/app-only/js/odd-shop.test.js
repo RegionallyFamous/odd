@@ -12,10 +12,16 @@ describe( 'Apps-only ODD Shop', () => {
 	beforeEach( () => {
 		document.body.innerHTML = '<div data-odd-shop></div>';
 		window.openStationNativeWindows = {};
-		osSettings = { itemVisibility: {} };
+		osSettings = {
+			desktopLayout: 'unified',
+			dockPlacement: 'bottom',
+			itemVisibility: {},
+		};
 		window.wp = {
 			i18n: { __: ( value ) => value },
+			hooks: { addFilter: vi.fn(), hasFilter: vi.fn( () => false ) },
 			os: {
+				HOOKS: { WINDOW_GEOMETRY: 'os.window.geometry' },
 				getWindowConfig: vi.fn( () => ( {
 					canInstall: true,
 					restNonce: 'nonce',
@@ -33,7 +39,19 @@ describe( 'Apps-only ODD Shop', () => {
 				confirm: vi.fn( () => Promise.resolve( true ) ),
 				openWindow: vi.fn(),
 				refreshMenu: vi.fn( () => Promise.resolve() ),
+				files: {
+					rest: {
+						listPlacements: vi.fn( () => Promise.resolve( {
+							folderId: 0,
+							placements: [],
+						} ) ),
+					},
+					store: {
+						setFolderPlacements: vi.fn(),
+					},
+				},
 				getOsSettings: vi.fn( () => ( {
+					...osSettings,
 					itemVisibility: { ...osSettings.itemVisibility },
 				} ) ),
 				updateOsSettings: vi.fn( ( patch ) => {
@@ -64,6 +82,12 @@ describe( 'Apps-only ODD Shop', () => {
 		return registry.bundles.find( ( row ) => row.slug === slug );
 	}
 
+	function geometryFilter() {
+		return window.wp.hooks.addFilter.mock.calls.find(
+			( call ) => call[ 0 ] === 'os.window.geometry',
+		)[ 2 ];
+	}
+
 	it( 'publishes ODD Notes and ODD Workbench in the production catalog', () => {
 		expect( registry.bundles.length ).toBeGreaterThanOrEqual( 2 );
 		expect( registry.bundles ).toEqual( expect.arrayContaining( [
@@ -80,6 +104,80 @@ describe( 'Apps-only ODD Shop', () => {
 		expect( document.body.textContent ).toContain( 'ODD Workbench' );
 		expect( context.markLoading ).toHaveBeenCalledOnce();
 		expect( context.markReady ).toHaveBeenCalledOnce();
+	} );
+
+	it( 'registers the ODD geometry guard exactly once across immediate and init paths', () => {
+		expect( window.wp.hooks.addFilter ).toHaveBeenCalledWith(
+			'os.window.geometry',
+			'odd/shop-fit-viewport',
+			expect.any( Function ),
+		);
+		expect( window.wp.hooks.addFilter ).toHaveBeenCalledTimes( 1 );
+		document.dispatchEvent( new Event( 'os-init' ) );
+		expect( window.wp.hooks.addFilter ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'fits the Shop and app windows inside compact desktop bounds', () => {
+		const filter = geometryFilter();
+		expect( filter(
+			{ x: 40, y: 40, width: 920, height: 640 },
+			{ baseId: 'odd', desktopRect: { width: 390, height: 844 } },
+		) ).toEqual( { x: 12, y: 40, width: 366, height: 640 } );
+		expect( filter(
+			{ x: 500, y: 500, width: 1120, height: 720, state: 'normal' },
+			{ baseId: 'odd-app-pantry', hasSavedGeometry: true, desktopRect: { width: 1280, height: 720 } },
+		) ).toEqual( { x: 148, y: 12, width: 1120, height: 616, state: 'normal' } );
+	} );
+
+	it( 'maps every public desktop layout to its documented bottom-dock behavior', () => {
+		const filter = geometryFilter();
+		const geometry = { x: 12, y: 12, width: 800, height: 696 };
+		const context = { baseId: 'odd-app-pantry', desktopRect: { width: 1280, height: 720 } };
+
+		osSettings = { ...osSettings, desktopLayout: 'unified', dockPlacement: 'left' };
+		expect( filter( geometry, context ) ).toBe( geometry );
+
+		osSettings = { ...osSettings, desktopLayout: 'unified', dockPlacement: 'bottom' };
+		expect( filter( geometry, context ) ).toEqual( { x: 12, y: 12, width: 800, height: 616 } );
+
+		osSettings = { ...osSettings, desktopLayout: 'classic', dockPlacement: 'right' };
+		expect( filter( geometry, context ) ).toEqual( { x: 12, y: 12, width: 800, height: 616 } );
+
+		osSettings = { ...osSettings, desktopLayout: 'spatial', dockPlacement: 'bottom' };
+		expect( filter( geometry, context ) ).toEqual( { x: 12, y: 12, width: 800, height: 616 } );
+
+		osSettings = { ...osSettings, desktopLayout: 'spatial', dockPlacement: 'right' };
+		expect( filter( geometry, context ) ).toBe( geometry );
+
+		osSettings = { ...osSettings, desktopLayout: 'openstation', dockPlacement: 'left' };
+		expect( filter( geometry, context ) ).toEqual( { x: 12, y: 12, width: 800, height: 616 } );
+	} );
+
+	it( 'preserves safe geometry, window state, non-ODD windows, and incomplete contexts', () => {
+		const filter = geometryFilter();
+		const safe = { x: 24, y: 24, width: 600, height: 500, state: 'maximized' };
+		const desktopRect = { width: 1280, height: 720 };
+
+		expect( filter( safe, { baseId: 'odd-app-workbench', desktopRect } ) ).toBe( safe );
+		expect( filter(
+			{ x: 40, y: 40, width: 920, height: 640 },
+			{ baseId: 'edit-post', desktopRect: { width: 390, height: 844 } },
+		) ).toEqual( { x: 40, y: 40, width: 920, height: 640 } );
+		expect( filter( safe, null ) ).toBe( safe );
+		expect( filter( safe, { baseId: 'odd' } ) ).toBe( safe );
+		expect( filter( safe, { baseId: 'oddity', desktopRect } ) ).toBe( safe );
+		expect( filter( safe, { baseId: 'odd-app-', desktopRect } ) ).toBe( safe );
+	} );
+
+	it( 'degrades to margin-only clamping when public settings are unavailable', () => {
+		const filter = geometryFilter();
+		window.wp.os.getOsSettings.mockImplementation( () => {
+			throw new Error( 'settings unavailable' );
+		} );
+		expect( filter(
+			{ x: -100, y: 500, width: 1120, height: 696, state: 'normal' },
+			{ baseId: 'odd-app-pantry', desktopRect: { width: 1280, height: 720 } },
+		) ).toEqual( { x: 12, y: 12, width: 1120, height: 696, state: 'normal' } );
 	} );
 
 	it( 'renders a compact responsive shelf instead of full-width app features', () => {
@@ -175,6 +273,37 @@ describe( 'Apps-only ODD Shop', () => {
 		expect( window.wp.os.fetch ).not.toHaveBeenCalled();
 	} );
 
+	it( 'uses the server update flag instead of comparing version strings in the browser', () => {
+		const installed = {
+			...catalogRow( 'workbench' ),
+			version: '2.0.0',
+			enabled: true,
+		};
+		const serverSaysUpdate = {
+			...catalogRow( 'workbench' ),
+			version: '1.0.0-beta.2',
+			update_available: true,
+		};
+		window.wp.os.getWindowConfig.mockReturnValue( {
+			...window.wp.os.getWindowConfig(),
+			installedApps: [ installed ],
+			catalogApps: [ serverSaysUpdate ],
+		} );
+
+		let shop = mountShop();
+		expect( shop.querySelector( '.odd-app-card[data-slug="workbench"]' ).dataset.state ).toBe( 'update' );
+
+		document.body.innerHTML = '<div data-odd-shop></div>';
+		window.wp.os.getWindowConfig.mockReturnValue( {
+			...window.wp.os.getWindowConfig(),
+			installedApps: [ { ...installed, version: '1.0.0-beta.1' } ],
+			catalogApps: [ { ...serverSaysUpdate, version: '9.0.0', update_available: false } ],
+		} );
+		shop = mountShop();
+		expect( shop.querySelector( '.odd-app-card[data-slug="workbench"]' ).dataset.state ).toBe( 'installed' );
+		expect( panelSource ).not.toContain( 'versionNewer' );
+	} );
+
 	it( 'contains no retired wp.desktop integration calls', () => {
 		expect( panelSource ).not.toContain( 'wp.desktop' );
 		expect( panelSource ).not.toContain( 'desktopModeNativeWindows' );
@@ -213,6 +342,62 @@ describe( 'Apps-only ODD Shop', () => {
 			itemVisibility: { 'odd-app-odd-notes': 'desktop' },
 		}, { windowId: 'odd' } );
 		expect( window.wp.os.refreshMenu ).toHaveBeenCalledOnce();
+		expect( window.wp.os.files.rest.listPlacements ).toHaveBeenCalledWith( 0 );
+		expect( window.wp.os.files.store.setFolderPlacements ).toHaveBeenCalledWith( 0, [] );
+		expect( shop.textContent ).toContain( 'Everything is up to date.' );
+	} );
+
+	it( 'hydrates a newly installed unknown slug into the unified launcher store without a reload', async () => {
+		const slug = 'catalog-canary-unit';
+		const available = {
+			...catalogRow( 'workbench' ),
+			slug,
+			name: 'Catalog Canary',
+			label: 'Catalog Canary',
+		};
+		const installed = {
+			...available,
+			enabled: true,
+			surfaces: { desktop: true, taskbar: false },
+		};
+		const placement = {
+			id: 8123,
+			parentId: 0,
+			file: {
+				type: 'shortcut',
+				ref: `odd-app-${ slug }`,
+				shortcutWindow: `odd-app-${ slug }`,
+			},
+		};
+		window.wp.os.getWindowConfig.mockReturnValue( {
+			...window.wp.os.getWindowConfig(),
+			installedApps: [],
+			catalogApps: [ available ],
+		} );
+		window.wp.os.files.rest.listPlacements.mockResolvedValue( {
+			folderId: 0,
+			placements: [ placement ],
+		} );
+		window.wp.os.fetch.mockImplementation( ( url, options ) => {
+			if ( url.includes( 'install-from-catalog' ) && options.method === 'POST' ) {
+				return response( { installed: true, slug, row: installed, manifest: installed } );
+			}
+			if ( url.includes( '/apps' ) ) {
+				return response( { apps: [ installed ] } );
+			}
+			return response( { bundles: [ available ] } );
+		} );
+
+		const shop = mountShop();
+		shop.querySelector( `.odd-app-card[data-slug="${ slug }"] .odd-app-card__button--primary` ).click();
+
+		await vi.waitFor( () => {
+			expect( shop.querySelector( `.odd-app-card[data-slug="${ slug }"]` )?.dataset.state ).toBe( 'installed' );
+		} );
+		expect( window.wp.os.files.rest.listPlacements ).toHaveBeenCalledWith( 0 );
+		expect( window.wp.os.files.store.setFolderPlacements ).toHaveBeenCalledWith( 0, [ placement ] );
+		expect( window.wp.os.files.rest.listPlacements.mock.invocationCallOrder[ 0 ] )
+			.toBeGreaterThan( window.wp.os.refreshMenu.mock.invocationCallOrder[ 0 ] );
 		expect( shop.textContent ).toContain( 'Everything is up to date.' );
 	} );
 

@@ -168,6 +168,15 @@ class ODDOUT_Apps_Only_Test extends WP_UnitTestCase {
 		return $registry;
 	}
 
+	public function test_shop_window_registration_fits_supported_mobile_viewport() {
+		$args = oddout_shop_window_args( 'https://example.test/icon.svg' );
+
+		$this->assertSame( 320, $args['min_width'] );
+		$this->assertLessThanOrEqual( 390, $args['min_width'] );
+		$this->assertSame( 920, $args['width'] );
+		$this->assertSame( array( 'read' ), $args['capabilities'] );
+	}
+
 	public function test_archive_manifest_validation_matches_schema_parity_fixtures() {
 		$fixtures_dir = dirname( ODDOUT_DIR ) . '/tests/fixtures';
 
@@ -425,6 +434,221 @@ class ODDOUT_Apps_Only_Test extends WP_UnitTestCase {
 	public function test_catalog_allows_only_apps() {
 		$this->assertSame( array( 'app' ), oddout_catalog_allowed_types() );
 		$this->assertNull( oddout_catalog_allowed_slugs() );
+	}
+
+	public function test_first_party_catalog_requires_exact_runtime_requirements() {
+		$registry = json_decode( file_get_contents( ODDOUT_DIR . 'data/fallback-registry.json' ), true );
+		$this->assertIsArray( $registry );
+		$row = $registry['bundles'][0];
+
+		$missing             = $registry;
+		$missing['bundles']  = array( $row );
+		unset( $missing['bundles'][0]['requires'] );
+		$result = oddout_catalog_validate_remote_registry( $missing, ODDOUT_CATALOG_URL );
+		$this->assertWPError( $result );
+		$this->assertSame( 'catalog_missing_requires', $result->get_error_code() );
+
+		$partial                            = $registry;
+		$partial['bundles']                 = array( $row );
+		$partial['bundles'][0]['requires'] = array( 'odd' => '1.0.0', 'openStation' => '1.0.0' );
+		$result = oddout_catalog_validate_remote_registry( $partial, ODDOUT_CATALOG_URL );
+		$this->assertWPError( $result );
+		$this->assertSame( 'catalog_missing_requires', $result->get_error_code() );
+
+		$unknown                            = $registry;
+		$unknown['bundles']                 = array( $row );
+		$unknown['bundles'][0]['requires']['php'] = '8.1.0';
+		$result = oddout_catalog_validate_remote_registry( $unknown, ODDOUT_CATALOG_URL );
+		$this->assertWPError( $result );
+		$this->assertSame( 'catalog_missing_requires', $result->get_error_code() );
+
+		foreach ( array( 'latest', '1.0.0-alpha..1', '1.0.0-01', '1.0.0+build..1' ) as $invalid_version ) {
+			$invalid                                      = $registry;
+			$invalid['bundles']                           = array( $row );
+			$invalid['bundles'][0]['requires']['api'] = $invalid_version;
+			$result = oddout_catalog_validate_remote_registry( $invalid, ODDOUT_CATALOG_URL );
+			$this->assertWPError( $result, $invalid_version );
+			$this->assertSame( 'catalog_bad_requires_version', $result->get_error_code(), $invalid_version );
+		}
+	}
+
+	public function test_catalog_semver_validation_enforces_identifier_rules() {
+		foreach ( array( '0.0.0', '1.2.3-alpha.1', '1.2.3-0', '1.2.3-alpha-1+build.01' ) as $valid ) {
+			$this->assertTrue( oddout_catalog_semver_is_valid( $valid ), $valid );
+		}
+		foreach ( array( '01.0.0', '1.0.0-', '1.0.0-alpha..1', '1.0.0-01', '1.0.0+build..1' ) as $invalid ) {
+			$this->assertFalse( oddout_catalog_semver_is_valid( $invalid ), $invalid );
+		}
+	}
+
+	public function test_private_catalog_may_omit_runtime_requirements() {
+		$registry = json_decode( file_get_contents( ODDOUT_DIR . 'data/fallback-registry.json' ), true );
+		$this->assertIsArray( $registry );
+		$row = $registry['bundles'][0];
+		unset( $row['requires'] );
+		foreach ( array( 'download_url', 'icon_url', 'card_url' ) as $field ) {
+			$row[ $field ] = 'https://mirror.example/catalog/v1/' . basename( wp_parse_url( $row[ $field ], PHP_URL_PATH ) );
+		}
+		$registry['bundles'] = array( $row );
+
+		$this->assertTrue( oddout_catalog_validate_remote_registry( $registry, 'https://mirror.example/catalog/v1/registry.json' ) );
+	}
+
+	public function test_private_remote_cannot_forge_internal_provenance_metadata() {
+		$url      = 'https://mirror.example/catalog/v1/registry.json';
+		$registry = json_decode( file_get_contents( ODDOUT_DIR . 'data/fallback-registry.json' ), true );
+		$this->assertIsArray( $registry );
+		foreach ( $registry['bundles'] as &$row ) {
+			foreach ( array( 'download_url', 'icon_url', 'card_url' ) as $field ) {
+				$row[ $field ] = 'https://mirror.example/catalog/v1/' . basename( wp_parse_url( $row[ $field ], PHP_URL_PATH ) );
+			}
+		}
+		unset( $row );
+		$registry['_oddout_frozen_fallback']  = true;
+		$registry['_oddout_catalog_url']      = ODDOUT_CATALOG_URL;
+		$registry['_oddout_signature_status'] = 'valid';
+		$body = wp_json_encode( $registry );
+		$serve_registry = static function ( $preempt, $args, $request_url ) use ( $url, $body ) {
+			if ( $url !== $request_url ) {
+				return $preempt;
+			}
+			return array(
+				'headers'  => array(),
+				'body'     => $body,
+				'response' => array( 'code' => 200, 'message' => 'OK' ),
+				'cookies'  => array(),
+				'filename' => null,
+			);
+		};
+		add_filter( 'pre_http_request', $serve_registry, 10, 3 );
+		try {
+			$fetched = oddout_catalog_fetch_remote( $url );
+			$this->assertIsArray( $fetched );
+			$this->assertArrayNotHasKey( '_oddout_frozen_fallback', $fetched );
+			$this->assertSame( $url, $fetched['_oddout_catalog_url'] );
+			$this->assertSame( 'skipped', $fetched['_oddout_signature_status'] );
+			$normalised = oddout_catalog_normalise( $fetched );
+			$this->assertFalse( $normalised['_oddout_frozen_fallback'] );
+			$this->assertArrayNotHasKey( '_oddout_capability_source', $normalised['bundles'][0] );
+		} finally {
+			remove_filter( 'pre_http_request', $serve_registry, 10 );
+		}
+	}
+
+	public function test_catalog_provenance_is_retained_only_for_trusted_sources() {
+		$registry = json_decode( file_get_contents( ODDOUT_DIR . 'data/fallback-registry.json' ), true );
+		$this->assertIsArray( $registry );
+		$registry['_oddout_catalog_url']      = ODDOUT_CATALOG_URL;
+		$registry['_oddout_signature_status'] = 'valid';
+		$signed = oddout_catalog_normalise( $registry );
+		$this->assertSame( 'first_party_catalog', $signed['bundles'][0]['_oddout_capability_source'] );
+
+		$registry['_oddout_catalog_url']      = 'https://mirror.example/catalog/v1/registry.json';
+		$registry['_oddout_signature_status'] = 'valid';
+		$registry['_oddout_frozen_fallback']  = true;
+		$private = oddout_catalog_normalise( $registry );
+		$this->assertArrayNotHasKey( '_oddout_capability_source', $private['bundles'][0] );
+		$this->assertFalse( $private['_oddout_frozen_fallback'] );
+
+		$registry['_oddout_catalog_url']      = ODDOUT_CATALOG_URL;
+		$registry['_oddout_signature_status'] = 'unsigned';
+		$unsigned = oddout_catalog_normalise( $registry );
+		$this->assertArrayNotHasKey( '_oddout_capability_source', $unsigned['bundles'][0] );
+		$this->assertFalse( $unsigned['_oddout_frozen_fallback'] );
+
+		$fallback = oddout_catalog_fallback_load();
+		$this->assertSame( 'frozen_fallback', $fallback['bundles'][0]['_oddout_capability_source'] );
+		$this->assertTrue( oddout_catalog_fallback_path_is_plugin_owned( ODDOUT_CATALOG_FALLBACK_PATH ) );
+	}
+
+	public function test_catalog_install_recomputes_compatibility_before_download() {
+		$registry = oddout_catalog_fallback_load();
+		$this->assertNotEmpty( $registry['bundles'] );
+		$entry                    = $registry['bundles'][0];
+		$entry['requires']['odd'] = '99.0.0';
+		unset( $entry['incompatible'], $entry['incompatibility_reason'], $entry['incompatibility_current'] );
+
+		$result = oddout_catalog_install_entry( $entry );
+		$this->assertWPError( $result );
+		$this->assertSame( 'catalog_incompatible', $result->get_error_code() );
+		$this->assertFalse( get_option( 'oddout_catalog_install_lock_' . $entry['slug'], false ) );
+	}
+
+	public function test_catalog_update_precedence_follows_semver_prereleases() {
+		$this->assertTrue( oddout_bundle_catalog_is_newer( '1.0.0-beta.2', '1.0.0-beta.1' ) );
+		$this->assertTrue( oddout_bundle_catalog_is_newer( '1.0.0', '1.0.0-rc.1' ) );
+		$this->assertFalse( oddout_bundle_catalog_is_newer( '1.0.0-beta.1', '1.0.0' ) );
+		$this->assertFalse( oddout_bundle_catalog_is_newer( '1.0.0+build.2', '1.0.0+build.1' ) );
+		$this->assertSame( 1, oddout_catalog_semver_compare( '184467440737095516160.0.0', '184467440737095516159.0.0' ) );
+		$this->assertSame( -1, oddout_catalog_semver_compare( '184467440737095516159.0.0', '184467440737095516160.0.0' ) );
+		$this->assertSame( 1, oddout_catalog_semver_compare( '1.0.0-184467440737095516160', '1.0.0-184467440737095516159' ) );
+		$this->assertSame( -1, oddout_catalog_semver_compare( '1.0.0-184467440737095516159', '1.0.0-184467440737095516160' ) );
+	}
+
+	public function test_initial_and_rest_catalog_rows_use_authoritative_update_flags() {
+		$original_index     = oddout_apps_index_load();
+		$original_transient = get_transient( ODDOUT_CATALOG_TRANSIENT );
+		$source             = json_decode( file_get_contents( ODDOUT_DIR . 'data/fallback-registry.json' ), true );
+		$this->assertIsArray( $source );
+		$base = $source['bundles'][0];
+		$cases = array(
+			'prerelease-update' => array( 'catalog' => '1.0.0-rc.1', 'installed' => '1.0.0-beta.2', 'update' => true ),
+			'incompatible-app'  => array( 'catalog' => '2.0.0', 'installed' => '1.0.0', 'update' => false, 'incompatible' => true ),
+			'build-metadata'    => array( 'catalog' => '1.0.0+build.2', 'installed' => '1.0.0+build.1', 'update' => false ),
+		);
+		$raw = array( 'version' => 1, 'bundles' => array() );
+		$index = array();
+		foreach ( $cases as $slug => $case ) {
+			$row            = $base;
+			$row['slug']    = $slug;
+			$row['name']    = $slug;
+			$row['version'] = $case['catalog'];
+			unset( $row['requires'] );
+			$raw['bundles'][] = $row;
+			$index[ $slug ] = array(
+				'slug'       => $slug,
+				'name'       => $slug,
+				'version'    => $case['installed'],
+				'enabled'    => true,
+				'capability' => 'manage_options',
+			);
+		}
+		$registry = oddout_catalog_normalise( $raw );
+		foreach ( $registry['bundles'] as &$row ) {
+			if ( ! empty( $cases[ $row['slug'] ]['incompatible'] ) ) {
+				$row['incompatible'] = true;
+				$row['state']        = 'incompatible';
+			}
+		}
+		unset( $row );
+		$registry['_oddout_registry_sha256'] = hash( 'sha256', wp_json_encode( $registry ) . microtime( true ) );
+
+		try {
+			oddout_apps_index_save( $index );
+			set_transient( ODDOUT_CATALOG_TRANSIENT, $registry, ODDOUT_CATALOG_CACHE_TTL );
+			$initial = oddout_bundle_catalog_for_type( 'app' );
+			$request = new WP_REST_Request( 'GET', '/odd/v1/bundles/catalog' );
+			$request->set_param( 'type', 'app' );
+			$rest = oddout_bundle_rest_catalog( $request )->get_data()['bundles'];
+			$by_slug = static function ( array $rows ) {
+				$out = array();
+				foreach ( $rows as $row ) {
+					$out[ $row['slug'] ] = $row;
+				}
+				return $out;
+			};
+			$initial = $by_slug( $initial );
+			$rest    = $by_slug( $rest );
+			foreach ( $cases as $slug => $case ) {
+				$this->assertSame( $case['installed'], $initial[ $slug ]['installed_version'], 'initial installed version for ' . $slug );
+				$this->assertSame( $case['update'], $initial[ $slug ]['update_available'], 'initial update flag for ' . $slug );
+				$this->assertSame( $case['installed'], $rest[ $slug ]['installed_version'], 'REST installed version for ' . $slug );
+				$this->assertSame( $case['update'], $rest[ $slug ]['update_available'], 'REST update flag for ' . $slug );
+			}
+		} finally {
+			oddout_apps_index_save( $original_index );
+			$this->restore_transient_fixture( ODDOUT_CATALOG_TRANSIENT, $original_transient, ODDOUT_CATALOG_CACHE_TTL );
+		}
 	}
 
 	public function test_catalog_accepts_new_apps_without_a_plugin_allowlist_update() {
@@ -1517,9 +1741,232 @@ class ODDOUT_Apps_Only_Test extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'onclick=', $clean );
 	}
 
-	public function test_odd_notes_uses_read_capability() {
-		$this->assertSame( 'read', oddout_apps_normalize_capability( 'read', 'odd-notes' ) );
-		$this->assertSame( 'manage_options', oddout_apps_normalize_capability( 'read', 'untrusted-app' ) );
+	public function test_read_capability_requires_explicit_request_and_trusted_provenance() {
+		$this->assertSame( 'read', oddout_apps_resolve_capability( array( 'capability' => 'read', 'capability_source' => 'first_party_catalog' ) ) );
+		$this->assertSame( 'read', oddout_apps_resolve_capability( array( 'capability' => 'read', 'capability_source' => 'frozen_fallback' ) ) );
+		$this->assertSame( 'manage_options', oddout_apps_resolve_capability( array( 'capability_source' => 'first_party_catalog' ) ) );
+		$this->assertSame( 'manage_options', oddout_apps_resolve_capability( array( 'capability' => 'read' ) ) );
+		$this->assertSame( 'manage_options', oddout_apps_resolve_capability( array( 'capability' => 'read', 'capability_source' => 'private_mirror' ) ) );
+	}
+
+	public function test_update_replaces_capability_provenance_instead_of_inheriting_it() {
+		$slug          = 'capability-provenance-fixture';
+		$original      = oddout_apps_index_load();
+		$original_user = get_current_user_id();
+		$final         = rtrim( oddout_apps_dir_for( $slug ), '/\\' );
+		$manifest      = array(
+			'type'       => 'app',
+			'slug'       => $slug,
+			'name'       => 'Capability provenance fixture',
+			'version'    => '1.0.0',
+			'entry'      => 'index.html',
+			'icon'       => 'icon.svg',
+			'capability' => 'read',
+		);
+		$first_archive = $this->create_transaction_archive( $manifest );
+		$subscriber    = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+
+		try {
+			$installed = oddout_apps_install( $first_archive, $slug . '.wp', array( 'capability_source' => 'first_party_catalog' ) );
+			$this->assertIsArray( $installed );
+			$row = oddout_apps_index_load()[ $slug ];
+			$this->assertSame( 'read', $row['capability'] );
+			$this->assertSame( 'first_party_catalog', $row['capability_source'] );
+
+			wp_set_current_user( $subscriber );
+			$request = new WP_REST_Request( 'GET', '/odd/v1/apps/store/' . $slug );
+			$request->set_param( 'slug', $slug );
+			$this->assertTrue( oddout_apps_rest_store_permission( $request ) );
+			$this->assertFalse( current_user_can( 'manage_options' ) );
+
+			wp_set_current_user( $original_user );
+			$manifest['version'] = '1.0.1';
+			$update_archive      = $this->create_transaction_archive( $manifest );
+			try {
+				$updated = oddout_apps_install( $update_archive, $slug . '.wp', array( 'operation' => 'update' ) );
+				$this->assertIsArray( $updated );
+			} finally {
+				wp_delete_file( $update_archive );
+			}
+			$row = oddout_apps_index_load()[ $slug ];
+			$this->assertSame( 'manage_options', $row['capability'] );
+			$this->assertArrayNotHasKey( 'capability_source', $row );
+
+			wp_set_current_user( $subscriber );
+			$this->assertWPError( oddout_apps_rest_store_permission( $request ) );
+		} finally {
+			wp_set_current_user( $original_user );
+			wp_delete_file( $first_archive );
+			oddout_apps_rrmdir( $final );
+			oddout_apps_manifest_delete( $slug );
+			oddout_apps_index_save( $original );
+		}
+	}
+
+	public function test_existing_native_odd_notes_receives_narrow_capability_migration() {
+		$original_index    = oddout_apps_index_load();
+		$manifest_key      = ODDOUT_APPS_OPTION_PREFIX . 'odd-notes';
+		$original_manifest = get_option( $manifest_key, false );
+		$original_migration = get_option( ODDOUT_APPS_CAPABILITY_MIGRATION_OPTION, false );
+		$row               = array(
+			'slug'       => 'odd-notes',
+			'name'       => 'ODD Notes',
+			'version'    => '1.3.2',
+			'enabled'    => true,
+			'capability' => 'read',
+		);
+		$manifest          = array(
+			'type'       => 'app',
+			'slug'       => 'odd-notes',
+			'capability' => 'read',
+			'native'     => array(
+				'template' => 'odd-notes',
+				'script'   => 'assets/js/odd-notes.min.js',
+				'style'    => 'assets/css/odd-notes.css',
+			),
+		);
+
+		try {
+			delete_option( ODDOUT_APPS_CAPABILITY_MIGRATION_OPTION );
+			oddout_apps_index_save( array( 'odd-notes' => $row ) );
+			oddout_apps_manifest_save( 'odd-notes', $manifest );
+			oddout_apps_migrate_native_notes_capability_source();
+			$migrated = oddout_apps_index_load()['odd-notes'];
+			$this->assertSame( 'native_odd_notes_migration', $migrated['capability_source'] );
+			$this->assertSame( 'read', oddout_apps_resolve_capability( $migrated ) );
+			$this->assertSame( ODDOUT_APPS_CAPABILITY_MIGRATION_VERSION, (int) get_option( ODDOUT_APPS_CAPABILITY_MIGRATION_OPTION ) );
+		} finally {
+			oddout_apps_index_save( $original_index );
+			$this->restore_option_fixture( $manifest_key, $original_manifest );
+			$this->restore_option_fixture( ODDOUT_APPS_CAPABILITY_MIGRATION_OPTION, $original_migration );
+		}
+	}
+
+	public function test_notes_migration_waits_for_index_lease_and_preserves_concurrent_state() {
+		$original_index     = oddout_apps_index_load();
+		$manifest_key       = ODDOUT_APPS_OPTION_PREFIX . 'odd-notes';
+		$original_manifest  = get_option( $manifest_key, false );
+		$original_migration = get_option( ODDOUT_APPS_CAPABILITY_MIGRATION_OPTION, false );
+		$lock_key           = oddout_apps_index_lock_key();
+		$original_lock      = get_option( $lock_key, false );
+		$other_owner        = '';
+		$row                = array(
+			'slug'       => 'odd-notes',
+			'name'       => 'ODD Notes',
+			'version'    => '1.3.2',
+			'enabled'    => true,
+			'capability' => 'read',
+			'surfaces'   => array( 'desktop' => true, 'taskbar' => false ),
+		);
+		$manifest           = array(
+			'type'       => 'app',
+			'slug'       => 'odd-notes',
+			'capability' => 'read',
+			'native'     => array(
+				'template' => 'odd-notes',
+				'script'   => 'assets/js/odd-notes.min.js',
+				'style'    => 'assets/css/odd-notes.css',
+			),
+		);
+
+		try {
+			delete_option( ODDOUT_APPS_CAPABILITY_MIGRATION_OPTION );
+			delete_option( $lock_key );
+			oddout_apps_index_save( array( 'odd-notes' => $row ) );
+			oddout_apps_manifest_save( 'odd-notes', $manifest );
+
+			$other_owner = oddout_apps_atomic_lock_acquire( $lock_key );
+			$this->assertIsString( $other_owner );
+			oddout_apps_migrate_native_notes_capability_source();
+			$this->assertSame( 0, (int) get_option( ODDOUT_APPS_CAPABILITY_MIGRATION_OPTION, 0 ) );
+			$this->assertArrayNotHasKey( 'capability_source', oddout_apps_index_load()['odd-notes'] );
+			$this->assertTrue( oddout_apps_lock_same_owner( get_option( $lock_key, false ), $other_owner ) );
+
+			$concurrent_row = array(
+				'slug'     => 'concurrent-app',
+				'name'     => 'Concurrent app',
+				'version'  => '1.0.0',
+				'enabled'  => true,
+				'surfaces' => array( 'desktop' => false, 'taskbar' => true ),
+			);
+			$concurrent_index                                   = oddout_apps_index_load();
+			$concurrent_index['odd-notes']['enabled']           = false;
+			$concurrent_index['odd-notes']['surfaces']          = array( 'desktop' => false, 'taskbar' => true );
+			$concurrent_index[ $concurrent_row['slug'] ]         = $concurrent_row;
+			oddout_apps_index_save( $concurrent_index );
+			$this->assertTrue( oddout_apps_atomic_lock_release( $lock_key, $other_owner ) );
+			$other_owner = '';
+
+			oddout_apps_migrate_native_notes_capability_source();
+			$stored = oddout_apps_index_load();
+			$this->assertSame( $concurrent_row, $stored['concurrent-app'] );
+			$this->assertFalse( $stored['odd-notes']['enabled'] );
+			$this->assertSame( array( 'desktop' => false, 'taskbar' => true ), $stored['odd-notes']['surfaces'] );
+			$this->assertSame( 'native_odd_notes_migration', $stored['odd-notes']['capability_source'] );
+			$this->assertSame( ODDOUT_APPS_CAPABILITY_MIGRATION_VERSION, (int) get_option( ODDOUT_APPS_CAPABILITY_MIGRATION_OPTION ) );
+			$this->assertFalse( get_option( $lock_key, false ) );
+		} finally {
+			if ( '' !== $other_owner ) {
+				oddout_apps_atomic_lock_release( $lock_key, $other_owner );
+			}
+			delete_option( $lock_key );
+			oddout_apps_index_save( $original_index );
+			$this->restore_option_fixture( $manifest_key, $original_manifest );
+			$this->restore_option_fixture( ODDOUT_APPS_CAPABILITY_MIGRATION_OPTION, $original_migration );
+			$this->restore_option_fixture( $lock_key, $original_lock );
+		}
+	}
+
+	public function test_post_migration_direct_upload_cannot_gain_notes_provenance() {
+		$slug               = 'odd-notes';
+		$original_index     = oddout_apps_index_load();
+		$manifest_key       = ODDOUT_APPS_OPTION_PREFIX . $slug;
+		$original_manifest  = get_option( $manifest_key, false );
+		$original_migration = get_option( ODDOUT_APPS_CAPABILITY_MIGRATION_OPTION, false );
+		$final              = rtrim( oddout_apps_dir_for( $slug ), '/\\' );
+		$this->assertArrayNotHasKey( $slug, $original_index );
+		$manifest = array(
+			'type'       => 'app',
+			'slug'       => $slug,
+			'name'       => 'ODD Notes lookalike',
+			'version'    => '9.9.9',
+			'entry'      => 'index.html',
+			'icon'       => 'icon.svg',
+			'capability' => 'read',
+			'native'     => array(
+				'template' => 'odd-notes',
+				'script'   => 'assets/js/odd-notes.min.js',
+				'style'    => 'assets/css/odd-notes.css',
+			),
+		);
+		$archive = $this->create_transaction_archive(
+			$manifest,
+			array(
+				'assets/js/odd-notes.min.js' => 'window.lookalike = true;',
+				'assets/css/odd-notes.css'   => 'body{color:inherit}',
+			)
+		);
+
+		try {
+			update_option( ODDOUT_APPS_CAPABILITY_MIGRATION_OPTION, ODDOUT_APPS_CAPABILITY_MIGRATION_VERSION, false );
+			$installed = oddout_apps_install( $archive, 'odd-notes.wp' );
+			$this->assertIsArray( $installed );
+			$row = oddout_apps_index_load()[ $slug ];
+			$this->assertSame( 'manage_options', $row['capability'] );
+			$this->assertArrayNotHasKey( 'capability_source', $row );
+
+			oddout_apps_migrate_native_notes_capability_source();
+			$row = oddout_apps_index_load()[ $slug ];
+			$this->assertSame( 'manage_options', $row['capability'] );
+			$this->assertArrayNotHasKey( 'capability_source', $row );
+		} finally {
+			wp_delete_file( $archive );
+			oddout_apps_rrmdir( $final );
+			oddout_apps_manifest_delete( $slug );
+			oddout_apps_index_save( $original_index );
+			$this->restore_option_fixture( $manifest_key, $original_manifest );
+			$this->restore_option_fixture( ODDOUT_APPS_CAPABILITY_MIGRATION_OPTION, $original_migration );
+		}
 	}
 
 	public function test_notes_identifiers_are_stable() {

@@ -118,7 +118,7 @@ function oddout_apps_register_surfaces( $row ) {
 		'min_width'    => 420,
 		'min_height'   => 320,
 		'placement'    => 'none',
-		'capabilities' => array( oddout_apps_normalize_capability( isset( $row['capability'] ) ? $row['capability'] : '', $slug ) ),
+		'capabilities' => array( oddout_apps_resolve_capability( $row ) ),
 		'config'       => $config,
 	);
 	if ( '' !== $style ) {

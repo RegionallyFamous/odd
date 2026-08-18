@@ -5,8 +5,10 @@ on:
     paths:
       - '_tools/catalog-sources/**'
       - '_tools/build-catalog.py'
+      - 'odd/bin/check-app-version-bumps'
       - 'odd/bin/validate-catalog'
       - 'odd/bin/build-catalog-preview'
+      - 'odd/bin/smoke-catalog-apps'
       - '.github/workflows/catalog-preview.yml'
   workflow_dispatch:
 
@@ -15,15 +17,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
 
       - name: Install Python catalog dependencies
         run: python -m pip install --quiet -r requirements-catalog.txt
 
+      - name: Install catalog smoke dependencies
+        run: npm ci --no-audit --no-fund
+
       - name: Build non-published preview catalog
         run: odd/bin/build-catalog-preview
+
+      - name: Require preview app version bumps for changed bundle bytes
+        env:
+          ODD_APP_VERSION_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: >-
+          odd/bin/check-app-version-bumps
+          --channel preview
+          --current-registry .odd/catalog-preview/v1/registry.json
 
       - name: Summarize preview catalog
         run: |
@@ -49,10 +68,21 @@ jobs:
           mkdir -p catalog-preview
           cp -R .odd/catalog-preview/v1 catalog-preview/v1
 
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: Smoke every built preview app
+        env:
+          ODD_CATALOG_BUNDLES_DIR: .odd/catalog-preview/v1/bundles
+        run: odd/bin/smoke-catalog-apps --screenshots-dir test-results/catalog-preview-ci
+
       - uses: actions/upload-artifact@v7
+        if: always()
         with:
           name: odd-catalog-preview
           path: |
             catalog-preview/v1
             catalog-preview-summary.md
+            test-results/catalog-preview-ci/
+          if-no-files-found: warn
           retention-days: 7

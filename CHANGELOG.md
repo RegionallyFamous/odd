@@ -7,6 +7,36 @@ All notable changes to ODD are documented here. The format follows
 <a id="unreleased"></a>
 ## [Unreleased]
 
+<a id="v1.2.0"></a>
+## [1.2.0] — 2026-08-18
+
+### Added
+- Added strict runtime requirement declarations and changed-bundle SemVer
+  enforcement so catalog apps can ship independently without silent downgrade
+  or same-version replacement mistakes.
+- Added arbitrary-slug installation coverage and all-app desktop/mobile catalog
+  smoke tests to the required release workflows.
+- Added trusted install provenance for the limited app capabilities that may be
+  used by subscribers.
+
+### Changed
+- Catalog compatibility, update availability, and prerelease precedence are now
+  decided by the server and shared consistently with every Shop response.
+- The frozen offline shelf and approved stable catalog now contain ODD Notes,
+  ODD Pantry, and ODD Workbench.
+- New catalog app launchers hydrate into OpenStation's unified desktop in the
+  same session in which the app is installed.
+
+### Fixed
+- Prevented direct uploads, unsigned fixtures, forged provenance, and private
+  mirrors from granting subscriber-readable app capabilities.
+- Preserved existing native ODD Notes access through a one-time, locked,
+  pre-upgrade migration without promoting later lookalike uploads.
+- Kept ODD Shop and catalog app windows inside OpenStation's dock-safe visible
+  workspace across saved layouts, desktop resizing, and mobile reopen.
+- Made SemVer requirement and update comparisons strict and overflow-safe,
+  including prerelease identifiers and arbitrarily large numeric components.
+
 <a id="v1.1.11"></a>
 ## [1.1.11] — 2026-08-17
 

@@ -59,6 +59,25 @@ if (
 add_filter( 'oddout_catalog_signature_required', '__return_false' );
 
 /**
+ * Permit the browser-facing copies of fixture artwork. The registry itself
+ * stays on fixture.invalid so catalog and bundle HTTP remains hermetic, while
+ * icons and cards are rewritten to the fixture directory under wp-content so
+ * the browser can load them from the local WordPress origin.
+ */
+add_filter(
+	'oddout_catalog_entry_url_allowed',
+	static function ( $allowed, $url, $field ) {
+		if ( $allowed || ! in_array( $field, array( 'icon_url', 'card_url' ), true ) ) {
+			return $allowed;
+		}
+
+		return oddout_smoke_public_asset_url_allowed( $url );
+	},
+	10,
+	3
+);
+
+/**
  * Intercept HTTP requests to the ODD catalog domain and serve fixtures
  * from disk. Returning anything other than `false` short-circuits the
  * standard HTTP API pipeline with our fabricated response.
@@ -93,7 +112,7 @@ add_filter(
 		// Catalog registry.
 		if ( false !== strpos( $path, '/catalog/v1/registry.json' ) ) {
 			$file = $root . '/registry.json';
-			return oddout_smoke_serve_file( $file, 'application/json', $args );
+			return oddout_smoke_serve_registry( $file, $args );
 		}
 
 		// Catalog bundle (.wp).
@@ -102,12 +121,19 @@ add_filter(
 			return oddout_smoke_serve_file( $file, 'application/zip', $args );
 		}
 
-		// Catalog icon (optional — nothing in the installer reads these
-		// as HTTP requests today, but the Shop catalog endpoint does).
+		// Catalog artwork. Browser requests use the rewritten local URLs,
+		// while this also keeps server-side fixture requests well formed.
 		if ( preg_match( '#/catalog/v1/icons/(.+)$#', $path, $m ) ) {
 			$file = $root . '/icons/' . $m[1];
 			if ( is_readable( $file ) ) {
-				return oddout_smoke_serve_file( $file, 'image/svg+xml', $args );
+				return oddout_smoke_serve_file( $file, oddout_smoke_asset_content_type( $file ), $args );
+			}
+		}
+
+		if ( preg_match( '#/catalog/v1/cards/(.+)$#', $path, $m ) ) {
+			$file = $root . '/cards/' . $m[1];
+			if ( is_readable( $file ) ) {
+				return oddout_smoke_serve_file( $file, oddout_smoke_asset_content_type( $file ), $args );
 			}
 		}
 
@@ -116,6 +142,139 @@ add_filter(
 	10,
 	3
 );
+
+/**
+ * Return the public URL prefix for a fixture directory inside wp-content.
+ *
+ * @return string Empty when the configured fixture is not web-accessible.
+ */
+function oddout_smoke_public_asset_base_url() {
+	$root         = realpath( ODD_SMOKE_FIXTURE_ROOT );
+	$content_root = realpath( WP_CONTENT_DIR );
+	if ( false === $root || false === $content_root ) {
+		return '';
+	}
+
+	$content_root = rtrim( wp_normalize_path( $content_root ), '/' );
+	$root         = wp_normalize_path( $root );
+	if ( $root === $content_root || 0 !== strpos( $root, $content_root . '/' ) ) {
+		return '';
+	}
+
+	$relative = ltrim( substr( $root, strlen( $content_root ) ), '/' );
+	return rtrim( content_url( '/' . $relative ), '/' );
+}
+
+/**
+ * Check that a rewritten artwork URL points to one exact fixture asset.
+ *
+ * @param string $url Candidate registry URL.
+ * @return bool
+ */
+function oddout_smoke_public_asset_url_allowed( $url ) {
+	$base = oddout_smoke_public_asset_base_url();
+	if ( '' === $base || ! is_string( $url ) || '' === $url ) {
+		return false;
+	}
+
+	$path      = wp_parse_url( $url, PHP_URL_PATH );
+	$base_path = wp_parse_url( $base, PHP_URL_PATH );
+	if ( ! is_string( $path ) || ! is_string( $base_path ) ) {
+		return false;
+	}
+	if ( ! preg_match( '#^' . preg_quote( rtrim( $base_path, '/' ), '#' ) . '/(icons|cards)/([A-Za-z0-9._-]+)$#', $path, $matches ) ) {
+		return false;
+	}
+
+	$expected = $base . '/' . $matches[1] . '/' . rawurlencode( $matches[2] );
+	return $expected === $url && is_readable( rtrim( ODD_SMOKE_FIXTURE_ROOT, '/\\' ) . '/' . $matches[1] . '/' . $matches[2] );
+}
+
+/**
+ * Convert one remote artwork URL to its browser-readable local fixture URL.
+ *
+ * @param string $url Remote registry URL.
+ * @param string $directory Expected fixture directory.
+ * @return string Original URL when it cannot be safely rewritten.
+ */
+function oddout_smoke_rewrite_asset_url( $url, $directory ) {
+	$base = oddout_smoke_public_asset_base_url();
+	$path = wp_parse_url( (string) $url, PHP_URL_PATH );
+	if ( '' === $base || ! is_string( $path ) ) {
+		return $url;
+	}
+
+	$filename = basename( $path );
+	if ( ! preg_match( '/^[A-Za-z0-9._-]+$/', $filename ) ) {
+		return $url;
+	}
+	$file = rtrim( ODD_SMOKE_FIXTURE_ROOT, '/\\' ) . '/' . $directory . '/' . $filename;
+	if ( ! is_readable( $file ) ) {
+		return $url;
+	}
+
+	return $base . '/' . $directory . '/' . rawurlencode( $filename );
+}
+
+/**
+ * Serve a registry whose visual assets resolve in the local browser.
+ *
+ * @param string $file Registry path.
+ * @param array  $args HTTP request arguments.
+ * @return array
+ */
+function oddout_smoke_serve_registry( $file, $args = array() ) {
+	if ( ! is_readable( $file ) ) {
+		return oddout_smoke_serve_file( $file, 'application/json', $args );
+	}
+
+	$registry = json_decode( (string) file_get_contents( $file ), true );
+	if ( ! is_array( $registry ) || ! isset( $registry['bundles'] ) || ! is_array( $registry['bundles'] ) ) {
+		return oddout_smoke_serve_file( $file, 'application/json', $args );
+	}
+
+	foreach ( $registry['bundles'] as &$entry ) {
+		if ( ! is_array( $entry ) ) {
+			continue;
+		}
+		if ( isset( $entry['icon_url'] ) ) {
+			$entry['icon_url'] = oddout_smoke_rewrite_asset_url( $entry['icon_url'], 'icons' );
+		}
+		if ( isset( $entry['card_url'] ) ) {
+			$entry['card_url'] = oddout_smoke_rewrite_asset_url( $entry['card_url'], 'cards' );
+		}
+	}
+	unset( $entry );
+
+	$body = wp_json_encode( $registry );
+	if ( ! is_string( $body ) ) {
+		return oddout_smoke_serve_file( $file, 'application/json', $args );
+	}
+
+	return oddout_smoke_serve_body( $body, 'application/json', $args );
+}
+
+/**
+ * Return the MIME type for fixture artwork.
+ *
+ * @param string $file Artwork path.
+ * @return string
+ */
+function oddout_smoke_asset_content_type( $file ) {
+	switch ( strtolower( pathinfo( $file, PATHINFO_EXTENSION ) ) ) {
+		case 'webp':
+			return 'image/webp';
+		case 'png':
+			return 'image/png';
+		case 'jpg':
+		case 'jpeg':
+			return 'image/jpeg';
+		case 'svg':
+			return 'image/svg+xml';
+		default:
+			return 'application/octet-stream';
+	}
+}
 
 /**
  * Build a WP_HTTP-shaped response array from a local file. Returns a
@@ -142,7 +301,19 @@ function oddout_smoke_serve_file( $file, $content_type, $args = array() ) {
 		);
 	}
 
-	$body    = (string) file_get_contents( $file );
+	$body = (string) file_get_contents( $file );
+	return oddout_smoke_serve_body( $body, $content_type, $args );
+}
+
+/**
+ * Build a WP_HTTP-shaped response array from an in-memory body.
+ *
+ * @param string $body         Response body.
+ * @param string $content_type Response MIME type.
+ * @param array  $args         HTTP request arguments.
+ * @return array
+ */
+function oddout_smoke_serve_body( $body, $content_type, $args = array() ) {
 	$headers = array(
 		'content-type'   => $content_type,
 		'content-length' => (string) strlen( $body ),

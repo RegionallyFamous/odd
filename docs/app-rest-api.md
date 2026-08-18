@@ -3,8 +3,11 @@
 All routes are under `/wp-json/odd/v1` and use WordPress cookie authentication.
 Mutating management routes require `manage_options`. App data routes require
 the named app to be installed and enabled, and the current user must have that
-app's normalized capability (normally `manage_options`; ODD Notes is the
-intentional `read` exception).
+app's normalized capability. The default is `manage_options`. A manifest request
+for `read` is honored only when the installed row records verified first-party
+signed-catalog or plugin-shipped frozen-fallback provenance. Uploads, unsigned
+fixtures, and private mirrors remain at `manage_options`; update provenance is
+derived from the replacement and is never inherited from the old install.
 
 ## Catalog and installation
 

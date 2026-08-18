@@ -12,6 +12,98 @@
 		return window.wp.os;
 	}
 
+	var shopGeometryFilterRegistered = false;
+
+	function isOddWindow( baseId ) {
+		return baseId === 'odd' || /^odd-app-[a-z0-9][a-z0-9-]*$/.test( String( baseId || '' ) );
+	}
+
+	function hasBottomDock( os ) {
+		if ( ! os || typeof os.getOsSettings !== 'function' ) {
+			return false;
+		}
+		var settings;
+		try {
+			settings = os.getOsSettings() || {};
+		} catch ( error ) {
+			return false;
+		}
+		return settings.desktopLayout === 'classic'
+			|| settings.desktopLayout === 'openstation'
+			|| (
+				( settings.desktopLayout === 'unified' || settings.desktopLayout === 'spatial' )
+				&& settings.dockPlacement === 'bottom'
+			);
+	}
+
+	function registerShopGeometryFilter() {
+		var os = window.wp && window.wp.os;
+		var hooks = window.wp && window.wp.hooks;
+		if ( ! os || ! hooks || typeof hooks.addFilter !== 'function' ) {
+			return;
+		}
+		var hookName = os.HOOKS && os.HOOKS.WINDOW_GEOMETRY
+			? os.HOOKS.WINDOW_GEOMETRY
+			: 'os.window.geometry';
+		var namespace = 'odd/shop-fit-viewport';
+		if (
+			shopGeometryFilterRegistered
+			|| ( typeof hooks.hasFilter === 'function' && hooks.hasFilter( hookName, namespace ) )
+		) {
+			shopGeometryFilterRegistered = true;
+			return;
+		}
+		hooks.addFilter( hookName, namespace, function ( geometry, context ) {
+			if ( ! context || ! isOddWindow( context.baseId ) || ! context.desktopRect || ! geometry ) {
+				return geometry;
+			}
+			var desktopWidth = Number( context.desktopRect.width ) || 0;
+			var desktopHeight = Number( context.desktopRect.height ) || 0;
+			var originalWidth = Number( geometry.width );
+			var originalHeight = Number( geometry.height );
+			var originalX = Number( geometry.x );
+			var originalY = Number( geometry.y );
+			if (
+				desktopWidth <= 0
+				|| desktopHeight <= 0
+				|| ! Number.isFinite( originalWidth )
+				|| ! Number.isFinite( originalHeight )
+				|| ! Number.isFinite( originalX )
+				|| ! Number.isFinite( originalY )
+			) {
+				return geometry;
+			}
+			var margin = 12;
+			var dockReserve = hasBottomDock( os ) ? 80 : 0;
+			var safeWidth = Math.max( 0, desktopWidth - margin * 2 );
+			var safeHeight = Math.max( 0, desktopHeight - margin * 2 - dockReserve );
+			if ( safeWidth <= 0 || safeHeight <= 0 ) {
+				return geometry;
+			}
+			var width = Math.min( originalWidth, safeWidth );
+			var height = Math.min( originalHeight, safeHeight );
+			var x = Math.max( margin, Math.min( originalX, margin + safeWidth - width ) );
+			var y = Math.max( margin, Math.min( originalY, margin + safeHeight - height ) );
+			if ( width === originalWidth && height === originalHeight && x === originalX && y === originalY ) {
+				return geometry;
+			}
+			return Object.assign( {}, geometry, {
+				width: width,
+				height: height,
+				x: x,
+				y: y
+			} );
+		} );
+		shopGeometryFilterRegistered = true;
+	}
+
+	// The panel bundle can execute before OpenStation finishes booting its
+	// public hook bridge. Register now for already-ready shells and once more
+	// on the public init event. The local/public-hook guards make the second
+	// call idempotent even when the hook implementation does not replace names.
+	document.addEventListener( 'os-init', registerShopGeometryFilter, { once: true } );
+	registerShopGeometryFilter();
+
 	function request( cfg, url, options ) {
 		options = options || {};
 		options.credentials = 'same-origin';
@@ -34,15 +126,6 @@
 		if ( className ) { node.className = className; }
 		if ( text ) { node.textContent = text; }
 		return node;
-	}
-
-	function versionNewer( catalog, installed ) {
-		var a = String( catalog || '0' ).split( '.' ).map( Number );
-		var b = String( installed || '0' ).split( '.' ).map( Number );
-		for ( var i = 0; i < Math.max( a.length, b.length ); i++ ) {
-			if ( ( a[ i ] || 0 ) !== ( b[ i ] || 0 ) ) { return ( a[ i ] || 0 ) > ( b[ i ] || 0 ); }
-		}
-		return false;
 	}
 
 	function displayName( row ) {
@@ -118,10 +201,32 @@
 	}
 
 	async function refreshOpenStation() {
-		if ( typeof api().refreshMenu !== 'function' ) {
+		var os = api();
+		if ( typeof os.refreshMenu !== 'function' ) {
 			throw new Error( __( 'OpenStation live refresh is unavailable. Update OpenStation and try again.' ) );
 		}
-		await api().refreshMenu();
+		await os.refreshMenu();
+
+		// OpenStation's unified wallpaper is backed by the public Files
+		// placement store. A menu refresh updates the registered icon and
+		// window lists, but a brand-new shortcut is not visible there until
+		// the root placements endpoint auto-places it and the live store is
+		// replaced with that authoritative response.
+		var files = os.files;
+		if (
+			! files
+			|| ! files.rest
+			|| typeof files.rest.listPlacements !== 'function'
+			|| ! files.store
+			|| typeof files.store.setFolderPlacements !== 'function'
+		) {
+			return;
+		}
+		var response = await files.rest.listPlacements( 0 );
+		if ( ! response || ! Array.isArray( response.placements ) ) {
+			throw new Error( __( 'OpenStation returned an incomplete desktop launcher list.' ) );
+		}
+		files.store.setFolderPlacements( 0, response.placements );
 	}
 
 	function validateInstallResult( payload, slug ) {
@@ -194,7 +299,7 @@
 	function renderCard( state, row ) {
 		var installed = state.installed.find( function ( app ) { return app.slug === row.slug; } );
 		var rowIncompatible = row.incompatible === true || row.state === 'incompatible';
-		var update = installed && ! rowIncompatible && versionNewer( row.version, installed.version );
+		var update = !! installed && ! rowIncompatible && row.update_available === true;
 		var incompatible = ! installed && rowIncompatible;
 		var incompatibilityReason = incompatible && typeof row.incompatibility_reason === 'string'
 			? row.incompatibility_reason.trim()

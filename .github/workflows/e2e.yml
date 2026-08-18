@@ -37,6 +37,7 @@ jobs:
           --health-retries=10
     env:
       WP_CLI_ALLOW_ROOT: '1'
+      ODD_E2E_CATALOG_ROOT: /tmp/odd-e2e-catalog/v1
     steps:
       - uses: actions/checkout@v6
 
@@ -69,10 +70,13 @@ jobs:
       - name: Install dependencies and build the fixture catalog
         env:
           ODD_CATALOG_BASE_URL: https://fixture.invalid/catalog/v1
+          ODD_CATALOG_OUT_ROOT: /tmp/odd-e2e-catalog/v1
         run: |
           npm ci --no-audit --no-fund
           python -m pip install --quiet -r requirements-catalog.txt
           python3 _tools/build-catalog.py
+          canary_slug="$(python3 ci/build-synthetic-catalog-app.py --catalog-root "$ODD_E2E_CATALOG_ROOT" --base-url https://fixture.invalid/catalog/v1 --id "${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}")"
+          echo "ODD_E2E_CANARY_SLUG=$canary_slug" >> "$GITHUB_ENV"
 
       - name: Verify exact ODD package
         run: |
@@ -118,7 +122,7 @@ jobs:
           wp config set ODD_SMOKE_CATALOG_URL https://fixture.invalid/catalog/v1/registry.json
           wp core install --url=http://127.0.0.1:8080 --title=ODD-e2e --admin_user=admin --admin_password=password --admin_email=e2e@example.com --skip-email
           mkdir -p wp-content/odd-smoke-fixture wp-content/mu-plugins
-          cp -R "$GITHUB_WORKSPACE/site/catalog/v1/." wp-content/odd-smoke-fixture/
+          cp -R "$ODD_E2E_CATALOG_ROOT/." wp-content/odd-smoke-fixture/
           cp "$GITHUB_WORKSPACE/ci/smoke/odd-smoke-fixture.php" wp-content/mu-plugins/
 
       - name: Install OpenStation 1.1.0 and ODD

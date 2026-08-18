@@ -24,6 +24,13 @@
 
 defined( 'ABSPATH' ) || exit;
 
+if ( ! defined( 'ODDOUT_APPS_CAPABILITY_MIGRATION_OPTION' ) ) {
+	define( 'ODDOUT_APPS_CAPABILITY_MIGRATION_OPTION', 'oddout_apps_capability_migration_version' );
+}
+if ( ! defined( 'ODDOUT_APPS_CAPABILITY_MIGRATION_VERSION' ) ) {
+	define( 'ODDOUT_APPS_CAPABILITY_MIGRATION_VERSION', 1 );
+}
+
 /**
  * Minimum capability an installed app can require by default.
  *
@@ -41,21 +48,34 @@ function oddout_apps_capability_floor() {
 }
 
 /**
- * Normalize an app manifest/index capability against the capability floor.
+ * Whether an installed row carries provenance trusted for `read` access.
+ *
+ * @param string $source Internal install provenance.
+ * @return bool
+ */
+function oddout_apps_capability_source_is_trusted( $source ) {
+	return in_array(
+		sanitize_key( (string) $source ),
+		array( 'first_party_catalog', 'frozen_fallback', 'native_odd_notes_migration' ),
+		true
+	);
+}
+
+/**
+ * Normalize a requested capability against the capability floor and provenance.
  *
  * @param string $capability Manifest-supplied capability.
- * @param string $slug       App slug.
+ * @param string $source     Internal install provenance.
  * @return string Capability safe to pass to current_user_can().
  */
-function oddout_apps_normalize_capability( $capability, $slug = '' ) {
-	if ( 'odd-notes' === sanitize_key( (string) $slug ) ) {
-		return 'read';
-	}
-
+function oddout_apps_normalize_capability( $capability, $source = '' ) {
 	$floor     = oddout_apps_capability_floor();
 	$requested = sanitize_key( (string) $capability );
 	if ( '' === $requested ) {
 		$requested = $floor;
+	}
+	if ( 'read' === $requested && ! oddout_apps_capability_source_is_trusted( $source ) ) {
+		return $floor;
 	}
 
 	$allowed = apply_filters( 'oddout_app_allowed_capabilities', array( $floor ), $floor );
@@ -77,9 +97,99 @@ function oddout_apps_normalize_capability( $capability, $slug = '' ) {
 	if ( ! in_array( $floor, $allowed, true ) ) {
 		$allowed[] = $floor;
 	}
+	if ( oddout_apps_capability_source_is_trusted( $source ) && ! in_array( 'read', $allowed, true ) ) {
+		$allowed[] = 'read';
+	}
 
 	return in_array( $requested, $allowed, true ) ? $requested : $floor;
 }
+
+/**
+ * Resolve the executable/storage capability from one installed index row.
+ *
+ * @param array $row Installed app index row.
+ * @return string
+ */
+function oddout_apps_resolve_capability( $row ) {
+	$row = is_array( $row ) ? $row : array();
+	return oddout_apps_normalize_capability(
+		isset( $row['capability'] ) ? (string) $row['capability'] : '',
+		isset( $row['capability_source'] ) ? (string) $row['capability_source'] : ''
+	);
+}
+
+/** Compare app versions while ignoring SemVer build metadata. */
+function oddout_apps_version_is_newer( $candidate, $installed ) {
+	if ( function_exists( 'oddout_catalog_semver_compare' ) ) {
+		return oddout_catalog_semver_compare( (string) $candidate, (string) $installed ) > 0;
+	}
+	$candidate = preg_replace( '/\+.*/', '', (string) $candidate );
+	$installed = preg_replace( '/\+.*/', '', (string) $installed );
+	return version_compare( $candidate, $installed, '>' );
+}
+
+/**
+ * Narrow migration for the native ODD Notes install shipped before provenance.
+ */
+function oddout_apps_migrate_native_notes_capability_source() {
+	if ( (int) get_option( ODDOUT_APPS_CAPABILITY_MIGRATION_OPTION, 0 ) >= ODDOUT_APPS_CAPABILITY_MIGRATION_VERSION ) {
+		return;
+	}
+
+	$lock_key = oddout_apps_index_lock_key();
+	$owner    = oddout_apps_atomic_lock_acquire( $lock_key, 10 * MINUTE_IN_SECONDS, true );
+	if ( is_wp_error( $owner ) ) {
+		return;
+	}
+
+	try {
+		// A concurrent request may have finished the migration while this
+		// request waited for the shared registry lease.
+		if ( (int) get_option( ODDOUT_APPS_CAPABILITY_MIGRATION_OPTION, 0 ) >= ODDOUT_APPS_CAPABILITY_MIGRATION_VERSION ) {
+			return;
+		}
+
+		// Every registry writer holds this same whole-index lease. Re-read only
+		// after winning it so installs and preference changes cannot be replaced
+		// by a stale pre-lock snapshot.
+		$index = oddout_apps_index_load();
+		if ( ! isset( $index['odd-notes'] ) || ! is_array( $index['odd-notes'] ) || ! empty( $index['odd-notes']['capability_source'] ) ) {
+			update_option( ODDOUT_APPS_CAPABILITY_MIGRATION_OPTION, ODDOUT_APPS_CAPABILITY_MIGRATION_VERSION, false );
+			return;
+		}
+		$manifest = oddout_apps_manifest_load( 'odd-notes' );
+		$native   = isset( $manifest['native'] ) && is_array( $manifest['native'] ) ? $manifest['native'] : array();
+		if (
+			'app' !== (string) ( $manifest['type'] ?? '' )
+			|| 'odd-notes' !== (string) ( $manifest['slug'] ?? '' )
+			|| 'read' !== sanitize_key( (string) ( $manifest['capability'] ?? '' ) )
+			|| 'odd-notes' !== (string) ( $native['template'] ?? '' )
+			|| 'assets/js/odd-notes.min.js' !== (string) ( $native['script'] ?? '' )
+			|| 'assets/css/odd-notes.css' !== (string) ( $native['style'] ?? '' )
+		) {
+			update_option( ODDOUT_APPS_CAPABILITY_MIGRATION_OPTION, ODDOUT_APPS_CAPABILITY_MIGRATION_VERSION, false );
+			return;
+		}
+
+		$lease = oddout_apps_atomic_lock_refresh( $lock_key, $owner );
+		if ( is_wp_error( $lease ) ) {
+			return;
+		}
+		$owner = $lease;
+
+		$index['odd-notes']['capability']        = 'read';
+		$index['odd-notes']['capability_source'] = 'native_odd_notes_migration';
+		oddout_apps_index_save( $index );
+		$stored = oddout_apps_index_load();
+		if ( empty( $stored['odd-notes']['capability_source'] ) || 'native_odd_notes_migration' !== $stored['odd-notes']['capability_source'] ) {
+			return;
+		}
+		update_option( ODDOUT_APPS_CAPABILITY_MIGRATION_OPTION, ODDOUT_APPS_CAPABILITY_MIGRATION_VERSION, false );
+	} finally {
+		oddout_apps_atomic_lock_release( $lock_key, $owner );
+	}
+}
+add_action( 'init', 'oddout_apps_migrate_native_notes_capability_source', 1 );
 
 /**
  * Install and activate an app archive.
@@ -613,7 +723,7 @@ function oddout_apps_install_validated_archive( $tmp_path, array $manifest, $arg
 		oddout_apps_mutation_locks_release( $slug, $locks );
 		return new WP_Error( 'not_installed', __( 'The app must already be installed for this operation.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 409 ) );
 	}
-	if ( 'update' === $operation && ! version_compare( (string) $manifest['version'], (string) $old_row['version'], '>' ) ) {
+	if ( 'update' === $operation && ! oddout_apps_version_is_newer( (string) $manifest['version'], (string) $old_row['version'] ) ) {
 		oddout_apps_mutation_locks_release( $slug, $locks );
 		return new WP_Error( 'no_newer_version', __( 'An update must have a newer version than the installed app.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 409 ) );
 	}
@@ -703,18 +813,26 @@ function oddout_apps_install_validated_archive( $tmp_path, array $manifest, $arg
 	if ( null !== $old_row ) {
 		$surfaces = oddout_apps_row_surfaces( $old_row );
 	}
-	$index[ $slug ] = array(
+	$capability_source = isset( $args['capability_source'] ) ? sanitize_key( (string) $args['capability_source'] ) : '';
+	$candidate_row     = array(
+		'capability'        => isset( $manifest['capability'] ) ? (string) $manifest['capability'] : '',
+		'capability_source' => $capability_source,
+	);
+	$index[ $slug ]    = array(
 		'slug'        => $slug,
 		'name'        => sanitize_text_field( $manifest['name'] ),
 		'version'     => sanitize_text_field( $manifest['version'] ),
 		'enabled'     => null !== $old_row ? ! empty( $old_row['enabled'] ) : true,
 		'icon'        => isset( $manifest['icon'] ) ? sanitize_text_field( (string) $manifest['icon'] ) : '',
 		'description' => isset( $manifest['description'] ) ? sanitize_text_field( (string) $manifest['description'] ) : '',
-		'capability'  => oddout_apps_normalize_capability( isset( $manifest['capability'] ) ? (string) $manifest['capability'] : '', $slug ),
+		'capability'  => oddout_apps_resolve_capability( $candidate_row ),
 		'surfaces'    => $surfaces,
 		'installed'   => null !== $old_row && ! empty( $old_row['installed'] ) ? (int) $old_row['installed'] : time(),
 	);
-	$lease          = $lease_check();
+	if ( oddout_apps_capability_source_is_trusted( $capability_source ) ) {
+		$index[ $slug ]['capability_source'] = $capability_source;
+	}
+	$lease = $lease_check();
 	if ( is_wp_error( $lease ) ) {
 		oddout_apps_mutation_locks_release( $slug, $locks );
 		return $lease;
@@ -1133,8 +1251,9 @@ function oddout_apps_list() {
 		$rows[] = $row;
 	}
 	foreach ( $rows as &$row ) {
-			// Keep the REST response and Shop store on a complete shape.
-		$row['surfaces'] = oddout_apps_row_surfaces( $row );
+		// Keep the REST response and Shop store on a complete shape.
+		$row['surfaces']   = oddout_apps_row_surfaces( $row );
+		$row['capability'] = oddout_apps_resolve_capability( $row );
 	}
 	unset( $row );
 	usort(

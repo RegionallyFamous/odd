@@ -18,20 +18,7 @@ function oddout_register_shop_surfaces() {
 	$icon = oddout_control_icon_url();
 	openstation_register_window(
 		'odd',
-		array(
-			'title'        => __( 'ODD Shop', 'odd-outlandish-desktop-decorator' ),
-			'icon'         => $icon,
-			'script'       => 'odd-panel',
-			'style'        => 'odd-panel-style',
-			'template'     => 'oddout_render_panel_template',
-			'width'        => 920,
-			'height'       => 640,
-			'min_width'    => 560,
-			'min_height'   => 440,
-			'placement'    => 'none',
-			'capabilities' => array( 'read' ),
-			'config'       => oddout_shop_window_config(),
-		)
+		oddout_shop_window_args( $icon )
 	);
 
 	openstation_register_icon(
@@ -47,6 +34,29 @@ function oddout_register_shop_surfaces() {
 
 	oddout_shop_seed_visibility();
 	oddout_register_shop_window_notice();
+}
+
+/**
+ * Build the native Shop window registration.
+ *
+ * @param string $icon Shop icon URL.
+ * @return array
+ */
+function oddout_shop_window_args( $icon = '' ) {
+	return array(
+		'title'        => __( 'ODD Shop', 'odd-outlandish-desktop-decorator' ),
+		'icon'         => (string) $icon,
+		'script'       => 'odd-panel',
+		'style'        => 'odd-panel-style',
+		'template'     => 'oddout_render_panel_template',
+		'width'        => 920,
+		'height'       => 640,
+		'min_width'    => 320,
+		'min_height'   => 440,
+		'placement'    => 'none',
+		'capabilities' => array( 'read' ),
+		'config'       => oddout_shop_window_config(),
+	);
 }
 
 /**

@@ -725,9 +725,78 @@ function oddout_catalog_entry_requires_sha( array $entry ) {
 	return (bool) apply_filters( 'oddout_bundle_catalog_requires_sha', true, $entry );
 }
 
+function oddout_catalog_semver_pattern() {
+	$numeric     = '(?:0|[1-9][0-9]*)';
+	$non_numeric = '(?:[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)';
+	$identifier  = '(?:' . $numeric . '|' . $non_numeric . ')';
+
+	return '/^('
+		. $numeric . ')\.(' . $numeric . ')\.(' . $numeric . ')'
+		. '(?:-(' . $identifier . '(?:\.' . $identifier . ')*))?'
+		. '(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?\z/';
+}
+
 function oddout_catalog_semver_is_valid( $version ) {
 	return is_string( $version )
-		&& 1 === preg_match( '/^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/', $version );
+		&& 1 === preg_match( oddout_catalog_semver_pattern(), $version );
+}
+
+/**
+ * Compare canonical SemVer numeric identifiers without integer conversion.
+ *
+ * @return int -1, 0, or 1.
+ */
+function oddout_catalog_semver_compare_numeric_identifier( $left, $right ) {
+	$left              = (string) $left;
+	$right             = (string) $right;
+	$length_comparison = strlen( $left ) <=> strlen( $right );
+	if ( 0 !== $length_comparison ) {
+		return $length_comparison;
+	}
+	return strcmp( $left, $right ) <=> 0;
+}
+
+/**
+ * Compare valid semantic versions without treating build metadata as precedence.
+ *
+ * @return int -1, 0, or 1.
+ */
+function oddout_catalog_semver_compare( $left, $right ) {
+	$pattern = oddout_catalog_semver_pattern();
+	if ( ! preg_match( $pattern, (string) $left, $left_parts ) || ! preg_match( $pattern, (string) $right, $right_parts ) ) {
+		return version_compare( (string) $left, (string) $right );
+	}
+	for ( $index = 1; $index <= 3; $index++ ) {
+		$comparison = oddout_catalog_semver_compare_numeric_identifier( $left_parts[ $index ], $right_parts[ $index ] );
+		if ( 0 !== $comparison ) {
+			return $comparison;
+		}
+	}
+
+	$left_pre  = isset( $left_parts[4] ) && '' !== $left_parts[4] ? explode( '.', $left_parts[4] ) : array();
+	$right_pre = isset( $right_parts[4] ) && '' !== $right_parts[4] ? explode( '.', $right_parts[4] ) : array();
+	if ( empty( $left_pre ) || empty( $right_pre ) ) {
+		return $left_pre === $right_pre ? 0 : ( empty( $left_pre ) ? 1 : -1 );
+	}
+	$length = max( count( $left_pre ), count( $right_pre ) );
+	for ( $index = 0; $index < $length; $index++ ) {
+		if ( ! isset( $left_pre[ $index ] ) || ! isset( $right_pre[ $index ] ) ) {
+			return isset( $left_pre[ $index ] ) ? 1 : -1;
+		}
+		if ( $left_pre[ $index ] === $right_pre[ $index ] ) {
+			continue;
+		}
+		$left_numeric  = ctype_digit( $left_pre[ $index ] );
+		$right_numeric = ctype_digit( $right_pre[ $index ] );
+		if ( $left_numeric && $right_numeric ) {
+			return oddout_catalog_semver_compare_numeric_identifier( $left_pre[ $index ], $right_pre[ $index ] );
+		}
+		if ( $left_numeric !== $right_numeric ) {
+			return $left_numeric ? -1 : 1;
+		}
+		return strcmp( $left_pre[ $index ], $right_pre[ $index ] ) <=> 0;
+	}
+	return 0;
 }
 
 function oddout_catalog_requires_keys() {
@@ -1270,6 +1339,7 @@ function oddout_catalog_validate_remote_registry( $data, $catalog_url ) {
 
 	$allowed_types = oddout_catalog_allowed_types();
 	$seen_slugs    = array();
+	$first_party   = oddout_catalog_is_first_party_url( $catalog_url );
 	foreach ( $data['bundles'] as $index => $entry ) {
 		if ( ! is_array( $entry ) ) {
 			return new WP_Error(
@@ -1322,6 +1392,14 @@ function oddout_catalog_validate_remote_registry( $data, $catalog_url ) {
 			return new WP_Error(
 				'catalog_bad_bundle_version',
 				__( 'Catalog registry contains a bundle with an invalid version.', 'odd-outlandish-desktop-decorator' ),
+				array( 'slug' => $slug )
+			);
+		}
+
+		if ( $first_party && ( ! isset( $entry['requires'] ) || ! is_array( $entry['requires'] ) || array_diff( oddout_catalog_requires_keys(), array_keys( $entry['requires'] ) ) || array_diff( array_keys( $entry['requires'] ), oddout_catalog_requires_keys() ) ) ) {
+			return new WP_Error(
+				'catalog_missing_requires',
+				__( 'First-party catalog apps must declare exact ODD, OpenStation, and API requirements.', 'odd-outlandish-desktop-decorator' ),
 				array( 'slug' => $slug )
 			);
 		}
@@ -1484,6 +1562,14 @@ function oddout_catalog_fetch_remote( $url ) {
 			array_merge( array( 'http_status' => $code ), $signature_meta )
 		);
 	}
+	// Registry JSON is untrusted even when its detached signature is valid.
+	// Provenance metadata is stamped by this fetch path only; never let the
+	// decoded document impersonate a cached, signed, or plugin-owned source.
+	foreach ( array_keys( $data ) as $key ) {
+		if ( 0 === strpos( (string) $key, '_oddout_' ) ) {
+			unset( $data[ $key ] );
+		}
+	}
 	$valid = oddout_catalog_validate_remote_registry( $data, $url );
 	if ( is_wp_error( $valid ) ) {
 		$valid->add_data(
@@ -1501,6 +1587,7 @@ function oddout_catalog_fetch_remote( $url ) {
 	$data['_oddout_signature_status'] = isset( $signature_meta['signature_status'] ) ? (string) $signature_meta['signature_status'] : 'unknown';
 	$data['_oddout_signature_key']    = isset( $signature_meta['signature_key'] ) ? (string) $signature_meta['signature_key'] : '';
 	$data['_oddout_signature_url']    = isset( $signature_meta['signature_url'] ) ? (string) $signature_meta['signature_url'] : '';
+	$data['_oddout_catalog_url']      = $url;
 	return $data;
 }
 
@@ -1508,11 +1595,13 @@ function oddout_catalog_fetch_remote( $url ) {
  * Normalise and sanitise a decoded registry so downstream callers
  * can depend on the shape. Silently drops malformed rows.
  *
- * @param array $data Decoded JSON.
- * @return array      {version:int, bundles:array}
+ * @param array  $data           Decoded JSON.
+ * @param string $trusted_source Internal source asserted by a plugin-owned loader.
+ * @return array                 {version:int, bundles:array}
  */
-function oddout_catalog_normalise( $data ) {
-	$out = array(
+function oddout_catalog_normalise( $data, $trusted_source = '' ) {
+	$trusted_source    = sanitize_key( (string) $trusted_source );
+	$out               = array(
 		'version'                  => isset( $data['version'] ) ? (int) $data['version'] : 1,
 		'generated_at'             => isset( $data['generated_at'] ) ? (string) $data['generated_at'] : '',
 		'_oddout_http_status'      => isset( $data['_oddout_http_status'] ) ? (int) $data['_oddout_http_status'] : 0,
@@ -1521,8 +1610,16 @@ function oddout_catalog_normalise( $data ) {
 		'_oddout_signature_status' => isset( $data['_oddout_signature_status'] ) ? sanitize_key( (string) $data['_oddout_signature_status'] ) : 'unknown',
 		'_oddout_signature_key'    => isset( $data['_oddout_signature_key'] ) ? sanitize_text_field( (string) $data['_oddout_signature_key'] ) : '',
 		'_oddout_signature_url'    => isset( $data['_oddout_signature_url'] ) ? esc_url_raw( (string) $data['_oddout_signature_url'] ) : '',
+		'_oddout_catalog_url'      => isset( $data['_oddout_catalog_url'] ) ? esc_url_raw( (string) $data['_oddout_catalog_url'] ) : '',
+		'_oddout_frozen_fallback'  => 'frozen_fallback' === $trusted_source,
 		'bundles'                  => array(),
 	);
+	$capability_source = '';
+	if ( ! empty( $out['_oddout_frozen_fallback'] ) ) {
+		$capability_source = 'frozen_fallback';
+	} elseif ( 'valid' === $out['_oddout_signature_status'] && oddout_catalog_is_first_party_url( $out['_oddout_catalog_url'] ) ) {
+		$capability_source = 'first_party_catalog';
+	}
 
 	$allowed_types = oddout_catalog_allowed_types();
 	$rows_in       = isset( $data['bundles'] ) && is_array( $data['bundles'] ) ? $data['bundles'] : array();
@@ -1581,6 +1678,9 @@ function oddout_catalog_normalise( $data ) {
 			if ( ! empty( $requires ) ) {
 				$row['requires'] = $requires;
 			}
+		}
+		if ( '' !== $capability_source ) {
+			$row['_oddout_capability_source'] = $capability_source;
 		}
 		$out['bundles'][] = oddout_catalog_annotate_compatibility( $row );
 	}
@@ -1855,6 +1955,7 @@ function oddout_catalog_row_for( $slug ) {
  * behind the same manage_options boundary as the install endpoint.
  */
 function oddout_bundle_catalog_row_for_response( array $entry ) {
+	unset( $entry['_oddout_capability_source'] );
 	if ( current_user_can( 'manage_options' ) ) {
 		return $entry;
 	}
@@ -1869,15 +1970,22 @@ function oddout_bundle_catalog_row_for_response( array $entry ) {
  * @return array<int, array<string, mixed>>
  */
 function oddout_bundle_catalog_for_type( $type ) {
-	$type      = sanitize_text_field( (string) $type );
-	$installed = oddout_bundle_catalog_installed_slugs();
-	$rows      = array();
+	$type     = sanitize_text_field( (string) $type );
+	$versions = oddout_bundle_catalog_installed_versions();
+	$rows     = array();
 	foreach ( oddout_bundle_catalog() as $entry ) {
 		if ( $entry['type'] !== $type ) {
 			continue;
 		}
-		$entry['installed'] = isset( $installed[ $entry['slug'] ] );
-		$rows[]             = oddout_bundle_catalog_row_for_response( $entry );
+		$slug                       = $entry['slug'];
+		$installed                  = array_key_exists( $slug, $versions );
+		$installed_version          = $installed ? $versions[ $slug ] : '';
+		$entry['installed']         = $installed;
+		$entry['installed_version'] = $installed_version;
+		$entry['update_available']  = $installed
+			&& empty( $entry['incompatible'] )
+			&& oddout_bundle_catalog_is_newer( $entry['version'], $installed_version );
+		$rows[]                     = oddout_bundle_catalog_row_for_response( $entry );
 	}
 	return $rows;
 }
@@ -1913,7 +2021,7 @@ function oddout_bundle_catalog_is_newer( $catalog_version, $installed_version ) 
 	if ( '' === $installed_version ) {
 		return true;
 	}
-	return version_compare( $installed_version, $catalog_version, '<' );
+	return oddout_catalog_semver_compare( $catalog_version, $installed_version ) > 0;
 }
 
 add_action(
@@ -2096,6 +2204,7 @@ function oddout_bundle_catalog_rows_for_response( $type = '' ) {
 		$entry['installed']         = $installed;
 		$entry['installed_version'] = $installed_version;
 		$entry['update_available']  = $installed
+			&& empty( $entry['incompatible'] )
 			&& oddout_bundle_catalog_is_newer( $entry['version'], $installed_version );
 		$rows[]                     = oddout_bundle_catalog_row_for_response( $entry );
 	}
@@ -2216,6 +2325,20 @@ function oddout_catalog_install_entry( array $entry, $args = array() ) {
 	if ( ! in_array( $operation, array( 'install', 'update', 'repair' ), true ) ) {
 		return new WP_Error( 'invalid_install_operation', __( 'Catalog operation must be install, update, or repair.', 'odd-outlandish-desktop-decorator' ), array( 'status' => 400 ) );
 	}
+	$compatibility = oddout_catalog_entry_compatibility( $entry );
+	if ( empty( $compatibility['compatible'] ) ) {
+		return new WP_Error(
+			'catalog_incompatible',
+			isset( $compatibility['reason'] ) && '' !== $compatibility['reason']
+				? $compatibility['reason']
+				: __( 'Bundle is not compatible with this ODD runtime.', 'odd-outlandish-desktop-decorator' ),
+			array(
+				'status'   => 409,
+				'requires' => isset( $compatibility['requires'] ) ? $compatibility['requires'] : array(),
+				'current'  => isset( $compatibility['current'] ) ? $compatibility['current'] : oddout_catalog_current_versions(),
+			)
+		);
+	}
 	$lock_key = 'oddout_catalog_install_lock_' . $slug;
 	$lock     = oddout_catalog_lock_acquire( $lock_key, 10 * MINUTE_IN_SECONDS );
 	if ( is_wp_error( $lock ) ) {
@@ -2261,10 +2384,11 @@ function oddout_catalog_install_entry( array $entry, $args = array() ) {
 		$tmp,
 		$filename,
 		array(
-			'operation'        => $operation,
-			'expected_slug'    => $slug,
-			'expected_type'    => isset( $entry['type'] ) ? (string) $entry['type'] : '',
-			'expected_version' => isset( $entry['version'] ) ? (string) $entry['version'] : '',
+			'operation'         => $operation,
+			'expected_slug'     => $slug,
+			'expected_type'     => isset( $entry['type'] ) ? (string) $entry['type'] : '',
+			'expected_version'  => isset( $entry['version'] ) ? (string) $entry['version'] : '',
+			'capability_source' => isset( $entry['_oddout_capability_source'] ) ? sanitize_key( (string) $entry['_oddout_capability_source'] ) : '',
 		)
 	);
 	wp_delete_file( $tmp );

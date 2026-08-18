@@ -24,6 +24,7 @@ REPO = HERE.parent.parent
 sys.path.insert(0, str(REPO / "_tools"))
 
 from manifest_validation import validate_manifest as validate_manifest_schema
+from semver_validation import STRICT_SEMVER_RE
 
 
 def repo_path_from_env(name: str, default: Path) -> Path:
@@ -48,9 +49,7 @@ BASE_URL = (
 ).rstrip("/") + "/"
 PUBLIC_KEY = "2aIvGPQMF//a9ciDvQ8GST7Q8QhfVsM6h1HB3/Td5Gk="
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
-SEMVER_RE = re.compile(
-    r"^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$"
-)
+SEMVER_RE = STRICT_SEMVER_RE
 PATH_RE = re.compile(r"^[a-zA-Z0-9._-]+(?:/[a-zA-Z0-9._-]+)*$")
 FORBIDDEN_EXTENSIONS = {
     "bash", "cgi", "phar", "php", "php3", "php4", "php5", "php7",
@@ -308,8 +307,8 @@ def validate_row(row: dict, index: int, seen: set[str], problems: list[str]) -> 
     version = row.get("version")
     if not isinstance(version, str) or not SEMVER_RE.fullmatch(version):
         problems.append(f"{label}: invalid version")
-    requires = row.get("requires", {})
-    if not isinstance(requires, dict) or set(requires).difference(REQUIRES_KEYS):
+    requires = row.get("requires")
+    if not isinstance(requires, dict) or set(requires) != REQUIRES_KEYS:
         problems.append(f"{label}: invalid requires object")
     elif any(not isinstance(value, str) or not SEMVER_RE.fullmatch(value) for value in requires.values()):
         problems.append(f"{label}: invalid requires version")

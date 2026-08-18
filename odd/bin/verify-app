@@ -120,6 +120,12 @@ env "${catalog_env[@]}" \
 	ODD_VALIDATE_REQUIRE_CATALOG_SIGNATURE=0 \
 	odd/bin/validate-catalog
 
+echo "[verify-app] checking catalog app version bump"
+odd/bin/check-app-version-bumps \
+	--current-registry "$isolated_catalog/registry.json" \
+	--base-ref HEAD \
+	--slug "$slug"
+
 catalog_diff="$(diff -qr "$isolated_catalog" "$repo_root/site/catalog/v1" || true)"
 if [[ -n "$catalog_diff" ]]; then
 	echo "verify-app: generated catalog does not match the validated source rebuild:" >&2

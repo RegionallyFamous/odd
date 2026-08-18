@@ -78,13 +78,25 @@ function parseArgs() {
 	return { headed, screenshots, screenshotsDir, slugs };
 }
 
-function listAllAppSlugs() {
-	const catalogConfig = path.join( REPO_ROOT, '_tools', 'catalog-sources', 'catalog.json' );
-	if ( ! fs.existsSync( catalogConfig ) ) {
-		return [];
+function listBuiltAppSlugs() {
+	const registryPath = path.join( path.dirname( CATALOG_BUNDLES_DIR ), 'registry.json' );
+	if ( ! fs.existsSync( registryPath ) ) {
+		throw new Error( `built catalog registry not found next to bundles: ${ registryPath }` );
 	}
-	const config = JSON.parse( fs.readFileSync( catalogConfig, 'utf8' ) );
-	return Array.isArray( config.apps ) ? [ ...config.apps ].sort() : [];
+	const registry = JSON.parse( fs.readFileSync( registryPath, 'utf8' ) );
+	if ( ! registry || ! Array.isArray( registry.bundles ) ) {
+		throw new Error( `built catalog registry has no bundles array: ${ registryPath }` );
+	}
+	const slugs = registry.bundles
+		.filter( ( row ) => row && row.type === 'app' )
+		.map( ( row ) => String( row.slug || '' ) );
+	if ( slugs.some( ( slug ) => ! /^[a-z0-9][a-z0-9-]*$/.test( slug ) ) ) {
+		throw new Error( `built catalog registry contains an invalid app slug: ${ registryPath }` );
+	}
+	if ( unique( slugs ).length !== slugs.length ) {
+		throw new Error( `built catalog registry contains duplicate app slugs: ${ registryPath }` );
+	}
+	return slugs.sort();
 }
 
 function unique( values ) {
@@ -668,7 +680,7 @@ async function smokeOneViewport( browser, server, app, viewport, screenshots, sc
 
 async function run() {
 	const args = parseArgs();
-	const slugs = unique( args.slugs.length ? args.slugs : listAllAppSlugs() );
+	const slugs = unique( args.slugs.length ? args.slugs : listBuiltAppSlugs() );
 	if ( ! slugs.length ) {
 		throw new Error( 'no app sources found' );
 	}
@@ -678,21 +690,29 @@ async function run() {
 	let browser = null;
 	try {
 		const apps = slugs.map( ( slug ) => extractBundle( slug, tempRoot ) );
-		server = await serveDirectory( tempRoot );
 		browser = await chromium.launch( { headless: ! args.headed } );
 
 		console.log( `[smoke-catalog-apps] testing ${ apps.length } app bundle(s)` );
 		const results = [];
 		for ( const app of apps ) {
 			for ( const viewport of VIEWPORTS ) {
-				const result = await smokeOneViewport(
-					browser,
-					server,
-					app,
-					viewport,
-					args.screenshots,
-					args.screenshotsDir
-				);
+				// Each page load receives pristine WordPress/App API fixtures.
+				// Mutating one app or viewport must not drain the next one's queue.
+				server = await serveDirectory( tempRoot );
+				let result;
+				try {
+					result = await smokeOneViewport(
+						browser,
+						server,
+						app,
+						viewport,
+						args.screenshots,
+						args.screenshotsDir
+					);
+				} finally {
+					await server.close();
+					server = null;
+				}
 				results.push( result );
 				console.log( `  ok ${ result.app }/${ result.viewport } — ${ result.title } (${ result.canvas })` );
 			}

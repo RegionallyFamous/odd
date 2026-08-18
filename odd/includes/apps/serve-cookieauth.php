@@ -337,8 +337,8 @@ function oddout_apps_serve_cookieauth( $slug, $path, $debug_trace = null ) {
 		status_header( 404 );
 		exit;
 	}
-	$cap = function_exists( 'oddout_apps_normalize_capability' )
-		? oddout_apps_normalize_capability( isset( $index[ $slug ]['capability'] ) ? $index[ $slug ]['capability'] : '', $slug )
+	$cap = function_exists( 'oddout_apps_resolve_capability' )
+		? oddout_apps_resolve_capability( $index[ $slug ] )
 		: 'manage_options';
 	if ( $debug_on ) {
 		$debug_trace['required_cap'] = $cap;

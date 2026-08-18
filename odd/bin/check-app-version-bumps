@@ -1,0 +1,245 @@
+#!/usr/bin/env python3
+"""Require a SemVer precedence bump when a catalog app bundle changes bytes."""
+
+from __future__ import annotations
+
+import argparse
+import io
+import json
+import os
+import re
+import subprocess
+import sys
+import tarfile
+import tempfile
+from pathlib import Path
+
+
+REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO / "_tools"))
+
+from semver_validation import STRICT_SEMVER_RE
+
+
+DEFAULT_REGISTRY = REPO / "site" / "catalog" / "v1" / "registry.json"
+SEMVER_RE = STRICT_SEMVER_RE
+ZERO_SHA_RE = re.compile(r"^0{40,64}$")
+
+
+def fail(message: str) -> "NoReturn":
+    raise SystemExit(f"check-app-version-bumps: {message}")
+
+
+def parse_semver(value: object, label: str) -> tuple[int, int, int, tuple[str, ...]]:
+    if not isinstance(value, str):
+        fail(f"{label} version must be a semantic version")
+    match = SEMVER_RE.fullmatch(value)
+    if match is None:
+        fail(f"{label} version is not valid SemVer: {value!r}")
+    prerelease = tuple(match.group(4).split(".")) if match.group(4) else ()
+    return int(match.group(1)), int(match.group(2)), int(match.group(3)), prerelease
+
+
+def semver_compare(left: object, right: object, label: str = "app") -> int:
+    left_major, left_minor, left_patch, left_pre = parse_semver(left, label)
+    right_major, right_minor, right_patch, right_pre = parse_semver(right, label)
+    left_core = (left_major, left_minor, left_patch)
+    right_core = (right_major, right_minor, right_patch)
+    if left_core != right_core:
+        return 1 if left_core > right_core else -1
+    if not left_pre or not right_pre:
+        if left_pre == right_pre:
+            return 0
+        return 1 if not left_pre else -1
+    for left_id, right_id in zip(left_pre, right_pre):
+        if left_id == right_id:
+            continue
+        left_numeric = left_id.isdigit()
+        right_numeric = right_id.isdigit()
+        if left_numeric and right_numeric:
+            return 1 if int(left_id) > int(right_id) else -1
+        if left_numeric != right_numeric:
+            return -1 if left_numeric else 1
+        return 1 if left_id > right_id else -1
+    if len(left_pre) == len(right_pre):
+        return 0
+    return 1 if len(left_pre) > len(right_pre) else -1
+
+
+def decode_registry(body: str, label: str) -> dict[str, dict[str, object]]:
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError as exc:
+        fail(f"{label} registry is invalid JSON: {exc}")
+    if not isinstance(data, dict) or not isinstance(data.get("bundles"), list):
+        fail(f"{label} registry must contain a bundles array")
+    rows: dict[str, dict[str, object]] = {}
+    for index, row in enumerate(data["bundles"]):
+        if not isinstance(row, dict):
+            fail(f"{label} registry row {index} is not an object")
+        slug = row.get("slug")
+        if not isinstance(slug, str) or not re.fullmatch(r"[a-z0-9][a-z0-9-]*", slug):
+            fail(f"{label} registry row {index} has an invalid slug")
+        if slug in rows:
+            fail(f"{label} registry contains duplicate slug {slug!r}")
+        sha = row.get("sha256")
+        if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-f]{64}", sha):
+            fail(f"{label} registry row {slug!r} has an invalid sha256")
+        parse_semver(row.get("version"), f"{label} {slug}")
+        rows[slug] = row
+    return rows
+
+
+def read_path(path: Path, label: str) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError as exc:
+        fail(f"could not read {label} registry {path}: {exc}")
+
+
+def read_stable_git_registry(base_ref: str) -> str:
+    result = subprocess.run(
+        ["git", "show", f"{base_ref}:site/catalog/v1/registry.json"],
+        cwd=REPO,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        detail = result.stderr.strip() or "git show failed"
+        fail(f"could not read baseline registry from {base_ref}: {detail}")
+    return result.stdout
+
+
+def build_git_registry(base_ref: str, channel: str) -> str:
+    archive = subprocess.run(
+        ["git", "archive", "--format=tar", base_ref],
+        cwd=REPO,
+        check=False,
+        capture_output=True,
+    )
+    if archive.returncode != 0:
+        detail = archive.stderr.decode("utf-8", errors="replace").strip() or "git archive failed"
+        fail(f"could not read baseline source from {base_ref}: {detail}")
+
+    with tempfile.TemporaryDirectory(prefix="odd-catalog-baseline-") as directory:
+        source_root = (Path(directory) / "source").resolve()
+        output_root = source_root / ".odd" / "catalog-version-baseline" / "v1"
+        source_root.mkdir()
+        try:
+            with tarfile.open(fileobj=io.BytesIO(archive.stdout), mode="r:") as tar:
+                tar.extractall(source_root, filter="data")
+        except (tarfile.TarError, OSError) as exc:
+            fail(f"could not unpack baseline source from {base_ref}: {exc}")
+
+        builder = source_root / "_tools" / "build-catalog.py"
+        if not builder.is_file():
+            fail(f"baseline {base_ref} does not contain _tools/build-catalog.py")
+        env = dict(os.environ)
+        env.update(
+            {
+                "ODD_CATALOG_SOURCE_ROOT": str(source_root / "_tools" / "catalog-sources"),
+                "ODD_CATALOG_OUT_ROOT": str(output_root),
+                "ODD_CATALOG_WRITE_FALLBACK": "0",
+                "ODD_CATALOG_CHANNEL": channel,
+                "ODD_CATALOG_BASE_URL": "https://odd-catalog-baseline.invalid/catalog/v1",
+                "ODD_CATALOG_GENERATED_AT": "",
+                "ODD_CATALOG_SIGNING_KEY": "",
+                "ODD_CATALOG_REQUIRE_SIGNATURE": "0",
+            }
+        )
+        result = subprocess.run(
+            [sys.executable, str(builder)],
+            cwd=source_root,
+            env=env,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            detail = result.stderr.strip() or result.stdout.strip() or "catalog build failed"
+            fail(f"could not build {channel} baseline registry from {base_ref}: {detail}")
+        return read_path(output_root / "registry.json", "baseline")
+
+
+def read_git_registry(base_ref: str, channel: str) -> str:
+    if channel == "stable":
+        return read_stable_git_registry(base_ref)
+    return build_git_registry(base_ref, channel)
+
+
+def resolve_base_ref(explicit: str | None, environ: dict[str, str] | None = None) -> str:
+    env = os.environ if environ is None else environ
+    for candidate in (explicit, env.get("ODD_APP_VERSION_BASE_REF")):
+        value = str(candidate or "").strip()
+        if value and not ZERO_SHA_RE.fullmatch(value):
+            return value
+    return "HEAD^" if env.get("GITHUB_ACTIONS", "").lower() == "true" else "HEAD"
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--current-registry", type=Path, default=DEFAULT_REGISTRY)
+    parser.add_argument(
+        "--channel",
+        choices=("stable", "preview", "all"),
+        default="stable",
+        help="catalog channel used to reconstruct a Git baseline",
+    )
+    baseline = parser.add_mutually_exclusive_group()
+    baseline.add_argument("--baseline-registry", type=Path)
+    baseline.add_argument("--base-ref")
+    parser.add_argument("--slug", action="append", default=[])
+    parser.add_argument(
+        "--resolve-base-ref",
+        action="store_true",
+        help="print the effective Git baseline and exit",
+    )
+    args = parser.parse_args()
+
+    if args.resolve_base_ref:
+        print(resolve_base_ref(args.base_ref))
+        return 0
+
+    current = decode_registry(read_path(args.current_registry, "current"), "current")
+    if args.baseline_registry:
+        baseline_body = read_path(args.baseline_registry, "baseline")
+    else:
+        baseline_body = read_git_registry(resolve_base_ref(args.base_ref), args.channel)
+    previous = decode_registry(baseline_body, "baseline")
+
+    requested = set(args.slug)
+    missing = sorted(requested.difference(current))
+    if missing:
+        fail(f"requested slug is missing from current registry: {', '.join(missing)}")
+    slugs = sorted(requested or current.keys())
+    changed = 0
+    added = 0
+    unchanged = 0
+    failures: list[str] = []
+    for slug in slugs:
+        row = current[slug]
+        old = previous.get(slug)
+        if old is None:
+            added += 1
+            continue
+        if row["sha256"] == old["sha256"]:
+            unchanged += 1
+            continue
+        changed += 1
+        if semver_compare(row["version"], old["version"], slug) <= 0:
+            failures.append(
+                f"{slug}: bundle sha256 changed but version {row['version']} "
+                f"does not have greater SemVer precedence than {old['version']}"
+            )
+    if failures:
+        fail("\n".join(failures))
+    print(
+        "check-app-version-bumps: ok "
+        f"({changed} changed, {added} new, {unchanged} byte-identical)"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

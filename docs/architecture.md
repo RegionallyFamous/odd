@@ -51,8 +51,15 @@ object or unrestricted parent helper.
 archives, and writes `site/catalog/v1/`. Registry signatures and archive
 SHA-256 values are checked before install. The plugin does not hard-code app
 slugs, so new valid apps can publish through the catalog without a plugin
-release. A frozen fallback registry is refreshed only when the plugin itself
-is released.
+release. First-party rows carry exact ODD, OpenStation, and app-API minimums;
+compatibility is re-evaluated immediately before download. A frozen fallback
+registry is refreshed only when the plugin itself is released.
+
+Lower-privilege app access is provenance-backed. An explicit `capability:
+"read"` becomes effective only for an install from the verified first-party
+catalog or the plugin-shipped frozen fallback. The internal provenance marker
+is replaced on every update. Existing native ODD Notes installs receive one
+narrow shape-checked migration; no slug-based capability bypass remains.
 
 ## Same-session correctness
 
@@ -61,6 +68,8 @@ An install is not complete from the user's perspective until both systems agree:
 1. ODD has committed the app archive and index.
 2. OpenStation's live `itemVisibility` includes the app placement.
 3. `wp.os.refreshMenu()` has refreshed the native window registry.
+4. `wp.os.files.rest.listPlacements(0)` has rehydrated the public Files store
+   so the unified wallpaper launcher appears immediately.
 
-The Shop preserves the committed install if step 2 or 3 fails, reports the
+The Shop preserves the committed install if steps 2–4 fail, reports the
 partial failure, and retries registration before opening a window.

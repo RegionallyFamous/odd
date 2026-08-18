@@ -119,12 +119,22 @@ provision() {
 
 	FIXTURE_ROOT="${WP_DIR}/wp-content/odd-smoke-fixture"
 	mkdir -p "${FIXTURE_ROOT}" "${WP_DIR}/wp-content/mu-plugins"
-	cp -R "${ROOT}/site/catalog/v1/." "${FIXTURE_ROOT}/"
+	ODD_CATALOG_SOURCE_ROOT="${ROOT}/_tools/catalog-sources" \
+	ODD_CATALOG_OUT_ROOT="${FIXTURE_ROOT}" \
+	ODD_CATALOG_WRITE_FALLBACK=0 \
+	ODD_CATALOG_BASE_URL="https://fixture.invalid/catalog/v1" \
+	ODD_CATALOG_SIGNING_KEY= \
+		python3 "${ROOT}/_tools/build-catalog.py"
+	CANARY_SLUG="$( python3 "${ROOT}/ci/build-synthetic-catalog-app.py" \
+		--catalog-root "${FIXTURE_ROOT}" \
+		--base-url "https://fixture.invalid/catalog/v1" \
+		--id "${ODD_E2E_CANARY_ID:-local}" )"
+	mkdir -p "${ROOT}/.e2e"
+	printf '%s\n' "${CANARY_SLUG}" > "${ROOT}/.e2e/canary-slug"
+	export ODD_E2E_CANARY_SLUG="${CANARY_SLUG}"
 	cp "${ROOT}/ci/smoke/odd-smoke-fixture.php" "${WP_DIR}/wp-content/mu-plugins/"
 	( cd "${WP_DIR}" && e2e_wp config set ODD_SMOKE_FIXTURE_ROOT "${FIXTURE_ROOT}" )
-	if ( cd "${WP_DIR}" && e2e_wp config has ODD_SMOKE_CATALOG_URL ); then
-		( cd "${WP_DIR}" && e2e_wp config delete ODD_SMOKE_CATALOG_URL )
-	fi
+	( cd "${WP_DIR}" && e2e_wp config set ODD_SMOKE_CATALOG_URL 'https://fixture.invalid/catalog/v1/registry.json' )
 
 	OPENSTATION_LINK="${WP_DIR}/wp-content/plugins/desktop-mode"
 	[[ -f "${OPENSTATION_CHECKOUT}/desktop-mode.php" ]] || die "missing clean OpenStation checkout at ${OPENSTATION_CHECKOUT}"
@@ -180,6 +190,10 @@ run_playwright() {
 	need_cmd npx
 	[[ -f "${WP_DIR}/wp-config.php" ]] || die "run: bash bin/e2e-local.sh provision"
 	export BASE_URL
+	if [[ -z "${ODD_E2E_CANARY_SLUG:-}" && -f "${ROOT}/.e2e/canary-slug" ]]; then
+		ODD_E2E_CANARY_SLUG="$( < "${ROOT}/.e2e/canary-slug" )"
+		export ODD_E2E_CANARY_SLUG
+	fi
 	( cd "${ROOT}" && npx playwright test "$@" )
 }
 

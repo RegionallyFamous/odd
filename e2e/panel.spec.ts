@@ -5,6 +5,47 @@ import { test, expect, type Locator, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { loginAdmin } from './helpers';
 
+function visibleAppLauncher( page: Page, slug: string ) {
+	const id = `odd-app-${ slug }`;
+	return page.locator(
+		`os-tile.os-file-tile[data-file-ref="${ id }"]:visible, .os-icon[data-icon-id="${ id }"]:visible`,
+	).first();
+}
+
+async function activateAppLauncher( launcher: Locator ) {
+	const tagName = await launcher.evaluate( ( element ) => element.tagName.toLowerCase() );
+	if ( tagName === 'os-tile' ) {
+		await launcher.dblclick();
+		return;
+	}
+	await launcher.click();
+}
+
+async function closeVisibleNativeWindows( page: Page ) {
+	const visibleWindows = page.locator( '.os-window:visible' );
+	const maximumWindows = 12;
+
+	for ( let closed = 0; closed < maximumWindows; closed += 1 ) {
+		if ( await visibleWindows.count() === 0 ) {
+			return;
+		}
+
+		const focusedWindows = page.locator( '.os-window.os-window--focused:visible' );
+		const nativeWindow = await focusedWindows.count() > 0
+			? focusedWindows.last()
+			: visibleWindows.last();
+		const windowId = await nativeWindow.getAttribute( 'id' );
+		expect( windowId ).toMatch( /^wp-window-[a-z0-9-]+$/ );
+
+		const closeButton = nativeWindow.locator( 'os-window-button[aria-label="Close"]:visible' );
+		await expect( closeButton ).toBeVisible();
+		await closeButton.click( { timeout: 5_000 } );
+		await expect( page.locator( `#${ windowId }` ) ).toBeHidden( { timeout: 5_000 } );
+	}
+
+	await expect( visibleWindows ).toHaveCount( 0, { timeout: 1_000 } );
+}
+
 async function ensureAppInstalled( page: Page, shop: Locator, slug: string ) {
 	const card = shop.locator( `.odd-app-card[data-slug="${ slug }"]` );
 	await expect( card ).toBeVisible();
@@ -20,11 +61,134 @@ async function ensureAppInstalled( page: Page, shop: Locator, slug: string ) {
 	await expect.poll( () => page.evaluate( ( id ) => (
 		window.wp.os.getOsSettings().itemVisibility?.[ id ]
 	), `odd-app-${ slug }` ) ).toBe( 'desktop' );
-	await expect( page.locator( `[data-icon-id="odd-app-${ slug }"]` ) ).toHaveCount( 1 );
+	await expect( visibleAppLauncher( page, slug ) ).toBeVisible();
 	return card;
 }
 
+async function expectWindowInsideBottomDockSafeArea(
+	window: Locator,
+	viewport: { width: number; height: number },
+) {
+	await expect( window ).not.toHaveClass( /os-window--opening/, { timeout: 10_000 } );
+	const bounds = await window.boundingBox();
+	expect( bounds ).not.toBeNull();
+	expect( bounds!.x ).toBeGreaterThanOrEqual( 12 );
+	expect( bounds!.y ).toBeGreaterThanOrEqual( 12 );
+	expect( bounds!.x + bounds!.width ).toBeLessThanOrEqual( viewport.width - 12 );
+	expect( bounds!.y + bounds!.height ).toBeLessThanOrEqual( viewport.height - 92 );
+}
+
 test.describe( 'ODD Apps-only smoke', () => {
+	test( 'fits the native Shop window inside a compact mobile viewport', async ( { page } ) => {
+		await page.setViewportSize( { width: 390, height: 844 } );
+
+		await loginAdmin( page );
+		await page.goto( '/wp-admin/index.php?desktop_mode_portal=1', {
+			waitUntil: 'load',
+			timeout: 45_000,
+		} );
+		await expect( page.locator( '#os-shell' ) ).toBeVisible( { timeout: 30_000 } );
+		await page.waitForFunction(
+			() => !! ( window.wp?.os?.openWindow && window.wp.os.updateOsSettings ),
+			undefined,
+			{ timeout: 30_000 },
+		);
+		await page.waitForFunction(
+			() => window.wp?.hooks?.hasFilter?.( 'os.window.geometry' ) === true,
+			undefined,
+			{ timeout: 30_000 },
+		);
+		const restoredShopWindow = page.locator( '#wp-window-odd' );
+		if ( await restoredShopWindow.isVisible() ) {
+			await restoredShopWindow.locator( 'os-window-button[aria-label="Close"]' ).click( { force: true } );
+			await expect( restoredShopWindow ).not.toBeVisible();
+		}
+
+		expect( await page.evaluate( () => window.wp.os.openWindow( 'odd' ) ) ).toBe( true );
+		const shop = page.locator( '.odd-shop' ).first();
+		await expect( shop ).toBeVisible( { timeout: 20_000 } );
+		const shopWindow = page.locator( '#wp-window-odd' );
+		const shopWindowBounds = await shopWindow.boundingBox();
+		expect( shopWindowBounds ).not.toBeNull();
+		expect( shopWindowBounds!.x ).toBeGreaterThanOrEqual( 0 );
+		expect( shopWindowBounds!.x + shopWindowBounds!.width ).toBeLessThanOrEqual( 390 );
+		const shopContentBounds = await shop.evaluate( ( root ) => {
+			const rootBounds = root.getBoundingClientRect();
+			const visibleDescendants = Array.from( root.querySelectorAll( '*' ) )
+				.map( ( node ) => node.getBoundingClientRect() )
+				.filter( ( bounds ) => bounds.width > 0 && bounds.height > 0 );
+			return {
+				left: Math.min( rootBounds.left, ...visibleDescendants.map( ( bounds ) => bounds.left ) ),
+				right: Math.max( rootBounds.right, ...visibleDescendants.map( ( bounds ) => bounds.right ) ),
+				rootLeft: rootBounds.left,
+				rootRight: rootBounds.right,
+			};
+		} );
+		expect( shopContentBounds.left ).toBeGreaterThanOrEqual( shopContentBounds.rootLeft - 1 );
+		expect( shopContentBounds.right ).toBeLessThanOrEqual( shopContentBounds.rootRight + 1 );
+	} );
+
+	test( 'installs and opens a brand-new catalog slug without a refresh', async ( { page } ) => {
+		const slug = process.env.ODD_E2E_CANARY_SLUG || '';
+		expect( slug ).toMatch( /^catalog-canary-[a-z0-9-]+$/ );
+
+		await loginAdmin( page );
+		await page.goto( '/wp-admin/index.php?desktop_mode_portal=1', {
+			waitUntil: 'load',
+			timeout: 45_000,
+		} );
+		await expect( page.locator( '#os-shell' ) ).toBeVisible( { timeout: 30_000 } );
+		await page.waitForFunction(
+			() => !! ( window.wp?.os?.openWindow && window.wp.os.updateOsSettings ),
+			undefined,
+			{ timeout: 30_000 },
+		);
+		const restoredShopWindow = page.locator( '#wp-window-odd' );
+		if ( await restoredShopWindow.isVisible() ) {
+			await restoredShopWindow.locator( 'os-window-button[aria-label="Close"]' ).click( { force: true } );
+			await expect( restoredShopWindow ).not.toBeVisible();
+		}
+
+		expect( await page.evaluate( () => window.wp.os.openWindow( 'odd' ) ) ).toBe( true );
+		const shop = page.locator( '.odd-shop' ).first();
+		await expect( shop ).toBeVisible( { timeout: 20_000 } );
+		await ensureAppInstalled( page, shop, slug );
+		const installed = await page.evaluate( async ( appSlug ) => {
+			const config = window.wp.os.getWindowConfig( 'odd' );
+			const response = await fetch( config.rest.apps, {
+				credentials: 'same-origin',
+				headers: { 'X-WP-Nonce': config.restNonce },
+			} );
+			const payload = await response.json() as { apps?: Array<{ slug?: string }> };
+			return response.ok && payload.apps?.some( ( row ) => row.slug === appSlug );
+		}, slug );
+		expect( installed ).toBe( true );
+
+		const launcher = visibleAppLauncher( page, slug );
+		await page.locator( '#wp-window-odd os-window-button[aria-label="Close"]' ).click();
+		await expect( page.locator( '#wp-window-odd' ) ).not.toBeVisible();
+		await closeVisibleNativeWindows( page );
+		await expect( launcher ).toBeVisible();
+		await expect( launcher ).toBeEnabled();
+		const launcherBounds = await launcher.boundingBox();
+		expect( launcherBounds ).not.toBeNull();
+		expect( launcherBounds!.width ).toBeGreaterThan( 24 );
+		expect( launcherBounds!.height ).toBeGreaterThan( 24 );
+		await activateAppLauncher( launcher );
+		const appWindow = page.locator( `#wp-window-odd-app-${ slug }` );
+		await expect( appWindow ).toBeVisible( { timeout: 30_000 } );
+		await expect( appWindow ).not.toHaveClass( /os-window--(?:maximized|fullscreen)/ );
+		const bounds = await appWindow.boundingBox();
+		expect( bounds ).not.toBeNull();
+		expect( bounds!.width ).toBeLessThan( 900 );
+		expect( bounds!.height ).toBeLessThan( 700 );
+		const canary = page.frameLocator( `#wp-window-odd-app-${ slug } iframe.odd-app-frame` );
+		await expect( canary.locator( `[data-catalog-canary="${ slug }"]` ) ).toBeVisible();
+		expect( await canary.locator( 'body' ).evaluate( () => (
+			window as typeof window & { oddApp?: { slug?: string } }
+		).oddApp?.slug ) ).toBe( slug );
+	} );
+
 	test( 'installs and opens Notes and exercises all Workbench tools without a refresh', async ( { page } ) => {
 		test.setTimeout( 240_000 );
 
@@ -177,6 +341,9 @@ test.describe( 'ODD Apps-only smoke', () => {
 		page,
 	}) => {
 		test.setTimeout(300_000);
+		const desktopViewport = { width: 1280, height: 720 };
+		const mobileViewport = { width: 390, height: 844 };
+		await page.setViewportSize( desktopViewport );
 
 		await loginAdmin(page);
 		await page.goto('/wp-admin/index.php?desktop_mode_portal=1', {
@@ -189,6 +356,24 @@ test.describe( 'ODD Apps-only smoke', () => {
 			undefined,
 			{ timeout: 30_000 },
 		);
+		const originalDockSettings = await page.evaluate( () => {
+			const settings = window.wp.os.getOsSettings();
+			return {
+				desktopLayout: settings.desktopLayout,
+				dockPlacement: settings.dockPlacement,
+			};
+		} );
+		try {
+			await page.evaluate( async () => {
+				await Promise.resolve( window.wp.os.updateOsSettings( {
+					desktopLayout: 'unified',
+					dockPlacement: 'bottom',
+				}, { windowId: 'odd' } ) );
+			} );
+			await expect.poll( () => page.evaluate( () => {
+				const settings = window.wp.os.getOsSettings();
+				return `${ settings.desktopLayout }:${ settings.dockPlacement }`;
+			} ) ).toBe( 'unified:bottom' );
 
 		expect(await page.evaluate(() => window.wp.os.openWindow('odd'))).toBe(true);
 		const shop = page.locator('.odd-shop').first();
@@ -217,6 +402,7 @@ test.describe( 'ODD Apps-only smoke', () => {
 		await pantryCard.getByRole('button', { name: /Open app/ }).click();
 		const pantryWindow = page.locator('#wp-window-odd-app-pantry');
 		await expect(pantryWindow).toBeVisible({ timeout: 30_000 });
+		await expectWindowInsideBottomDockSafeArea( pantryWindow, desktopViewport );
 		await expect(pantryWindow.locator('[data-odd-app-trust="verified-same-origin"]')).toBeVisible();
 		await expect(pantryWindow.locator('iframe.odd-app-frame')).toHaveAttribute(
 			'sandbox',
@@ -295,12 +481,25 @@ test.describe( 'ODD Apps-only smoke', () => {
 		expect(runtimeContract.escapedRest).toContain('REST root');
 		expect(runtimeContract.escapedStorage).toContain('lowercase slug');
 
-		await page.setViewportSize({ width: 390, height: 844 });
-		await expect(pantry.getByRole('button', { name: 'New pattern' })).toBeVisible();
+		await pantryWindow.locator( 'os-window-button[aria-label="Close"]' ).click();
+		await expect( pantryWindow ).toBeHidden();
+		await page.setViewportSize( mobileViewport );
+		expect( await page.evaluate( () => window.wp.os.openWindow( 'odd-app-pantry' ) ) ).toBe( true );
+		await expect( pantryWindow ).toBeVisible( { timeout: 30_000 } );
+		await expectWindowInsideBottomDockSafeArea( pantryWindow, mobileViewport );
+		await pantry.getByRole( 'button', { name: 'New pattern' } ).click();
+		await expect( pantry.locator( '#create-dialog' ) ).toBeVisible();
+		await pantry.locator( '#create-dialog' ).getByRole( 'button', { name: 'Cancel' } ).click();
+		await expect( pantry.locator( '#create-dialog' ) ).toBeHidden();
 		await expect(pantry.getByRole('searchbox', { name: 'Search synced patterns' })).toBeVisible();
 		await expect(pantry.getByRole('button', { name: 'Everything' })).toBeVisible();
 		await expect(pantry.locator('#refresh-patterns')).toHaveAttribute('aria-label', 'Refresh patterns');
-		await page.setViewportSize({ width: 1280, height: 720 });
+		await pantryWindow.locator( 'os-window-button[aria-label="Close"]' ).click();
+		await expect( pantryWindow ).toBeHidden();
+		await page.setViewportSize( desktopViewport );
+		expect( await page.evaluate( () => window.wp.os.openWindow( 'odd-app-pantry' ) ) ).toBe( true );
+		await expect( pantryWindow ).toBeVisible( { timeout: 30_000 } );
+		await expectWindowInsideBottomDockSafeArea( pantryWindow, desktopViewport );
 
 		const runId = Date.now();
 		const originalTitle = `ODD E2E pantry ${runId}`;
@@ -453,5 +652,16 @@ test.describe( 'ODD Apps-only smoke', () => {
 				() => (window as typeof window & { __oddNativeConfirmCalls: number }).__oddNativeConfirmCalls,
 			),
 		).toBe(0);
+		} finally {
+			if ( ! page.isClosed() ) {
+				await page.evaluate( async ( settings ) => {
+					await Promise.resolve( window.wp.os.updateOsSettings( settings, { windowId: 'odd' } ) );
+				}, originalDockSettings );
+				await expect.poll( () => page.evaluate( () => {
+					const settings = window.wp.os.getOsSettings();
+					return `${ settings.desktopLayout }:${ settings.dockPlacement }`;
+				} ) ).toBe( `${ originalDockSettings.desktopLayout }:${ originalDockSettings.dockPlacement }` );
+			}
+		}
 	});
 } );

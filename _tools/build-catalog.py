@@ -17,6 +17,7 @@ from pathlib import Path
 
 from PIL import Image
 from manifest_validation import validate_manifest as validate_manifest_schema
+from semver_validation import STRICT_SEMVER_RE
 
 
 HERE = Path(__file__).resolve().parent
@@ -51,9 +52,7 @@ CATALOG_BASE = (
 SCHEMA_URL = f"{CATALOG_BASE}/registry.schema.json"
 
 FIXED_DATE = (2025, 1, 1, 0, 0, 0)
-SEMVER_RE = re.compile(
-    r"^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$"
-)
+SEMVER_RE = STRICT_SEMVER_RE
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 ASSET_PATH_RE = re.compile(r"^[a-zA-Z0-9._-]+(?:/[a-zA-Z0-9._-]+)*$")
 REQUIRES_KEYS = {"odd", "openStation", "api"}
@@ -148,12 +147,20 @@ def selected_apps() -> list[str]:
 
 
 def catalog_requires(meta: dict, label: str) -> dict[str, str]:
-    raw = meta.get("requires") or {}
+    raw = meta.get("requires")
     if not isinstance(raw, dict):
         fail(f"{label}: requires must be an object")
-    if set(raw).difference(REQUIRES_KEYS):
-        fail(f"{label}: requires contains an unsupported key")
-    for key, value in raw.items():
+    if set(raw) != REQUIRES_KEYS:
+        missing = sorted(REQUIRES_KEYS.difference(raw))
+        extra = sorted(set(raw).difference(REQUIRES_KEYS))
+        details = []
+        if missing:
+            details.append(f"missing {missing}")
+        if extra:
+            details.append(f"unsupported {extra}")
+        fail(f"{label}: requires must contain exactly odd, openStation, and api ({'; '.join(details)})")
+    for key in sorted(REQUIRES_KEYS):
+        value = raw[key]
         if not isinstance(value, str) or not SEMVER_RE.fullmatch(value):
             fail(f"{label}: requires.{key} must be a semantic version")
     return dict(raw)
@@ -488,9 +495,7 @@ def build_app(slug: str) -> dict:
     }
     if not row["name"]:
         fail(f"{label}: meta.json name is required")
-    requires = catalog_requires(meta, label)
-    if requires:
-        row["requires"] = requires
+    row["requires"] = catalog_requires(meta, label)
     channel = app_channel(meta)
     if channel != "stable":
         row["channel"] = channel
@@ -517,7 +522,7 @@ SCHEMA = {
                 "required": [
                     "type", "slug", "name", "version", "author", "description", "tags",
                     "icon_url", "card_url", "card_bytes", "download_url", "sha256", "size",
-                    "department", "search_text", "search_tokens",
+                    "department", "search_text", "search_tokens", "requires",
                 ],
                 "properties": {
                     "type": {"const": "app"},
@@ -540,6 +545,7 @@ SCHEMA = {
                     "requires": {
                         "type": "object",
                         "additionalProperties": False,
+                        "required": sorted(REQUIRES_KEYS),
                         "properties": {
                             key: {"type": "string", "pattern": SEMVER_RE.pattern}
                             for key in sorted(REQUIRES_KEYS)
