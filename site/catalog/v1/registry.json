@@ -75,7 +75,7 @@
       "type": "app",
       "slug": "collections",
       "name": "ODD Collections",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": "Regionally Famous",
       "description": "Keep private shelves for the things you care about, with searchable entries and optional WordPress references.",
       "tags": [
@@ -89,8 +89,8 @@
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-collections.webp",
       "card_bytes": 49450,
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/collections.wp",
-      "sha256": "f74dd8ce343d5aefb1119de425fda6e9c7acb28fd3677f8cf20c9bbe89e03abe",
-      "size": 73499,
+      "sha256": "6b93d6b3fee75da47b80ba65d54eaf0b1c8489251698a446fe571d100d72037e",
+      "size": 73505,
       "requires": {
         "odd": "1.1.8",
         "openStation": "1.1.0",

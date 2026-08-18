@@ -12,6 +12,7 @@ describe('ODD Collections persistence and WordPress boundaries', () => {
 
 	it('guards shelf creation when persistence rejects', () => {
 		expect(source).toContain("state.shelves.push({id:id(),name,created:now()});try{await save()}catch(e){toast(msg(e,'Could not save your changes.'),true);return}");
+		expect(source).toContain('rt.confirm(`Delete “${item.title}”?`)');
 	});
 
 	it('uses the public post/page search contract and handles actionable REST errors', () => {

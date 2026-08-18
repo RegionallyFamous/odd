@@ -691,6 +691,48 @@ async function exerciseSubmissions( page, viewport ) {
 	await page.evaluate( () => document.querySelector( '.workspace' )?.scrollTo( 0, 0 ) );
 }
 
+async function exerciseCollections( page, viewport ) {
+	await page.locator( '#newCollection' ).click();
+	await page.locator( '#shelfName' ).fill( 'Smoke shelf' );
+	await page.locator( '#shelfForm button.primary' ).click();
+	await page.getByText( 'Smoke shelf', { exact: true } ).waitFor();
+	await page.locator( '#newEntry' ).click();
+	await page.locator( '#title' ).fill( 'Smoke collection item' );
+	await page.locator( '#collection option' ).first().waitFor( { state: 'attached' } );
+	await page.locator( '#collection' ).selectOption( { index: 0 } );
+	await page.locator( '#form button.primary' ).click();
+	await page.locator( '#dialog' ).waitFor( { state: 'hidden' } );
+	await page.waitForTimeout( 200 );
+	if ( await page.locator( '[data-edit]' ).count() < 1 ) {
+		throw new Error( `collections did not persist and render a created item: ${ await page.locator( 'body' ).innerText() }` );
+	}
+	await page.locator( '#search' ).fill( 'Smoke collection' );
+	await page.locator( '[data-edit]' ).first().waitFor();
+	await page.locator( '#exportJson' ).click();
+	await page.locator( '#exportCsv' ).click();
+	if ( viewport.name === 'desktop' ) {
+		await page.locator( '[data-delete]' ).first().click();
+		await page.locator( '[data-delete]' ).first().waitFor( { state: 'detached' } );
+	}
+}
+
+async function exerciseReadingList( page, viewport ) {
+	await page.locator( '#newItem' ).click();
+	await page.locator( '#url' ).fill( 'https://example.com/smoke-reading' );
+	await page.locator( '#title' ).fill( 'Smoke reading link' );
+	await page.locator( '#form button.primary' ).click();
+	await page.getByText( 'Smoke reading link', { exact: true } ).waitFor();
+	await page.locator( '#search' ).fill( 'Smoke reading' );
+	await page.locator( '[data-edit]' ).first().waitFor();
+	await page.locator( '#exportJson' ).click();
+	await page.locator( '#exportCsv' ).click();
+	await page.locator( '[data-open]' ).first().click();
+	if ( viewport.name === 'desktop' ) {
+		await page.locator( '[data-delete]' ).first().click();
+		await page.locator( '[data-delete]' ).first().waitFor( { state: 'detached' } );
+	}
+}
+
 async function exercisePage( page, app, viewport ) {
 	await page.keyboard.press( 'Space' );
 	await page.keyboard.press( 'ArrowLeft' );
@@ -723,6 +765,10 @@ async function exercisePage( page, app, viewport ) {
 		await exerciseAirdate( page, viewport );
 	} else if ( app.slug === 'submissions' ) {
 		await exerciseSubmissions( page, viewport );
+	} else if ( app.slug === 'collections' ) {
+		await exerciseCollections( page, viewport );
+	} else if ( app.slug === 'reading-list' ) {
+		await exerciseReadingList( page, viewport );
 	}
 }
 
@@ -880,7 +926,7 @@ async function smokeOneViewport( browser, server, app, viewport, screenshots, sc
 					},
 				};
 			} );
-		} else if ( [ 'revision-room', 'airdate', 'submissions' ].includes( app.slug ) ) {
+		} else if ( [ 'revision-room', 'airdate', 'submissions', 'collections', 'reading-list' ].includes( app.slug ) ) {
 			await page.addInitScript( ( slug ) => {
 				const preferences = new Map();
 				window.oddApp = {
