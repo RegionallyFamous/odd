@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>ODD Revision Room</title>
+  <link rel="stylesheet" href="./assets/app.css">
+  <script defer src="./assets/app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">↶</span><div><span class="eyebrow">Editorial time machine</span><strong>Revision Room</strong></div></div>
+      <label class="search"><span aria-hidden="true">⌕</span><span class="sr-only">Search posts and pages</span><input id="document-search" type="search" placeholder="Search posts and pages…" autocomplete="off"></label>
+      <button class="icon-button" id="refresh-documents" type="button" aria-label="Refresh documents" title="Refresh documents">↻</button>
+    </header>
+
+    <div class="notice" id="global-notice" role="status" aria-live="polite" hidden></div>
+    <main class="workspace" id="workspace" aria-busy="true">
+      <section class="panel document-panel" aria-labelledby="documents-heading">
+        <header class="panel-head"><div><span class="eyebrow">WordPress</span><h1 id="documents-heading">Documents</h1></div><span class="count" id="document-count">Loading…</span></header>
+        <fieldset class="segmented" id="type-filter"><legend class="sr-only">Document type</legend><label><input type="radio" name="type" value="all" checked><span>All</span></label><label><input type="radio" name="type" value="posts"><span>Posts</span></label><label><input type="radio" name="type" value="pages"><span>Pages</span></label></fieldset>
+        <div class="partial-warning" id="partial-warning" role="status" hidden></div>
+        <ul class="document-list" id="document-list" aria-label="Posts and pages"></ul>
+        <section class="state-card" id="document-empty" hidden><strong>No documents found</strong><p>Try another search or type filter.</p></section>
+        <section class="state-card state-card--error" id="document-error" hidden><strong>Revision Room could not load WordPress</strong><p id="document-error-copy"></p><button id="retry-documents" type="button">Try again</button></section>
+      </section>
+
+      <section class="panel revision-panel" aria-labelledby="revisions-heading">
+        <header class="panel-head"><div><span class="eyebrow">Saved moments</span><h2 id="revisions-heading">Revision timeline</h2></div><span class="count" id="revision-count">—</span></header>
+        <ul class="revision-list" id="revision-list" aria-label="Revisions"></ul>
+        <section class="state-card" id="revision-empty"><strong>Choose a document</strong><p>Its saved WordPress revisions will appear here.</p></section>
+        <section class="state-card state-card--error" id="revision-error" hidden><strong>Revisions unavailable</strong><p id="revision-error-copy"></p><button id="retry-revisions" type="button">Try again</button></section>
+      </section>
+
+      <section class="panel comparison-panel" aria-labelledby="comparison-heading">
+        <header class="comparison-head"><div><span class="eyebrow">Before and now</span><h2 id="comparison-heading">Comparison desk</h2></div><button class="restore-button" id="restore-revision" type="button" disabled>Restore selected version</button></header>
+        <fieldset class="segmented field-tabs" id="field-tabs"><legend class="sr-only">Field to compare</legend><label><input type="radio" name="field" value="title" checked><span>Title</span></label><label><input type="radio" name="field" value="content"><span>Content</span></label><label><input type="radio" name="field" value="excerpt"><span>Excerpt</span></label></fieldset>
+        <div class="comparison-meta" id="comparison-meta">Select a document and revision to compare.</div>
+        <div class="diff-legend" aria-label="Comparison legend"><span><i class="removed-dot"></i>Earlier</span><span><i class="added-dot"></i>Current</span><span><i class="same-dot"></i>Unchanged</span></div>
+        <div class="diff-output" id="diff-output" tabindex="0" aria-label="Revision comparison"></div>
+        <section class="state-card diff-state" id="diff-empty"><strong>Nothing on the desk yet</strong><p>Choose a document to begin.</p></section>
+        <section class="state-card diff-state" id="diff-too-large" hidden><strong>Comparison is too large</strong><p>This field exceeds the safe 350-line comparison limit. Choose another field or revision.</p></section>
+      </section>
+    </main>
+    <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+  </div>
+</body>
+</html>

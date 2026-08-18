@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/RegionallyFamous/odd/main/docs/schemas/manifest.schema.json",
+  "type": "app",
+  "slug": "airdate",
+  "name": "ODD Airdate",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A WordPress publishing calendar and scheduling desk.",
+  "icon": "icon.webp",
+  "entry": "index.html",
+  "capability": "manage_options",
+  "window": {
+    "title": "ODD Airdate",
+    "width": 1120,
+    "height": 720,
+    "minWidth": 320,
+    "minHeight": 240,
+    "resizable": true
+  },
+  "desktopIcon": {
+    "title": "ODD Airdate",
+    "position": 54
+  },
+  "surfaces": {
+    "desktop": true,
+    "taskbar": false
+  }
+}

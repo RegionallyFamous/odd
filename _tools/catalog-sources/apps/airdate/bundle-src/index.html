@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>ODD Airdate</title>
+  <link rel="stylesheet" href="./assets/app.css">
+  <script defer src="./assets/app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">◉</span><div><span class="eyebrow">Publishing control</span><strong>ODD Airdate</strong></div></div>
+      <div class="month-controls" aria-label="Calendar month"><button id="previous-month" type="button" aria-label="Previous month">‹</button><button id="today-month" type="button">Today</button><h1 id="month-heading" aria-live="polite">Month</h1><button id="next-month" type="button" aria-label="Next month">›</button></div>
+      <button class="icon-button" id="refresh-schedule" type="button" aria-label="Refresh schedule" title="Refresh schedule">↻</button>
+    </header>
+    <div class="notice" id="global-notice" role="status" aria-live="polite" hidden></div>
+
+    <main class="workspace" id="workspace" aria-busy="true">
+      <section class="schedule-panel" aria-labelledby="schedule-heading">
+        <header class="schedule-toolbar">
+          <div><span class="eyebrow">Broadcast board</span><h2 id="schedule-heading">Scheduled content</h2></div>
+          <div class="toolbar-actions">
+            <fieldset class="segmented" id="view-filter"><legend class="sr-only">Schedule view</legend><label><input type="radio" name="view" value="calendar" checked><span>Calendar</span></label><label><input type="radio" name="view" value="agenda"><span>Agenda</span></label></fieldset>
+            <label class="select-label" for="type-filter"><span class="sr-only">Content type</span><select id="type-filter"><option value="all">All types</option><option value="posts">Posts</option><option value="pages">Pages</option></select></label>
+          </div>
+        </header>
+        <div class="partial-warning" id="partial-warning" hidden></div>
+        <section class="calendar-view" id="calendar-view" aria-label="Monthly publishing calendar">
+          <div class="weekday-row" aria-hidden="true"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+        </section>
+        <section class="agenda-view" id="agenda-view" aria-label="Scheduled agenda" hidden><div class="agenda-list" id="agenda-list"></div></section>
+        <section class="state-card" id="schedule-empty" hidden><strong>No air dates this month</strong><p>Choose a draft from the queue to schedule it.</p></section>
+        <section class="state-card state-card--error" id="schedule-error" hidden><strong>Airdate could not load WordPress</strong><p id="schedule-error-copy"></p><button id="retry-schedule" type="button">Try again</button></section>
+      </section>
+
+      <aside class="queue-panel" aria-labelledby="queue-heading">
+        <header><div><span class="eyebrow">Ready when you are</span><h2 id="queue-heading">Unscheduled queue</h2></div><span id="queue-count">—</span></header>
+        <p class="timezone-label">Times shown in <strong id="timezone-label">your device timezone</strong>.</p>
+        <div class="queue-list" id="queue-list"></div>
+        <section class="state-card" id="queue-empty" hidden><strong>The queue is clear</strong><p>No draft or pending posts and pages are waiting.</p></section>
+      </aside>
+    </main>
+  </div>
+
+  <dialog class="schedule-dialog" id="schedule-dialog">
+    <form id="schedule-form" method="dialog">
+      <header><div><span class="eyebrow" id="dialog-eyebrow">Choose an air date</span><h2 id="dialog-title">Schedule document</h2></div><button class="dialog-close" type="submit" value="cancel" aria-label="Close">×</button></header>
+      <p id="dialog-copy">Choose a future date and time.</p>
+      <label for="airdate-input"><span>Date and time</span><input id="airdate-input" name="airdate" type="datetime-local" required></label>
+      <p class="field-error" id="airdate-error" role="alert" hidden></p>
+      <footer><button type="button" id="cancel-airdate" class="danger-button" hidden>Return to drafts</button><span class="dialog-spacer"></span><button type="submit" value="cancel" class="secondary-button">Close</button><button type="submit" value="schedule" id="schedule-submit" class="primary-button">Schedule</button></footer>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>

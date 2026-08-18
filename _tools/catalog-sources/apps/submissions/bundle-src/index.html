@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>ODD Submissions</title>
+  <link rel="stylesheet" href="./assets/app.css">
+  <script defer src="./assets/app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar" id="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">✓</span><div><span class="eyebrow">Editorial inbox</span><strong>ODD Submissions</strong></div></div>
+      <label class="search"><span aria-hidden="true">⌕</span><span class="sr-only">Search pending items</span><input id="submission-search" type="search" placeholder="Search pending posts and pages…" autocomplete="off"></label>
+      <button class="icon-button" id="refresh-submissions" type="button" aria-label="Refresh submissions" title="Refresh submissions">↻</button>
+    </header>
+    <div class="notice" id="global-notice" role="status" aria-live="polite" hidden></div>
+    <main class="workspace" id="workspace" aria-busy="true">
+      <section class="inbox" id="inbox" aria-labelledby="inbox-heading">
+		<header class="panel-head"><div><span class="eyebrow">Pending Review</span><h1 id="inbox-heading" tabindex="-1">Waiting for a decision</h1></div><span id="submission-count">Loading…</span></header>
+        <fieldset class="segmented" id="type-filter"><legend class="sr-only">Content type</legend><label><input type="radio" name="type" value="all" checked><span>All</span></label><label><input type="radio" name="type" value="posts"><span>Posts</span></label><label><input type="radio" name="type" value="pages"><span>Pages</span></label></fieldset>
+        <div class="partial-warning" id="partial-warning" hidden></div>
+        <ul class="submission-list" id="submission-list" aria-label="Pending WordPress content"></ul>
+        <section class="state-card" id="submission-empty" hidden><span aria-hidden="true">✓</span><strong>Inbox zero</strong><p>No posts or pages are waiting for review.</p></section>
+        <section class="state-card state-card--error" id="submission-error" hidden><strong>Submissions could not reach WordPress</strong><p id="submission-error-copy"></p><button id="retry-submissions" type="button">Try again</button></section>
+      </section>
+
+      <aside class="inspector" id="submission-inspector" aria-labelledby="submission-title" aria-hidden="true">
+        <header class="inspector-head"><div><span class="eyebrow">On the review desk</span><span class="status-pill">Pending Review</span></div><button class="icon-button close-button" id="close-inspector" type="button" aria-label="Close review" title="Close review">×</button></header>
+        <section class="submission-heading"><span class="type-label" id="submission-type">Post</span><h2 id="submission-title" tabindex="-1">Choose a submission</h2><p id="submission-excerpt">Select an item from the inbox to review it.</p></section>
+        <dl class="metadata"><div><dt>Author</dt><dd id="submission-author">—</dd></div><div><dt>Modified</dt><dd id="submission-modified">—</dd></div><div><dt>Status</dt><dd>Pending Review</dd></div></dl>
+        <section class="preview-card"><header><span>Inert preview</span><span>No forms or scripts</span></header><div class="preview" id="submission-preview"></div></section>
+        <div class="actions"><button class="approve-button" id="approve-submission" type="button">Approve and publish</button><button class="return-button" id="return-submission" type="button">Return to drafts</button><button class="open-button" id="open-submission" type="button">Open in WordPress</button></div>
+      </aside>
+    </main>
+    <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+  </div>
+</body>
+</html>

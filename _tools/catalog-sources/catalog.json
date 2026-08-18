@@ -1,7 +1,10 @@
 {
   "apps": [
+    "airdate",
     "odd-notes",
     "pantry",
+    "revision-room",
+    "submissions",
     "workbench"
   ]
 }

@@ -1,0 +1,19 @@
+{
+  "slug": "revision-room",
+  "name": "ODD Revision Room",
+  "description": "Compare WordPress post and page revisions, inspect exactly what changed, and safely restore an earlier title, body, or excerpt.",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "tags": [
+    "wordpress",
+    "revisions",
+    "editorial",
+    "content",
+    "recovery"
+  ],
+  "requires": {
+    "odd": "1.1.8",
+    "openStation": "1.1.0",
+    "api": "2.5.0"
+  }
+}

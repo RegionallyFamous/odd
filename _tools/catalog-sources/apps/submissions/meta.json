@@ -1,0 +1,19 @@
+{
+  "slug": "submissions",
+  "name": "ODD Submissions",
+  "description": "Review WordPress posts and pages waiting for approval, inspect an inert preview, and publish or return each item to drafts.",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "tags": [
+    "wordpress",
+    "editorial",
+    "review",
+    "publishing",
+    "workflow"
+  ],
+  "requires": {
+    "odd": "1.1.8",
+    "openStation": "1.1.0",
+    "api": "2.5.0"
+  }
+}

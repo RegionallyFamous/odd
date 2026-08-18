@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/RegionallyFamous/odd/main/docs/schemas/manifest.schema.json",
+  "type": "app",
+  "slug": "revision-room",
+  "name": "ODD Revision Room",
+  "version": "1.0.0",
+  "author": "Regionally Famous",
+  "description": "A careful comparison desk for WordPress post and page revisions.",
+  "icon": "icon.webp",
+  "entry": "index.html",
+  "capability": "manage_options",
+  "window": {
+    "title": "ODD Revision Room",
+    "width": 1120,
+    "height": 720,
+    "minWidth": 320,
+    "minHeight": 240,
+    "resizable": true
+  },
+  "desktopIcon": {
+    "title": "ODD Revision Room",
+    "position": 48
+  },
+  "surfaces": {
+    "desktop": true,
+    "taskbar": false
+  }
+}
