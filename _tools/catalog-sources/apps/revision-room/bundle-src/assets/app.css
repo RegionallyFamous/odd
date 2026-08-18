@@ -101,11 +101,11 @@ button[disabled], input[disabled] { opacity: .55; }
   .topbar { grid-template-columns: minmax(120px, .7fr) minmax(90px, 1fr) 38px; gap: 7px; padding: 8px; }
   .brand-mark { display: none; }.brand strong { font-size: 15px; }.brand .eyebrow { display: none; }
   .search { padding: 0 8px; }.search input { height: 36px; font-size: 12px; }.icon-button { width: 36px; height: 36px; }
-  .workspace { display: flex; flex-direction: column; overflow-y: auto; background: var(--bg); }
-  .panel { flex: 0 0 auto; min-height: 290px; border-bottom: 1px solid var(--line); overflow: visible; }
+  .workspace { display: grid; grid-template-columns: minmax(94px,.72fr) minmax(94px,.72fr) minmax(132px,1.15fr); overflow: hidden; background: var(--line); }
+  .panel { position:relative; inset:auto; overflow: hidden; background: rgba(12,18,29,.98); }
+  .document-list, .revision-list, .diff-output { overflow:auto; }
   .document-list, .revision-list { max-height: 240px; }
-  .comparison-panel { min-height: 420px; }
-  .diff-output { min-height: 220px; max-height: 340px; }
+  .diff-output { min-height: 0; max-height: none; }
   .comparison-head { align-items: flex-start; }.restore-button { max-width: 132px; white-space: normal; }
 }
 
@@ -114,5 +114,6 @@ button[disabled], input[disabled] { opacity: .55; }
   .topbar { padding: 5px 8px; }.brand-mark { width: 36px; height: 36px; flex-basis: 36px; }.brand strong { font-size: 15px; }
   .panel-head, .comparison-head { min-height: 52px; padding-block: 7px; }
 }
+@media (max-width: 760px) { .toast { position: absolute; right: 8px; bottom: 8px; max-width: calc(100% - 16px); } }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }

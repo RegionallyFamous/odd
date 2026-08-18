@@ -102,6 +102,13 @@ describe( 'ODD Revision Room', () => {
 		for ( const id of [ 'document-list','revision-list' ] ) { const list = document.getElementById( id ); const button = list.querySelector( 'button' ); expect( list.tagName ).toBe( 'UL' ); expect( list.hasAttribute( 'role' ) ).toBe( false ); expect( button.getAttribute( 'role' ) ).toBeNull(); expect( button.tabIndex ).toBe( 0 ); }
 	} );
 
+	it( 'keeps document, revision, comparison, and restore surfaces available in the compact grid', () => {
+		const css = readFileSync( resolve( '_tools/catalog-sources/apps/revision-room/bundle-src/assets/app.css' ), 'utf8' );
+		expect( css ).toMatch( /\.workspace \{ display: grid; grid-template-columns: minmax\(94px,\.72fr\) minmax\(94px,\.72fr\) minmax\(132px,1\.15fr\);/ );
+		expect( css ).not.toMatch( /\.document-panel, \.revision-panel \{ display: none; \}/ );
+		expect( document.querySelector( '#restore-revision' ) ).not.toBeNull();
+	} );
+
 	it( 'treats timezone-less WordPress GMT stamps as UTC when formatting', async () => {
 		const previousTimezone = process.env.TZ; process.env.TZ = 'America/Phoenix';
 		try {

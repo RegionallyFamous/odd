@@ -13,7 +13,7 @@
 
 	function cacheDom() {
 		[
-			'workspace','previous-month','today-month','month-heading','next-month','refresh-schedule','global-notice','view-filter','type-filter','partial-warning','calendar-view','calendar-grid','agenda-view','agenda-list','schedule-empty','schedule-error','schedule-error-copy','retry-schedule','schedule-heading','queue-heading','queue-count','timezone-label','queue-list','queue-empty','schedule-dialog','schedule-form','dialog-eyebrow','dialog-title','dialog-copy','airdate-input','airdate-error','cancel-airdate','schedule-submit','toast',
+			'workspace','previous-month','today-month','month-heading','next-month','refresh-schedule','global-notice','view-filter','type-filter','partial-warning','calendar-view','calendar-grid','agenda-view','agenda-list','schedule-empty','schedule-error','schedule-error-copy','retry-schedule','schedule-heading','queue-heading','queue-count','timezone-label','queue-list','queue-empty','compact-show-queue','compact-show-schedule','schedule-dialog','schedule-form','dialog-eyebrow','dialog-title','dialog-copy','airdate-input','airdate-error','cancel-airdate','schedule-submit','toast',
 		].forEach( ( id ) => { dom[ id ] = document.getElementById( id ); } );
 	}
 
@@ -206,6 +206,8 @@
 	function changeMonth( delta ) { const date = monthDate(); date.setMonth( date.getMonth() + delta ); state.month = monthKey( date ); render(); savePreferences(); }
 	function bindEvents() {
 		dom[ 'previous-month' ].addEventListener( 'click', () => changeMonth( -1 ) ); dom[ 'next-month' ].addEventListener( 'click', () => changeMonth( 1 ) ); dom[ 'today-month' ].addEventListener( 'click', () => { state.month = monthKey( new Date() ); render(); savePreferences(); } );
+		dom[ 'compact-show-queue' ].addEventListener( 'click', () => { const queue = dom.workspace.classList.toggle( 'compact-queue' ); dom[ 'compact-show-queue' ].setAttribute( 'aria-pressed', String( queue ) ); dom[ 'compact-show-queue' ].textContent = queue ? 'Schedule' : 'Queue'; } );
+		dom[ 'compact-show-schedule' ].addEventListener( 'click', () => { dom.workspace.classList.remove( 'compact-queue' ); dom[ 'compact-show-queue' ].setAttribute( 'aria-pressed', 'false' ); dom[ 'compact-show-queue' ].textContent = 'Queue'; dom[ 'compact-show-queue' ].focus(); } );
 		dom[ 'refresh-schedule' ].addEventListener( 'click', () => refresh( true ) ); dom[ 'retry-schedule' ].addEventListener( 'click', () => refresh() );
 		dom[ 'view-filter' ].addEventListener( 'change', ( event ) => { if ( VALID_VIEWS.has( event.target.value ) ) { state.view = event.target.value; render(); savePreferences(); } } ); dom[ 'type-filter' ].addEventListener( 'change', ( event ) => { if ( VALID_TYPES.has( event.target.value ) ) { state.typeFilter = event.target.value; render(); savePreferences(); } } );
 		dom.workspace.addEventListener( 'click', ( event ) => { const schedule = event.target.closest( '[data-schedule-key]' ); if ( schedule ) openScheduleDialog( schedule.dataset.scheduleKey ); const cancel = event.target.closest( '[data-cancel-key]' ); if ( cancel ) cancelSchedule( cancel.dataset.cancelKey ); } );

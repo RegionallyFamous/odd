@@ -67,6 +67,25 @@ describe( 'ODD Airdate', () => {
 		expect( css ).toMatch( /\.icon-button\{grid-column:2;width:34px;height:34px\}/ );
 	} );
 
+	it( 'keeps the compact schedule and unscheduled queue reachable through an explicit toggle', () => {
+		expect( document.querySelector( '#compact-show-queue' ) ).not.toBeNull();
+		expect( document.querySelector( '#compact-show-schedule' ) ).not.toBeNull();
+		expect( source ).toContain( "compact-queue" );
+		expect( css ).toMatch( /\.workspace\.compact-queue \.schedule-panel\{display:none\}/ );
+		expect( css ).toMatch( /\.workspace\.compact-queue \.queue-panel\{display:flex\}/ );
+		expect( css ).not.toMatch( /\.agenda-row \.action-button\{display:none\}/ );
+	} );
+
+	it( 'returns from the compact queue to scheduled actions through a visible back control', async () => {
+		await boot();
+		const workspace = document.querySelector( '#workspace' );
+		document.querySelector( '#compact-show-queue' ).click();
+		expect( workspace.classList.contains( 'compact-queue' ) ).toBe( true );
+		document.querySelector( '#compact-show-schedule' ).click();
+		expect( workspace.classList.contains( 'compact-queue' ) ).toBe( false );
+		expect( document.activeElement ).toBe( document.querySelector( '#compact-show-queue' ) );
+	} );
+
 	it( 'converts a device-local air date to the exact canonical UTC instant without content fields', async () => {
 		await boot(); document.querySelector( '#queue-list [data-schedule-key="posts:2"]' ).click();
 		const local = new Date( Date.now() + 3 * 60 * 60 * 1000 ); const pad = ( value ) => String( value ).padStart( 2,'0' );

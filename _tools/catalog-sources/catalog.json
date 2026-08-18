@@ -1,9 +1,11 @@
 {
   "apps": [
     "airdate",
+    "collections",
     "odd-notes",
     "pantry",
     "revision-room",
+    "reading-list",
     "submissions",
     "workbench"
   ]

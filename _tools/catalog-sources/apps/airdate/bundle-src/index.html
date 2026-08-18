@@ -22,6 +22,7 @@
         <header class="schedule-toolbar">
           <div><span class="eyebrow">Broadcast board</span><h2 id="schedule-heading">Scheduled content</h2></div>
           <div class="toolbar-actions">
+			<button class="compact-surface-toggle" id="compact-show-queue" type="button" aria-pressed="false">Queue</button>
             <fieldset class="segmented" id="view-filter"><legend class="sr-only">Schedule view</legend><label><input type="radio" name="view" value="calendar" checked><span>Calendar</span></label><label><input type="radio" name="view" value="agenda"><span>Agenda</span></label></fieldset>
             <label class="select-label" for="type-filter"><span class="sr-only">Content type</span><select id="type-filter"><option value="all">All types</option><option value="posts">Posts</option><option value="pages">Pages</option></select></label>
           </div>
@@ -37,7 +38,7 @@
       </section>
 
       <aside class="queue-panel" aria-labelledby="queue-heading">
-        <header><div><span class="eyebrow">Ready when you are</span><h2 id="queue-heading">Unscheduled queue</h2></div><span id="queue-count">—</span></header>
+        <header><div><span class="eyebrow">Ready when you are</span><h2 id="queue-heading">Unscheduled queue</h2></div><div class="queue-header-actions"><span id="queue-count">—</span><button class="compact-surface-toggle" id="compact-show-schedule" type="button">Schedule</button></div></header>
         <p class="timezone-label">Times shown in <strong id="timezone-label">your device timezone</strong>.</p>
         <div class="queue-list" id="queue-list"></div>
         <section class="state-card" id="queue-empty" hidden><strong>The queue is clear</strong><p>No draft or pending posts and pages are waiting.</p></section>

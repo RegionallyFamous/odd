@@ -2,7 +2,7 @@
   "slug": "airdate",
   "name": "ODD Airdate",
   "description": "See scheduled WordPress posts and pages at a glance, then schedule, reschedule, or return them to drafts without touching their content.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Regionally Famous",
   "tags": [
     "wordpress",

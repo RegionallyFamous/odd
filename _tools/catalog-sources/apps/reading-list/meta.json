@@ -1,0 +1,1 @@
+{"slug":"reading-list","name":"ODD Reading List","description":"A private, searchable reading queue for links you want to return to.","version":"1.0.0","author":"Regionally Famous","tags":["reading","bookmarks","links","private","productivity"],"requires":{"odd":"1.1.8","openStation":"1.1.0","api":"2.5.0"}}

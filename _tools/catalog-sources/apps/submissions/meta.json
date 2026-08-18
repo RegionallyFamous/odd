@@ -2,7 +2,7 @@
   "slug": "submissions",
   "name": "ODD Submissions",
   "description": "Review WordPress posts and pages waiting for approval, inspect an inert preview, and publish or return each item to drafts.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Regionally Famous",
   "tags": [
     "wordpress",

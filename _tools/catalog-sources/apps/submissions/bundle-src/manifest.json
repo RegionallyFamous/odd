@@ -3,7 +3,7 @@
   "type": "app",
   "slug": "submissions",
   "name": "ODD Submissions",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Regionally Famous",
   "description": "A focused Pending Review inbox for WordPress posts and pages.",
   "icon": "icon.webp",
