@@ -32,6 +32,15 @@ def repo_path_from_env(name: str, default: Path) -> Path:
     return path if path.is_absolute() else REPO / path
 
 
+def display_path(path: Path) -> str:
+    """Return a readable path without assuming generated output is in the repo."""
+    resolved = path.resolve()
+    try:
+        return str(resolved.relative_to(REPO.resolve()))
+    except ValueError:
+        return str(resolved)
+
+
 SOURCES = repo_path_from_env("ODD_CATALOG_SOURCE_ROOT", HERE / "catalog-sources")
 OUT_ROOT = repo_path_from_env("ODD_CATALOG_OUT_ROOT", REPO / "site" / "catalog" / "v1")
 OUT_BUNDLES = OUT_ROOT / "bundles"
@@ -587,9 +596,9 @@ def main() -> int:
 
     total = sum(row["size"] for row in rows)
     print(f"built catalog: {len(rows)} apps, {total:,} bundle bytes")
-    print(f"  registry: {REGISTRY_JSON.relative_to(REPO)}")
-    print(f"  schema:   {(OUT_ROOT / 'registry.schema.json').relative_to(REPO)}")
-    print(f"  fallback: {FALLBACK_REGISTRY.relative_to(REPO) if WRITE_FALLBACK else 'disabled'}")
+    print(f"  registry: {display_path(REGISTRY_JSON)}")
+    print(f"  schema:   {display_path(OUT_ROOT / 'registry.schema.json')}")
+    print(f"  fallback: {display_path(FALLBACK_REGISTRY) if WRITE_FALLBACK else 'disabled'}")
     return 0
 
 
