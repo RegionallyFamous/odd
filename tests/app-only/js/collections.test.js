@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const source = readFileSync(resolve('_tools/catalog-sources/apps/collections/bundle-src/assets/app.js'), 'utf8');
+const html = readFileSync(resolve('_tools/catalog-sources/apps/collections/bundle-src/index.html'), 'utf8');
 
 describe('ODD Collections persistence and WordPress boundaries', () => {
 	it('fails closed when a save rejects and retries from the recovered queue', () => {
@@ -22,5 +23,11 @@ describe('ODD Collections persistence and WordPress boundaries', () => {
 		expect(source).toContain('wp/v2/search?search=');
 		expect(source).toContain('type=post&subtype=post,page');
 		expect(source).toMatch(/WordPress search failed/);
+	});
+
+	it('keeps shelf actions in the dark ODD button system on narrow screens', () => {
+		expect(html).toContain('.shelf-action');
+		expect(html).toContain('background: #151e2f');
+		expect(html).toContain('.shelf-action.danger');
 	});
 });

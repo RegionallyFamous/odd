@@ -104,9 +104,15 @@ describe( 'ODD Revision Room', () => {
 
 	it( 'keeps document, revision, comparison, and restore surfaces available in the compact grid', () => {
 		const css = readFileSync( resolve( '_tools/catalog-sources/apps/revision-room/bundle-src/assets/app.css' ), 'utf8' );
-		expect( css ).toMatch( /\.workspace \{ display: grid; grid-template-columns: minmax\(94px,\.72fr\) minmax\(94px,\.72fr\) minmax\(132px,1\.15fr\);/ );
+		expect( css ).toMatch( /\.workspace \{ display: grid; grid-template-columns: minmax\(0,1fr\); grid-template-rows: auto auto minmax\(180px,1fr\);/ );
 		expect( css ).not.toMatch( /\.document-panel, \.revision-panel \{ display: none; \}/ );
 		expect( document.querySelector( '#restore-revision' ) ).not.toBeNull();
+		expect( css ).toMatch( /\.revision-item \.item-top strong \{[^}]*white-space: normal/ );
+		expect( css ).toMatch( /\.revision-item small \{[^}]*white-space: normal/ );
+		expect( css ).toMatch( /\.app-shell \{ grid-template-rows: 60px auto minmax\(0,1fr\) auto; \}/ );
+		expect( css ).toMatch( /\.workspace \{ grid-row: 3; \}/ );
+		expect( css ).toMatch( /\.toast \{ position: static; grid-row: 4;[^}]*height: 0/ );
+		expect( css ).toMatch( /\.toast\.is-visible \{ height: auto; min-height: 38px/ );
 	} );
 
 	it( 'treats timezone-less WordPress GMT stamps as UTC when formatting', async () => {

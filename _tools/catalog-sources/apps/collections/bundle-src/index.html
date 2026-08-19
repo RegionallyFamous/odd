@@ -1,1 +1,163 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>ODD Collections</title><link rel="stylesheet" href="./assets/app.css"><script defer src="./assets/app.js"></script></head><body><div class="app"><header><div class="brand"><span class="mark">▦</span><div><small>Private shelves</small><h1>ODD Collections</h1></div></div><label class="search">⌕ <input id="search" type="search" placeholder="Search your shelves…" aria-label="Search collections and entries"></label><button id="newCollection" class="primary">+ New shelf</button></header><main><aside><div class="summary"><b id="total">0</b><span>items tracked</span></div><div id="shelves" class="shelves" aria-label="Collections"></div><div class="export-actions"><button id="exportJson" class="secondary">Export JSON</button><button id="exportCsv" class="secondary">Export CSV</button></div></aside><section class="content"><div class="toolbar"><div><small>YOUR PRIVATE LIBRARY</small><h2 id="heading">All collections</h2></div><div class="tools"><select id="sort" aria-label="Sort entries"><option value="updated">Recently updated</option><option value="title">Title A–Z</option><option value="date">Date</option></select><button id="newEntry" class="primary">+ Add item</button></div></div><div id="notice" class="notice" role="status" aria-live="polite" hidden></div><div id="loading" class="state">Loading your shelves…</div><div id="empty" class="state" hidden><b>Nothing here yet</b><span>Create a shelf, then add the things you want to remember.</span></div><div id="entries" class="entries"></div></section></main></div><dialog id="dialog"><form id="form"><header><div><small id="dialogKicker">NEW ITEM</small><h2 id="dialogTitle">Add an item</h2></div><button type="button" class="icon" id="close" aria-label="Close">×</button></header><div class="fields"><label>Title<input id="title" maxlength="140" required></label><label>Collection<select id="collection"></select></label><label>Description<textarea id="description" maxlength="500" rows="2"></textarea></label><label>Tags <small>(comma separated)</small><input id="tags" maxlength="240"></label><label>Status<select id="status"><option>active</option><option>completed</option><option>paused</option></select></label><label>Date<input id="date" type="date"></label><label>Notes<textarea id="notes" maxlength="2000" rows="3"></textarea></label><fieldset><legend>Optional WordPress reference</legend><input id="wpRef" type="hidden"><span id="wpLabel" class="ref">None selected</span><button type="button" class="secondary" id="pick">Choose a post or page</button></fieldset></div><footer><button type="button" class="secondary" id="cancel">Cancel</button><button class="primary" type="submit">Save item</button></footer></form></dialog><dialog id="shelfDialog"><form id="shelfForm"><header><h2 id="shelfTitle">New shelf</h2><button type="button" class="icon" id="shelfClose" aria-label="Close">×</button></header><label>Shelf name<input id="shelfName" maxlength="80" required></label><footer><button type="button" class="secondary" id="shelfCancel">Cancel</button><button class="primary">Save shelf</button></footer></form></dialog><div id="toast" class="toast" role="status" aria-live="polite"></div></body></html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>ODD Collections</title>
+    <link rel="stylesheet" href="./assets/app.css" />
+    <style>
+      .shelf-action {
+        min-height: 28px;
+        padding: 4px 6px;
+        border: 1px solid rgba(210, 224, 241, 0.14);
+        border-radius: 6px;
+        background: #151e2f;
+        color: #9da9ba;
+        cursor: pointer;
+        font-size: 9px;
+        font-weight: 700;
+      }
+      .shelf-action:hover,
+      .shelf-action:focus-visible {
+        border-color: rgba(52, 223, 199, 0.38);
+        background: rgba(52, 223, 199, 0.12);
+        color: #f7f0df;
+      }
+      .shelf-action.danger {
+        color: #ff7580;
+      }
+    </style>
+    <script defer src="./assets/app.js"></script>
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <div class="brand">
+          <span class="mark">▦</span>
+          <div>
+            <small>Private shelves</small>
+            <h1>ODD Collections</h1>
+          </div>
+        </div>
+        <label class="search"
+          >⌕
+          <input
+            id="search"
+            type="search"
+            placeholder="Search your shelves…"
+            aria-label="Search collections and entries" /></label
+        ><button id="newCollection" class="primary">+ New shelf</button>
+      </header>
+      <main>
+        <aside>
+          <div class="summary">
+            <b id="total">0</b><span>items tracked</span>
+          </div>
+          <div id="shelves" class="shelves" aria-label="Collections"></div>
+          <div class="export-actions">
+            <button id="exportJson" class="secondary">Export JSON</button
+            ><button id="exportCsv" class="secondary">Export CSV</button>
+          </div>
+        </aside>
+        <section class="content">
+          <div class="toolbar">
+            <div>
+              <small>YOUR PRIVATE LIBRARY</small>
+              <h2 id="heading">All collections</h2>
+            </div>
+            <div class="tools">
+              <select id="sort" aria-label="Sort entries">
+                <option value="updated">Recently updated</option>
+                <option value="title">Title A–Z</option>
+                <option value="date">Date</option></select
+              ><button id="newEntry" class="primary">+ Add item</button>
+            </div>
+          </div>
+          <div
+            id="notice"
+            class="notice"
+            role="status"
+            aria-live="polite"
+            hidden
+          ></div>
+          <div id="loading" class="state">Loading your shelves…</div>
+          <div id="empty" class="state" hidden>
+            <b>Nothing here yet</b
+            ><span
+              >Create a shelf, then add the things you want to remember.</span
+            >
+          </div>
+          <div id="entries" class="entries"></div>
+        </section>
+      </main>
+    </div>
+    <dialog id="dialog">
+      <form id="form">
+        <header>
+          <div>
+            <small id="dialogKicker">NEW ITEM</small>
+            <h2 id="dialogTitle">Add an item</h2>
+          </div>
+          <button type="button" class="icon" id="close" aria-label="Close">
+            ×
+          </button>
+        </header>
+        <div class="fields">
+          <label>Title<input id="title" maxlength="140" required /></label
+          ><label>Collection<select id="collection"></select></label
+          ><label
+            >Description<textarea
+              id="description"
+              maxlength="500"
+              rows="2"
+            ></textarea></label
+          ><label
+            >Tags <small>(comma separated)</small
+            ><input id="tags" maxlength="240" /></label
+          ><label
+            >Status<select id="status">
+              <option>active</option>
+              <option>completed</option>
+              <option>paused</option>
+            </select></label
+          ><label>Date<input id="date" type="date" /></label
+          ><label
+            >Notes<textarea id="notes" maxlength="2000" rows="3"></textarea>
+          </label>
+          <fieldset>
+            <legend>Optional WordPress reference</legend>
+            <input id="wpRef" type="hidden" /><span id="wpLabel" class="ref"
+              >None selected</span
+            ><button type="button" class="secondary" id="pick">
+              Choose a post or page
+            </button>
+          </fieldset>
+        </div>
+        <footer>
+          <button type="button" class="secondary" id="cancel">Cancel</button
+          ><button class="primary" type="submit">Save item</button>
+        </footer>
+      </form>
+    </dialog>
+    <dialog id="shelfDialog">
+      <form id="shelfForm">
+        <header>
+          <h2 id="shelfTitle">New shelf</h2>
+          <button type="button" class="icon" id="shelfClose" aria-label="Close">
+            ×
+          </button>
+        </header>
+        <label
+          >Shelf name<input id="shelfName" maxlength="80" required
+        /></label>
+        <footer>
+          <button type="button" class="secondary" id="shelfCancel">
+            Cancel</button
+          ><button class="primary">Save shelf</button>
+        </footer>
+      </form>
+    </dialog>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

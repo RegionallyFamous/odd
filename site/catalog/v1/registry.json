@@ -75,7 +75,7 @@
       "type": "app",
       "slug": "collections",
       "name": "ODD Collections",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "author": "Regionally Famous",
       "description": "Keep private shelves for the things you care about, with searchable entries and optional WordPress references.",
       "tags": [
@@ -89,8 +89,8 @@
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-collections.webp",
       "card_bytes": 49450,
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/collections.wp",
-      "sha256": "a7bb5d126d46eb80653ec058bcdcfb5639305ad929815ed35e4568cd0cbb20a6",
-      "size": 74500,
+      "sha256": "cb4e337e7b8ef726c24838b1d5cf39b8a84306af85771e1cf6d673c01a154ecc",
+      "size": 74967,
       "requires": {
         "odd": "1.1.8",
         "openStation": "1.1.0",
@@ -262,7 +262,7 @@
       "type": "app",
       "slug": "revision-room",
       "name": "ODD Revision Room",
-      "version": "1.0.1",
+      "version": "1.0.4",
       "author": "Regionally Famous",
       "description": "Compare WordPress post and page revisions, inspect exactly what changed, and safely restore an earlier title, body, or excerpt.",
       "tags": [
@@ -276,8 +276,8 @@
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-revision-room.webp",
       "card_bytes": 40164,
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/revision-room.wp",
-      "sha256": "6f1b2fa375fc142e0e654a66d2567615a9768bce9f2458bfe29c76e06e71ff77",
-      "size": 14202,
+      "sha256": "52fc1c8132e814ea2bdfa90c8dae4663f748aeb0247af886f502678a76e510be",
+      "size": 14303,
       "requires": {
         "odd": "1.1.8",
         "openStation": "1.1.0",
