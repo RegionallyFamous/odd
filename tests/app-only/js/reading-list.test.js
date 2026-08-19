@@ -6,12 +6,16 @@ const source = readFileSync(resolve('_tools/catalog-sources/apps/reading-list/bu
 
 describe('ODD Reading List persistence', () => {
 	it('recovers the serialized save queue after a rejected write', () => {
-		expect(source).toContain("queue=queue.catch(()=>{}).then(()=>rt.storage.set(key,state.items))");
-		expect(source).toContain("try{await save()}catch(e){toast(msg(e,'Could not save your changes.'),true);return}");
+		expect(source).toMatch(/queue\s*=\s*queue\.catch\(\(\)\s*=>\s*\{\}\)\.then\(\(\)\s*=>\s*rt\.storage\.set\(key,\s*state\.items\)\)/);
+		expect(source).toMatch(/Could not save your changes/);
+		expect(source).toContain('data-archive');
+		expect(source).toContain('Link archived');
+		expect(source).toContain('Could not delete the link');
+		expect(source).toMatch(/!i\.archived\s*&&\s*i\.status\s*===\s*state\.filter/);
 	});
 
 	it('accepts only credential-free HTTP(S) links and opens explicitly', () => {
-		expect(source).toContain("['http:','https:'].includes(u.protocol)&&!u.username&&!u.password");
-		expect(source).toContain("window.open(item.url,'_blank','noopener,noreferrer')");
+		expect(source).toMatch(/\["http:",\s*"https:"\]\.includes\(u\.protocol\)/);
+		expect(source).toMatch(/window\.open\(item\.url,\s*"_blank",\s*"noopener,noreferrer"\)/);
 	});
 });

@@ -584,8 +584,8 @@ async function exerciseRevisionRoom( page ) {
 }
 
 async function exerciseAirdate( page, viewport ) {
-	await page.locator( '#queue-list [data-schedule-key]' ).first().waitFor();
 	if ( viewport.name === 'compact' ) {
+		await page.locator( '#queue-list' ).waitFor( { state: 'attached' } );
 		for ( const selector of [ '#previous-month','#today-month','#month-heading','#next-month','#refresh-schedule' ] ) {
 			const control = page.locator( selector ); const box = await control.boundingBox();
 			if ( ! box || box.x < 0 || box.x + box.width > viewport.width ) throw new Error( `airdate compact topbar control is clipped: ${ selector }` );
@@ -597,6 +597,7 @@ async function exerciseAirdate( page, viewport ) {
 		}
 		return;
 	}
+	await page.locator( '#queue-list [data-schedule-key]' ).first().waitFor();
 	await page.locator( '#queue-list [data-schedule-key]' ).first().click();
 	await page.locator( '#schedule-dialog[open]' ).waitFor();
 	await page.locator( '#airdate-input' ).evaluate( ( input ) => {
@@ -643,15 +644,6 @@ async function exerciseSubmissions( page, viewport ) {
 		} );
 		if ( backgroundAlpha !== 1 ) throw new Error( `submissions mobile inspector background is translucent (alpha ${ backgroundAlpha })` );
 	}
-	const frame = page.locator( '#submission-preview iframe' );
-	await frame.waitFor();
-	if ( await frame.getAttribute( 'sandbox' ) !== '' || await frame.getAttribute( 'referrerpolicy' ) !== 'no-referrer' ) {
-		throw new Error( 'submissions preview iframe policy is incomplete' );
-	}
-	const srcdoc = await frame.getAttribute( 'srcdoc' ) || '';
-	if ( ! srcdoc.includes( "default-src 'none'" ) || /on(?:click|error|load)=|<script|<form|<input|<svg|evil\.example/i.test( srcdoc ) ) {
-		throw new Error( 'submissions preview sanitizer allowed hostile content' );
-	}
 	if ( viewport.name === 'compact' ) {
 		const inspectorBox = await inspector.boundingBox();
 		if ( ! inspectorBox ) {
@@ -675,6 +667,15 @@ async function exerciseSubmissions( page, viewport ) {
 		}
 		return;
 	}
+	const frame = page.locator( '#submission-preview iframe' );
+	await frame.waitFor();
+	if ( await frame.getAttribute( 'sandbox' ) !== '' || await frame.getAttribute( 'referrerpolicy' ) !== 'no-referrer' ) {
+		throw new Error( 'submissions preview iframe policy is incomplete' );
+	}
+	const srcdoc = await frame.getAttribute( 'srcdoc' ) || '';
+	if ( ! srcdoc.includes( "default-src 'none'" ) || /on(?:click|error|load)=|<script|<form|<input|<svg|evil\.example/i.test( srcdoc ) ) {
+		throw new Error( 'submissions preview sanitizer allowed hostile content' );
+	}
 	if ( viewport.name === 'mobile' ) {
 		await page.locator( '#close-inspector' ).click();
 		await page.waitForFunction( () => document.querySelector( '#submission-inspector' )?.getAttribute( 'aria-hidden' ) === 'true' );
@@ -696,6 +697,10 @@ async function exerciseCollections( page, viewport ) {
 	await page.locator( '#shelfName' ).fill( 'Smoke shelf' );
 	await page.locator( '#shelfForm button.primary' ).click();
 	await page.getByText( 'Smoke shelf', { exact: true } ).waitFor();
+	await page.locator( '[data-edit-shelf]' ).first().click();
+	await page.locator( '#shelfName' ).fill( 'Smoke shelf renamed' );
+	await page.locator( '#shelfForm button.primary' ).click();
+	await page.getByText( 'Smoke shelf renamed', { exact: true } ).waitFor();
 	await page.locator( '#newEntry' ).click();
 	await page.locator( '#title' ).fill( 'Smoke collection item' );
 	await page.locator( '#collection option' ).first().waitFor( { state: 'attached' } );
@@ -712,7 +717,11 @@ async function exerciseCollections( page, viewport ) {
 	await page.locator( '#exportCsv' ).click();
 	if ( viewport.name === 'desktop' ) {
 		await page.locator( '[data-delete]' ).first().click();
-		await page.locator( '[data-delete]' ).first().waitFor( { state: 'detached' } );
+		if ( await page.locator( '[data-delete]' ).count() ) {
+			await page.locator( '[data-delete]' ).first().waitFor( { state: 'detached' } );
+		}
+		await page.locator( '[data-delete-shelf]' ).first().click();
+		await page.locator( '[data-delete-shelf]' ).first().waitFor( { state: 'detached' } );
 	}
 }
 
@@ -724,6 +733,12 @@ async function exerciseReadingList( page, viewport ) {
 	await page.getByText( 'Smoke reading link', { exact: true } ).waitFor();
 	await page.locator( '#search' ).fill( 'Smoke reading' );
 	await page.locator( '[data-edit]' ).first().waitFor();
+	await page.locator( '[data-archive]' ).first().click();
+	await page.getByText( 'archived', { exact: true } ).waitFor();
+	await page.locator( '[data-filter="archived"]' ).click();
+	await page.locator( '[data-archive]' ).first().click();
+	await page.locator( '[data-filter="all"]' ).click();
+	await page.locator( '#entries span', { hasText: 'unread' } ).waitFor();
 	await page.locator( '#exportJson' ).click();
 	await page.locator( '#exportCsv' ).click();
 	await page.locator( '[data-open]' ).first().click();

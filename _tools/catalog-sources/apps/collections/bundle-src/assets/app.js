@@ -1,1 +1,417 @@
-(()=>{'use strict';const slug='collections',key='records',max=120;let rt,state={shelves:[],items:[],selected:'all',query:'',sort:'updated',editing:null},queue=Promise.resolve();const $=id=>document.getElementById(id);const esc=s=>String(s||'').trim().slice(0,max);function id(){return crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`}function now(){return new Date().toISOString()}function toast(s,bad=false){const e=$('toast');e.textContent=s;e.style.borderColor=bad?'rgba(255,120,131,.5)':'rgba(49,222,197,.4)';e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),3800)}function msg(e,f){if(/nonce|rest_cookie/i.test(`${e?.code} ${e?.message}`))return'WordPress could not verify that request. Refresh and try again.';if(e?.status===401)return'Your session expired. Sign in again.';if(e?.status===403)return'WordPress denied that action.';if(e?.status===413)return'The saved data is too large. Remove some notes or entries.';if(e?.status===429)return'Too many saves. Wait a moment and try again.';return e?.message||f}function req(){const x=window.oddApp;if(!x||x.apiVersion!==1||x.slug!==slug||!x.storage||typeof x.storage.get!=='function'||typeof x.storage.set!=='function'||typeof x.confirm!=='function')throw Error('ODD app runtime v1 is unavailable. Update ODD and reopen this app.');return x}async function load(){try{rt=req();const v=await rt.storage.get(key);if(v&&typeof v==='object'){state.shelves=Array.isArray(v.shelves)?v.shelves:[];state.items=Array.isArray(v.items)?v.items:[]}$('loading').hidden=true;render()}catch(e){$('loading').textContent=msg(e,'Could not load private storage.');toast(msg(e,'Storage unavailable.'),true)}}function save(){const snap={shelves:state.shelves,items:state.items};queue=queue.catch(()=>{}).then(()=>rt.storage.set(key,snap));return queue}function selectedItems(){const q=state.query.toLowerCase();return state.items.filter(x=>(state.selected==='all'||x.collectionId===state.selected)&&(!q||`${x.title} ${x.description} ${x.notes} ${(x.tags||[]).join(' ')}`.toLowerCase().includes(q))).sort((a,b)=>state.sort==='title'?a.title.localeCompare(b.title):state.sort==='date'?String(b.date).localeCompare(String(a.date)):String(b.updated).localeCompare(String(a.updated)))}function render(){const shelves=$('shelves');shelves.replaceChildren();const all=document.createElement('button');all.className=`shelf ${state.selected==='all'?'active':''}`;all.innerHTML='<span>All items</span><b>'+state.items.length+'</b>';all.onclick=()=>{state.selected='all';render()};shelves.append(all);state.shelves.forEach(s=>{const b=document.createElement('button');b.className=`shelf ${state.selected===s.id?'active':''}`;const n=state.items.filter(i=>i.collectionId===s.id).length;b.innerHTML=`<span>${safe(s.name)}</span><b>${n}</b>`;b.onclick=()=>{state.selected=s.id;render()};shelves.append(b)});$('total').textContent=state.items.length;const sh=state.selected==='all'?'All collections':state.shelves.find(s=>s.id===state.selected)?.name||'All collections';$('heading').textContent=sh;const list=$('entries');list.replaceChildren();const items=selectedItems();$('empty').hidden=items.length>0;items.forEach(i=>{const c=document.createElement('article');c.className='entry';c.innerHTML=`<div class="entry-top"><small>${safe(state.shelves.find(s=>s.id===i.collectionId)?.name||'Unfiled')}</small><span>${safe(i.status)}</span></div><h3>${safe(i.title)}</h3><p>${safe(i.description||i.notes||'No description yet.')}</p><div class="entry-foot"><span>${i.date?safe(i.date):'No date'} · ${(i.tags||[]).slice(0,2).map(safe).join(', ')}</span><div class="entry-actions"><button data-edit="${i.id}">Edit</button><button class="danger" data-delete="${i.id}">Delete</button></div></div>`;list.append(c)});$('exportJson').disabled=!state.items.length}function safe(x){const d=document.createElement('div');d.textContent=x;return d.innerHTML}function openItem(item){state.editing=item?.id||null;const is=!!item;$('dialogTitle').textContent=is?'Edit item':'Add an item';$('dialogKicker').textContent=is?'UPDATE ITEM':'NEW ITEM';$('title').value=item?.title||'';$('description').value=item?.description||'';$('tags').value=(item?.tags||[]).join(', ');$('status').value=item?.status||'active';$('date').value=item?.date||'';$('notes').value=item?.notes||'';$('wpRef').value=item?.wpRef?.id||'';$('wpLabel').textContent=item?.wpRef?.title||'None selected';const sel=$('collection');sel.replaceChildren(...state.shelves.map(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name;return o}));if(item)sel.value=item.collectionId;else if(state.selected!=='all')sel.value=state.selected;$('dialog').showModal();$('title').focus()}function close(){ $('dialog').close();state.editing=null}async function submit(e){e.preventDefault();if(!$('collection').value){toast('Create a shelf before adding an item.',true);return}const item={id:state.editing||id(),collectionId:$('collection').value,title:esc($('title').value),description:esc($('description').value),tags:$('tags').value.split(',').map(esc).filter(Boolean).slice(0,20),status:$('status').value,date:$('date').value,notes:esc($('notes').value),wpRef:$('wpRef').value?{id:$('wpRef').value,title:esc($('wpLabel').textContent)}:null,updated:now()};const ix=state.items.findIndex(x=>x.id===item.id);if(ix<0)state.items.unshift(item);else state.items[ix]=item;try{await save()}catch(e){toast(msg(e,'Could not save your changes.'),true);return}close();render();toast(ix<0?'Item added':'Item updated')}async function newShelf(e){e.preventDefault();const name=esc($('shelfName').value);if(!name)return;state.shelves.push({id:id(),name,created:now()});try{await save()}catch(e){toast(msg(e,'Could not save your changes.'),true);return}$('shelfDialog').close();$('shelfName').value='';render();toast('Shelf created')}function download(type){const data=selectedItems();const rows=type==='csv'?[['title','collection','description','tags','status','date','notes','wordpress_reference'],...data.map(i=>[i.title,state.shelves.find(s=>s.id===i.collectionId)?.name||'',i.description,(i.tags||[]).join('; '),i.status,i.date,i.notes,i.wpRef?.title||''])]:data;const text=type==='csv'?rows.map(r=>r.map(v=>'"'+String(v??'').replaceAll('"','""')+'"').join(',')).join('\n'):JSON.stringify({version:1,exportedAt:now(),shelves:state.shelves,items:data},null,2);const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type==='csv'?'text/csv':'application/json'}));a.download=`odd-collections.${type}`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500);toast(`Exported ${data.length} item${data.length===1?'':'s'}`)}async function pick(){try{const r=await rt.request('wp/v2/search?search='+encodeURIComponent(prompt('Search WordPress posts or pages')||'')+'&per_page=10&type=post&subtype=post,page');const body=r?.body||r;if(!Array.isArray(body)||!body.length){toast('No matching WordPress content found.');return}const choice=body[0];$('wpRef').value=String(choice.id);$('wpLabel').textContent=choice.title||`WordPress item ${choice.id}`}catch(e){toast(msg(e,'WordPress search failed.'),true)}}document.addEventListener('DOMContentLoaded',()=>{['search','sort'].forEach(i=>$(i).addEventListener('input',()=>{if(i==='search')state.query=$(i).value;else state.sort=$(i).value;render()}));$('newEntry').onclick=()=>openItem();$('newCollection').onclick=()=>{$('shelfDialog').showModal();$('shelfName').focus()};$('form').onsubmit=submit;$('shelfForm').onsubmit=newShelf;['close','cancel'].forEach(i=>$(i).onclick=close);['shelfClose','shelfCancel'].forEach(i=>$(i).onclick=()=>$('shelfDialog').close());$('pick').onclick=pick;$('exportJson').onclick=()=>download('json');$('exportCsv').onclick=()=>download('csv');$('entries').onclick=e=>{const b=e.target.closest("button");if(!b)return;const item=state.items.find(i=>i.id===(b.dataset.edit||b.dataset.delete));if(b.dataset.edit)openItem(item);if(b.dataset.delete)rt.confirm(`Delete “${item.title}”?`).then(ok=>{if(ok){state.items=state.items.filter(i=>i.id!==item.id);save().then(()=>{render();toast("Item deleted")})}})};load()});})();
+(() => {
+  "use strict";
+  const slug = "collections",
+    key = "records",
+    max = 120;
+  let rt,
+    state = {
+      shelves: [],
+      items: [],
+      selected: "all",
+      query: "",
+      sort: "updated",
+      editing: null,
+      shelfEditing: null,
+    },
+    queue = Promise.resolve();
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) =>
+    String(s || "")
+      .trim()
+      .slice(0, max);
+  function id() {
+    return crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+  function now() {
+    return new Date().toISOString();
+  }
+  function toast(s, bad = false) {
+    const e = $("toast");
+    e.textContent = s;
+    e.style.borderColor = bad ? "rgba(255,120,131,.5)" : "rgba(49,222,197,.4)";
+    e.classList.add("show");
+    clearTimeout(toast.t);
+    toast.t = setTimeout(() => e.classList.remove("show"), 3800);
+  }
+  function msg(e, f) {
+    if (/nonce|rest_cookie/i.test(`${e?.code} ${e?.message}`))
+      return "WordPress could not verify that request. Refresh and try again.";
+    if (e?.status === 401) return "Your session expired. Sign in again.";
+    if (e?.status === 403) return "WordPress denied that action.";
+    if (e?.status === 413)
+      return "The saved data is too large. Remove some notes or entries.";
+    if (e?.status === 429)
+      return "Too many saves. Wait a moment and try again.";
+    return e?.message || f;
+  }
+  function req() {
+    const x = window.oddApp;
+    if (
+      !x ||
+      x.apiVersion !== 1 ||
+      x.slug !== slug ||
+      !x.storage ||
+      typeof x.storage.get !== "function" ||
+      typeof x.storage.set !== "function" ||
+      typeof x.confirm !== "function"
+    )
+      throw Error(
+        "ODD app runtime v1 is unavailable. Update ODD and reopen this app.",
+      );
+    return x;
+  }
+  async function load() {
+    try {
+      rt = req();
+      const v = await rt.storage.get(key);
+      if (v && typeof v === "object") {
+        state.shelves = Array.isArray(v.shelves) ? v.shelves : [];
+        state.items = Array.isArray(v.items) ? v.items : [];
+      }
+      $("loading").hidden = true;
+      render();
+    } catch (e) {
+      $("loading").textContent = msg(e, "Could not load private storage.");
+      toast(msg(e, "Storage unavailable."), true);
+    }
+  }
+  function save() {
+    const snap = { shelves: state.shelves, items: state.items };
+    queue = queue.catch(() => {}).then(() => rt.storage.set(key, snap));
+    return queue;
+  }
+  function selectedItems() {
+    const q = state.query.toLowerCase();
+    return state.items
+      .filter(
+        (x) =>
+          (state.selected === "all" || x.collectionId === state.selected) &&
+          (!q ||
+            `${x.title} ${x.description} ${x.notes} ${(x.tags || []).join(" ")}`
+              .toLowerCase()
+              .includes(q)),
+      )
+      .sort((a, b) =>
+        state.sort === "title"
+          ? a.title.localeCompare(b.title)
+          : state.sort === "date"
+            ? String(b.date).localeCompare(String(a.date))
+            : String(b.updated).localeCompare(String(a.updated)),
+      );
+  }
+  function render() {
+    const shelves = $("shelves");
+    shelves.replaceChildren();
+    const all = document.createElement("button");
+    all.className = `shelf ${state.selected === "all" ? "active" : ""}`;
+    all.innerHTML = "<span>All items</span><b>" + state.items.length + "</b>";
+    all.onclick = () => {
+      state.selected = "all";
+      render();
+    };
+    shelves.append(all);
+    state.shelves.forEach((s) => {
+      const wrap = document.createElement("div");
+      wrap.className = "shelf-row";
+      const b = document.createElement("button");
+      b.className = `shelf ${state.selected === s.id ? "active" : ""}`;
+      const n = state.items.filter((i) => i.collectionId === s.id).length;
+      b.innerHTML = `<span>${safe(s.name)}</span><b>${n}</b>`;
+      b.onclick = () => {
+        state.selected = s.id;
+        render();
+      };
+      wrap.append(b);
+      const edit = document.createElement("button");
+      edit.className = "shelf-action";
+      edit.type = "button";
+      edit.dataset.editShelf = s.id;
+      edit.textContent = "Rename";
+      edit.setAttribute("aria-label", `Rename ${s.name}`);
+      const remove = document.createElement("button");
+      remove.className = "shelf-action danger";
+      remove.type = "button";
+      remove.dataset.deleteShelf = s.id;
+      remove.textContent = "Delete";
+      remove.setAttribute("aria-label", `Delete ${s.name}`);
+      wrap.append(edit, remove);
+      shelves.append(wrap);
+    });
+    $("total").textContent = state.items.length;
+    const sh =
+      state.selected === "all"
+        ? "All collections"
+        : state.shelves.find((s) => s.id === state.selected)?.name ||
+          "All collections";
+    $("heading").textContent = sh;
+    const list = $("entries");
+    list.replaceChildren();
+    const items = selectedItems();
+    $("empty").hidden = items.length > 0;
+    items.forEach((i) => {
+      const c = document.createElement("article");
+      c.className = "entry";
+      c.innerHTML = `<div class="entry-top"><small>${safe(state.shelves.find((s) => s.id === i.collectionId)?.name || "Unfiled")}</small><span>${safe(i.status)}</span></div><h3>${safe(i.title)}</h3><p>${safe(i.description || i.notes || "No description yet.")}</p><div class="entry-foot"><span>${i.date ? safe(i.date) : "No date"} · ${(i.tags || []).slice(0, 2).map(safe).join(", ")}</span><div class="entry-actions"><button data-edit="${i.id}">Edit</button><button class="danger" data-delete="${i.id}">Delete</button></div></div>`;
+      list.append(c);
+    });
+    $("exportJson").disabled = !state.items.length;
+  }
+  function safe(x) {
+    const d = document.createElement("div");
+    d.textContent = x;
+    return d.innerHTML;
+  }
+  function openItem(item) {
+    state.editing = item?.id || null;
+    const is = !!item;
+    $("dialogTitle").textContent = is ? "Edit item" : "Add an item";
+    $("dialogKicker").textContent = is ? "UPDATE ITEM" : "NEW ITEM";
+    $("title").value = item?.title || "";
+    $("description").value = item?.description || "";
+    $("tags").value = (item?.tags || []).join(", ");
+    $("status").value = item?.status || "active";
+    $("date").value = item?.date || "";
+    $("notes").value = item?.notes || "";
+    $("wpRef").value = item?.wpRef?.id || "";
+    $("wpLabel").textContent = item?.wpRef?.title || "None selected";
+    const sel = $("collection");
+    sel.replaceChildren(
+      ...state.shelves.map((s) => {
+        const o = document.createElement("option");
+        o.value = s.id;
+        o.textContent = s.name;
+        return o;
+      }),
+    );
+    if (item) sel.value = item.collectionId;
+    else if (state.selected !== "all") sel.value = state.selected;
+    $("dialog").showModal();
+    $("title").focus();
+  }
+  function close() {
+    $("dialog").close();
+    state.editing = null;
+  }
+  async function submit(e) {
+    e.preventDefault();
+    if (!$("collection").value) {
+      toast("Create a shelf before adding an item.", true);
+      return;
+    }
+    const item = {
+      id: state.editing || id(),
+      collectionId: $("collection").value,
+      title: esc($("title").value),
+      description: esc($("description").value),
+      tags: $("tags").value.split(",").map(esc).filter(Boolean).slice(0, 20),
+      status: $("status").value,
+      date: $("date").value,
+      notes: esc($("notes").value),
+      wpRef: $("wpRef").value
+        ? { id: $("wpRef").value, title: esc($("wpLabel").textContent) }
+        : null,
+      updated: now(),
+    };
+    const ix = state.items.findIndex((x) => x.id === item.id);
+    const previous = [...state.items];
+    if (ix < 0) state.items.unshift(item);
+    else state.items[ix] = item;
+    try {
+      await save();
+    } catch (e) {
+      state.items = previous;
+      render();
+      toast(msg(e, "Could not save your changes."), true);
+      return;
+    }
+    close();
+    render();
+    toast(ix < 0 ? "Item added" : "Item updated");
+  }
+  async function newShelf(e) {
+    e.preventDefault();
+    const name = esc($("shelfName").value);
+    if (!name) return;
+    const previous = { shelves: [...state.shelves], items: [...state.items], selected: state.selected };
+    const shelf = { id: state.shelfEditing || id(), name, created: state.shelfEditing ? state.shelves.find((s) => s.id === state.shelfEditing)?.created || now() : now() };
+    const ix = state.shelves.findIndex((s) => s.id === shelf.id);
+    if (ix < 0) state.shelves.push(shelf);
+    else state.shelves[ix] = shelf;
+    try {
+      await save();
+    } catch (e) {
+      state.shelves = previous.shelves;
+      state.items = previous.items;
+      state.selected = previous.selected;
+      render();
+      toast(msg(e, "Could not save your changes."), true);
+      return;
+    }
+    $("shelfDialog").close();
+    $("shelfName").value = "";
+    state.shelfEditing = null;
+    render();
+    toast(ix < 0 ? "Shelf created" : "Shelf renamed");
+  }
+  async function deleteShelf(shelf) {
+    if (!shelf || !(await rt.confirm(`Delete “${shelf.name}” and its items?`))) return;
+    const previous = { shelves: [...state.shelves], items: [...state.items], selected: state.selected };
+    state.shelves = state.shelves.filter((s) => s.id !== shelf.id);
+    state.items = state.items.filter((item) => item.collectionId !== shelf.id);
+    if (state.selected === shelf.id) state.selected = "all";
+    try {
+      await save();
+    } catch (e) {
+      state.shelves = previous.shelves;
+      state.items = previous.items;
+      state.selected = previous.selected;
+      render();
+      toast(msg(e, "Could not delete the shelf."), true);
+      return;
+    }
+    render();
+    toast("Shelf deleted");
+  }
+  function download(type) {
+    const data = selectedItems();
+    const rows =
+      type === "csv"
+        ? [
+            [
+              "title",
+              "collection",
+              "description",
+              "tags",
+              "status",
+              "date",
+              "notes",
+              "wordpress_reference",
+            ],
+            ...data.map((i) => [
+              i.title,
+              state.shelves.find((s) => s.id === i.collectionId)?.name || "",
+              i.description,
+              (i.tags || []).join("; "),
+              i.status,
+              i.date,
+              i.notes,
+              i.wpRef?.title || "",
+            ]),
+          ]
+        : data;
+    const text =
+      type === "csv"
+        ? rows
+            .map((r) =>
+              r
+                .map((v) => '"' + String(v ?? "").replaceAll('"', '""') + '"')
+                .join(","),
+            )
+            .join("\n")
+        : JSON.stringify(
+            {
+              version: 1,
+              exportedAt: now(),
+              shelves: state.shelves,
+              items: data,
+            },
+            null,
+            2,
+          );
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(
+      new Blob([text], {
+        type: type === "csv" ? "text/csv" : "application/json",
+      }),
+    );
+    a.download = `odd-collections.${type}`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 500);
+    toast(`Exported ${data.length} item${data.length === 1 ? "" : "s"}`);
+  }
+  async function pick() {
+    try {
+      const r = await rt.request(
+        "wp/v2/search?search=" +
+          encodeURIComponent(prompt("Search WordPress posts or pages") || "") +
+          "&per_page=10&type=post&subtype=post,page",
+      );
+      const body = r?.body || r;
+      if (!Array.isArray(body) || !body.length) {
+        toast("No matching WordPress content found.");
+        return;
+      }
+      const choice = body[0];
+      $("wpRef").value = String(choice.id);
+      $("wpLabel").textContent = choice.title || `WordPress item ${choice.id}`;
+    } catch (e) {
+      toast(msg(e, "WordPress search failed."), true);
+    }
+  }
+  document.addEventListener("DOMContentLoaded", () => {
+    ["search", "sort"].forEach((i) =>
+      $(i).addEventListener("input", () => {
+        if (i === "search") state.query = $(i).value;
+        else state.sort = $(i).value;
+        render();
+      }),
+    );
+    $("newEntry").onclick = () => openItem();
+    $("newCollection").onclick = () => {
+      state.shelfEditing = null;
+      $("shelfTitle").textContent = "New shelf";
+      $("shelfName").value = "";
+      $("shelfDialog").showModal();
+      $("shelfName").focus();
+    };
+    $("form").onsubmit = submit;
+    $("shelfForm").onsubmit = newShelf;
+    ["close", "cancel"].forEach((i) => ($(i).onclick = close));
+    ["shelfClose", "shelfCancel"].forEach(
+      (i) =>
+        ($(i).onclick = () => {
+          $("shelfDialog").close();
+          state.shelfEditing = null;
+        }),
+    );
+    $("pick").onclick = pick;
+    $("exportJson").onclick = () => download("json");
+    $("exportCsv").onclick = () => download("csv");
+    $("shelves").onclick = (e) => {
+      const edit = e.target.closest("[data-edit-shelf]");
+      const remove = e.target.closest("[data-delete-shelf]");
+      const shelf = state.shelves.find((s) => s.id === (edit || remove)?.dataset?.[edit ? "editShelf" : "deleteShelf"]);
+      if (edit && shelf) {
+        state.shelfEditing = shelf.id;
+        $("shelfTitle").textContent = "Rename shelf";
+        $("shelfName").value = shelf.name;
+        $("shelfDialog").showModal();
+        $("shelfName").focus();
+      } else if (remove) deleteShelf(shelf);
+    };
+    $("entries").onclick = async (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      const item = state.items.find(
+        (i) => i.id === (b.dataset.edit || b.dataset.delete),
+      );
+      if (b.dataset.edit) openItem(item);
+      if (b.dataset.delete && item && (await rt.confirm(`Delete “${item.title}”?`))) {
+        const previous = state.items;
+        state.items = state.items.filter((i) => i.id !== item.id);
+        try {
+          await save();
+          render();
+          toast("Item deleted");
+        } catch (error) {
+          state.items = previous;
+          render();
+          toast(msg(error, "Could not delete the item."), true);
+        }
+      }
+    };
+    load();
+  });
+})();

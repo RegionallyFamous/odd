@@ -75,7 +75,7 @@
       "type": "app",
       "slug": "collections",
       "name": "ODD Collections",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "author": "Regionally Famous",
       "description": "Keep private shelves for the things you care about, with searchable entries and optional WordPress references.",
       "tags": [
@@ -89,8 +89,8 @@
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-collections.webp",
       "card_bytes": 49450,
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/collections.wp",
-      "sha256": "6b93d6b3fee75da47b80ba65d54eaf0b1c8489251698a446fe571d100d72037e",
-      "size": 73505,
+      "sha256": "a7bb5d126d46eb80653ec058bcdcfb5639305ad929815ed35e4568cd0cbb20a6",
+      "size": 74500,
       "requires": {
         "odd": "1.1.8",
         "openStation": "1.1.0",
@@ -328,7 +328,7 @@
       "type": "app",
       "slug": "reading-list",
       "name": "ODD Reading List",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "author": "Regionally Famous",
       "description": "A private, searchable reading queue for links you want to return to.",
       "tags": [
@@ -342,8 +342,8 @@
       "card_url": "https://odd.regionallyfamous.com/catalog/v1/cards/app-reading-list.webp",
       "card_bytes": 71878,
       "download_url": "https://odd.regionallyfamous.com/catalog/v1/bundles/reading-list.wp",
-      "sha256": "f025a4e0b48fc2b5167665cd12702bcd9553dae3db327132a69a44cba1ccf62c",
-      "size": 101073,
+      "sha256": "f98bac018716080a51bbf6eda05e0e1bb8d80db8d263704a5ba045b697254076",
+      "size": 101699,
       "requires": {
         "odd": "1.1.8",
         "openStation": "1.1.0",
