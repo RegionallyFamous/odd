@@ -1,6 +1,6 @@
 === ODD — Apps for OpenStation ===
 Contributors: nickhamze
-Tags: openstation, desktop, apps, notes, productivity
+Tags: openstation, desktop, apps, publishing, productivity
 Requires at least: 6.8
 Tested up to: 7.0
 Requires PHP: 8.1
@@ -9,7 +9,7 @@ Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-A growing catalog of delightful apps for OpenStation.
+Eight thoughtful apps for notes, collections, publishing workflows, patterns, reading, and local utilities in OpenStation.
 
 == Description ==
 
@@ -19,11 +19,26 @@ OpenStation makes WordPress feel less like a stack of admin screens and more lik
 
 ODD is here to fill that desktop with good stuff.
 
-We are building useful little tools, playful experiments, and apps that make WordPress more fun to spend time in. Some will help you get work done. Some may be delightfully unnecessary. All of them should feel like they belong in OpenStation.
+The current shelf spans personal tools, publishing workflows, and local utilities. Every app is deliberately small, focused, and designed to feel at home in an OpenStation window.
 
 Each app ships through ODD's signed catalog, so the shelf can grow without waiting for another plugin release.
 
-= Meet ODD Notes =
+= Eight apps, one shelf =
+
+The live ODD catalog currently includes:
+
+* ODD Notes — write, organize, share, and recover private WordPress-backed notes.
+* ODD Collections — keep private, searchable shelves for books, gear, records, recipes, or anything else worth tracking.
+* ODD Reading List — save links privately, track reading progress, and export the queue whenever you want.
+* ODD Pantry — browse, preview, copy, rename, duplicate, and retire WordPress synced patterns.
+* ODD Revision Room — compare WordPress post and page revisions and safely restore earlier content.
+* ODD Airdate — see the publishing calendar and schedule, reschedule, or return content to drafts.
+* ODD Submissions — preview pending posts and pages, approve them, or return them to drafts.
+* ODD Workbench — clean text, preview Markdown, make slugs, format JSON, compare drafts, and convert encodings locally.
+
+Install only the apps you want. Each one gets its own launcher and native OpenStation window.
+
+= ODD Notes, up close =
 
 ODD Notes is a calm, native place to write things down without leaving your WordPress desktop. Your notes live in WordPress, open in their own window, and stay ready whenever you need them.
 
@@ -42,7 +57,7 @@ Because OpenStation deserves great apps.
 
 ODD gives those apps one friendly place to live. Open the Shop, find something interesting, install it, and decide whether it belongs on your desktop, in your dock, or both. OpenStation creates the workspace. ODD fills it with things worth opening.
 
-The shelf will keep growing with thoughtfully made OpenStation apps: useful ones, weird ones, tiny ones, and things WordPress did not know it needed yet.
+The signed catalog lets ODD add and improve thoughtfully made OpenStation apps independently from plugin releases. The Shop stays small and stable while the shelf keeps growing.
 
 == Installation ==
 
@@ -58,9 +73,13 @@ The shelf will keep growing with thoughtfully made OpenStation apps: useful ones
 
 No. OpenStation, ODD, and ODD Notes live inside your WordPress admin workspace. Visitors will not see them on your public site.
 
-= Is ODD just a notes app? =
+= Are all eight apps installed automatically? =
 
-No. ODD Notes is one example from a growing shelf. New apps can arrive through the signed catalog without another plugin update.
+No. ODD is the Shop. Choose and install only the apps you want from its signed catalog.
+
+= Do new apps require another ODD plugin update? =
+
+Usually not. Apps and app updates can arrive through the signed catalog when the existing public ODD and OpenStation contracts already support them. Plugin updates are reserved for changes to the Shop, installer, permissions, or runtime APIs.
 
 = Why does ODD require OpenStation? =
 
@@ -88,7 +107,7 @@ Privacy policy: https://odd.regionallyfamous.com/privacy/
 
 == Source and build tools ==
 
-ODD is open source. The human-readable plugin and ODD Notes source, along with the catalog and packaging tools, are available at https://github.com/RegionallyFamous/odd.
+ODD is open source. The human-readable plugin and catalog app source, along with the catalog and packaging tools, are available at https://github.com/RegionallyFamous/odd.
 
 To rebuild the distributed files:
 
